@@ -1,0 +1,56 @@
+# ADR-0010 — The daemon is Python, single-threaded, on the default GLib main context
+
+**Status:** accepted
+**Date:** 2026-08-08
+**Carried forward from the prototype. Every clause below was paid for.**
+
+## Context
+
+The accessibility layer on Linux is AT-SPI2, reached through GObject introspection bindings that are distribution packages rather than wheels. That single fact drives most of this ADR.
+
+The prototype's own notes record what went wrong before these rules were adopted, and they are worth restating because each looks like a preference until you violate it:
+
+**Threading.** AT-SPI2 access from more than one thread produces failures that do not look like threading failures. The rule is a single-threaded event loop, and it is not negotiable.
+
+**Main context.** Registering on a non-default GLib main context caused **silent event loss** — no error, no warning, simply events that never arrived. The prototype's notes record that this cost roughly an hour to find, which is cheap only because it was found at all. A subscription lane that silently drops some events is worse than one that is obviously broken.
+
+**Virtual environment.** The venv must be created with `--system-site-packages`, because the GObject bindings are installed by the distribution and cannot be pip-installed into an isolated environment. The prototype's notes call this mandatory, and a fresh contributor hits it immediately.
+
+**Test isolation.** AT-SPI2 can **abort the interpreter** when the accessibility bus is absent — not raise, abort. This is why the prototype has a `--no-live` test lane: the suite must be runnable on a machine with no display, and the mechanism cannot be a try/except.
+
+**Capability probing.** Reading a settings key to decide whether accessibility is available is not the same as asking the system whether it works. The prototype learned to probe capability directly rather than trust `gsettings`, and the same mistake in a different costume produced issue #194, where a refusal blamed a flag that was demonstrably present.
+
+The counter-argument — write the daemon in a compiled language — was considered and loses on binding maturity. The Python GObject bindings are the well-trodden path for AT-SPI2; anything else means maintaining bindings as well as a product.
+
+## Decision
+
+**The daemon is Python. Five rules, all enforced by tests or by the setup script, not by memory:**
+
+1. **One thread.** A single event loop owns all accessibility access. Any work that must happen elsewhere is handed off by queue and never touches an accessibility object.
+2. **The default GLib main context.** Registering elsewhere loses events silently. A test asserts the context used at registration.
+3. **`--system-site-packages`**, created by `infra/apply.sh`, never by a hand-typed `python -m venv`.
+4. **Two test lanes.** `--no-live` runs everywhere and is what CI runs. The live lane requires a display and is what proof artifacts run under. A live-only test must be marked, because the alternative is an interpreter abort that looks like a crashed runner.
+5. **Capability is probed, never inferred from a settings key.** A refusal cites the probe result. See [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md).
+
+**One additional rule from operational experience:** the daemon's own module layout should keep backends small and separately testable. The prototype's single largest churn source was its server module at 35 revisions, with the AT-SPI backend at 24 — the two files that everything else pushed changes into. Splitting transport, dispatch, scope enforcement, and backend into separate modules from the start is the cheap version of that lesson.
+
+## Consequences
+
+**Good.** The bindings are the mature path, the failure modes are known and written down, and a contributor who reads this document avoids all five of the traps that cost the prototype real time.
+
+**Cost.** Python in a performance-sensitive event path. The prototype did not hit a throughput wall in seven days of use, so this is a watch item rather than a known problem — and if it becomes one, the fix is to narrow what happens on the event thread, not to change language.
+
+**Cost.** `--system-site-packages` means the daemon's environment is not fully hermetic. Accepted: the alternative is not available.
+
+## Evidence
+
+| Claim | Source |
+|---|---|
+| single-thread loop rule | prototype `docs/08-prototype-notes.md` |
+| default GLib context, silent event loss, ~1 hour lost | prototype `docs/08-prototype-notes.md` |
+| `--system-site-packages` mandatory | prototype `docs/08-prototype-notes.md`; also the sandbox setup command |
+| AT-SPI2 can abort the interpreter without a bus; `--no-live` lane rationale | prototype `docs/08-prototype-notes.md` |
+| capability probing beats reading `gsettings` | prototype `docs/08-prototype-notes.md` |
+| refusal blamed a present flag | issue #194 |
+| `server.py` 35 revisions, `backends/atspi.py` 24 | `git log` counts |
+| suite size at pivot: 1,126 passed / 57 skipped | full python run, 2026-08-07 18:33 |
