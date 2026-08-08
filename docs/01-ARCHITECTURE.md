@@ -192,9 +192,10 @@ Named here so nobody re-derives them as new ideas. All four are recorded in the 
 
 Real, unresolved, and each one needs a decision before the code that depends on it:
 
-1. **Wake capture path.** The measurements are solid: enrolment-first fingerprinting admits about 82% of a person's own unseen takes at zero false accepts, with a threshold of 20 and an enrolled-template weight of 1.15. But on the live microphone the same person's voice scored 20.4–21.3 against their own templates — a systematic offset just over the line, not random noise. The measurement rig and the live capture path were built separately, and that is the suspect. **Decision needed:** rebuild capture once, in one place, shared by the enrolment page and the live gate, and re-measure. See [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md).
-2. **Where the phone client's transport terminates.** Direct to hub, or through a relay when the person is off their network.
-3. **Episode storage.** Episodes-as-git was right; whether the graph lives beside the audit log or inside it was never settled.
+1. **Where the phone client's transport terminates.** Direct to hub, or through a relay when the person is off their network.
+2. **Episode storage.** Episodes-as-git was right; whether the graph lives beside the audit log or inside it was never settled. Whichever way it goes decides whether redaction happens at write time or at read time — see [ADR-0013](02-DECISIONS/0013-episodes-are-a-git-graph.md).
+
+**Settled, 2026-08-08 — the wake capture path.** This was the third open question here. The measurements are solid: enrolment-first fingerprinting admits about 82% of a person's own unseen takes at zero false accepts, with a threshold of 20 and an enrolled-template weight of 1.15. But on the live microphone the same person's voice scored 20.4–21.3 against their own templates — a systematic offset just over the line, not random noise. The measurement rig and the live capture path were built separately, and that is the suspect. **Decision: rebuild capture once, in one place, shared by the enrolment page and the live gate, and re-measure — carry the measurements, not the capture code.** Do not port a constant that has not been re-measured against the rebuilt path. See [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md) and [07-ROADMAP.md](07-ROADMAP.md) M5.
 
 ---
 

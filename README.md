@@ -40,6 +40,8 @@ Every document here exists to make one of those families structurally impossible
 
 **If you are about to write code:** you also need [05-TEST-STRATEGY.md](docs/05-TEST-STRATEGY.md) and [07-ROADMAP.md](docs/07-ROADMAP.md), because the roadmap says which milestone you are in and the milestone says which gate must pass.
 
+**Where the work actually starts.** M0 (these documents) closed on 2026-08-08 with all three open decisions taken — they are recorded under [§Decisions taken](docs/07-ROADMAP.md) and you do not need to re-open them. **The next commit belongs to [M1 — Skeleton](docs/07-ROADMAP.md): repository layout, toolchain, and gates, with no features at all.** M1 is not finished when the gates pass; it is finished when each gate has been *made to fail on purpose* and observed going red.
+
 ---
 
 ## The shape, in one screen

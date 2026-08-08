@@ -1,6 +1,6 @@
 # ADR-0005 — Wake is enrolment-first fingerprinting, not transcription
 
-**Status:** accepted, with one open sub-decision (§5)
+**Status:** accepted; the §5 sub-decision was taken 2026-08-08 — rebuild the capture path once, carry the measurements, re-measure before trusting any constant
 **Date:** 2026-08-08
 
 ## Context
@@ -46,7 +46,7 @@ Two implementation lessons were paid for in live debugging:
 
 The suspect is that the enrolment page and the live gate were built as two capture paths. On paper they match (same constraints, same fixed sample rate); in practice they were written at different times, in different packages, and only one of them was ever measured.
 
-**The decision to make before writing the wake code:** build the capture path **once**, in `packages/voice`, consumed identically by the enrolment page and the live gate, then re-measure the whole table above against the live path. Do not port the threshold as a constant until the rig that produced it is the rig that runs.
+**Decision taken, 2026-08-08:** build the capture path **once**, in `packages/voice`, consumed identically by the enrolment page and the live gate, then re-measure the whole table above against the live path. Carry the measurements forward as prior expectations; carry no capture code. Do not port the threshold as a constant until the rig that produced it is the rig that runs.
 
 Do **not** respond to the offset by raising the threshold. That is how the prototype got to 20 in the first place, and the fact that it needed raising twice is the signal that something upstream is inconsistent.
 

@@ -15,11 +15,13 @@
 **Deliverables:** the nine documents in `docs/`, the ADR series in `docs/02-DECISIONS/`, `README.md`, and `CONTRIBUTING.md`.
 
 **Exit gate:**
-- [ ] Every internal link resolves (`tools/check-links.sh` exits 0).
-- [ ] Every document's Receipts table has at least one entry per non-obvious claim.
-- [ ] Jamie has reacted to the three open decisions in §"Open decisions" below.
+- [x] Every internal link resolves — `scripts/check-docs.py` exits 0 over 27 files.
+- [x] Every document's Receipts table has at least one entry per non-obvious claim.
+- [x] Jamie has reacted to the three open decisions — all three taken on the recommendation, 2026-08-08. See §"Decisions taken" below.
 
-**Status:** in progress.
+**Status:** complete, 2026-08-08. The verify pass caught three of its own factual errors before it closed (the schema-freeze count, the number of operation classes, and two churn figures), which is the only reason to trust the rest — see [05-TEST-STRATEGY.md](05-TEST-STRATEGY.md) on gates being proved by failing.
+
+**M1 is unblocked.**
 
 ---
 
@@ -188,13 +190,15 @@ Named so they are not mistaken for oversights, and so nobody re-derives them as 
 
 ---
 
-## Open decisions
+## Decisions taken
 
-Three things Jamie needs to weigh in on. The stated position is the current recommendation, not a decision already taken.
+Three questions were held open for Jamie while the documents were written. He took all three on the recommendation, 2026-08-08 — so they are settled, and a session reading this does not need to ask again.
 
-1. **Wake capture.** Recommendation: port the *measurements*, rebuild the *capture path* once in one place, re-measure before trusting any constant. The alternative — porting the code as-is — inherits an unexplained offset.
-2. **Vite plus the Mastra component library from commit one.** Recommendation: yes. This was the direction on 2026-08-07 that never landed because the migration became a gate on itself. → [ADR-0011](02-DECISIONS/0011-dashboard-is-vite-with-playground-ui.md)
-3. **Carry versus retype.** Recommendation: carry the protocol schema, the proof artifacts, and the substantive prototype documents; retype everything else. Copying code copies the assumptions that made it wrong, and the prototype's four best documents — the generated tool API, the security model, the architecture notes, and the prototype notes — are worth migrating rather than re-deriving.
+1. **Wake capture — rebuild, do not port.** Port the *measurements*; rebuild the *capture path* once, in one place, shared by the enrolment page and the live gate; re-measure before trusting any constant. Porting the code as-is would inherit the unexplained live offset (20.4–21.3 against a threshold of 20) rather than explain it. → [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md), M5.
+2. **Vite plus the Mastra component library from commit one.** Yes. This was the direction on 2026-08-07 that never landed because the migration became a gate on itself. Known cost: `lucide-react` pins down to the `0.474.x` line the library peers on. → [ADR-0011](02-DECISIONS/0011-dashboard-is-vite-with-playground-ui.md), M1 and M4.
+3. **Carry the protocol, the proofs, and the four good documents; retype everything else.** Copying code copies the assumptions that made it wrong. The prototype's generated tool API, security model, architecture notes, and prototype notes are worth migrating rather than re-deriving; no runtime source is copied. → M1 and M2.
+
+**What is still genuinely open** is scheduling, not direction: whether the factory is pinned to a known-good `@mastra/factory` release before M1 or after it. The factory is not needed until M7, so this is not a blocker for starting.
 
 ---
 
