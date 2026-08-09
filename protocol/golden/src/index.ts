@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.0.1
+// Mastra CC protocol v1.0.0
 
-export const PROTOCOL_VERSION = "1.0.1";
-export const SCHEMA_DIGEST = "741c39557172335f3c8a29bee3ac3e99ebb4dd091a97322f15ba85bc60951ee2";
+export const PROTOCOL_VERSION = "1.0.0";
+export const SCHEMA_DIGEST = "9578d0d3331473c7a123fc385704668dc286b5f019264a3a4b1579eb0e885465";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
