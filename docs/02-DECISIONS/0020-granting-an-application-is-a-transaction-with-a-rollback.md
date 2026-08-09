@@ -1,8 +1,17 @@
 # ADR-0020 — Granting an application is a transaction with a rollback
 
-**Status:** accepted
+**Status:** **superseded 2026-08-09 by [ADR-0027](0027-the-assistant-opens-the-application-itself.md)** — retired entirely, not shrunk.
 **Date:** 2026-08-08
 **Depends on [ADR-0019](0019-capability-is-not-authority.md).**
+
+> **Why this record is dead.** It rested on a belief about *when* an application becomes
+> readable. Measured in
+> [which condition makes a browser readable](../proofs/which-condition-makes-a-browser-readable.md):
+> readability is decided at process start and cannot be changed afterwards, so rewriting a
+> launcher entry buys nothing that launching the process ourselves does not. There is no
+> override inventory and no rollback because there is nothing on the user's system to undo.
+> The reasoning below is kept because it was sound given what we believed; it is the
+> premise that was wrong, not the argument.
 **Carried forward from the prototype's permission flow, with a rollback requirement added.**
 
 ## Context

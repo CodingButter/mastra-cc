@@ -1,8 +1,13 @@
 # ADR-0019 — Capability is not authority
 
-**Status:** accepted
+**Status:** accepted; **superseded in part 2026-08-09 by [ADR-0028](0028-trust-is-a-mode-and-the-default-asks-almost-nothing.md)**.
 **Date:** 2026-08-08
 **Extends [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md).**
+
+> **Which part.** The core distinction — the operating system's permission is a
+> precondition, never consent — is untouched and load-bearing. What is superseded is the
+> implication that consent must therefore be *collected per action*. The user may choose a
+> trust mode in which it is collected once. The precondition still is not consent.
 **Forward decision.** The distinction below was implicit in the prototype and is being made explicit because it was about to be violated in this repository's own design conversation.
 
 ## Context

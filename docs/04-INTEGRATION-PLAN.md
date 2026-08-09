@@ -40,13 +40,17 @@ That is the single most important fact for this plan: **a new capability area ge
 | `zod` | `^4.4.3` | `3.25.76` ❌ major-line gap |
 | `react` / `react-dom` | `^19.2.5` | `19.2.8` ✅ compatible |
 
-**And the fact that shapes everything else: there is no Python anywhere in the monorepo.** A search for `*.py`, `pyproject.toml`, `Cargo.toml`, and `go.mod` outside `node_modules` returns nothing. The monorepo is a TypeScript monorepo. Our daemon is Python, by a decision that is well-founded ([ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md)) and not casually reversible.
+**And the fact that shaped everything else: there is no Python anywhere in the monorepo.** A search for `*.py`, `pyproject.toml`, `Cargo.toml`, and `go.mod` outside `node_modules` returns nothing. The monorepo is a TypeScript monorepo.
+
+> **Updated 2026-08-09.** This used to be the plan's hardest constraint, because the daemon was Python. It is not any more — see §4 and [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md). The observation above is kept because it remains true of the destination and is still the reason the rest of this document reads the way it does; it is simply no longer an obstacle.
 
 ---
 
 ## 2. The target layout
 
-Mastra CC becomes a **top-level domain directory** named `desktop/`, matching the `voice/` and `signals/` precedent.
+Mastra CC becomes a **top-level directory named `desktop/`, a sibling of `mastracode/`** — a peer product, not a package domain beneath one.
+
+> **Corrected 2026-08-09, and the distinction is not cosmetic.** This section originally read `desktop/` as a domain directory in the `voice/` and `signals/` mould: a group of packages. It is a sibling of `mastracode/` instead, because Mastra CC is a *product* built on the same coding-agent runtime rather than a library family. The practical consequence is that everything `mastracode` can do is available to the hub — its tools coexist with the accessibility-tree surface rather than being replaced by it. Q12 in [09-QUESTIONS.md](09-QUESTIONS.md) records the choice and its cost: a sibling does not inherit a plugin host's lifecycle, so process supervision and configuration are ours.
 
 ```
 mastra/
@@ -57,7 +61,7 @@ mastra/
 │   ├── hub/                 # @mastra/desktop-hub        — the brain
 │   ├── widget/              # @mastra/desktop-widget     — Electron tray face
 │   ├── dashboard/           # @mastra/desktop-dashboard  — Vite config surface
-│   └── daemon/              # NOT a workspace package — see §4
+│   └── daemon/              # @mastra/desktop-daemon      — Node; an ordinary workspace package (see §4)
 └── pnpm-workspace.yaml      # one added line: `- desktop/*`
 ```
 
@@ -106,35 +110,25 @@ Each rule below is a thing the destination requires. Adopting them now costs not
 
 ---
 
-## 4. The Python daemon — the one genuine obstacle
+## 4. The Python daemon — the obstacle that no longer exists
 
-**The problem, stated plainly:** the destination monorepo contains no Python, no Python tooling, and no CI lane that would run a Python test suite. Dropping a Python package into it is not a directory move; it is a request that the monorepo grow a capability it currently does not have.
+**Superseded 2026-08-09 by M0.5's measurements. This section previously weighed three options for getting a Python daemon into a TypeScript monorepo. There is no Python daemon.**
 
-Three options, with an honest recommendation.
+The obstacle was real and correctly stated: the destination contains no Python, no Python tooling, and no CI lane that would run a Python test suite. What was wrong was the premise underneath — that Linux accessibility requires the Python bindings at all. It does not. Accessibility on Linux is plain D-Bus underneath, and a direct-to-bus implementation in Node matched the Python route on every capability the daemon needs:
 
-### Option A — Ship the daemon separately (recommended)
+| Capability | Receipt |
+|---|---|
+| Enumerate and walk | [can Node read the accessibility tree](proofs/can-node-read-the-accessibility-tree.md) — 18 applications, matching a Python control exactly; 400 nodes |
+| Write | [can Node act on the desktop](proofs/can-node-act-on-the-desktop.md) — text inserted and verified; action invoked with its effect measured on the tree |
+| Events | [can Node be told the desktop changed](proofs/can-node-be-told-the-desktop-changed.md) — signals attributable to a cause at 142ms |
 
-`desktop/daemon/` lives in the directory tree but is **not** a pnpm workspace package. It is built and released independently as the Debian package, and the monorepo's Turbo graph ignores it.
+Option C — "rewrite the daemon in TypeScript" — was assessed above as *not worth it for repository tidiness*, on the grounds that AT-SPI bindings are mature in Python and not in Node. That assessment was correct about the bindings and wrong about the need for them. The relevant ruling is now [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md), which supersedes [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md)'s language choice while keeping its single-thread constraint.
 
-- **Cost:** the monorepo's CI does not run the daemon's tests. That gap has to be filled by a separate workflow or a separate repository, and it must be *stated*, not assumed away.
-- **Benefit:** zero imposition on the destination. The move stays a move.
-- **Precedent:** none in the monorepo, which is the point — this option asks for nothing.
+**What this changes for integration:** `desktop/daemon/` becomes an ordinary pnpm workspace package. One CI story, one toolchain, one release graph. The maintainer conversation in Stage 2 loses its hardest item, and the Debian package becomes a packaging concern rather than a language concern.
 
-### Option B — Add a Python lane to the monorepo
+**What it does not change:** the daemon still ships as a `.deb` because it is a system service with a systemd unit, and that packaging question is untouched by the language it is written in.
 
-`desktop/daemon/` becomes a first-class member with `pyproject.toml`, a CI job, and a Python toolchain in the monorepo's setup.
-
-- **Cost:** a real change to a repository owned by other people, requiring their agreement, for the benefit of one directory. This is a conversation to have *with maintainers*, not a decision to make unilaterally.
-- **Benefit:** one CI story, one repository, no split-brain releases.
-
-### Option C — Rewrite the daemon in TypeScript
-
-- **Cost:** the AT-SPI2 bindings are mature in Python and not in Node. This would mean maintaining bindings in addition to a product, and would discard the five hard-won operational rules in [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md).
-- **Assessment:** not worth it for repository tidiness. Reconsider only if a Node binding story becomes genuinely good.
-
-**Recommendation: Option A, with Option B raised as a question to Mastra maintainers before integration** — not before. Asking a monorepo to grow a Python lane is a reasonable request with a working system behind it and an unreasonable one with a plan behind it.
-
-**Either way, `desktop/daemon/` is self-contained today:** its own environment, its own two test lanes, its own build, and no dependency on any Node tooling. That property is what keeps all three options open, and it is cheap to maintain from the start and expensive to retrofit.
+**One constraint survives the rewrite and must not be lost:** everything touching the accessibility layer is serialised. Concurrent access does not degrade — it aborts the process, deterministically ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md)).
 
 ---
 
@@ -158,7 +152,7 @@ Integration is not one event. It is four, and the first three happen while we ar
 
 **Stage 1 — after the vertical slice works.** Dry-run the move in a scratch clone of the monorepo: copy the tree to `desktop/`, add one line to `pnpm-workspace.yaml`, run `pnpm install`, then `turbo run build lint typecheck test --filter='./desktop/*'`. Fix whatever breaks *in our repository*. Throw the scratch clone away. Repeat at each milestone — this is a test, and it should be scripted as `tools/dry-run-integration.sh`.
 
-**Stage 2 — the maintainer conversation.** With a working system and a green dry run, raise: the `desktop/*` workspace glob, the Python question (§4), the Electron question, and the `.deb` release workflow. Not before there is something to look at.
+**Stage 2 — the maintainer conversation.** With a working system and a green dry run, raise: the `desktop/*` workspace glob, the Electron question, and the `.deb` release workflow. (The Python question is gone — see §4.) Not before there is something to look at.
 
 **Stage 3 — the move.** `git mv` into `desktop/`, one line in `pnpm-workspace.yaml`, changesets for the new packages, CI green. If Stage 1 has been running all along, this stage is boring, which is the entire objective.
 

@@ -1,8 +1,14 @@
 # ADR-0008 — Scopes, operation classes, and refusals that explain themselves
 
-**Status:** accepted
+**Status:** accepted; **superseded in part 2026-08-09 by [ADR-0028](0028-trust-is-a-mode-and-the-default-asks-almost-nothing.md)**.
 **Date:** 2026-08-08
 **Carried forward from the prototype, with the depth-ceiling correction applied.**
+
+> **Which part.** The scope ladder below is now a **preset, not a law** — it remains the
+> vocabulary a plan is written in and the axis a permission manifest is derived along, but
+> it is no longer a mandatory sequence of prompts. Honest refusals are unaffected, and the
+> ambiguity rule is *strengthened*: refusing and naming both candidates holds in every
+> trust mode, because it is a correctness check rather than a permission check.
 
 ## Context
 

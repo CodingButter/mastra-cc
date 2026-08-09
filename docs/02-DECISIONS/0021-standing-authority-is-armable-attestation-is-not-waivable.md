@@ -1,8 +1,16 @@
 # ADR-0021 — Standing authority is armable; attestation is never waivable
 
-**Status:** accepted
+**Status:** accepted; **superseded in part 2026-08-09 by [ADR-0028](0028-trust-is-a-mode-and-the-default-asks-almost-nothing.md)**.
 **Date:** 2026-08-08
 **Extends [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md). Read with [ADR-0022](0022-failure-to-act-is-harm-we-caused.md).**
+
+> **Which part.** "Standing authority is armable" is superseded by something broader: the
+> user may switch off the asking entirely. **Attestation is not waivable is unchanged**,
+> and its reason is now stronger than when it was written — attestation is a local daemon
+> call rather than a model round trip, so it costs nothing to keep, and the record it
+> produces is the instrument the improvement measurement is counted from
+> ([does the second run cost less](../proofs/does-the-second-run-cost-less.md)). Switching
+> off the asking is a user's choice; switching off the record would break the product.
 **Forward decision, driven by a product argument rather than by prototype evidence.**
 
 ## Context

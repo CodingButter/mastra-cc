@@ -1,7 +1,15 @@
 # ADR-0010 — The daemon is Python, single-threaded, on the default GLib main context
 
-**Status:** accepted, **re-scoped 2026-08-08** — see Amendments.
+**Status:** **superseded 2026-08-09 by [ADR-0030](0030-the-daemon-is-one-node-process.md)** — the language choice is dead; the single-thread constraint survives.
 **Date:** 2026-08-08
+
+> **What changed.** Linux accessibility is plain D-Bus underneath, and a Node
+> implementation matched the Python one on read, write and events
+> ([what language each backend wants](../proofs/what-language-each-backend-wants.md)). The
+> single-thread rule below is **confirmed and strengthened** — but its stated failure mode
+> was wrong. Concurrent use does not silently corrupt data; it aborts the process with
+> SIGTRAP, deterministically, on two machines
+> ([is the accessibility binding thread-safe](../proofs/is-the-accessibility-binding-thread-safe.md)).
 **Carried forward from the prototype. Every clause below was paid for.**
 
 > **Scope, corrected.** This record describes **the Linux backend**, not "the daemon" in

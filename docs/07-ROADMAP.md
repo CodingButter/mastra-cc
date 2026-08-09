@@ -25,25 +25,38 @@
 
 ---
 
-## M0.5 — Research
+## M0.5 — Research ✅ closed 2026-08-09
 
 **Goal:** answer, or knowingly defer, every question whose answer would change what M1 builds — before M1 builds it.
 
-**Why this exists.** It was inserted 2026-08-08, after M0 closed and before any code. Several decisions taken that day rest on beliefs that have not been probed, and two of them could *delete* work rather than add it. Building first and discovering second is precisely how the prototype rewrote one module thirty-five times. [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md) rule 5 already says capability is probed and never inferred; this milestone applies that rule to the plan itself.
+**Outcome.** All twenty questions closed, plus six added as Group G — the improvement thesis, which existed only in conversation. Sixteen measurement artifacts in [docs/proofs/](proofs/). Six decision records forced by findings ([ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md) – [ADR-0032](02-DECISIONS/0032-the-page-layer-is-an-instrument-not-a-gate.md)); six earlier records superseded. All spike code deleted, as required.
+
+**The four findings that changed what M1 builds:**
+
+1. **An entire subsystem is gone.** Readability is decided at process start and nothing can change it afterwards, so the assistant opens the application itself and rewrites nothing on the user's system. [ADR-0020](02-DECISIONS/0020-granting-an-application-is-a-transaction-with-a-rollback.md) is retired outright.
+2. **The daemon is one Node process.** Linux accessibility is plain D-Bus underneath; Node matched Python on read, write and events. No Python, no sidecar, no cross-language seam — and [04-INTEGRATION-PLAN.md §4](04-INTEGRATION-PLAN.md)'s hardest obstacle disappears with it.
+3. **A fourth adapter exists and covers the majority case.** The browser protocol reaches Chrome *and* every Electron application on all three operating systems from one implementation — 4.3× faster than the platform route on the same browser at the same moment, and it needs no accessibility flag at all.
+4. **The improvement thesis survives its first measurement, unevenly.** Steps to completion: 9.0 cold against 6.0 warm with zero spread, recovering to baseline one run after the interface changed. Tokens: **not established at this sample size** — the spread is larger than the effect, and the mean flatters.
+
+**What it deliberately left open** is listed in [09-QUESTIONS.md §6](09-QUESTIONS.md), so M1 starts with an accurate picture of its own ignorance: live Gmail (needs credentials that are not the agent's to hold), Qt's enabling knob, Windows and macOS from Node (read, never run), and a wake model whose licence permits commercial use.
+
+**Why this exists.** It was inserted 2026-08-08, after M0 closed and before any code. Several decisions taken that day rest on beliefs that have not been probed, and two of them could *delete* work rather than add it. Building first and discovering second is precisely how the prototype rewrote one module thirty-five times.
+
+[ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md) rule 5 already says capability is probed and never inferred; this milestone applied that rule to the plan itself — and then, fittingly, retired ADR-0010's own language choice on the strength of a measurement.
 
 **Deliverables:** the twenty questions in [09-QUESTIONS.md](09-QUESTIONS.md), each closed as *answered* (with a receipt) or *bookmarked* (with the specific source where the answer lives). Findings written into the documents where the work will happen — an amended ADR, a new ADR, or a correction — never left in a spike's output.
 
 **This milestone writes code, and none of it survives.** Spikes are throwaway by construction. If a spike's code starts to look reusable, that is the signal that we have stopped researching and started building.
 
 **Exit gate:**
-- [ ] Every question in [09-QUESTIONS.md](09-QUESTIONS.md) is closed, with its own stated requirement met.
-- [ ] `scripts/check-docs.py` exits 0.
-- [ ] Every decision a finding invalidated has been **superseded in writing**, not edited in place.
-- [ ] A cold reader — a person, or a session with no memory of these conversations — can read `docs/` and begin M1 without asking a question.
+- [x] Every question in [09-QUESTIONS.md](09-QUESTIONS.md) is closed, with its own stated requirement met.
+- [x] `scripts/check-docs.py` exits 0.
+- [x] Every decision a finding invalidated has been **superseded in writing**, not edited in place.
+- [x] A cold reader — a person, or a session with no memory of these conversations — can read `docs/` and begin M1 without asking a question.
 
 **Discipline clause:** no new ADR during this milestone unless a finding forces one. Wanting to write one because of a good idea is the signal that we have drifted from converging back to generating.
 
-**The two that can remove work,** and therefore go first: **Q01** (whether Chromium enables accessibility on its own, which would delete most of [ADR-0020](02-DECISIONS/0020-granting-an-application-is-a-transaction-with-a-rollback.md)) and **Q07/Q08** (whether the daemon can be TypeScript, which would delete the Python boundary and most of [04-INTEGRATION-PLAN.md §4](04-INTEGRATION-PLAN.md)).
+**The two that could remove work went first, and both did.** **Q01** deleted [ADR-0020](02-DECISIONS/0020-granting-an-application-is-a-transaction-with-a-rollback.md) entirely; **Q07/Q08** deleted the Python boundary and most of [04-INTEGRATION-PLAN.md §4](04-INTEGRATION-PLAN.md). A milestone whose two highest-leverage questions both subtracted is the argument for measuring before building, made once in practice rather than repeatedly in prose.
 
 ---
 
@@ -67,6 +80,28 @@
 
 **Note on the third and fourth items:** a gate is not proven by passing. It is proven by failing when it should. Do both, record both.
 
+### M1's first commit, concretely
+
+Written for a reader with no memory of the conversations that produced this repository. A gate over an empty tree passes vacuously — [05-TEST-STRATEGY.md §3](05-TEST-STRATEGY.md) — so the first commit is a **thin vertical slice with a real spine**, not scaffolding.
+
+**Build, in this order:**
+
+1. `protocol/schema.json` with exactly **two** methods — `queryElements` and `attestElement`. Two, because one cannot exercise the generator's handling of shared types and twenty is a week of work before anything is proven.
+2. `protocol/generate.mjs`, emitting TypeScript bindings from that schema, plus golden fixtures. Generated code is build output, never source — [ADR-0009](02-DECISIONS/0009-generated-code-is-build-output.md).
+3. `packages/transport/` — the one daemon client. Every other package reaches the daemon through it; a second, drifted client is what [ADR-0003](02-DECISIONS/0003-one-shared-transport-package.md) exists to prevent.
+4. `daemon/` in **Node** ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md)), answering `queryElements` against one backend and one element. Everything touching the accessibility layer is serialised — concurrency there aborts the process rather than degrading.
+5. `apps/hub/` calling that method through the transport and printing the result.
+
+**The first gate it must make fail** — and this is the part that matters, because it is the failure the prototype's freeze gate never produced:
+
+> Edit one character in `protocol/schema.json` without an accompanying ADR, run CI, and **watch the freeze gate go red**. Then revert and watch it go green.
+
+The prototype's freeze was prose. The schema changed 23 times after being frozen and nothing ever failed — [ADR-0002](02-DECISIONS/0002-schema-freeze-is-a-ci-job.md). Both directions of that gate get recorded in the commit message, because a gate that has only ever passed is indistinguishable from a gate that is not wired up.
+
+**Two backends exist and M1 builds neither fully.** The browser-protocol adapter covers Chrome and every Electron application from one implementation; the Linux accessibility adapter covers native toolkits. M1 wires *one* of them to *one* method. Choosing which is an M1 decision, not a prerequisite — the protocol vocabulary is neutral by [ADR-0018](02-DECISIONS/0018-the-protocol-speaks-a-neutral-element-vocabulary.md), so the caller cannot tell which answered.
+
+**What M1 must not do:** no wake detection, no voice, no dashboard features, no consent UI, no second protocol method added for completeness. Those are M2 onward, and the exit gate above is the whole of the work.
+
 ---
 
 ## M2 — The daemon reads
@@ -74,10 +109,11 @@
 **Goal:** the accessibility layer, under scope, with attribution.
 
 **Deliverables:**
-- Daemon with transport, dispatch, scope enforcement, and one AT-SPI backend as separate modules.
+- Daemon with transport, dispatch, scope enforcement, and **two** backends as separate modules: the browser protocol and the Linux accessibility layer. M0.5 established the browser route is the majority case — it covers Chrome and every Electron application on all three operating systems — so building it second would be building the harder one first.
+- The launch mechanism from [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md), including the ownership table from [ADR-0029](02-DECISIONS/0029-the-daemon-knows-what-it-launched.md). Without it, applications are unreadable and nothing else in this milestone can be demonstrated.
 - `observe` scope end to end; `edit`, `activate`, `submit` defined and refused.
-- The change stream — the desktop talks first.
-- Effect attribution: `external` versus a cause id.
+- The change stream — the desktop talks first. Both routes have a push channel; the browser one was measured at 253ms from cause to observation.
+- Effect attribution: `external` versus a cause id. Unmatched effects are **labelled, never flagged** — [ADR-0032](02-DECISIONS/0032-the-page-layer-is-an-instrument-not-a-gate.md).
 - Deny-by-default application visibility.
 - Both test lanes.
 
@@ -87,6 +123,9 @@
 - [ ] Boundary pin B1 passes and **fails** when an accessibility import is added to a non-daemon package.
 - [ ] Proof artifact: `an-unpermitted-application-is-invisible.md`, produced on real hardware.
 - [ ] A refusal for an out-of-scope operation names the check that produced it.
+- [ ] **The two questions M0.5 could not close, closed here:** live Gmail end to end, against a profile the operator signed into by hand; and Qt's per-process enabling knob, on a machine with Qt6 installed. Both are named in [09-QUESTIONS.md §6](09-QUESTIONS.md).
+
+**A visibility verdict must carry its route.** M0.5 asked both routes to decide whether a person can actually see an element, judged against layout ground truth: the browser route scored 10 of 10, the platform route 6 of 10 — it cannot detect a fully transparent element, and its hit test returns *self* for an element covered by an opaque panel. **Bounds alone is a liar**: a covered button has a perfect rectangle. A bare boolean hides which instrument produced it, so the verdict carries its route. See [what hidden actually means](proofs/what-hidden-actually-means.md).
 
 ---
 
@@ -132,6 +171,11 @@
 **Goal:** the wake gate works on Jamie's actual microphone, and the number that says so was measured on the path that ships.
 
 **This is the milestone with a known unsolved problem.** See [ADR-0005 §5](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md).
+
+**M0.5 left this milestone two things and no code, by design** (Q14–Q16 in [09-QUESTIONS.md](09-QUESTIONS.md)):
+
+- **A structural suspect for the unexplained offset.** Every published system stages wake detection and speaker identification as separate mechanisms with separate thresholds; ours does both at once. That is exactly what would produce an offset between live captures and their own templates. It is a named suspect, not a diagnosis — but it is the first thing to test, before touching a threshold.
+- **A licence blocker on the obvious dependency.** openWakeWord's *code* is Apache-2.0 while its shipped *pre-trained models* are CC BY-NC-SA — non-commercial, and therefore disqualified. A licence gate reading manifests would have passed it. Training a custom "hey mastra" model may resolve the licence and the custom-phrase requirement in one move, since the restriction lives in the weights rather than the framework. A second candidate's licence is genuinely disputed between two of its own sources; that is unresolved on purpose and closes by reading the LICENSE file at a pinned commit.
 
 **Deliverables:**
 - One capture path in `packages/voice`, consumed identically by the enrolment page and the live gate.
@@ -206,7 +250,7 @@ Named so they are not mistaken for oversights, and so nobody re-derives them as 
 | Node-based skill editor (prototype issue #189) | after M7; needs the dashboard's React Flow surface |
 | Windows port (prototype issue #16) | after M8 |
 | App-native integration, compositor access, vision, raw input | deferred tiers; [01-ARCHITECTURE.md §8](01-ARCHITECTURE.md) |
-| Launch-an-application tool (prototype issue #183) | needs its own decision; the protocol method exists, the minted tool does not |
+| Launch-an-application tool (prototype issue #183) | **promoted, 2026-08-09** — no longer optional. [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md) makes launching *the* mechanism by which an application becomes readable, so this is a prerequisite for M2 rather than a convenience for later |
 
 **The orb line is deliberate.** Four consecutive commits refined the prototype's orb — glass, wisps, smoke, reflection — in a single night, before the north star sentence worked. Visual work is scheduled after M6, on purpose.
 
@@ -224,7 +268,9 @@ Three questions were held open for Jamie while the documents were written. He to
 
 **Superseded, 2026-08-08 — the factory question.** It previously read that the only open item was *when* to pin the factory. That is no longer the question. The fleet is deferred until the project has dependable tests, settled rules, and quality control, and its remit is narrowed to defects — things that are clearly not the intended behaviour. If there is no intended behaviour yet, the fleet does not get to invent it. → [ADR-0025](02-DECISIONS/0025-the-agent-fleet-only-fixes-defined-behaviour.md), which re-scopes M7.
 
-**Decisions taken later the same day** are recorded as [ADR-0017](02-DECISIONS/0017-platform-backends-live-inside-the-daemon.md) through [ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md): cross-platform from commit one, a neutral protocol vocabulary, capability separated from authority, granting as a transaction, armable standing authority with non-waivable attestation, failure-to-act as harm, the phone as a consent surface, steerable tasks, the fleet's narrowed remit, and the audit log as an access record. Several of them rest on beliefs that M0.5 exists to probe; the ADR index says which kind each record is.
+**Decisions taken later the same day** are recorded as [ADR-0017](02-DECISIONS/0017-platform-backends-live-inside-the-daemon.md) through [ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md): cross-platform from commit one, a neutral protocol vocabulary, capability separated from authority, granting as a transaction, armable standing authority with non-waivable attestation, failure-to-act as harm, the phone as a consent surface, steerable tasks, the fleet's narrowed remit, and the audit log as an access record. Several of them rested on beliefs that M0.5 existed to probe, and the probing changed six of them.
+
+**Decisions forced by M0.5's findings**, 2026-08-09, are [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md) through [ADR-0032](02-DECISIONS/0032-the-page-layer-is-an-instrument-not-a-gate.md): the assistant opens the application itself, trust as a mode whose default asks almost nothing, the daemon knowing what it launched, one Node process, the plan-and-interpreter execution model, and the page layer as an instrument rather than a gate. Each names the measurement that forced it. The ADR index says which kind each record is, and which were superseded.
 
 ---
 

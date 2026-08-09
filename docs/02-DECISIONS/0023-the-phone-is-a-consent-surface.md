@@ -1,8 +1,16 @@
 # ADR-0023 — The phone is a consent surface
 
-**Status:** accepted
+**Status:** accepted; **superseded in part 2026-08-09 by [ADR-0028](0028-trust-is-a-mode-and-the-default-asks-almost-nothing.md)**.
 **Date:** 2026-08-08
 **Follows from [ADR-0022](0022-failure-to-act-is-harm-we-caused.md). Constrained by [ADR-0007](0007-identity-is-derived-credentials-are-minted.md).**
+
+> **Which part.** The phone is re-framed from a **checkpoint that must be passed** to a
+> place where a question can be **answered**. Its mechanism and authority model are
+> unchanged — the decision travels with the person, the authority never leaves the hub.
+> It no longer implies a gate on the path. Q11 also settled that this needs no new
+> subsystem: the runtime's `ResolutionPolicy` is a swappable interface, so a phone-routed
+> policy is an implementation of an existing seam. Q18 names the proof-of-human standard
+> (WebAuthn) and its honest limit — it proves possession plus local unlock, not identity.
 **Forward decision. The prototype had a phone page; it had no remote consent.**
 
 ## Context

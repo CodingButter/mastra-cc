@@ -41,7 +41,11 @@ Every document here exists to make one of those families structurally impossible
 
 **If you are about to write code:** you also need [05-TEST-STRATEGY.md](docs/05-TEST-STRATEGY.md) and [07-ROADMAP.md](docs/07-ROADMAP.md), because the roadmap says which milestone you are in and the milestone says which gate must pass.
 
-**Where the work actually starts.** M0 (these documents) closed on 2026-08-08. **The next work belongs to [M0.5 — Research](docs/07-ROADMAP.md):** answering the twenty questions in [09-QUESTIONS.md](docs/09-QUESTIONS.md) before the skeleton is built, because several decisions taken that day rest on beliefs nobody has probed, and two of them could delete work rather than add it. That milestone writes code and keeps none of it. [M1 — Skeleton](docs/07-ROADMAP.md) follows, and M1 is not finished when its gates pass; it is finished when each gate has been *made to fail on purpose* and observed going red.
+**Where the work actually starts.** M0 (documents) closed 2026-08-08. **M0.5 (research) closed 2026-08-09** — all twenty questions closed plus six added, sixteen measurement artifacts in [docs/proofs/](docs/proofs/), six decision records forced by findings and six earlier ones superseded. Its spike code was deleted, as that milestone required from the start.
+
+**The next work is [M1 — Skeleton](docs/07-ROADMAP.md)**, and its first commit is described concretely enough to start on: two protocol methods, the generator, the one transport package, a Node daemon answering one method, and a hub calling it. **The first thing M1 must do is make a gate fail on purpose** — edit one character of `protocol/schema.json` with no ADR and watch the freeze gate go red. The prototype's freeze was prose; the schema changed 23 times afterwards and nothing ever failed. A gate that has only ever passed is indistinguishable from one that is not wired up.
+
+**Two findings a newcomer should not have to discover twice.** The daemon is Node, not Python — Linux accessibility is plain D-Bus underneath, and Node matched Python on read, write and events. And an application becomes readable only at the moment it starts, so the assistant opens applications itself and changes nothing about how your system launches them.
 
 ---
 

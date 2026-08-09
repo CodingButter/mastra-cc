@@ -5,7 +5,8 @@ Read them before writing code. They are the reason the layout in [01-ARCHITECTUR
 Two kinds of record live here, and the difference matters when you are deciding how much to trust one:
 
 - **0001–0016 are back-filled from evidence** in the `computer-controls` prototype: 332 commits, 127 pull requests, and 105 issues over seven days (2026-08-01 → 2026-08-08). None of them are speculative. Each names the commit, PR, issue, or measurement that produced it.
-- **0017 onward are forward decisions**, taken 2026-08-08 while scoping the rebuild. They are argued from prototype evidence and from source read in a live checkout, but several rest on beliefs that have not been probed yet. Where that is true the record says so, and the belief is filed as a question in [09-QUESTIONS.md](../09-QUESTIONS.md). A forward decision that a spike contradicts gets superseded, not quietly edited.
+- **0027–0032 are findings-forced**, written 2026-08-09 at the close of M0.5. Each names the measurement that forced it and links the artifact in [docs/proofs/](../proofs/). Six earlier records were superseded by them — 0020 entirely, and 0008, 0010, 0019, 0021 and 0023 in part. None were edited: each carries a header note saying which part died and why, because the reason a decision was made is as useful as the decision, especially when the premise turns out to be wrong.
+- **0017–0026 are forward decisions**, taken 2026-08-08 while scoping the rebuild. They are argued from prototype evidence and from source read in a live checkout, but several rest on beliefs that have not been probed yet. Where that is true the record says so, and the belief is filed as a question in [09-QUESTIONS.md](../09-QUESTIONS.md). A forward decision that a spike contradicts gets superseded, not quietly edited.
 
 ## The records
 
@@ -37,6 +38,12 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | [0024](0024-a-task-in-flight-can-be-steered.md) | A task in flight can be steered | Stop and start are not the only two things a person may want to say |
 | [0025](0025-the-agent-fleet-only-fixes-defined-behaviour.md) | The agent fleet only fixes defined behaviour | If there is no intended behaviour yet, the fleet does not get to invent it |
 | [0026](0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md) | The audit log is an access record; episodes are the narrative | A receipt you can rewrite is not a receipt |
+| [0027](0027-the-assistant-opens-the-application-itself.md) | The assistant opens the application itself | Readability is decided at launch, so there is nothing on your system to rewrite |
+| [0028](0028-trust-is-a-mode-and-the-default-asks-almost-nothing.md) | Trust is a mode, and the default asks almost nothing | People want to hand over a task and leave; the record survives every mode |
+| [0029](0029-the-daemon-knows-what-it-launched.md) | The daemon knows what it launched | It can only ever disclaim its own, never claim yours |
+| [0030](0030-the-daemon-is-one-node-process.md) | The daemon is one Node process; Linux does not need Python | Accessibility is plain D-Bus underneath; the binding was a convenience, not a gate |
+| [0031](0031-the-agent-emits-a-plan-a-model-free-interpreter-runs-it.md) | The agent emits a plan; a model-free interpreter runs it | A transcript cannot be reviewed, replayed, or measured |
+| [0032](0032-the-page-layer-is-an-instrument-not-a-gate.md) | The page layer is an instrument, not a gate | Five of eight paths observed — a gate with holes is worse than none |
 
 ## Writing a new one
 
