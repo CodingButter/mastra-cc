@@ -1,6 +1,7 @@
 # Proofs
 
-Seventeen measurements taken during M0.5, each answering a question in
+Sixteen measurements taken during M0.5, and the record of how the milestone
+checked itself. Each measurement answers a question in
 [09-QUESTIONS.md](../09-QUESTIONS.md) that could not be answered by argument.
 
 ## The convention
@@ -46,8 +47,9 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 
 ## Two rules these artifacts follow
 
-**A spike that cannot exercise a condition writes nothing.** Every one refuses rather than
-emitting a partial table, and the refusal was proven by making each spike fail on purpose.
+**A spike that cannot exercise a condition writes nothing.** Every measurement above
+refuses rather than emitting a partial table, and the refusal was proven by making each
+spike fail on purpose. The last row is not a measurement and had no spike.
 The prototype specified one of these artifacts and never produced it; a half-filled table
 would have been worse than the absence, because it would have been quoted.
 

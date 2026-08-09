@@ -39,19 +39,28 @@ const SKIP_DIRS = new Set(['.git', '.mastracode', 'node_modules']);
 
 // Symlinks are followed rather than skipped, so a linked-in directory of
 // documents is still checked; `seen` keeps a cycle from looping forever.
-function markdownFiles(dir = ROOT, found = [], seen = new Set()) {
+function markdownFiles(dir = ROOT, found = [], seen = new Set(), broken = []) {
   const real = realpathSync(dir);
-  if (seen.has(real)) return found;
+  if (seen.has(real)) return { found: found.sort(), broken };
   seen.add(real);
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
-    if (statSync(path).isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name)) markdownFiles(path, found, seen);
+    let isDir;
+    try {
+      isDir = statSync(path).isDirectory();
+    } catch {
+      // A dangling symlink: report it rather than dying on it. lstat would have
+      // said "link" and hidden it; stat throws. Neither is a silent skip.
+      broken.push(`${relative(ROOT, path)}: symlink points at nothing`);
+      continue;
+    }
+    if (isDir) {
+      if (!SKIP_DIRS.has(entry.name)) markdownFiles(path, found, seen, broken);
     } else if (entry.name.endsWith('.md')) {
       found.push(path);
     }
   }
-  return found.sort();
+  return { found: found.sort(), broken };
 }
 
 function linkTargets(body) {
@@ -115,6 +124,7 @@ function checkCoverage() {
     'docs/06-OPERATIONS.md',
     'docs/07-ROADMAP.md',
     'docs/08-GLOSSARY.md',
+    'docs/09-QUESTIONS.md',
     'README.md',
     'CONTRIBUTING.md',
   ];
@@ -123,13 +133,13 @@ function checkCoverage() {
     .map((r) => `missing required document: ${r}`);
 }
 
-const files = markdownFiles();
+const { found: files, broken } = markdownFiles();
 if (files.length === 0) {
   console.log('check-docs: found no markdown files - the check itself is broken');
   process.exit(1);
 }
 
-const problems = [...checkCoverage(), ...checkLinks(files), ...checkAdrIndex()];
+const problems = [...broken, ...checkCoverage(), ...checkLinks(files), ...checkAdrIndex()];
 if (problems.length > 0) {
   console.log(`check-docs: ${problems.length} problem(s) across ${files.length} files\n`);
   for (const p of problems) console.log(`  ${p}`);

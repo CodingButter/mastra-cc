@@ -6,9 +6,9 @@
 > **What changed.** Linux accessibility is plain D-Bus underneath, and a Node
 > implementation matched the Python one on read, write and events
 > ([what language each backend wants](../proofs/what-language-each-backend-wants.md)). The
-> single-thread rule below is **confirmed and strengthened** — but its stated failure mode
-> was wrong. Concurrent use does not silently corrupt data; it aborts the process with
-> SIGTRAP, deterministically, on two machines
+> single-thread rule below is **kept, and its stated failure mode was wrong** — running
+> `libatspi` from two or more threads does not silently corrupt data; it aborts the process
+> with SIGTRAP, deterministically, on two machines
 > ([is the accessibility binding thread-safe](../proofs/is-the-accessibility-binding-thread-safe.md))
 > — measured through `libatspi`, which the Node daemon does not load, so that receipt is
 > owed again on the new route ([ADR-0030](0030-the-daemon-is-one-node-process.md) clause 3).
@@ -43,7 +43,7 @@ The counter-argument — write the daemon in a compiled language — was conside
 
 ## Decision
 
-**The daemon is Python. Five rules, all enforced by tests or by the setup script, not by memory:**
+~~**The daemon is Python.**~~ **Five rules, all enforced by tests or by the setup script, not by memory** — two of which died with the language and are struck below:
 
 1. **One thread.** A single event loop owns all accessibility access. Any work that must happen elsewhere is handed off by queue and never touches an accessibility object.
 2. ~~**The default GLib main context.** Registering elsewhere loses events silently. A test asserts the context used at registration.~~ — **dead with the language.** There is no GLib main context in a Node daemon; the rule it encoded, that one owner registers for events, survives in clause 1.
@@ -61,9 +61,11 @@ daemon and its only backend were the same object. They are not any more:
 the daemon, so the rules above apply to what lives *behind* that seam on Linux.
 
 The underlying principle does generalise, in three shapes. Each platform's accessibility
-layer has a threading discipline that is not optional and that fails quietly rather than
-loudly when broken: Linux wants the default GLib main context, Windows UI Automation is
-apartment-threaded, macOS wants the main run loop. Same rule, three expressions. Rules 3
+layer has a threading discipline that is not optional: Linux wants the default GLib main
+context, Windows UI Automation is apartment-threaded, macOS wants the main run loop. Same
+rule, three expressions. The clause here originally added *and it fails quietly rather than
+loudly when broken*; that is half refuted — the main-context failure is silent, and the
+threading failure measured in M0.5 is a loud abort. Rules 3
 and 4 — `--system-site-packages`, and the two test lanes — are Linux-specific
 consequences of the bindings being distribution packages, and do not transfer.
 

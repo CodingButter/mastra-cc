@@ -283,9 +283,10 @@ implementation, not an argument from the library's documentation.
 
 > **CLOSED — Answered, and the prototype's stated failure mode was wrong.**
 >
-> It is a property of **the library, not the wire**, demonstrated by a non-GLib
-> implementation as the question demanded: the Node direct-to-bus route read, wrote and
-> subscribed without any GLib main context.
+> The **main-context** half is a property of **the library, not the wire**, demonstrated by
+> a non-GLib implementation as the question demanded: the Node direct-to-bus route read,
+> wrote and subscribed without any GLib main context. The **threading** half is not
+> answered by that run, which was single-threaded throughout — see the limit below.
 >
 > The constraint is real but its shape was misrecorded. `comcon/.../atspi.py:5-6` claimed
 > concurrent use causes *silent data corruption*. Measured in
@@ -293,6 +294,13 @@ implementation, not an argument from the library's documentation.
 > two or more concurrent threads **abort the process** with SIGTRAP, deterministically,
 > across 8 consecutive runs and on both machines. It is a loud crash, not silent
 > corruption — the opposite of the documented behaviour.
+>
+> **The limit, stated because this closure is quoted elsewhere:** that abort was measured
+> through `libatspi`, which the Node daemon does not load, and its diagnostic names a
+> *connection* failure rather than a corrupted read. So it establishes neither that the
+> hazard is use rather than setup, nor that it exists on the direct-to-bus route at all.
+> The serialisation rule is kept on other grounds and the measurement is owed by M1
+> ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3).
 >
 > This matters beyond the correction. "Silent corruption" argues for defensive
 > single-threading everywhere forever; "deterministic abort" is a bug that announces

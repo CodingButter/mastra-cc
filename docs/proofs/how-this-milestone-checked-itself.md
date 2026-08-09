@@ -47,20 +47,45 @@ is what makes the pass credible.
 ## The adversarial review
 
 An independent reviewer inspected the documents — read-only, no shell, nothing
-re-executed. It raised **seven must-fix findings. All seven were verified against
-the files and all seven were correct.** A second round found five more, including
-two in text written to satisfy the first round.
+re-executed. It ran **four rounds**, and the count is the finding: seven must-fix
+findings, then five, then five, then seven. Every round after the first included
+defects created by the previous round's fixes.
 
-The corrections were: a tree measurement quoted with no artifact behind it, a
-speed ratio inflated from 2.8× to 4.3×, one events measurement quoted three
-different ways, a dependency's publish date relabelled as a commit date when
-recency was exactly what disqualified the alternative, coverage asserted on three
-operating systems from measurements taken only on Linux, and stale runtime claims
-in the glossary and two decision records.
+Round one: a tree measurement quoted with no artifact behind it, a speed ratio
+inflated from 2.8× to 4.3×, one events measurement quoted three different ways, a
+dependency's publish date relabelled as a commit date when recency was exactly
+what disqualified the alternative, coverage asserted on three operating systems
+from measurements taken only on Linux, and stale runtime claims in the glossary
+and two decision records.
+
+Round two: a weakness invented to argue for a decision that did not need it — the
+claim that the old runtime hand-wrote what this one generates, when the
+repository's own records show both ends were generated — and a table of numbers
+typed from memory instead of copied from the artifact directly above it.
+
+Round three found the two most instructive ones. An architecture diagram still
+naming the old runtime, twenty lines below the line correcting it. And a
+measurement asserted about a runtime that never ran it: the thread-safety abort
+was measured through a C library this daemon does not load, and the record had
+begun describing it as reproduced across *runtime versions* — an axis of
+variation that did not exist in the experiment. **A receipt had been quietly
+widened to cover the thing it was being used to justify.**
+
+Round four found that fixing that had produced three new defects, including a
+closed milestone's gate receipt edited in place to a number that gate never
+produced, and a count corrected into disagreement with two other files.
 
 **Every one of them ran in the flattering direction.** That is the pattern worth
 carrying into M1, and it is not a coincidence: errors that make the work look
 better are the ones nobody re-checks.
+
+**The second pattern is that fixing is not free.** A correction is written in
+confidence, at speed, by someone who has just been shown they were wrong and
+wants to stop being wrong — which is exactly the state in which a receipt gets
+widened or a historical record gets edited to a convenient number. Four rounds
+were needed not because the first review was weak but because each round of
+repairs was itself unreviewed work. **A fix is a change, and a change is
+unverified until someone who did not make it looks at it.**
 
 The most instructive was a number that was real, measured, and favourable — and
 deleted anyway, because the spike that produced it is gone and no artifact

@@ -63,9 +63,12 @@ same code path, same child process, no crash.
 ## What this changes
 
 The single-threaded daemon design **survives, with a better justification than
-the one it had.** The documents should stop citing silent corruption and start
-citing this: concurrent access to the accessibility bindings terminates the
-process, loudly, every time.
+the one it had.** The documents should stop citing silent corruption. What they
+should cite instead has to carry its own scope, so: **running `libatspi` from two
+or more threads terminates the process, loudly, every time** — and whether that
+is the concurrency or the connection setup is not settled here, nor is whether it
+happens at all on the direct-to-bus route the daemon actually uses. A restatement
+that drops those two clauses is quoting this artifact for more than it measured.
 
 That difference is not cosmetic. A silent-corruption risk argues for defensive
 review, since violations would be invisible and could accumulate unnoticed. A

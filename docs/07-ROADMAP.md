@@ -15,7 +15,7 @@
 **Deliverables:** the nine documents in `docs/`, the ADR series in `docs/02-DECISIONS/`, `README.md`, and `CONTRIBUTING.md`.
 
 **Exit gate:**
-- [x] Every internal link resolves — `scripts/check-docs.mjs` exits 0 over 62 files.
+- [x] Every internal link resolves — the docs gate exits 0 over 27 files, *the count at M0 close on 2026-08-08*. The gate has since been ported from Python to Node (`scripts/check-docs.mjs`) and the repository has grown; this line records what was checked then, and is not re-run to a current number.
 - [x] Every document's Receipts table has at least one entry per non-obvious claim.
 - [x] Jamie has reacted to the three open decisions — all three taken on the recommendation, 2026-08-08. See §"Decisions taken" below.
 
@@ -77,6 +77,7 @@
 - [ ] The freeze gate **fails** on a deliberate one-character edit to `schema.json` with no ADR — verified by doing it and watching it go red.
 - [ ] The generator determinism check **fails** on a deliberate hand-edit to a generated file — same method.
 - [ ] `infra/apply.sh` runs clean on a fresh machine and the installed keeper-style script executes from its installed path.
+- [ ] **The debt M0.5 recorded is paid:** concurrent accessibility access is measured on the Node route, with every connection established and read sequentially first, so the result separates *concurrent setup aborts* from *concurrent use is unsafe* ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md), [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3). Either answer is acceptable; leaving it unmeasured is not, because the serialisation rule is currently kept on judgement alone.
 
 **Note on the third and fourth items:** a gate is not proven by passing. It is proven by failing when it should. Do both, record both.
 
@@ -89,7 +90,7 @@ Written for a reader with no memory of the conversations that produced this repo
 1. `protocol/schema.json` with exactly **two** methods — `queryElements` and `attestElement`. Two, because one cannot exercise the generator's handling of shared types and twenty is a week of work before anything is proven.
 2. `protocol/generate.mjs`, emitting TypeScript bindings from that schema, plus golden fixtures. Generated code is build output, never source — [ADR-0009](02-DECISIONS/0009-generated-code-is-build-output.md).
 3. `packages/transport/` — the one daemon client. Every other package reaches the daemon through it; a second, drifted client is what [ADR-0003](02-DECISIONS/0003-one-shared-transport-package.md) exists to prevent.
-4. `daemon/` in **Node** ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md)), answering `queryElements` against one backend and one element. Everything touching the accessibility layer is serialised — concurrency there aborts the process rather than degrading.
+4. `daemon/` in **Node** ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md)), answering `queryElements` against one backend and one element. Everything touching the accessibility layer is serialised, by design rather than by measurement: the abort measured in M0.5 was `libatspi`'s, and this daemon does not load it ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3). Serialising is what makes an audit record attributable, and it is what the owed measurement below tests against.
 5. `apps/hub/` calling that method through the transport and printing the result.
 
 **The first gate it must make fail** — and this is the part that matters, because it is the failure the prototype's freeze gate never produced:

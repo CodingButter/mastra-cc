@@ -50,7 +50,8 @@ the timing result, which is what this artifact is for.
 **It does affect M1**, and that is why it stays open rather than being filed as
 trivia. If a locator strategy is built against whichever count is the lower one
 and the difference turns out to be real controls rather than double-counting,
-the strategy cannot address 41 things that exist. The discriminating check is
+the strategy cannot address up to 41 things that exist — *up to*, because the
+size of the shortfall is exactly what is unestablished. The discriminating check is
 cheap — compare the two sets by identity instead of by count — and belongs to
 whichever milestone first resolves an element for real.
 

@@ -31,10 +31,13 @@ the same live desktop and matched it:
 | Write | text inserted and verified by reading it back; an action invoked by name with its effect measured on the tree |
 | Events | 6 signals attributable to a specific cause, 138ms from cause to signal |
 
-The single-thread constraint is real and turned out to be **a property of the library, not
-the wire** — demonstrated by a non-GLib implementation working without any GLib main
-context, which is exactly the evidence Q08 demanded and refused to accept an argument in
-place of.
+ADR-0010 bundled two constraints into one rule, and they separate under measurement. **The
+main-context requirement is a property of the library, not the wire** — demonstrated by a
+non-GLib implementation receiving events with no GLib main context anywhere, which is
+exactly the evidence Q08 demanded and refused to accept an argument in place of. **The
+threading constraint did not separate**, because the Node route was only ever run
+single-threaded. Q08's evidence covers the first and not the second; clause 3 below says
+what follows from that.
 
 The prototype's stated failure mode was also wrong, in a way worth recording. Its source
 claimed concurrent use causes *silent data corruption*. Measured: two or more concurrent
