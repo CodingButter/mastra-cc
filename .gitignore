@@ -1,3 +1,10 @@
 __pycache__/
 *.pyc
 node_modules/
+
+# Plans, progress and proof scratch. Never committed; also skipped by
+# scripts/check-docs.py, which walks the filesystem rather than the index.
+.mastracode/
+
+# Throwaway browser profiles used by M0.5 spikes.
+spikes/**/.profile*

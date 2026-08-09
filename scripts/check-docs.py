@@ -23,8 +23,11 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 FENCE = re.compile(r"```.*?```", re.S)
 
 
+SKIP_DIRS = {".git", ".mastracode"}
+
+
 def markdown_files() -> list[Path]:
-    return sorted(p for p in ROOT.rglob("*.md") if ".git" not in p.parts)
+    return sorted(p for p in ROOT.rglob("*.md") if SKIP_DIRS.isdisjoint(p.parts))
 
 
 def check_links() -> list[str]:
