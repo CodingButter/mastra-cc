@@ -54,9 +54,12 @@ and the failure looks exactly like an element that has vanished.
 
 The claim was that concurrent access produces *silent data corruption rather
 than a loud error*, and it lived in a docstring. Measured, it is wrong in its
-particulars and right in its conclusion: concurrent access **aborts the process
-immediately and deterministically** — `SIGTRAP`, before a single read completes,
-with a diagnostic on standard error. One worker thread through the identical
+particulars and right in its conclusion: using `libatspi` from two or more
+threads **aborts the process immediately and deterministically** — `SIGTRAP`,
+before a single read completes, with a diagnostic on standard error. The
+diagnostic names a connection failure, so whether the hazard is concurrent setup
+or concurrent use is not settled here, and this daemon loads no `libatspi` at
+all — see the artifact's own limits section. One worker thread through the identical
 code path succeeds every time; two do not. Checked at two, three, four and eight
 threads, twice each, on **two unlike machines** (Wayland and X11), without
 variation.

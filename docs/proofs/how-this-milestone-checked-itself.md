@@ -48,8 +48,9 @@ is what makes the pass credible.
 
 An independent reviewer inspected the documents — read-only, no shell, nothing
 re-executed. It ran **four rounds**, and the count is the finding: seven must-fix
-findings, then five, then five, then seven. Every round after the first included
-defects created by the previous round's fixes.
+findings, then eight, then five, then seven — twenty-seven in total, and the
+sequence never trended down. Every round after the first included defects created
+by the previous round's fixes.
 
 Round one: a tree measurement quoted with no artifact behind it, a speed ratio
 inflated from 2.8× to 4.3×, one events measurement quoted three different ways, a

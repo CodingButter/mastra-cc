@@ -128,7 +128,7 @@ Option C — "rewrite the daemon in TypeScript" — was assessed above as *not w
 
 **What it does not change:** the daemon still ships as a `.deb` because it is a system service with a systemd unit, and that packaging question is untouched by the language it is written in.
 
-**One constraint survives the rewrite and must not be lost:** everything touching the accessibility layer is serialised. Concurrent access does not degrade — it aborts the process, deterministically ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md)).
+**One constraint survives the rewrite and must not be lost:** everything touching the accessibility layer is serialised. What was measured is that `libatspi` aborts the process deterministically when used from two or more threads ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md)) — a library this daemon does not load, so the rule is carried on design grounds and the measurement is owed on the new route ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3).
 
 ---
 
