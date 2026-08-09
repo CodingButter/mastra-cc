@@ -2,7 +2,9 @@ name: ci
 
 on:
   push:
-    branches: [master]
+    # feat/** is included so the freeze gate's red/green proof can be observed
+    # in CI on the working branch, as docs/07-ROADMAP.md:95-99 requires.
+    branches: [master, "feat/**"]
   pull_request:
 
 jobs:
@@ -10,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: the freeze gate diffs the schema against the merge
+          # base with master, which a depth-1 clone cannot resolve
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -18,15 +24,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      # The nine steps of docs/05-TEST-STRATEGY.md:126-136, in order. Steps 1-3
-      # land in Phase 2 WITH the protocol they guard - they are deliberately
-      # absent here, not stubbed, because a step present before its subject
-      # exists is a step that has only ever passed, which is indistinguishable
-      # from a step that is not wired up:
-      #   step 1: protocol regenerate + diff (B7)  - lands in Phase 2
-      #   step 2: schema freeze gate (B6, ADR-0002) - lands in Phase 2
-      #   step 3: schema digest agreement           - lands in Phase 2
-
+      # The nine steps of docs/05-TEST-STRATEGY.md:126-136, in order.
+      - name: "step 1: protocol regenerate + diff (B7, temp-dir shape)"
+        run: node tools/determinism.mjs
+      - name: "step 2: schema freeze gate (B6, ADR-0002)"
+        run: node tools/freeze-gate.mjs
+      - name: "step 3: schema digest agreement"
+        run: node tools/digest-agreement.mjs
       - name: "step 4: boundary pins (wired set must match tools/pins/README.md)"
         run: node tools/pins/run.mjs
       - name: "step 5: unit and integration tests"

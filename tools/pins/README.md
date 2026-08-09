@@ -10,15 +10,16 @@ in Phase 2 with the schema they guard, and the licence check is
 `run.mjs` (CI step 4) executes the wired set and fails if it disagrees with the
 declared list below, so a silently dropped pin is a red build.
 
-Wired: b1, b5, b8
+Wired: b1, b10, b5, b8
 
 - **B1** — only `daemon/**` imports a D-Bus or accessibility binding.
 - **B5** — no second socket implementation outside `packages/transport` (the one
   daemon client, ADR-0003). The daemon serves the socket, so it is not scanned.
 - **B8** — no `xdotool`, `wmctrl`, or `uinput` anywhere (ADR-0004:32).
-
-**B10** (no platform vocabulary on the wire) lands in Phase 2 with the schema it
-reads. That will make four of the nine wired.
+- **B10** — no platform vocabulary on the wire (ADR-0018): a deny-list matched
+  against every field name, enum value, method name, description, role and
+  state in `protocol/schema.json`. The one exemption is any subtree under a
+  field named `diagnostic` (clause 6), encoded by field name, not by pattern.
 
 Deliberately not wired in M1 — five, each because its subject does not exist:
 
@@ -33,7 +34,7 @@ Deliberately not wired in M1 — five, each because its subject does not exist:
   (`docs/05-TEST-STRATEGY.md:33`). M2 must wire it **in the same commit as** the
   first effect-class operation, not after.
 
-Four wired (after Phase 2) plus five absent is the nine. Check the arithmetic
+Four wired plus five absent is the nine. Check the arithmetic
 against the files in this directory rather than trusting this paragraph:
 `run.mjs` does exactly that on every CI run.
 

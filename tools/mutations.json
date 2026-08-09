@@ -19,5 +19,19 @@
     "find": "if (files.length === 0) fail(\"pin-b8: no files matched - the pin would pass vacuously\");",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b10-vacuous-guard-removed",
+    "file": "tools/pins/b10.mjs",
+    "find": "if (!schemaText.trim()) fail(\"pin-b10: schema is missing or empty - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/b10.test.mjs"
+  },
+  {
+    "name": "freeze-gate-golden-staleness-check-removed",
+    "file": "tools/freeze-gate.mjs",
+    "find": "  problems.push(\"golden fixtures were not updated for this schema change\");",
+    "cwd": "tools",
+    "testFile": "__tests__/freeze-gate.test.mjs"
   }
 ]

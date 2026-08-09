@@ -8,3 +8,7 @@ dist/
 
 # Throwaway browser profiles used by M0.5 spikes.
 spikes/**/.profile*
+
+# Generated from protocol/schema.json - build output, never committed
+# (ADR-0009). The committed record is protocol/golden/.
+packages/protocol-types/
