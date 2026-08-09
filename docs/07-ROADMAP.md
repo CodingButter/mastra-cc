@@ -52,7 +52,7 @@
 - [x] Every question in [09-QUESTIONS.md](09-QUESTIONS.md) is closed, with its own stated requirement met.
 - [x] `scripts/check-docs.mjs` exits 0.
 - [x] Every decision a finding invalidated has been **superseded in writing**, not edited in place.
-- [x] A cold reader — a person, or a session with no memory of these conversations — can read `docs/` and begin M1 without asking a question.
+- [x] A cold reader — a person, or a session with no memory of these conversations — can read `docs/` and begin M1 without asking a question. **Tested, not assumed:** [how this milestone checked itself](proofs/how-this-milestone-checked-itself.md) records the mechanism, what the reader answered, and the defect it found that a review had missed.
 
 **Discipline clause:** no new ADR during this milestone unless a finding forces one. Wanting to write one because of a good idea is the signal that we have drifted from converging back to generating.
 

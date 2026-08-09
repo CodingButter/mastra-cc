@@ -42,6 +42,7 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 | [how the daemon knows what it launched](how-the-daemon-knows-what-it-launched.md) | Ownership, attacked three ways |
 | [what a plan can say without a model](what-a-plan-can-say-without-a-model.md) | G4, G5 — go; and scroll is a verb, not a capability |
 | [does the second run cost less](does-the-second-run-cost-less.md) | G1 — steps yes, tokens not at this sample size |
+| [how this milestone checked itself](how-this-milestone-checked-itself.md) | The cold-reader test, the review, and what none of it established |
 
 ## Two rules these artifacts follow
 
