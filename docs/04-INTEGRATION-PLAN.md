@@ -120,7 +120,7 @@ The obstacle was real and correctly stated: the destination contains no Python, 
 |---|---|
 | Enumerate and walk | [can Node read the accessibility tree](proofs/can-node-read-the-accessibility-tree.md) — 18 applications, matching a Python control exactly; 400 nodes |
 | Write | [can Node act on the desktop](proofs/can-node-act-on-the-desktop.md) — text inserted and verified; action invoked with its effect measured on the tree |
-| Events | [can Node be told the desktop changed](proofs/can-node-be-told-the-desktop-changed.md) — signals attributable to a cause at 142ms |
+| Events | [can Node be told the desktop changed](proofs/can-node-be-told-the-desktop-changed.md) — 6 signals attributable to a cause at 138ms, against 639 received |
 
 Option C — "rewrite the daemon in TypeScript" — was assessed above as *not worth it for repository tidiness*, on the grounds that AT-SPI bindings are mature in Python and not in Node. That assessment was correct about the bindings and wrong about the need for them. The relevant ruling is now [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md), which supersedes [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md)'s language choice while keeping its single-thread constraint.
 

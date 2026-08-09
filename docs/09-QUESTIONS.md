@@ -129,11 +129,18 @@ subject and date are separable fields.
 
 > **CLOSED — Bookmarked, with one half answered and the blocker named.**
 >
-> *Answered half:* rows in a real Chromium application carry genuine roles. Discord's
-> browser-side tree returned 2431 nodes across 28 distinct roles including `listitem` ×50,
-> `article` ×16 and `button` ×97 — measured in
-> [which route to the tree is cheaper](proofs/which-route-to-the-tree-is-cheaper.md).
+> *Answered half:* controls in a real Chromium application carry genuine roles and names.
+> A live Electron application's browser-side tree returned **505 nodes with 42 named
+> controls**, each carrying a role and a usable name (`menuitem "File"`, `menuitem
+> "Edit"`) — measured in
+> [which apps the browser adapter covers](proofs/which-apps-the-browser-adapter-covers.md).
 > Structure is present, not soup.
+>
+> *A larger figure was measured and is deliberately not cited.* A session probe read a
+> chat application's tree at a few thousand nodes across roughly thirty roles. That number
+> is not quoted here because its spike is deleted and no artifact carries it, so it has no
+> receipt — and a number without a receipt is exactly what this document forbids, however
+> favourable it is. Re-measure it in M2 or leave it out.
 >
 > *Unanswered half, and why:* the live Gmail run needs an authenticated Google session.
 > A throwaway profile starts signed out, and signing in would require holding the
@@ -248,11 +255,11 @@ history of abandonment.
 > [can Node act on the desktop](proofs/can-node-act-on-the-desktop.md) (text inserted and
 > verified, action invoked with its effect measured on the tree), and
 > [can Node be told the desktop changed](proofs/can-node-be-told-the-desktop-changed.md)
-> (6 events attributable to a cause, 142ms).
+> (6 events attributable to a cause out of 639 received, first at 138ms).
 >
 > | Candidate | Licence | Maintenance |
 > |---|---|---|
-> | `dbus-native` (sidorares) | MIT — **read from the LICENSE file**, because GitHub's API reports `NOASSERTION` | last commit 2026-07-30, 10 open issues |
+> | `dbus-native` (sidorares) | MIT — **read from the LICENSE file**, because GitHub's API reports `NOASSERTION` | last commit 2026-08-02, last publish 2026-07-30, 10 open issues |
 > | `@homebridge/dbus-native` | MIT — read from the LICENSE file | last commit 2026-07-25, 0 open issues |
 > | `dbus-next` | MIT | **abandoned** — last commit 2022-04-02, last publish 2021, 51 open issues |
 >

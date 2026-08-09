@@ -35,7 +35,7 @@
 
 1. **An entire subsystem is gone.** Readability is decided at process start and nothing can change it afterwards, so the assistant opens the application itself and rewrites nothing on the user's system. [ADR-0020](02-DECISIONS/0020-granting-an-application-is-a-transaction-with-a-rollback.md) is retired outright.
 2. **The daemon is one Node process.** Linux accessibility is plain D-Bus underneath; Node matched Python on read, write and events. No Python, no sidecar, no cross-language seam — and [04-INTEGRATION-PLAN.md §4](04-INTEGRATION-PLAN.md)'s hardest obstacle disappears with it.
-3. **A fourth adapter exists and covers the majority case.** The browser protocol reaches Chrome *and* every Electron application on all three operating systems from one implementation — 4.3× faster than the platform route on the same browser at the same moment, and it needs no accessibility flag at all.
+3. **A fourth adapter exists and covers the majority case.** The browser protocol reaches Chrome *and* every Electron application from one implementation — **2.8× faster** than the platform route on the same browser at the same moment (44ms against 16ms), and it needs no accessibility flag at all. The protocol is identical across operating systems, so this adapter is *expected* to need no per-platform work; **that expectation is unmeasured — every measurement in [docs/proofs/](proofs/) was taken on Linux.**
 4. **The improvement thesis survives its first measurement, unevenly.** Steps to completion: 9.0 cold against 6.0 warm with zero spread, recovering to baseline one run after the interface changed. Tokens: **not established at this sample size** — the spread is larger than the effect, and the mean flatters.
 
 **What it deliberately left open** is listed in [09-QUESTIONS.md §6](09-QUESTIONS.md), so M1 starts with an accurate picture of its own ignorance: live Gmail (needs credentials that are not the agent's to hold), Qt's enabling knob, Windows and macOS from Node (read, never run), and a wake model whose licence permits commercial use.
@@ -109,7 +109,7 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 **Goal:** the accessibility layer, under scope, with attribution.
 
 **Deliverables:**
-- Daemon with transport, dispatch, scope enforcement, and **two** backends as separate modules: the browser protocol and the Linux accessibility layer. M0.5 established the browser route is the majority case — it covers Chrome and every Electron application on all three operating systems — so building it second would be building the harder one first.
+- Daemon with transport, dispatch, scope enforcement, and **two** backends as separate modules: the browser protocol and the Linux accessibility layer. M0.5 established the browser route is the majority case on the platform it was measured on — it covers Chrome and every Electron application — so building it second would be building the harder one first.
 - The launch mechanism from [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md), including the ownership table from [ADR-0029](02-DECISIONS/0029-the-daemon-knows-what-it-launched.md). Without it, applications are unreadable and nothing else in this milestone can be demonstrated.
 - `observe` scope end to end; `edit`, `activate`, `submit` defined and refused.
 - The change stream — the desktop talks first. Both routes have a push channel; the browser one was measured at 253ms from cause to observation.

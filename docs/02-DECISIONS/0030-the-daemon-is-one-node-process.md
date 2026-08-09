@@ -29,7 +29,7 @@ the same live desktop and matched it:
 | Enumerate applications | 18 found by Node, 18 by the Python control — identical |
 | Walk and read | 400 nodes walked, roles and states readable on every one |
 | Write | text inserted and verified by reading it back; an action invoked by name with its effect measured on the tree |
-| Events | 6 signals attributable to a specific cause, 142ms from cause to signal |
+| Events | 6 signals attributable to a specific cause, 138ms from cause to signal |
 
 The single-thread constraint is real and turned out to be **a property of the library, not
 the wire** — demonstrated by a non-GLib implementation working without any GLib main
@@ -51,7 +51,10 @@ It is a loud crash, not silent corruption.
    to maintain forever.
 2. **The Chromium backend is Node too**, over the browser protocol, using the runtime's
    built-in WebSocket with **no dependency at all**. It covers Chrome and every Electron
-   application, on all three operating systems, from one implementation.
+   application, from one implementation. The protocol itself is not platform-specific, so
+   this is expected to hold on Windows and macOS — **expected, not measured.** Every
+   receipt below was taken on Linux, and clause 4 applies to this claim as much as to the
+   accessibility one.
 3. **The single-threaded requirement survives**, for a better reason than it was given.
    Concurrency against the accessibility layer is not a corruption risk to mitigate — it is
    a deterministic process abort. Serialise, and the failure cannot occur.
@@ -66,7 +69,7 @@ It is a loud crash, not silent corruption.
 
    | Candidate | Licence | Maintenance |
    |---|---|---|
-   | `dbus-native` (sidorares) | MIT | last commit 2026-07-30, 10 open issues |
+   | `dbus-native` (sidorares) | MIT | last commit 2026-08-02, last publish 2026-07-30, 10 open issues |
    | `@homebridge/dbus-native` | MIT | last commit 2026-07-25, 0 open issues |
    | `dbus-next` | MIT | **abandoned** — last commit 2022, 51 open issues |
 
@@ -105,8 +108,8 @@ policy rather than two. That is
   value. A write reported success while a naive full-range read returned empty; the write
   had landed and the *verification* was broken. This is why writes need their own verdict.
 - [can Node be told the desktop changed](../proofs/can-node-be-told-the-desktop-changed.md)
-  — 6 attributable events at 142ms. Of 649 signals received during the window, only 6 were
-  caused by us; an idle desktop emits roughly 13 signals every 3 seconds. Passive listening
+  — 6 attributable events at 138ms. Of 639 signals received during the window, only 6 were
+  caused by us; an idle desktop emits 18 signals in a quiet 3-second window. Passive listening
   would have "proved" subscription using ambient chatter.
 - [is the accessibility binding thread-safe](../proofs/is-the-accessibility-binding-thread-safe.md)
   — deterministic SIGTRAP abort at two or more threads, 8 runs, reproduced on a second
