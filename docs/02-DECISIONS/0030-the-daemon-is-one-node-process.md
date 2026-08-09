@@ -92,6 +92,27 @@ In exchange: one process, one language, one build, one dependency story. No inte
 protocol between two halves of the daemon, and no seam that has to be versioned. The
 Chromium backend needs no per-platform work at all.
 
+**The consequence that pays daily: one type system, end to end.** With a Python daemon,
+`protocol/schema.json` was the only shared truth, and it was shared by *convention* — the
+generated TypeScript bound the client half, while the daemon half re-stated the same shapes
+by hand in a language that could not be checked against them. Every schema change had two
+implementations to keep honest and only one of them was compiled. With the daemon in Node,
+the generated bindings are consumed by **both** ends: daemon, transport, hub and clients
+type-check against the same emitted types, and a schema change that one side has not
+absorbed fails at build rather than at runtime in front of a user.
+
+This is what gives two existing rules teeth rather than good intentions:
+[B7](../01-ARCHITECTURE.md) (generated bindings are reproducible) and
+[B10](../01-ARCHITECTURE.md) (no platform-specific identifiers in the schema) were previously
+enforceable only on the client side of the wire. They now bind the daemon too.
+
+Two honest limits. The schema remains the source of truth and the generator remains the
+only way to a binding — sharing a language is not permission to hand-write a type on either
+side, or to import across the daemon boundary in violation of
+[B1](../01-ARCHITECTURE.md). And a shared type system proves the two ends agree about
+*shape*; it proves nothing about behaviour, which is what the golden fixtures and the freeze
+gate are for.
+
 **A constraint that follows from this and the browser work together.** Both routes need the
 same thing — the application must be launched with the right conditions — which is one
 policy rather than two. That is

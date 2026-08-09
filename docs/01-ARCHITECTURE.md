@@ -55,7 +55,7 @@ That second diagram is the whole reason the first one says "ZERO audio bytes". S
 - Attributes every effect. A change is `external` (a human did it) or carries a cause id (the agent did it). This is what makes "the human outranks the agent" (issue #25) enforceable.
 - Knows nothing about models, credentials, users, or voice.
 
-**Runtime:** Python, single-threaded event loop, on the default GLib main context. Both of those are hard-won: the prototype notes record that the single-thread rule and the default-context choice each cost real time and produced silent event loss when violated (prototype `docs/08-prototype-notes.md`). Its venv must be created with `--system-site-packages` because the accessibility bindings are distribution packages, not wheels.
+**Runtime:** Node, single-threaded, one process ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md)). The **single-thread rule is the hard-won part and it survives unchanged** — the prototype recorded it as a docstring, and M0.5 measured it: two or more concurrent accessibility threads abort the whole process with `SIGTRAP`, deterministically, across eight runs on two machines ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md)). The *language* did not survive: AT-SPI is plain D-Bus underneath, and Node reached read, write and events without a Python binding. There is no venv and no GLib main context, so `--system-site-packages` no longer applies.
 
 ### Hub — *the brain, and the only place secrets live*
 
@@ -91,7 +91,7 @@ mastra-cc/
 │   ├── schema.json           # the wire contract, one source of truth
 │   ├── golden/               # frozen request/response fixtures
 │   └── generate.mjs          # emits every binding
-├── daemon/                   # Python; the only accessibility consumer
+├── daemon/                   # Node; the only accessibility consumer
 │   ├── src/
 │   └── tests/
 ├── packages/
@@ -228,7 +228,7 @@ Real, unresolved, and each one needs a decision before the code that depends on 
 |---|---|
 | reshape = 179 files / 135 pure renames | PR #227 |
 | generated files churn with the schema (24 / 23 / 23) | `git log` counts on `schemas.generated.ts`, `protocol_generated.py`, `schema.json` |
-| single-thread + default GLib context, `--system-site-packages` | prototype `docs/08-prototype-notes.md` |
+| single-thread rule | prototype `docs/08-prototype-notes.md`, then **measured** — [is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md) |
 | the desktop talks first | commit `08-01 10:07` |
 | lane vocabulary | prototype hub lane implementation; used verbatim throughout |
 | joining client told current voice state; ping/hang-up sweep; pongs don't count as activity | PR #230 (closes issue #206) |
