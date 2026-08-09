@@ -137,6 +137,7 @@ const packageJson = `${JSON.stringify(
     private: true,
     type: "module",
     main: "./src/index.ts",
+    types: "./src/index.ts",
     description: "GENERATED from protocol/schema.json - do not edit (ADR-0009).",
   },
   null,

@@ -33,5 +33,19 @@
     "find": "  problems.push(\"golden fixtures were not updated for this schema change\");",
     "cwd": "tools",
     "testFile": "__tests__/freeze-gate.test.mjs"
+  },
+  {
+    "name": "effect-class-gate-name-dropped-from-refusal",
+    "file": "daemon/src/server.ts",
+    "find": "refused by the effect-class gate: ",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "loopback-element-loses-its-id",
+    "file": "daemon/src/backends/loopback.ts",
+    "find": "  id: ID,",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/backend-conformance.test.ts"
   }
 ]

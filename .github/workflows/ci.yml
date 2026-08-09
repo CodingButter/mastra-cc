@@ -22,6 +22,11 @@ jobs:
           # Node 22: active LTS, matching docs.yml's reasoning.
           node-version: 22
           cache: pnpm
+      # packages/protocol-types is generated build output (ADR-0009) and a
+      # workspace member; it must exist before pnpm can resolve the workspace.
+      # The generator uses only the Node standard library.
+      - name: "generate protocol-types (build output, ADR-0009)"
+        run: node protocol/generate.mjs
       - run: pnpm install --frozen-lockfile
 
       # The nine steps of docs/05-TEST-STRATEGY.md:126-136, in order.
@@ -57,6 +62,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: "generate protocol-types (build output, ADR-0009)"
+        run: node protocol/generate.mjs
       - run: pnpm install --frozen-lockfile
       - name: "B12: permissive-licence check over every manifest"
         run: node tools/licences.mjs

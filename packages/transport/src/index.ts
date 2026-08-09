@@ -1,12 +1,120 @@
-// M1 Phase 1 placeholder: the transport package exists so the workspace pipelines
-// have a real subject. The socket client - the one daemon client, B5 - lands in
-// Phase 3. What is here already true: the socket path is derived, never guessed.
-export const SOCKET_DIRNAME = "mastra-cc";
-export const SOCKET_FILENAME = "daemon.sock";
+import { createConnection, type Socket } from "node:net";
+import { join } from "node:path";
+import {
+  SCHEMA_DIGEST,
+  type AttestElementParams,
+  type AttestElementResult,
+  type QueryElementsParams,
+  type QueryElementsResult,
+} from "@mastra-cc/protocol-types";
 
-export function socketPath(runtimeDir: string): string {
-  if (runtimeDir.length === 0) {
-    throw new Error("transport: runtimeDir must not be empty");
+// The one and only daemon client (B5, ADR-0003). Newline-delimited JSON over a
+// unix domain socket. The connection is keyed on the schema digest: both sides
+// state the digest they were built against before anything else, and a
+// mismatch is refused AT CONNECT with a message naming both digests - never
+// left to fail on a malformed field later.
+
+export function defaultSocketPath(): string {
+  const runtimeDir = process.env.XDG_RUNTIME_DIR ?? "/tmp";
+  return join(runtimeDir, "mastra-cc", "daemon.sock");
+}
+
+interface Hello {
+  type: "hello";
+  digest: string;
+  version?: string;
+}
+
+interface Response {
+  type: "response";
+  id: number;
+  result?: unknown;
+  refusal?: string;
+}
+
+export interface TransportClient {
+  queryElements(params: QueryElementsParams): Promise<QueryElementsResult>;
+  attestElement(params: AttestElementParams): Promise<AttestElementResult>;
+  close(): void;
+}
+
+export async function connect(options: { socketPath?: string } = {}): Promise<TransportClient> {
+  const socketPath = options.socketPath ?? defaultSocketPath();
+  const socket = createConnection(socketPath);
+  const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+  let nextId = 1;
+  let buffer = "";
+  let helloResolve: ((h: Hello) => void) | null = null;
+  let helloReject: ((e: Error) => void) | null = null;
+
+  socket.on("data", (chunk) => {
+    buffer += chunk.toString("utf8");
+    let newline = buffer.indexOf("\n");
+    while (newline >= 0) {
+      const line = buffer.slice(0, newline);
+      buffer = buffer.slice(newline + 1);
+      newline = buffer.indexOf("\n");
+      if (!line.trim()) continue;
+      const message = JSON.parse(line) as Hello | Response | { type: "refusal"; refusal: string };
+      if (message.type === "hello" && helloResolve) {
+        helloResolve(message);
+        helloResolve = null;
+      } else if (message.type === "refusal") {
+        const error = new Error(message.refusal);
+        if (helloReject) {
+          helloReject(error);
+          helloReject = null;
+        }
+        for (const p of pending.values()) p.reject(error);
+        pending.clear();
+      } else if (message.type === "response") {
+        const p = pending.get(message.id);
+        if (p) {
+          pending.delete(message.id);
+          if (message.refusal !== undefined) p.reject(new Error(message.refusal));
+          else p.resolve(message.result);
+        }
+      }
+    }
+  });
+
+  const failAll = (error: Error) => {
+    if (helloReject) {
+      helloReject(error);
+      helloReject = null;
+    }
+    for (const p of pending.values()) p.reject(error);
+    pending.clear();
+  };
+  socket.on("error", failAll);
+  socket.on("close", () => failAll(new Error(`transport: connection to ${socketPath} closed`)));
+
+  const serverHello = await new Promise<Hello>((resolve, reject) => {
+    helloResolve = resolve;
+    helloReject = reject;
+    socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+  });
+
+  if (serverHello.digest !== SCHEMA_DIGEST) {
+    const refusal =
+      `transport: refused at connect - this transport was built against schema digest ${SCHEMA_DIGEST} ` +
+      `but the daemon speaks schema digest ${serverHello.digest} (digest-agreement check)`;
+    socket.destroy();
+    throw new Error(refusal);
   }
-  return `${runtimeDir}/${SOCKET_DIRNAME}/${SOCKET_FILENAME}`;
+
+  function call(method: string, params: unknown): Promise<unknown> {
+    const id = nextId;
+    nextId += 1;
+    return new Promise((resolve, reject) => {
+      pending.set(id, { resolve, reject });
+      socket.write(`${JSON.stringify({ type: "request", id, method, params })}\n`);
+    });
+  }
+
+  return {
+    queryElements: (params) => call("queryElements", params) as Promise<QueryElementsResult>,
+    attestElement: (params) => call("attestElement", params) as Promise<AttestElementResult>,
+    close: () => void (socket as Socket).end(),
+  };
 }
