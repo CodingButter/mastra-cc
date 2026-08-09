@@ -1,0 +1,14 @@
+# The workspace globs follow docs/01-ARCHITECTURE.md:88-107. The catalog pins the
+# toolchain to the destination monorepo's own catalog (docs/04-INTEGRATION-PLAN.md §3);
+# tools/catalog-check.mjs goes red when these drift from the destination.
+packages:
+  - daemon
+  - packages/*
+  - apps/*
+  - tools
+
+catalog:
+  typescript: ^6.0.3
+  vitest: 4.1.10
+  zod: ^4.4.3
+  oxfmt: 0.59.0

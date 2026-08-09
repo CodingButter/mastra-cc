@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Node 22: active LTS, matching docs.yml's reasoning.
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # The nine steps of docs/05-TEST-STRATEGY.md:126-136, in order. Steps 1-3
+      # land in Phase 2 WITH the protocol they guard - they are deliberately
+      # absent here, not stubbed, because a step present before its subject
+      # exists is a step that has only ever passed, which is indistinguishable
+      # from a step that is not wired up:
+      #   step 1: protocol regenerate + diff (B7)  - lands in Phase 2
+      #   step 2: schema freeze gate (B6, ADR-0002) - lands in Phase 2
+      #   step 3: schema digest agreement           - lands in Phase 2
+
+      - name: "step 4: boundary pins (wired set must match tools/pins/README.md)"
+        run: node tools/pins/run.mjs
+      - name: "step 5: unit and integration tests"
+        run: pnpm turbo run test
+      - name: "step 6: typecheck (each package's own tsc)"
+        run: pnpm turbo run typecheck
+      - name: "step 7: build"
+        run: pnpm turbo run build
+      - name: "step 8: mutation checks"
+        run: node tools/mutations.mjs
+      - name: "step 9: integration dry run (catalog divergence)"
+        run: bash tools/dry-run-integration.sh
+      - name: "lint (workspace hygiene; not one of the nine steps)"
+        run: pnpm turbo run lint
+
+  # B12 is a CI job over every manifest, not a source pin
+  # (docs/01-ARCHITECTURE.md:139-150).
+  licences:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: "B12: permissive-licence check over every manifest"
+        run: node tools/licences.mjs
