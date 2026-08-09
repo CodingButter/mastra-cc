@@ -7,6 +7,15 @@ The task is given in plain language — "read the subject of my most recent emai
 plan. The interpreter that executes it contains no model, in either run. So what
 is being measured is a **planning** saving, not a faster click.
 
+**The surface is a locally authored fixture with a mail client's shape, not
+Gmail** — the live run needs an authenticated session that is not the agent's to
+obtain, and the substitution is bookmarked against Q03 in
+[09-QUESTIONS.md](../09-QUESTIONS.md). The consequence for these numbers
+specifically: the *mutation* that drives the recovery curve was one I applied
+myself, so it is representative of interface drift only to the extent that my
+guess about drift is representative. Measured 2026-08-09 on Linux (Ubuntu 24.04,
+Wayland, Node 25.2.1), planning model `deepseek-v4-flash`.
+
 | run | steps | tokens | wall-clock (ms) |
 |---|---|---|---|
 | cold | 9.0 (9–9) | 2149.0 (889–3416) | 4799.7 (4707–4882) |

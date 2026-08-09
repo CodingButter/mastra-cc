@@ -9,6 +9,20 @@ out, the plan was underspecified and nothing was learned that can be replayed.
 The same interpreter runs against a fixture and against a real browser; only the
 surface differs. What follows is the browser run.
 
+**The limit of this result, stated here because a number travels without its
+context.** The browser was real and driven over the debugging protocol, but the
+*page* was a locally authored fixture with the Gmail scenario's shape — **not
+Gmail**. The live run needs an authenticated Google session, and holding the
+operator's credentials is not the agent's to do; the substitution is recorded in
+full in the milestone's progress record and bookmarked against Q03 in
+[09-QUESTIONS.md](../09-QUESTIONS.md). What this therefore proves: the plan
+representation, the interpreter, the resolution ladder and the refusal behaviour
+are the real ones. What it does not prove: that a surface **I did not author**
+can be addressed this way. A fixture cannot surprise its author.
+
+Measured 2026-08-09 on Linux (Ubuntu 24.04, Wayland, Node 25.2.1, Chrome
+150.0.7871.186). No measurement in this directory was taken on Windows or macOS.
+
 ## G5 — can every precondition be a predicate?
 
 **Yes, for this scenario.** Every step's target is a `{role, name, within}`

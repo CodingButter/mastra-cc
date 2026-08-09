@@ -15,7 +15,7 @@
 **Deliverables:** the nine documents in `docs/`, the ADR series in `docs/02-DECISIONS/`, `README.md`, and `CONTRIBUTING.md`.
 
 **Exit gate:**
-- [x] Every internal link resolves — `scripts/check-docs.py` exits 0 over 27 files.
+- [x] Every internal link resolves — `scripts/check-docs.mjs` exits 0 over 27 files.
 - [x] Every document's Receipts table has at least one entry per non-obvious claim.
 - [x] Jamie has reacted to the three open decisions — all three taken on the recommendation, 2026-08-08. See §"Decisions taken" below.
 
@@ -50,7 +50,7 @@
 
 **Exit gate:**
 - [x] Every question in [09-QUESTIONS.md](09-QUESTIONS.md) is closed, with its own stated requirement met.
-- [x] `scripts/check-docs.py` exits 0.
+- [x] `scripts/check-docs.mjs` exits 0.
 - [x] Every decision a finding invalidated has been **superseded in writing**, not edited in place.
 - [x] A cold reader — a person, or a session with no memory of these conversations — can read `docs/` and begin M1 without asking a question.
 

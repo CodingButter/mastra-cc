@@ -92,26 +92,35 @@ In exchange: one process, one language, one build, one dependency story. No inte
 protocol between two halves of the daemon, and no seam that has to be versioned. The
 Chromium backend needs no per-platform work at all.
 
-**The consequence that pays daily: one type system, end to end.** With a Python daemon,
-`protocol/schema.json` was the only shared truth, and it was shared by *convention* — the
-generated TypeScript bound the client half, while the daemon half re-stated the same shapes
-by hand in a language that could not be checked against them. Every schema change had two
-implementations to keep honest and only one of them was compiled. With the daemon in Node,
-the generated bindings are consumed by **both** ends: daemon, transport, hub and clients
-type-check against the same emitted types, and a schema change that one side has not
-absorbed fails at build rather than at runtime in front of a user.
+**One type system, end to end — stated carefully, because the obvious version of this claim
+is wrong.** The prototype did *not* hand-write its daemon-side shapes: it generated a Python
+validator, `desktop_service/protocol_generated.py`, from the same schema
+([ADR-0009](0009-generated-code-is-build-output.md)). Both ends were already generated, and
+both were already checked. The gain is narrower than "we finally share types", and worth
+naming precisely:
 
-This is what gives two existing rules teeth rather than good intentions:
-[B7](../01-ARCHITECTURE.md) (generated bindings are reproducible) and
-[B10](../01-ARCHITECTURE.md) (no platform-specific identifiers in the schema) were previously
-enforceable only on the client side of the wire. They now bind the daemon too.
+1. **One generated artifact instead of two.** `schema.json` dragged both
+   `schemas.generated.ts` and `protocol_generated.py` behind it, at 24 and 23 revisions
+   against the schema's 23 — the churn [ADR-0009](0009-generated-code-is-build-output.md)
+   and [03-LESSONS §5](../03-LESSONS.md) both record. One target for the generator means one
+   emitter to keep correct and one golden fixture set to keep honest.
+2. **A mismatch fails at build rather than at call time.** The Python validator caught a
+   shape violation when the method *ran*; a TypeScript daemon consuming the emitted types
+   fails to compile. Same guarantee, discovered earlier and without needing the code path to
+   execute.
 
-Two honest limits. The schema remains the source of truth and the generator remains the
-only way to a binding — sharing a language is not permission to hand-write a type on either
-side, or to import across the daemon boundary in violation of
-[B1](../01-ARCHITECTURE.md). And a shared type system proves the two ends agree about
-*shape*; it proves nothing about behaviour, which is what the golden fixtures and the freeze
-gate are for.
+Neither point is load-bearing for the ruling — the ruling rests on the measurements above.
+This is a consequence, and its honest size is "the build got simpler and the feedback got
+earlier", not "the boundary got safer".
+
+**What this explicitly does not change.** Two boundary rules could be mistaken for
+beneficiaries and are not: [B7](../01-ARCHITECTURE.md) is enforced by CI regenerating and
+diffing, which is a property of the generator and indifferent to the daemon's language, and
+[B10](../01-ARCHITECTURE.md) is enforced by a source-level test over the schema itself.
+Neither was ever client-side-only and neither gains anything here. Nor is a shared language
+permission to hand-write a type on either side, or to import across the daemon boundary in
+violation of [B1](../01-ARCHITECTURE.md). And matching types prove the two ends agree about
+*shape* only — behaviour is what the golden fixtures and the freeze gate are for.
 
 **A constraint that follows from this and the browser work together.** Both routes need the
 same thing — the application must be launched with the right conditions — which is one

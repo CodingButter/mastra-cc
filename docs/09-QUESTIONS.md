@@ -219,7 +219,7 @@ mechanism each one is worth reading for. Closure by bookmark is expected here.
 > | Source | Read it for |
 > |---|---|
 > | **Orca** (`gnome/orca`), `src/orca/script_utilities.py` | How a mature client decides an element is *stale* rather than absent — the same problem our durability ladder hit |
-> | **Orca**, `src/orca/event_manager.py` | Event-storm handling: coalescing and dropping accessibility events without losing the one that mattered. We measured ~13 ambient signals per 3 seconds on an idle desktop; Orca has lived with that for two decades |
+> | **Orca**, `src/orca/event_manager.py` | Event-storm handling: coalescing and dropping accessibility events without losing the one that mattered. We measured 18 ambient signals in a quiet 3-second window on an idle desktop; Orca has lived with that for two decades |
 > | **AT-SPI2 core** (`GNOME/at-spi2-core`), `registryd/` | Why the registry is the authority on which applications exist, and what the bus actually guarantees |
 > | **NVDA** (`nvaccess/nvda`), `source/NVDAObjects/` | The per-application override pattern: a general model plus explicit exceptions for applications that misreport. The prototype rediscovered this as its per-app probe |
 > | **NVDA**, `source/browseMode.py` | Virtual-buffer construction — how a screen reader presents web content that is not all rendered, which is exactly the virtualised-list problem in Q's G4 |
@@ -749,7 +749,7 @@ Recorded so nobody re-derives them.
 All of the following, or the phase is not finished:
 
 1. Every question above is **answered** or **bookmarked**, with its stated requirement met.
-2. `scripts/check-docs.py` exits 0.
+2. `scripts/check-docs.mjs` exits 0.
 3. Findings are written down where the work will happen — an amended ADR, a new ADR, or
    a correction to an existing document. A finding that lives only in a spike's output is
    not recorded.

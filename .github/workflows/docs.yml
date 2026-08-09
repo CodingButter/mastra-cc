@@ -9,8 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # Pinned to 22 because it is the active LTS line and the gate uses only
+      # stable `node:fs`/`node:path` APIs — a pin without a stated reason gets
+      # bumped by the next person who reads it.
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "22"
       - name: Check documents
-        run: python3 scripts/check-docs.py
+        run: node scripts/check-docs.mjs

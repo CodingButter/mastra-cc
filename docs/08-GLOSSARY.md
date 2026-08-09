@@ -20,7 +20,7 @@
 
 ## Processes
 
-**Daemon** — the process that speaks to the accessibility layer. The only one that may. Python. → [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md)
+**Daemon** — the process that speaks to the accessibility layer. The only one that may. Node, single-threaded, one process. → [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md), superseding [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md)'s language choice while keeping its single-thread rule
 
 **Hub** — the brain. Agents, tools, memory, credentials, audit, lane control. Holds **no audio**. → [ADR-0006](02-DECISIONS/0006-hub-holds-no-audio.md)
 
@@ -44,7 +44,7 @@
 
 **Ownership** — an element is *owned while it is being written*. A human reaching for a field the agent is working in takes it.
 
-**Curing** — making an application's accessibility exposure readable when it is not by default. The prototype cured Chromium with desktop-entry overrides and a renderer flag, and explicitly rejected requiring a screen reader to be running.
+**Curing** — *retired term.* It named making an application readable when it is not by default, and the prototype's mechanism was desktop-entry overrides plus a renderer flag. Readability is decided at process start and cannot be changed afterwards, so there is nothing to cure and nothing on the user's system to rewrite: the assistant opens the application itself, with the right conditions, or asks to restart one that is already running. → [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md), which retires [ADR-0020](02-DECISIONS/0020-granting-an-application-is-a-transaction-with-a-rollback.md)
 
 ---
 

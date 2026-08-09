@@ -22,7 +22,7 @@ Concretely:
 1. **`apps/` and `packages/` conventions**, which is what the destination monorepo uses. Nothing at the top level is a product-specific noun that would collide.
 2. **Every package has a scoped name** and its own `package.json`, `tsconfig.json`, test config, and typecheck script. A package that only builds as part of a bespoke root script is not droppable.
 3. **No dependency on repository-root position.** No script resolves paths relative to a hard-coded top-level directory name. This is the same class of bug as the keeper shim that computed its root through a symlink and landed in `$HOME`.
-4. **The Python daemon is a sibling, not a nested oddity.** It has its own environment, its own test lanes, and a documented reason it cannot be a workspace package.
+4. **The daemon is a sibling, not a nested oddity.** It has its own test lanes and its own build. ~~Python~~ — **superseded by [ADR-0030](0030-the-daemon-is-one-node-process.md)**: the daemon is Node, so it has no separate environment and no documented reason to sit outside the workspace. The layout rule survives the language change; the justification for it shrank.
 5. **The full integration story is written before the code**, not derived after it — see [04-INTEGRATION-PLAN.md](../04-INTEGRATION-PLAN.md).
 
 **And the corollary rule, which is the one that actually saves the day:** if a rename ever *is* necessary, it happens when no parallel work is in flight, it greps out-of-tree configuration for old paths first, and it proves itself by provisioning one fresh environment afterwards.

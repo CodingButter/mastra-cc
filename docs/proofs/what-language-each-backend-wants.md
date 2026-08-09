@@ -28,7 +28,7 @@ because none of them implies the others:
 
 - **Read** — finds the same 18 applications the Python bindings find on the same
   desktop at the same moment; roles and states readable on every node reached.
-- **Subscribe** — receives events attributable to a window it opened, 142ms from
+- **Subscribe** — receives events attributable to a window it opened, 138ms from
   cause to signal.
 - **Write** — inserts text and verifies it by reading back; invokes an action and
   verifies it by the window disappearing.
