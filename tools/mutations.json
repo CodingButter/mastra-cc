@@ -47,5 +47,19 @@
     "find": "  id: ID,",
     "cwd": "daemon",
     "testFile": "src/__tests__/backend-conformance.test.ts"
+  },
+  {
+    "name": "atspi-nfkc-normalisation-dropped",
+    "file": "daemon/src/backends/atspi/names.ts",
+    "find": ".normalize(\"NFKC\")",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/normalisation.test.ts"
+  },
+  {
+    "name": "atspi-ambiguity-refusal-takes-first-match",
+    "file": "daemon/src/backends/atspi/resolve.ts",
+    "find": "  if (candidates.length > 1) return { refusal: ambiguityRefusal(candidates, query) };",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/ambiguity.test.ts"
   }
 ]

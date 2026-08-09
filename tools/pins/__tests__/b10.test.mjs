@@ -13,10 +13,10 @@ const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const pin = join(repoRoot, "tools", "pins", "b10.mjs");
 const realSchema = JSON.parse(readFileSync(join(repoRoot, "protocol", "schema.json"), "utf8"));
 
-function runOn(schemaObject) {
+function runOn(schemaObject, extraArgs = []) {
   const file = join(mkdtempSync(join(tmpdir(), "b10-test-")), "schema.json");
   writeFileSync(file, typeof schemaObject === "string" ? schemaObject : JSON.stringify(schemaObject, null, 2));
-  return spawnSync(process.execPath, [pin, "--schema", file], { encoding: "utf8" });
+  return spawnSync(process.execPath, [pin, "--schema", file, ...extraArgs], { encoding: "utf8" });
 }
 
 describe("pin b10 - no platform vocabulary on the wire", () => {
@@ -64,5 +64,12 @@ describe("pin b10 - no platform vocabulary on the wire", () => {
     const r = runOn("");
     expect(r.status).toBe(1);
     expect(r.stderr).toContain("would pass vacuously");
+  });
+
+  it("refuses a missing deny-list rather than passing vacuously - the list is load-bearing data", () => {
+    const emptyRoot = mkdtempSync(join(tmpdir(), "b10-root-"));
+    const r = runOn(realSchema, ["--root", emptyRoot]);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("deny-list.json is missing or empty");
   });
 });

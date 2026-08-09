@@ -1,0 +1,22 @@
+[
+  "atspi",
+  "at-spi",
+  "uia",
+  "uiautomation",
+  "msaa",
+  "gtk",
+  "qt",
+  "cdp",
+  "chromium",
+  "win32",
+  "cocoa",
+  "gobject",
+  "glib",
+  "xlib",
+  "x11",
+  "wayland",
+  "nsaccessibility",
+  "dbus",
+  "d-bus",
+  "freedesktop"
+]

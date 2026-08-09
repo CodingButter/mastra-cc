@@ -2,8 +2,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fail, rootFromArgs } from "./lib.mjs";
 
-// B10: no platform vocabulary on the wire (ADR-0018). The deny-list below is
-// matched against every field name, enum value, method name, description, role
+// B10: no platform vocabulary on the wire (ADR-0018). The deny-list lives in
+// deny-list.json next to this pin and GROWS IN THE SAME COMMIT as any backend
+// that introduces platform vocabulary to the codebase (clause 5) - Phase 4's
+// accessibility backend added its bus terms there. Every term is matched
+// against every field name, enum value, method name, description, role
 // and state in protocol/schema.json. Clause 1 of the ADR names enum values
 // explicitly. The ONE exemption is clause 6: any subtree under a field named
 // "diagnostic" - the exemption is encoded by FIELD NAME, not by pattern, so a
@@ -28,25 +31,15 @@ try {
 }
 if (!schemaText.trim()) fail("pin-b10: schema is missing or empty - the pin would pass vacuously");
 
-const DENY = [
-  "atspi",
-  "at-spi",
-  "uia",
-  "uiautomation",
-  "msaa",
-  "gtk",
-  "qt",
-  "cdp",
-  "chromium",
-  "win32",
-  "cocoa",
-  "gobject",
-  "glib",
-  "xlib",
-  "x11",
-  "wayland",
-  "nsaccessibility",
-];
+let DENY = [];
+try {
+  DENY = JSON.parse(readFileSync(join(rootFromArgs(process.argv), "tools", "pins", "deny-list.json"), "utf8"));
+} catch {
+  // missing file falls through to the vacuous-pass guard
+}
+if (!Array.isArray(DENY) || DENY.length === 0) {
+  fail("pin-b10: deny-list.json is missing or empty - the pin would pass vacuously");
+}
 const matchers = DENY.map((term) => ({
   term,
   re: new RegExp(`(^|[^a-z0-9])${term.replace("-", "\\-")}([^a-z0-9]|$)`, "i"),

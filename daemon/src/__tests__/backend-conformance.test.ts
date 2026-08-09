@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
 import { BACKEND_METHODS } from "../backend.js";
-import { registry } from "../backends/registry.js";
+import { LIVE_BACKENDS, registry } from "../backends/registry.js";
+
+// Live-lane gating: backends that need a real desktop run through this suite
+// only when MASTRA_CC_LIVE=1 (a machine with an accessibility bus). CI runs
+// the --no-live lane; the skip is loud in the reporter, never silent.
+const LIVE = process.env.MASTRA_CC_LIVE === "1";
 
 // The shared conformance suite: the seam's enforcement arm. The backend
 // interface defines what every backend must implement; this suite is what
@@ -11,7 +16,9 @@ import { registry } from "../backends/registry.js";
 // exist as far as the daemon is concerned.
 
 for (const [name, factory] of Object.entries(registry)) {
-  describe(`backend "${name}" conforms to the backend interface`, () => {
+  const suite = LIVE_BACKENDS.has(name) && !LIVE ? describe.skip : describe;
+  const lane = LIVE_BACKENDS.has(name) ? " (live lane: MASTRA_CC_LIVE=1)" : "";
+  suite(`backend "${name}" conforms to the backend interface${lane}`, { timeout: 120_000 }, () => {
     const backend = factory();
 
     it("implements every method the interface names", () => {

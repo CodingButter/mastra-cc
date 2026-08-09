@@ -12,13 +12,14 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "oxlint": "^1.77.0",
     "tsdown": "^0.22.14",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@types/node": "^24.10.1"
+    "vitest": "catalog:"
   },
   "dependencies": {
-    "@mastra-cc/protocol-types": "workspace:*"
+    "@mastra-cc/protocol-types": "workspace:*",
+    "dbus-native": "0.15.1"
   }
 }
