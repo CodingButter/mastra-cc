@@ -1,0 +1,9 @@
+{
+  "name": "exec-spike",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway. Deleted at the end of M0.5.",
+  "dependencies": {
+    "@mastra/core": "1.57.0"
+  }
+}

@@ -23,7 +23,11 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 FENCE = re.compile(r"```.*?```", re.S)
 
 
-SKIP_DIRS = {".git", ".mastracode"}
+# Directories whose markdown is not ours to check. `.git` and `.mastracode`
+# are bookkeeping; `node_modules` is other people's documentation, and their
+# dead links are their business — scanning it turns this gate into a report on
+# five hundred dependency READMEs and buries any real problem.
+SKIP_DIRS = {".git", ".mastracode", "node_modules"}
 
 
 def markdown_files() -> list[Path]:
