@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { interpret, Ambiguous, Suspended } from './interpret.mjs';
 import { fixtureSurface } from './surface.mjs';
 import { scenario, ambiguousScenario, step } from './plan.mjs';
+import { mergeBatches } from './agent.mjs';
 
 // A fixture with the shape of a mail interface: the message list does not exist
 // until the inbox link is clicked, which is the materialisation case.
@@ -241,4 +242,28 @@ test('a predicate matching nothing fails loudly rather than skipping', async () 
     steps: [step({ id: 'nope', verb: 'read', class: 'observe', predicate: { role: 'link', name: 'Nowhere' } })],
   };
   await assert.rejects(() => interpret(plan, fixtureSurface(mailFixture())), /matched nothing/);
+});
+
+test('two planning batches never produce colliding step ids', () => {
+  // Both model calls number their steps from one. A collision is not cosmetic:
+  // steps are addressed by id, `within` resolves by id, and the recorded
+  // workflow keys elements by id — so one step's resolution would quietly
+  // stand in for another's. This was found in rung telemetry, not in the table.
+  const merged = mergeBatches(
+    [{ id: '1', verb: 'click', class: 'reveal', predicate: { role: 'link', name: 'Inbox' } }],
+    [
+      { id: '1', verb: 'resolve', class: 'observe', predicate: { role: 'list', name: 'Messages' } },
+      { id: '2', verb: 'read', class: 'observe', predicate: { role: 'heading', within: '1' } },
+    ],
+  );
+
+  const ids = merged.map((s) => s.id);
+  assert.equal(new Set(ids).size, ids.length, 'step ids must be unique');
+
+  // The scope must follow the renamed step, not reattach to the first batch's
+  // step of the same name.
+  const reader = merged.find((s) => s.verb === 'read');
+  const listStep = merged.find((s) => s.predicate?.role === 'list');
+  assert.equal(reader.predicate.within, listStep.id);
+  assert.notEqual(reader.predicate.within, '1');
 });
