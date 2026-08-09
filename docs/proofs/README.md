@@ -45,6 +45,19 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 | [does the second run cost less](does-the-second-run-cost-less.md) | G1 — steps yes, tokens not at this sample size |
 | [how this milestone checked itself](how-this-milestone-checked-itself.md) | The cold-reader test, the review, and what none of it established |
 
+## Release-gate checks
+
+Checks that need a live desktop cannot run in CI — a live-requiring step in CI
+does not fail, it kills the runner (../05-TEST-STRATEGY.md:103). They run on a
+desktop machine instead, on a stated cadence, and their results land in the
+active milestone's progress record.
+
+| Check | Command | Cadence |
+|---|---|---|
+| Tape drift | `node daemon/dist/main.mjs --verify-tape gtk-dialog` | Before each milestone closes, on a machine with a live accessibility bus. Drift is the desktop changing, not a bug — if the corpus should follow, re-capture, record the diff, and re-run the replay tests against the new tape. Undiscovered drift is the failure. |
+| Live conformance | `MASTRA_CC_LIVE=1 pnpm --filter @mastra-cc/daemon test` | Before each milestone closes (tracked as issue #1 until a runner with a bus exists). |
+| Headless lane | `bash infra/apply.sh --headless-check` | Before each milestone closes — proves a machine can capture with no monitor attached. |
+
 ## Two rules these artifacts follow
 
 **A spike that cannot exercise a condition writes nothing.** Every measurement above

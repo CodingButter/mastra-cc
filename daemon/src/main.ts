@@ -8,12 +8,22 @@ import { startServer } from "./server.js";
 // from the registry; this is a LOCAL OPERATOR FLAG on the daemon's own command
 // line, not schema - B10 and ADR-0018 govern the wire, and no backend name
 // ever crosses it. --capture <name> records every exchange the backend
-// performs to daemon/fixtures/<name>/tape.json. --query / --resolve are
-// one-shot operator modes: ask the backend directly, print, exit - no socket.
+// performs to daemon/fixtures/<name>/tape.json; --fixture <name> selects the
+// tape the replay backend answers from. --query / --resolve are one-shot
+// operator modes: ask the backend directly, print, exit - no socket.
 
 function arg(name: string): string | null {
   const i = process.argv.indexOf(name);
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : null;
+}
+
+// --verify-tape <name>: replay a tape against the live bus and report drift.
+// A release-gate check (docs/proofs/README.md), not a CI step - CI has no bus.
+const verifyFixture = arg("--verify-tape");
+if (verifyFixture !== null) {
+  const { verifyTape } = await import("./backends/replay/verify.js");
+  await verifyTape(verifyFixture, (line) => console.log(line));
+  process.exit(0);
 }
 
 const backendName = arg("--backend");
@@ -25,7 +35,8 @@ if (!backendName || !registry[backendName]) {
 }
 
 const capture = arg("--capture") ?? undefined;
-const backend = registry[backendName]({ capture });
+const fixture = arg("--fixture") ?? undefined;
+const backend = registry[backendName]({ capture, fixture });
 
 const query = arg("--query");
 const resolve = arg("--resolve");

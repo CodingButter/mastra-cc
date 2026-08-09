@@ -6,7 +6,7 @@ import type {
   SemanticElement,
 } from "@mastra-cc/protocol-types";
 import type { Backend } from "../../backend.js";
-import type { Channel } from "./channel.js";
+import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { nameMatches } from "./names.js";
 import { actionsForRole, toNeutralRole, toNeutralStates } from "./roles.js";
@@ -151,7 +151,10 @@ export class AtspiBackend implements Backend {
             const kids = await this.children(ref);
             stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1 })));
           }
-        } catch {
+        } catch (error) {
+          // ...but an off-tape read under replay is not a dying process, it is
+          // ignorance, and ignorance surfaces as a refusal - never a skip.
+          if (error instanceof UnrecordedExchangeError) throw error;
           continue;
         }
       }
@@ -169,7 +172,8 @@ export class AtspiBackend implements Backend {
       // still-present element attests under the id it was answered with.
       const element = await this.readElement(ref);
       return { element };
-    } catch {
+    } catch (error) {
+      if (error instanceof UnrecordedExchangeError) throw error;
       return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again` };
     }
   }

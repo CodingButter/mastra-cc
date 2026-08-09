@@ -42,11 +42,11 @@
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
-    "name": "loopback-element-loses-its-id",
-    "file": "daemon/src/backends/loopback.ts",
-    "find": "  id: ID,",
+    "name": "replay-invents-a-reply-for-an-unrecorded-exchange",
+    "file": "daemon/src/backends/replay/index.ts",
+    "find": "      if (reply === undefined) {\n        throw new UnrecordedExchangeError(\n          `no recorded exchange for ${exchangeKey(exchange)} - refusing to invent a reply`,\n        );\n      }\n",
     "cwd": "daemon",
-    "testFile": "src/__tests__/backend-conformance.test.ts"
+    "testFile": "src/backends/replay/__tests__/refuses-unrecorded.test.ts"
   },
   {
     "name": "atspi-nfkc-normalisation-dropped",

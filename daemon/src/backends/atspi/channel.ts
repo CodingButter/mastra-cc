@@ -25,9 +25,17 @@ export interface Channel {
 }
 
 // One stable key per exchange; the replay backend looks answers up by it.
+// The body is part of the key on purpose: a looser key produced a false
+// "identical" replay at plan time that a distinct-name check exposed.
 export function exchangeKey(x: Exchange): string {
   return [x.destination, x.path, x.iface, x.member, JSON.stringify(x.body ?? [])].join("|");
 }
+
+// Thrown by the replay channel when asked for an exchange the tape never
+// recorded. Lives here (not in replay/) so the tree walk can tell it apart
+// from a live dead-node error: a dying process is skipped, an off-tape read
+// is a refusal that must surface. Refuse-on-ignorance, not invention.
+export class UnrecordedExchangeError extends Error {}
 
 function invoke(bus: DbusBus, x: Exchange): Promise<unknown[]> {
   return new Promise((resolve, reject) => {

@@ -11,9 +11,10 @@ const LIVE = process.env.MASTRA_CC_LIVE === "1";
 // The shared conformance suite: the seam's enforcement arm. The backend
 // interface defines what every backend must implement; this suite is what
 // makes that binding ("thats what our tests are for though"). Every backend in
-// the registry - loopback today, at-spi in Phase 4, replay in Phase 5 - runs
+// the registry - at-spi on the live lane, replay on the default lane - runs
 // through the same assertions. A backend that is not in the registry does not
-// exist as far as the daemon is concerned.
+// exist as far as the daemon is concerned. (The loopback wire double served
+// Phase 3 and was deleted in Phase 5, replaced by recordings of a real tree.)
 
 for (const [name, factory] of Object.entries(registry)) {
   const suite = LIVE_BACKENDS.has(name) && !LIVE ? describe.skip : describe;

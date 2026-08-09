@@ -20,6 +20,54 @@ PREFIX="${MASTRA_CC_PREFIX:-$HOME}"
 DRY=0
 if [ "${1:-}" = "--dry-run" ]; then DRY=1; fi
 
+# --headless-check: prove the headless session recipe by obtaining a real
+# element with no monitor attached - a virtual display (Xvfb), a private
+# session bus (dbus-run-session), the accessibility bus launched into it
+# (at-spi-bus-launcher lives in /usr/libexec, not on PATH), a GTK application
+# started into the virtual display, and the built daemon reading it off the
+# bus. This is the lane that gives a machine with no desktop live capture.
+#
+# The dialog is yad (GTK3), not zenity: zenity 4.x is GTK4, and a GTK4
+# application inside a bare Xvfb session was observed never registering on the
+# private accessibility bus (its pid never appears among the bus connections),
+# while GTK3 applications in the same sandbox register immediately. The lane
+# needs an app that provably joins the bus, so GTK3 it is.
+if [ "${1:-}" = "--headless-check" ]; then
+  REPO="$(cd "$(dirname "$0")/.." && pwd)"
+  for cmd in Xvfb dbus-run-session yad node; do
+    command -v "$cmd" >/dev/null 2>&1 || { echo "headless: $cmd is not installed - install it and re-run" >&2; exit 1; }
+  done
+  [ -x /usr/libexec/at-spi-bus-launcher ] || { echo "headless: /usr/libexec/at-spi-bus-launcher is missing" >&2; exit 1; }
+  [ -f "$REPO/daemon/dist/main.mjs" ] || { echo "headless: daemon is not built - run pnpm turbo run build first" >&2; exit 1; }
+
+  HEADLESS_DISPLAY=":97"
+  Xvfb "$HEADLESS_DISPLAY" -screen 0 1024x768x24 -nolisten tcp 2>/dev/null &
+  XVFB_PID=$!
+  trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT
+  sleep 1
+
+  # Everything below runs inside a PRIVATE session bus: the a11y bus is
+  # launched into it, the GTK app registers there, and the daemon reads from
+  # it. The real desktop's buses are never touched. WAYLAND_DISPLAY is
+  # stripped so GTK cannot prefer the real compositor over the virtual X
+  # display. STATUS is captured with || so set -e cannot swallow the exit code.
+  env -u WAYLAND_DISPLAY DISPLAY="$HEADLESS_DISPLAY" dbus-run-session -- bash -c '
+    set -euo pipefail
+    /usr/libexec/at-spi-bus-launcher --launch-immediately --a11y=1 >/dev/null 2>&1 &
+    LAUNCHER_PID=$!
+    sleep 1.5
+    yad --title "M1 demo window" --text "M1 demo window" --button OK >/dev/null 2>&1 &
+    YAD_PID=$!
+    sleep 3
+    STATUS=0
+    node "'"$REPO"'/daemon/dist/main.mjs" --backend atspi --query "OK" || STATUS=$?
+    kill "$YAD_PID" "$LAUNCHER_PID" 2>/dev/null || true
+    exit "$STATUS"
+  '
+  echo "headless: a real element was read with no monitor attached"
+  exit 0
+fi
+
 # Preconditions: fail loudly rather than continue.
 command -v node >/dev/null 2>&1 || { echo "apply: node is not on PATH" >&2; exit 1; }
 [ -n "${XDG_RUNTIME_DIR:-}" ] || { echo "apply: XDG_RUNTIME_DIR is not set" >&2; exit 1; }

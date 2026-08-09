@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LoopbackBackend } from "../backends/loopback.js";
+import { registry } from "../backends/registry.js";
 import { handleRequest } from "../server.js";
 
 // Anything beyond observe is refused with the check named (ADR-0019:
@@ -8,7 +8,7 @@ import { handleRequest } from "../server.js";
 // method does - B11 will pin its timing when M2 lands one.
 
 describe("the daemon refuses anything beyond observe", () => {
-  const backend = new LoopbackBackend();
+  const backend = registry.replay();
 
   it("refuses a method the schema does not define, naming the effect-class gate", async () => {
     const response = await handleRequest({ type: "request", id: 1, method: "editElement", params: {} }, backend);
