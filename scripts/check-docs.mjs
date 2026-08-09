@@ -7,15 +7,23 @@
  * ships no Python and a gate should not be the one thing that drags a second
  * runtime into CI (ADR-0030).
  *
- * Three checks:
+ * Three checks, four failure modes — `index` reports both a missing entry and a
+ * gap or duplicate in the ADR numbering, and each was proven to fail on purpose
+ * before the Python original was deleted:
  *   links     every relative markdown link resolves to a file on disk
- *   index     every ADR file is listed in the ADR index, and vice versa
+ *   index     every ADR file is listed in the ADR index, and vice versa,
+ *             and the numbering is contiguous
  *   coverage  every numbered doc named in the README exists
+ *
+ * Known limits, both of which fail loudly rather than passing vacuously: a link
+ * target containing a closing parenthesis is truncated at it, and an unclosed
+ * code fence stops fence-stripping so its remaining content is read as prose.
+ * Either produces a reported dead link, never a silent skip.
  *
  * Exit 0 when clean, 1 with a report otherwise.
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -29,12 +37,18 @@ const FENCE = /```[\s\S]*?```/g;
 // five hundred dependency READMEs and buries any real problem.
 const SKIP_DIRS = new Set(['.git', '.mastracode', 'node_modules']);
 
-function markdownFiles(dir = ROOT, found = []) {
+// Symlinks are followed rather than skipped, so a linked-in directory of
+// documents is still checked; `seen` keeps a cycle from looping forever.
+function markdownFiles(dir = ROOT, found = [], seen = new Set()) {
+  const real = realpathSync(dir);
+  if (seen.has(real)) return found;
+  seen.add(real);
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name)) markdownFiles(join(dir, entry.name), found);
+    const path = join(dir, entry.name);
+    if (statSync(path).isDirectory()) {
+      if (!SKIP_DIRS.has(entry.name)) markdownFiles(path, found, seen);
     } else if (entry.name.endsWith('.md')) {
-      found.push(join(dir, entry.name));
+      found.push(path);
     }
   }
   return found.sort();

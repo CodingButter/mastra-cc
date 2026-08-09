@@ -38,9 +38,12 @@ place of.
 
 The prototype's stated failure mode was also wrong, in a way worth recording. Its source
 claimed concurrent use causes *silent data corruption*. Measured: two or more concurrent
-threads **abort the process** with SIGTRAP, deterministically, over 8 consecutive runs and
-reproduced on a second machine with a different session type and a different Node version.
-It is a loud crash, not silent corruption.
+threads **abort the process** with SIGTRAP, deterministically, over 8 consecutive runs
+(2/3/4/8 threads, twice each) and reproduced on a second machine — X11 rather than Wayland,
+different desktop session, different hardware. It is a loud crash, not silent corruption.
+The spike was Python against `libatspi`, so no Node version enters this measurement; an
+earlier draft of this record said one did, which was an axis of variation that did not
+exist.
 
 ## Decision
 
@@ -55,9 +58,15 @@ It is a loud crash, not silent corruption.
    this is expected to hold on Windows and macOS — **expected, not measured.** Every
    receipt below was taken on Linux, and clause 4 applies to this claim as much as to the
    accessibility one.
-3. **The single-threaded requirement survives**, for a better reason than it was given.
-   Concurrency against the accessibility layer is not a corruption risk to mitigate — it is
-   a deterministic process abort. Serialise, and the failure cannot occur.
+3. **The single-threaded requirement survives — as a design choice, on evidence that does
+   not fully transfer.** The measured abort is `libatspi`'s behaviour, reached through
+   Python. Clause 1 says this daemon loads neither: it speaks D-Bus directly. **What a raw
+   D-Bus client does under concurrent access is therefore unmeasured**, and inheriting the
+   receipt would be the exact analogy clause 4 forbids for Windows and macOS. The rule is
+   kept anyway, for two reasons that stand on their own: one owner for accessibility access
+   is what makes an audit record attributable, and the downside of serialising is latency
+   while the downside of being wrong is a process abort. **M1 owes a measurement here** —
+   the same spike, pointed at the Node route.
 4. **Windows and macOS are unresolved and marked as such.** UI Automation is a COM API and
    the macOS Accessibility API is Objective-C; both are reachable from Node through a
    native addon, and **neither has been run**. They are recorded as read-not-verified. This
@@ -143,5 +152,6 @@ policy rather than two. That is
   would have "proved" subscription using ambient chatter.
 - [is the accessibility binding thread-safe](../proofs/is-the-accessibility-binding-thread-safe.md)
   — deterministic SIGTRAP abort at two or more threads, 8 runs, reproduced on a second
-  machine across different session types and runtime versions. A threading claim resting on
+  machine with a different session type, desktop and hardware. Measured through `libatspi`,
+  which this daemon does not load — see clause 3. A threading claim resting on
   one machine is one machine's claim.

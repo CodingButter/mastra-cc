@@ -9,7 +9,13 @@
 > single-thread rule below is **confirmed and strengthened** — but its stated failure mode
 > was wrong. Concurrent use does not silently corrupt data; it aborts the process with
 > SIGTRAP, deterministically, on two machines
-> ([is the accessibility binding thread-safe](../proofs/is-the-accessibility-binding-thread-safe.md)).
+> ([is the accessibility binding thread-safe](../proofs/is-the-accessibility-binding-thread-safe.md))
+> — measured through `libatspi`, which the Node daemon does not load, so that receipt is
+> owed again on the new route ([ADR-0030](0030-the-daemon-is-one-node-process.md) clause 3).
+>
+> **Nothing below is an instruction any more.** Clauses that died with the language are
+> struck through in place rather than deleted, so the record still shows what was believed
+> and what it cost. Read this file as history; read ADR-0030 for what to build.
 **Carried forward from the prototype. Every clause below was paid for.**
 
 > **Scope, corrected.** This record describes **the Linux backend**, not "the daemon" in
@@ -40,8 +46,8 @@ The counter-argument — write the daemon in a compiled language — was conside
 **The daemon is Python. Five rules, all enforced by tests or by the setup script, not by memory:**
 
 1. **One thread.** A single event loop owns all accessibility access. Any work that must happen elsewhere is handed off by queue and never touches an accessibility object.
-2. **The default GLib main context.** Registering elsewhere loses events silently. A test asserts the context used at registration.
-3. **`--system-site-packages`**, created by `infra/apply.sh`, never by a hand-typed `python -m venv`.
+2. ~~**The default GLib main context.** Registering elsewhere loses events silently. A test asserts the context used at registration.~~ — **dead with the language.** There is no GLib main context in a Node daemon; the rule it encoded, that one owner registers for events, survives in clause 1.
+3. ~~**`--system-site-packages`**, created by `infra/apply.sh`, never by a hand-typed `python -m venv`.~~ — **dead with the language.** There is no interpreter and no virtual environment to configure.
 4. **Two test lanes.** `--no-live` runs everywhere and is what CI runs. The live lane requires a display and is what proof artifacts run under. A live-only test must be marked, because the alternative is an interpreter abort that looks like a crashed runner.
 5. **Capability is probed, never inferred from a settings key.** A refusal cites the probe result. See [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md).
 

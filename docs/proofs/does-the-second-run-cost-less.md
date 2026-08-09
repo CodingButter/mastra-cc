@@ -14,7 +14,8 @@ obtain, and the substitution is bookmarked against Q03 in
 specifically: the *mutation* that drives the recovery curve was one I applied
 myself, so it is representative of interface drift only to the extent that my
 guess about drift is representative. Measured 2026-08-09 on Linux (Ubuntu 24.04,
-Wayland, Node 25.2.1), planning model `deepseek-v4-flash`.
+Wayland, Node 25.2.1), planning model `deepseek-chat` (served as
+`deepseek-v4-flash`).
 
 | run | steps | tokens | wall-clock (ms) |
 |---|---|---|---|
@@ -114,5 +115,7 @@ node spikes/exec/measure.mjs --runs cold --simulate-failure   # refuses: partial
 node spikes/exec/measure.mjs --runs warm --no-model           # refuses: fabricated zero
 ```
 
-Model in the planning path: `deepseek-chat`, 9 calls,
-3780 tokens total across the whole measurement.
+Model in the planning path: requested as `deepseek-chat`, which the API reports
+serving as `deepseek-v4-flash` — both names appear in this document and they are
+the same path, an alias and the model behind it. 9 calls, 3780 tokens total
+across the whole measurement.

@@ -32,6 +32,26 @@ produced the same result: control exit 0, concurrent exits `-5` on both repeats.
 A crash reproducible on one machine could be that machine's problem; on two
 unlike machines it is the library's behaviour.
 
+## What this measurement does *not* establish
+
+The diagnostic names a **connection** failure, not a corrupted read. So the
+mechanism consistent with this evidence is *concurrent connection setup aborts
+the process* — not *concurrent use of an established connection is unsafe*. The
+control does not separate the two, because one worker thread opens one
+connection and the failure appears at the second.
+
+That distinction is load-bearing rather than pedantic. This daemon speaks D-Bus
+directly and loads no `libatspi`
+([ADR-0030](../02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 1),
+and a D-Bus client opening one socket per connection is ordinary practice. **The
+abort measured here is a property of the C library's connection setup, and it
+cannot be assumed to transfer to the route being built.**
+
+The experiment that separates them: establish every connection first, confirm a
+sequential read on each, and only then read concurrently. If that survives, the
+hazard is setup and not use. M1 owes it, on the Node route — recorded as an owed
+measurement in ADR-0030 clause 3.
+
 ## Why the control run is the important half
 
 A crash on its own proves nothing about concurrency — it could mean the binding

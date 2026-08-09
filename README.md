@@ -28,7 +28,7 @@ Every document here exists to make one of those families structurally impossible
 |---|---|
 | [00-PRODUCT.md](docs/00-PRODUCT.md) | What this is, who it is for, and what it refuses to become |
 | [01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) | The three layers, every boundary, and who owns what |
-| [02-DECISIONS/](docs/02-DECISIONS/README.md) | Twenty-six ADRs: 0001-0016 back-filled from prototype evidence, 0017 onward forward decisions |
+| [02-DECISIONS/](docs/02-DECISIONS/README.md) | Thirty-two ADRs: 0001-0016 back-filled from prototype evidence, 0017-0026 forward decisions, 0027-0032 forced by what M0.5 measured |
 | [03-LESSONS.md](docs/03-LESSONS.md) | What went wrong, categorised, and the rule each failure buys |
 | [04-INTEGRATION-PLAN.md](docs/04-INTEGRATION-PLAN.md) | How this drops into the Mastra monorepo without a rewrite |
 | [05-TEST-STRATEGY.md](docs/05-TEST-STRATEGY.md) | Boundary pins, mutation tests, proof artifacts, the live lane |
@@ -66,7 +66,7 @@ Every document here exists to make one of those families structurally impossible
                             │  socket keyed on schema digest
 ┌───────────────────────────▼─────────────────────────────────┐
 │  DAEMON — the only process that touches the desktop.        │
-│  Python, single-threaded, accessibility tree in and out.    │
+│  Node, single-threaded, accessibility tree in and out.      │
 └─────────────────────────────────────────────────────────────┘
 ```
 

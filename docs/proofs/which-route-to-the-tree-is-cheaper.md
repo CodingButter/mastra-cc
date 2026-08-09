@@ -47,6 +47,13 @@ expose it. This is exactly the kind of number that gets quoted later as though
 it meant something, so it is flagged rather than averaged. It does not affect
 the timing result, which is what this artifact is for.
 
+**It does affect M1**, and that is why it stays open rather than being filed as
+trivia. If a locator strategy is built against whichever count is the lower one
+and the difference turns out to be real controls rather than double-counting,
+the strategy cannot address 41 things that exist. The discriminating check is
+cheap — compare the two sets by identity instead of by count — and belongs to
+whichever milestone first resolves an element for real.
+
 ## Why the gap is structural rather than incidental
 
 The platform route is a walk: every node is a separate call across a message

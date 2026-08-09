@@ -15,7 +15,7 @@
 **Deliverables:** the nine documents in `docs/`, the ADR series in `docs/02-DECISIONS/`, `README.md`, and `CONTRIBUTING.md`.
 
 **Exit gate:**
-- [x] Every internal link resolves — `scripts/check-docs.mjs` exits 0 over 27 files.
+- [x] Every internal link resolves — `scripts/check-docs.mjs` exits 0 over 62 files.
 - [x] Every document's Receipts table has at least one entry per non-obvious claim.
 - [x] Jamie has reacted to the three open decisions — all three taken on the recommendation, 2026-08-08. See §"Decisions taken" below.
 

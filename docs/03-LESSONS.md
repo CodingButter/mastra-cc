@@ -15,7 +15,7 @@ The prototype produced 332 commits in seven days across as many as nineteen para
 | Signal | Number |
 |---|---|
 | Merge commits, out of 332 | 106 |
-| Revisions of the single most-churned file | 34 (`desktop_service/server.py`) |
+| Revisions of the single most-churned file | 35 (`desktop_service/server.py`) |
 | Revisions of the file declared "frozen" on day one | 23 (`protocol/schema.json`) |
 | Copies of the same seven live modules | 3 |
 | Commits prefixed `fix:` | 29 |

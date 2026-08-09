@@ -1,6 +1,6 @@
 # Proofs
 
-Sixteen measurements taken during M0.5, each answering a question in
+Seventeen measurements taken during M0.5, each answering a question in
 [09-QUESTIONS.md](../09-QUESTIONS.md) that could not be answered by argument.
 
 ## The convention
