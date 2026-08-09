@@ -21,7 +21,29 @@
 
 **Status:** complete, 2026-08-08. The verify pass caught three of its own factual errors before it closed (the schema-freeze count, the number of operation classes, and two churn figures), which is the only reason to trust the rest — see [05-TEST-STRATEGY.md](05-TEST-STRATEGY.md) on gates being proved by failing.
 
-**M1 is unblocked.**
+**M0.5 is unblocked.**
+
+---
+
+## M0.5 — Research
+
+**Goal:** answer, or knowingly defer, every question whose answer would change what M1 builds — before M1 builds it.
+
+**Why this exists.** It was inserted 2026-08-08, after M0 closed and before any code. Several decisions taken that day rest on beliefs that have not been probed, and two of them could *delete* work rather than add it. Building first and discovering second is precisely how the prototype rewrote one module thirty-five times. [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md) rule 5 already says capability is probed and never inferred; this milestone applies that rule to the plan itself.
+
+**Deliverables:** the twenty questions in [09-QUESTIONS.md](09-QUESTIONS.md), each closed as *answered* (with a receipt) or *bookmarked* (with the specific source where the answer lives). Findings written into the documents where the work will happen — an amended ADR, a new ADR, or a correction — never left in a spike's output.
+
+**This milestone writes code, and none of it survives.** Spikes are throwaway by construction. If a spike's code starts to look reusable, that is the signal that we have stopped researching and started building.
+
+**Exit gate:**
+- [ ] Every question in [09-QUESTIONS.md](09-QUESTIONS.md) is closed, with its own stated requirement met.
+- [ ] `scripts/check-docs.py` exits 0.
+- [ ] Every decision a finding invalidated has been **superseded in writing**, not edited in place.
+- [ ] A cold reader — a person, or a session with no memory of these conversations — can read `docs/` and begin M1 without asking a question.
+
+**Discipline clause:** no new ADR during this milestone unless a finding forces one. Wanting to write one because of a good idea is the signal that we have drifted from converging back to generating.
+
+**The two that can remove work,** and therefore go first: **Q01** (whether Chromium enables accessibility on its own, which would delete most of [ADR-0020](02-DECISIONS/0020-granting-an-application-is-a-transaction-with-a-rollback.md)) and **Q07/Q08** (whether the daemon can be TypeScript, which would delete the Python boundary and most of [04-INTEGRATION-PLAN.md §4](04-INTEGRATION-PLAN.md)).
 
 ---
 
@@ -180,13 +202,15 @@ Named so they are not mistaken for oversights, and so nobody re-derives them as 
 | Item | When |
 |---|---|
 | Orb visual design beyond a legible face | after M6 |
-| Phone client | after M6 |
+| Phone client, as a full client | after M6 |
 | Node-based skill editor (prototype issue #189) | after M7; needs the dashboard's React Flow surface |
 | Windows port (prototype issue #16) | after M8 |
 | App-native integration, compositor access, vision, raw input | deferred tiers; [01-ARCHITECTURE.md §8](01-ARCHITECTURE.md) |
 | Launch-an-application tool (prototype issue #183) | needs its own decision; the protocol method exists, the minted tool does not |
 
 **The orb line is deliberate.** Four consecutive commits refined the prototype's orb — glass, wisps, smoke, reflection — in a single night, before the north star sentence worked. Visual work is scheduled after M6, on purpose.
+
+**The phone line was corrected, 2026-08-08.** The phone *client* remains deferred. The **notification path is not**, and it has been promoted out of this table into M6. [ADR-0022](02-DECISIONS/0022-failure-to-act-is-harm-we-caused.md) makes reaching the user a safety mechanism rather than a convenience: if every protection must fail toward informing, then the thing that does the informing is load-bearing, and a milestone that can complete a task without being able to say so has not met the bar. M6 must therefore ship at least a stubbed notification path and a surface that shows a task is still running with its last checkpoint. Whether the person then answers from a phone, and how their answer is proven to come from them, is [ADR-0023](02-DECISIONS/0023-the-phone-is-a-consent-surface.md) and stays after M6.
 
 ---
 
@@ -198,7 +222,9 @@ Three questions were held open for Jamie while the documents were written. He to
 2. **Vite plus the Mastra component library from commit one.** Yes. This was the direction on 2026-08-07 that never landed because the migration became a gate on itself. Known cost: `lucide-react` pins down to the `0.474.x` line the library peers on. → [ADR-0011](02-DECISIONS/0011-dashboard-is-vite-with-playground-ui.md), M1 and M4.
 3. **Carry the protocol, the proofs, and the four good documents; retype everything else.** Copying code copies the assumptions that made it wrong. The prototype's generated tool API, security model, architecture notes, and prototype notes are worth migrating rather than re-deriving; no runtime source is copied. → M1 and M2.
 
-**What is still genuinely open** is scheduling, not direction: whether the factory is pinned to a known-good `@mastra/factory` release before M1 or after it. The factory is not needed until M7, so this is not a blocker for starting.
+**Superseded, 2026-08-08 — the factory question.** It previously read that the only open item was *when* to pin the factory. That is no longer the question. The fleet is deferred until the project has dependable tests, settled rules, and quality control, and its remit is narrowed to defects — things that are clearly not the intended behaviour. If there is no intended behaviour yet, the fleet does not get to invent it. → [ADR-0025](02-DECISIONS/0025-the-agent-fleet-only-fixes-defined-behaviour.md), which re-scopes M7.
+
+**Decisions taken later the same day** are recorded as [ADR-0017](02-DECISIONS/0017-platform-backends-live-inside-the-daemon.md) through [ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md): cross-platform from commit one, a neutral protocol vocabulary, capability separated from authority, granting as a transaction, armable standing authority with non-waivable attestation, failure-to-act as harm, the phone as a consent surface, steerable tasks, the fleet's narrowed remit, and the audit log as an access record. Several of them rest on beliefs that M0.5 exists to probe; the ADR index says which kind each record is.
 
 ---
 

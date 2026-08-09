@@ -1,8 +1,11 @@
 # Architecture Decision Records
 
-Every ADR here is **back-filled from evidence** in the `computer-controls` prototype: 332 commits, 127 pull requests, and 105 issues over seven days (2026-08-01 → 2026-08-08). None of them are speculative. Each one names the commit, PR, issue, or measurement that produced it.
-
 Read them before writing code. They are the reason the layout in [01-ARCHITECTURE.md](../01-ARCHITECTURE.md) looks the way it does.
+
+Two kinds of record live here, and the difference matters when you are deciding how much to trust one:
+
+- **0001–0016 are back-filled from evidence** in the `computer-controls` prototype: 332 commits, 127 pull requests, and 105 issues over seven days (2026-08-01 → 2026-08-08). None of them are speculative. Each names the commit, PR, issue, or measurement that produced it.
+- **0017 onward are forward decisions**, taken 2026-08-08 while scoping the rebuild. They are argued from prototype evidence and from source read in a live checkout, but several rest on beliefs that have not been probed yet. Where that is true the record says so, and the belief is filed as a question in [09-QUESTIONS.md](../09-QUESTIONS.md). A forward decision that a spike contradicts gets superseded, not quietly edited.
 
 ## The records
 
@@ -24,6 +27,16 @@ Read them before writing code. They are the reason the layout in [01-ARCHITECTUR
 | [0014](0014-monorepo-droppable-from-commit-one.md) | Monorepo-droppable from commit one | The day-seven reshape cost 179 files and one outage |
 | [0015](0015-one-vertical-slice-before-parallel-agents.md) | One vertical slice before parallel agents | Rework was the constraint, never throughput |
 | [0016](0016-the-face-is-a-managed-window-that-hides-when-told.md) | The face is a managed window that hides when told | Unfocusable on X11 means unmanaged, and "on top" silently stops working |
+| [0017](0017-platform-backends-live-inside-the-daemon.md) | Platform backends live inside the daemon | Hub and clients must not learn which operating system they are on |
+| [0018](0018-the-protocol-speaks-a-neutral-element-vocabulary.md) | The protocol speaks a neutral element vocabulary | A platform's words in the schema become a version bump later |
+| [0019](0019-capability-is-not-authority.md) | Capability is not authority | The operating system's permission is a precondition, never consent |
+| [0020](0020-granting-an-application-is-a-transaction-with-a-rollback.md) | Granting an application is a transaction with a rollback | Runtime edits to launcher entries are facts no test in the tree can see |
+| [0021](0021-standing-authority-is-armable-attestation-is-not-waivable.md) | Standing authority is armable; attestation is not waivable | Prompting for every write is how assistants become babysitting |
+| [0022](0022-failure-to-act-is-harm-we-caused.md) | Failure to act is harm we caused | Every protection must fail toward informing, not toward stopping quietly |
+| [0023](0023-the-phone-is-a-consent-surface.md) | The phone is a consent surface | The decision travels with the person; the authority never leaves the hub |
+| [0024](0024-a-task-in-flight-can-be-steered.md) | A task in flight can be steered | Stop and start are not the only two things a person may want to say |
+| [0025](0025-the-agent-fleet-only-fixes-defined-behaviour.md) | The agent fleet only fixes defined behaviour | If there is no intended behaviour yet, the fleet does not get to invent it |
+| [0026](0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md) | The audit log is an access record; episodes are the narrative | A receipt you can rewrite is not a receipt |
 
 ## Writing a new one
 

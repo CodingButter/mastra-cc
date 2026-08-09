@@ -145,6 +145,29 @@ Each boundary below is a rule, a reason, and a test. If it has no test, it is a 
 | B7 | Generated bindings are reproducible from the schema | CI regenerates and diffs |
 | B8 | No `xdotool`, `wmctrl`, or `uinput` anywhere | source-level test over the whole tree |
 | B9 | No transcriber in any client | source-level test (ADR-0005) |
+| B10 | No platform-specific vocabulary in `protocol/schema.json` | source-level test over the schema (ADR-0018) |
+| B11 | No effect-class operation relies solely on post-hoc enforcement | source-level test over the daemon's dispatch table |
+| B12 | Every dependency carries a permissive licence | CI job over every manifest, against an allowlist |
+
+**B10** keeps a platform's words out of the wire. Each backend owns its own native→neutral
+map, so a role named after one toolkit's widget set cannot leak into a protocol that three
+platforms have to speak. It costs nothing today and saves a version bump later.
+
+**B11** is the enforcement-timing rule, and it is the one most likely to be broken by
+someone being helpful. Permission may be enforced in two places: before a call runs, or on
+the result it returns. Result-time enforcement is legitimate for `observe`, and it is how
+`permitted-unreadable` is reported honestly rather than as absence. It is *illegitimate*
+for `edit`, `activate`, `submit` and `destructive`, because by the time there is a result
+to filter, the effect has already happened. A redacted confirmation does not unsend an
+email. The dispatch table must therefore mark every effect-class operation as
+enforced-before-call, and the test must fail if one is not.
+
+**B12** exists because this is intended to land in an Apache-2.0 tree, so "free" is not the
+test — compatible is. The allowlist is MIT, BSD, Apache-2.0 and ISC. Two notes: a
+dependency the operating system already provides and which we merely require, rather than
+ship, is outside the allowlist's reach and should be recorded as such with its reason; and
+a permissive licence on an abandoned project is a different problem that this gate does not
+catch, so adoption records a maintenance note as well as a licence.
 
 Two notes on how to write these, from prototype experience:
 

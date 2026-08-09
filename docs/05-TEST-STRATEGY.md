@@ -25,7 +25,13 @@ The prototype had all six. What it lacked was a written rule about which claim n
 
 A boundary pin is a **source-level test**: it reads the source files of a package as text and asserts a structural property. It is not elegant. It is the only thing that reliably stops a rule from decaying, because it fails on the *shape* of the code rather than on its behaviour.
 
-The pins are the nine boundaries in [01-ARCHITECTURE.md §5](01-ARCHITECTURE.md): daemon-only accessibility imports, no audio in the hub, no credentials in clients, one microphone consumer per client, one transport implementation, the schema gate, generator determinism, no raw-input tools, no transcriber.
+The pins are the twelve boundaries in [01-ARCHITECTURE.md §5](01-ARCHITECTURE.md): daemon-only accessibility imports, no audio in the hub, no credentials in clients, one microphone consumer per client, one transport implementation, the schema gate, generator determinism, no raw-input tools, no transcriber, no platform vocabulary in the schema, no effect enforced after the fact, and no non-permissive dependency.
+
+Three of those are new and are the ones without prototype scar tissue behind them, so they need the most care in the writing:
+
+- **B10 — no platform vocabulary in the schema.** Reads `protocol/schema.json` and asserts no identifier matches a list of platform and toolkit names. Rule 4 below applies: pin the differing *set*, so that adding a platform's word fails loudly rather than slipping in beside the others.
+- **B11 — no effect enforced after the fact.** The only pin here that is about *timing* rather than presence. It reads the daemon's dispatch table and asserts that every operation of class `edit`, `activate`, `submit` or `destructive` is marked enforced-before-call. Enforcement on the *result* is permitted only for `observe`. The reasoning is not stylistic: once a result exists, the effect has happened, and filtering the response does not unsend the email. This pin is worth a mutation (§3) — flip one effect-class operation to result-time enforcement and confirm it goes red.
+- **B12 — every dependency carries a permissive licence.** Reads every manifest in the tree against an allowlist of MIT, BSD, Apache-2.0 and ISC. Rule 3 below is the whole point of it: this is a manifest check by construction, because a licence problem is never visible in source. Two known holes to state rather than pretend away — a system library we require but do not ship is out of its reach and needs a recorded exemption with a reason, and an abandoned-but-permissive project passes cleanly, which is why adoption records a maintenance note as well as a licence.
 
 ### Four rules for writing one
 

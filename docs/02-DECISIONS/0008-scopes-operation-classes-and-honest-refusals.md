@@ -44,6 +44,53 @@
 
 **Cost, accepted.** Attestation on `submit` adds a round trip and can be annoying on a chain of small submits. The alternative — an agent that can send email without describing the email — is not an alternative.
 
+## Amendments
+
+**2026-08-08 — three per-application states, never collapsed to two.** Rule 6 above says
+denial is invisibility. That is still true, but it hid a third state the prototype never
+named. An application is in exactly one of:
+
+| State | Meaning | What the person sees |
+|---|---|---|
+| `invisible` | Not granted. | Nothing. It does not appear, is not nameable, is not queryable. |
+| `permitted-unreadable` | Granted, but its tree could not be read. | An honest report naming the check that failed and what would change it. |
+| `readable` | Granted and readable. | Normal operation. |
+
+Collapsing `permitted-unreadable` into either neighbour is a violation of the
+"not a thing that pretends" non-goal in [00-PRODUCT.md](../00-PRODUCT.md). Reporting it as
+invisible lies about installation; reporting it as readable lies about capability. The
+prototype got this right once, by reporting an unreadable browser as *running but
+unreadable* (commit 6657915), and that behaviour is now required rather than incidental.
+
+A fourth state, `unknown`, exists before an application has ever been observed. It is not
+a failure and must not be presented as one — see Q02 in
+[09-QUESTIONS.md](../09-QUESTIONS.md), which is open on whether capability can be
+determined without launching.
+
+**2026-08-08 — what the permission surface actually grants.** The dashboard offers a
+per-application **View / Interact** control, which maps onto this ADR's classes rather
+than replacing them:
+
+- **View** grants `observe`.
+- **Interact** grants `edit` and `activate`.
+- **Neither grants `submit`.** `submit` is never conferred by the toggle. It is either
+  requested per act, or armed deliberately per application under
+  [ADR-0021](0021-standing-authority-is-armable-attestation-is-not-waivable.md), which
+  moves the human's consent earlier in time without removing it — and which does not
+  waive the attestation in rule 2 above, because attestation is the machine verifying
+  itself, not the human being asked.
+- `destructive` is likewise never conferred by a toggle.
+
+**2026-08-08 — authority is checked before capability.** Split out into its own record,
+[ADR-0019](0019-capability-is-not-authority.md): the operating system's permission is a
+precondition, never consent. A refusal caused by missing user authority must never be
+reported as an operating-system limitation, and the authority check runs first so that
+the two can never be confused.
+
+**Consistency note.** [00-PRODUCT.md](../00-PRODUCT.md) §7 describes four scopes and omits
+`destructive`. The schema and this record enumerate five. The product document is the
+simplification for a reader; this record and `protocol/schema.json` are normative.
+
 ## Evidence
 
 | Claim | Source |

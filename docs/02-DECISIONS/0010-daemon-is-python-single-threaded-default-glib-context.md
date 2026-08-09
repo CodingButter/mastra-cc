@@ -1,8 +1,13 @@
 # ADR-0010 — The daemon is Python, single-threaded, on the default GLib main context
 
-**Status:** accepted
+**Status:** accepted, **re-scoped 2026-08-08** — see Amendments.
 **Date:** 2026-08-08
 **Carried forward from the prototype. Every clause below was paid for.**
+
+> **Scope, corrected.** This record describes **the Linux backend**, not "the daemon" in
+> general. The distinction did not exist when it was written because only one platform
+> did. See the Amendments section before applying any rule here to Windows or macOS, and
+> note that two of its clauses are now open questions rather than settled law.
 
 ## Context
 
@@ -33,6 +38,41 @@ The counter-argument — write the daemon in a compiled language — was conside
 5. **Capability is probed, never inferred from a settings key.** A refusal cites the probe result. See [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md).
 
 **One additional rule from operational experience:** the daemon's own module layout should keep backends small and separately testable. The prototype's single largest churn source was its server module at 35 revisions, with the AT-SPI backend at 24 — the two files that everything else pushed changes into. Splitting transport, dispatch, scope enforcement, and backend into separate modules from the start is the cheap version of that lesson.
+
+## Amendments
+
+**2026-08-08 — this is the Linux backend, not the daemon.** When this was written the
+daemon and its only backend were the same object. They are not any more:
+[ADR-0017](0017-platform-backends-live-inside-the-daemon.md) puts a platform seam inside
+the daemon, so the rules above apply to what lives *behind* that seam on Linux.
+
+The underlying principle does generalise, in three shapes. Each platform's accessibility
+layer has a threading discipline that is not optional and that fails quietly rather than
+loudly when broken: Linux wants the default GLib main context, Windows UI Automation is
+apartment-threaded, macOS wants the main run loop. Same rule, three expressions. Rules 3
+and 4 — `--system-site-packages`, and the two test lanes — are Linux-specific
+consequences of the bindings being distribution packages, and do not transfer.
+
+Rule 5, capability is probed and never inferred, is **not** platform-specific and applies
+everywhere without amendment.
+
+**2026-08-08 — two clauses are now open questions, not settled law.** Both are filed in
+[09-QUESTIONS.md](../09-QUESTIONS.md) and either could invalidate part of this record:
+
+- **Q07** asks whether a maintained, permissively licensed TypeScript path to each
+  platform's accessibility API exists. "Python" in the title is a consequence of the
+  bindings being mature in Python and immature elsewhere. If that premise fails, the
+  language choice fails with it — and a native Node addon counts, because it still ships
+  as a registry package inside the monorepo, which a separate Python process does not.
+- **Q08** asks whether the single-threaded default-main-context requirement is a property
+  of the C library or of the AT-SPI protocol underneath it. Accessibility on Linux is a
+  message bus protocol; the library is a convenience over it. If the constraint lives in
+  the wrapper rather than the wire, rules 1 and 2 are a workaround for a dependency we
+  were not obliged to take.
+
+Neither is being acted on yet. They are recorded here so that nobody reads this record as
+closed when two of its load-bearing clauses are hypotheses that happen to have been
+expensive to learn.
 
 ## Consequences
 

@@ -28,19 +28,20 @@ Every document here exists to make one of those families structurally impossible
 |---|---|
 | [00-PRODUCT.md](docs/00-PRODUCT.md) | What this is, who it is for, and what it refuses to become |
 | [01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) | The three layers, every boundary, and who owns what |
-| [02-DECISIONS/](docs/02-DECISIONS/README.md) | Sixteen ADRs, each back-filled from prototype evidence |
+| [02-DECISIONS/](docs/02-DECISIONS/README.md) | Twenty-six ADRs: 0001-0016 back-filled from prototype evidence, 0017 onward forward decisions |
 | [03-LESSONS.md](docs/03-LESSONS.md) | What went wrong, categorised, and the rule each failure buys |
 | [04-INTEGRATION-PLAN.md](docs/04-INTEGRATION-PLAN.md) | How this drops into the Mastra monorepo without a rewrite |
 | [05-TEST-STRATEGY.md](docs/05-TEST-STRATEGY.md) | Boundary pins, mutation tests, proof artifacts, the live lane |
 | [06-OPERATIONS.md](docs/06-OPERATIONS.md) | Running the factory: dispatch, the keeper, board vocabulary, pinned versions |
 | [07-ROADMAP.md](docs/07-ROADMAP.md) | Milestones, each with a gate that can fail |
 | [08-GLOSSARY.md](docs/08-GLOSSARY.md) | Exact vocabulary. Several prototype bugs were vocabulary bugs |
+| [09-QUESTIONS.md](docs/09-QUESTIONS.md) | What we still do not know, and what counts as finding out |
 
 **If you are a fresh session with fifteen minutes:** read 00, then 01, then the [ADR index](docs/02-DECISIONS/README.md), then [CONTRIBUTING.md](CONTRIBUTING.md). That is enough to make a correct first change.
 
 **If you are about to write code:** you also need [05-TEST-STRATEGY.md](docs/05-TEST-STRATEGY.md) and [07-ROADMAP.md](docs/07-ROADMAP.md), because the roadmap says which milestone you are in and the milestone says which gate must pass.
 
-**Where the work actually starts.** M0 (these documents) closed on 2026-08-08 with all three open decisions taken — they are recorded under [§Decisions taken](docs/07-ROADMAP.md) and you do not need to re-open them. **The next commit belongs to [M1 — Skeleton](docs/07-ROADMAP.md): repository layout, toolchain, and gates, with no features at all.** M1 is not finished when the gates pass; it is finished when each gate has been *made to fail on purpose* and observed going red.
+**Where the work actually starts.** M0 (these documents) closed on 2026-08-08. **The next work belongs to [M0.5 — Research](docs/07-ROADMAP.md):** answering the twenty questions in [09-QUESTIONS.md](docs/09-QUESTIONS.md) before the skeleton is built, because several decisions taken that day rest on beliefs nobody has probed, and two of them could delete work rather than add it. That milestone writes code and keeps none of it. [M1 — Skeleton](docs/07-ROADMAP.md) follows, and M1 is not finished when its gates pass; it is finished when each gate has been *made to fail on purpose* and observed going red.
 
 ---
 
