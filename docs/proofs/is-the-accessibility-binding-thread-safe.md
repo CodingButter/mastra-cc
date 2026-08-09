@@ -14,7 +14,7 @@ entire single-threaded shape rests on it.
 |---|---|
 | Control — **one** worker thread | exit 0, 60 successful reads |
 | Experiment — **8** worker threads | exit -5 on all 2 repeats |
-| Diagnostic | `(process:61082): dbind-ERROR **: 02:47:46.719: AT-SPI: Couldn't connect to accessibility bus. Is at-spi-bus-launcher running?` |
+| Diagnostic | `(process:61464): dbind-ERROR **: 02:50:48.065: AT-SPI: Couldn't connect to accessibility bus. Is at-spi-bus-launcher running?` |
 
 Concurrent access does not silently corrupt anything. It **aborts the process
 immediately and deterministically**, before a single read completes, with a
@@ -25,6 +25,12 @@ documented elsewhere and did not connect to this claim.
 The boundary is sharp. One worker thread reads the desktop happily. Two do not.
 That was checked at two, three, four and eight threads, twice each, and the
 result never varied.
+
+**Confirmed on a second machine.** The same spike was run on a different host —
+X11 rather than Wayland, a different desktop session, different hardware — and
+produced the same result: control exit 0, concurrent exits `-5` on both repeats.
+A crash reproducible on one machine could be that machine's problem; on two
+unlike machines it is the library's behaviour.
 
 ## Why the control run is the important half
 

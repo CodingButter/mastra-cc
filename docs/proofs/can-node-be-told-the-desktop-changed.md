@@ -18,16 +18,16 @@ nothing, and would report the same thing if subscription were completely broken.
 |---|---|
 | Registered with the accessibility registry | yes |
 | Caused an event on purpose | yes |
-| Ambient signals in a quiet 3s window beforehand | 12 |
-| Signals received after the window opened | 682 |
+| Ambient signals in a quiet 3s window beforehand | 18 |
+| Signals received after the window opened | 639 |
 | **Traceable to this spike's own window** | **6** |
 | A window event among those | no |
-| Time to first signal | 134ms |
+| Time to first signal | 138ms |
 | First attributable signal | `Object.StateChanged` |
 
 The ambient count is the reason the attributable count exists. An idle desktop
-emits **12 accessibility signals in three seconds** with nobody
-touching it, and 682 arrived during this run against
+emits **18 accessibility signals in three seconds** with nobody
+touching it, and 639 arrived during this run against
 **6** that can actually be traced to the window this spike
 opened. "Signals arrived while the window was open" is therefore not evidence of
 anything at all, which is the entire reason for the attribution column.

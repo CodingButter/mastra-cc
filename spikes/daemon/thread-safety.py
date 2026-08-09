@@ -164,6 +164,12 @@ The boundary is sharp. One worker thread reads the desktop happily. Two do not.
 That was checked at two, three, four and eight threads, twice each, and the
 result never varied.
 
+**Confirmed on a second machine.** The same spike was run on a different host —
+X11 rather than Wayland, a different desktop session, different hardware — and
+produced the same result: control exit 0, concurrent exits `-5` on both repeats.
+A crash reproducible on one machine could be that machine's problem; on two
+unlike machines it is the library's behaviour.
+
 ## Why the control run is the important half
 
 A crash on its own proves nothing about concurrency — it could mean the binding

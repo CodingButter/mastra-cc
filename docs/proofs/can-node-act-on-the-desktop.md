@@ -32,8 +32,16 @@ belief — so the last row checks specifically for that behaviour rather than
 assuming honesty.
 
 Verification here is by content, not by return code: the text is read back and
-compared, and the button press is confirmed by the application leaving the
+compared, and the button press is confirmed by the window leaving the
 accessibility desktop.
+
+**The clamping hazard is real and was reproduced.** An insert at offset 99999
+into a nine-character field did not fail — the toolkit clamped the offset,
+performed the write, and reported success. The prototype documented this
+behaviour; this is it happening. A daemon that treats a successful return as
+evidence of a correct write will therefore be wrong in exactly the cases where
+being wrong matters most: text landing somewhere other than where it was aimed,
+with a success code to prove it went well.
 
 ## The trap this spike walked into
 
