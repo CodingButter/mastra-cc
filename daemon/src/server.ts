@@ -48,6 +48,13 @@ export const ALREADY_RUNNING_REFUSAL =
 // leak argv[0], which is platform vocabulary the wire must never carry (B10).
 export const COULD_NOT_START_REFUSAL = "the application could not be started";
 
+// A backend that throws while serving a method becomes THIS constant on the
+// wire - never the raw error (the M2.1 lesson, commit 98ac7fd: a system error
+// leaks transport and platform vocabulary). For the browser backend this is
+// the everyday case, not the exotic one: an unreachable debugging endpoint is
+// a browser this session cannot read.
+export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this session's backend";
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -67,9 +74,21 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
 const POLL_BUDGET_MS = 10_000; // how long a launched app gets to become readable
 const POLL_INTERVAL_MS = 250;
 
+// A backend read that throws here means "no daemon-visible application by
+// that name" - not a refusal. For the CDP backend that is literally true: a
+// browser without its debug port is invisible to this backend, so unreachable
+// and not-running are the same observation. This tolerance covers BOTH call
+// sites (the pre-spawn already-running check and the post-spawn poll, where a
+// per-tick exception is "not ready yet" within the poll budget) - without it,
+// opening the browser while the browser is down would refuse instead of
+// launching.
 async function findApplication(backend: Backend, name: string): Promise<SemanticElement | undefined> {
-  const { elements } = await backend.queryElements({ role: "application", name });
-  return elements.find((el) => el.role === "application" && normalise(el.name) === normalise(name));
+  try {
+    const { elements } = await backend.queryElements({ role: "application", name });
+    return elements.find((el) => el.role === "application" && normalise(el.name) === normalise(name));
+  } catch {
+    return undefined;
+  }
 }
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
@@ -172,8 +191,10 @@ export async function handleRequest(
   try {
     const result = await serialised<unknown>(() => entry.handler(request.params, backend, launch));
     return { type: "response", id: request.id, result };
-  } catch (error) {
-    return { type: "response", id: request.id, refusal: `backend "${backend.name}" failed: ${(error as Error).message}` };
+  } catch {
+    // Whatever the backend threw stays on this side of the wire; the client
+    // gets one honest constant, never the raw error (98ac7fd's lesson).
+    return { type: "response", id: request.id, refusal: BACKEND_UNREADABLE_REFUSAL };
   }
 }
 
