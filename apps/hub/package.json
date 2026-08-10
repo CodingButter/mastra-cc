@@ -1,0 +1,25 @@
+{
+  "name": "@mastra-cc/hub",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "scripts": {
+    "build": "tsdown",
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "oxlint": "^1.77.0",
+    "tsdown": "^0.22.14",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "^24.10.1",
+    "@mastra-cc/daemon": "workspace:*"
+  },
+  "dependencies": {
+    "@mastra-cc/transport": "workspace:*"
+  }
+}

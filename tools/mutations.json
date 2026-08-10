@@ -1,0 +1,86 @@
+[
+  {
+    "name": "b1-vacuous-guard-removed",
+    "file": "tools/pins/b1.mjs",
+    "find": "if (files.length === 0) fail(\"pin-b1: no files matched - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b5-vacuous-guard-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "if (files.length === 0) fail(\"pin-b5: no files matched - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b8-vacuous-guard-removed",
+    "file": "tools/pins/b8.mjs",
+    "find": "if (files.length === 0) fail(\"pin-b8: no files matched - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b10-vacuous-guard-removed",
+    "file": "tools/pins/b10.mjs",
+    "find": "if (!schemaText.trim()) fail(\"pin-b10: schema is missing or empty - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/b10.test.mjs"
+  },
+  {
+    "name": "freeze-gate-golden-staleness-check-removed",
+    "file": "tools/freeze-gate.mjs",
+    "find": "  problems.push(\"golden fixtures were not updated for this schema change\");",
+    "cwd": "tools",
+    "testFile": "__tests__/freeze-gate.test.mjs"
+  },
+  {
+    "name": "effect-class-gate-name-dropped-from-refusal",
+    "file": "daemon/src/server.ts",
+    "find": "refused by the effect-class gate: ",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "replay-invents-a-reply-for-an-unrecorded-exchange",
+    "file": "daemon/src/backends/replay/index.ts",
+    "find": "      if (reply === undefined) {\n        throw new UnrecordedExchangeError(\n          `no recorded exchange for ${exchangeKey(exchange)} - refusing to invent a reply`,\n        );\n      }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/replay/__tests__/refuses-unrecorded.test.ts"
+  },
+  {
+    "name": "atspi-nfkc-normalisation-dropped",
+    "file": "daemon/src/backends/atspi/names.ts",
+    "find": ".normalize(\"NFKC\")",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/normalisation.test.ts"
+  },
+  {
+    "name": "concurrency-proof-writes-a-table-with-a-missing-duration",
+    "file": "tools/proofs/concurrent-accessibility.mjs",
+    "find": "        if (!Number.isFinite(run.wallMs)) {\n          throw new Error(`partial result: run ${mode} n=${n} rep=${rep} has no duration - writing nothing`);\n        }\n",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/concurrent-accessibility.test.mjs"
+  },
+  {
+    "name": "server-swallows-a-malformed-post-hello-line",
+    "file": "daemon/src/server.ts",
+    "find": "              refusal: 'daemon: a message after hello must be {type:\"request\", id:number, method:string} - refusing a malformed line',\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-malformed-lines.test.ts"
+  },
+  {
+    "name": "transport-dies-on-a-non-json-line",
+    "file": "packages/transport/src/index.ts",
+    "find": "        failAll(new Error(`transport: peer at ${socketPath} sent a non-JSON line - refusing to continue`));\n        socket.destroy();\n        return;\n",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/digest-agreement.test.ts"
+  },
+  {
+    "name": "atspi-ambiguity-refusal-takes-first-match",
+    "file": "daemon/src/backends/atspi/resolve.ts",
+    "find": "  if (candidates.length > 1) return { refusal: ambiguityRefusal(candidates, query) };",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/ambiguity.test.ts"
+  }
+]

@@ -1,10 +1,14 @@
-__pycache__/
-*.pyc
 node_modules/
+dist/
+.turbo/
 
 # Plans, progress and proof scratch. Never committed; also skipped by
-# scripts/check-docs.py, which walks the filesystem rather than the index.
+# scripts/check-docs.mjs, which walks the filesystem rather than the index.
 .mastracode/
 
 # Throwaway browser profiles used by M0.5 spikes.
 spikes/**/.profile*
+
+# Generated from protocol/schema.json - build output, never committed
+# (ADR-0009). The committed record is protocol/golden/.
+packages/protocol-types/

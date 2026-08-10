@@ -1,0 +1,9 @@
+{
+  "name": "@mastra-cc/protocol-types",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "description": "GENERATED from protocol/schema.json - do not edit (ADR-0009)."
+}

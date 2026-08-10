@@ -44,6 +44,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | [0030](0030-the-daemon-is-one-node-process.md) | The daemon is one Node process; Linux does not need Python | Accessibility is plain D-Bus underneath; the binding was a convenience, not a gate |
 | [0031](0031-the-agent-emits-a-plan-a-model-free-interpreter-runs-it.md) | The agent emits a plan; a model-free interpreter runs it | A transcript cannot be reviewed, replayed, or measured |
 | [0032](0032-the-page-layer-is-an-instrument-not-a-gate.md) | The page layer is an instrument, not a gate | Five of eight paths observed — a gate with holes is worse than none |
+| [0033](0033-the-schema-arrives-at-one-point-oh.md) | The schema arrives at 1.0.0, and its introduction goes through its own gate | A gate whose first act is an exemption has taught everyone how to ask for the second one |
 
 ## Writing a new one
 
