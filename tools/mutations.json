@@ -138,5 +138,26 @@
     "find": "    if (!isVisible(this.visibility, productName(version))) {\n      return { elements: [] };\n    }\n",
     "cwd": "daemon",
     "testFile": "src/backends/__tests__/invisibility.test.ts"
+  },
+  {
+    "name": "scope-gate-serves-edit",
+    "file": "daemon/src/server.ts",
+    "find": "  editElement: { effectClass: \"edit\", enforcement: \"before-call\", handler: async () => ({ refusal: EDIT_SCOPE_REFUSAL }) },\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "scope-gate-serves-activate",
+    "file": "daemon/src/server.ts",
+    "find": "  activateElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: async () => ({ refusal: ACTIVATE_SCOPE_REFUSAL }) },\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "scope-gate-serves-submit",
+    "file": "daemon/src/server.ts",
+    "find": "  submitElement: { effectClass: \"submit\", enforcement: \"before-call\", handler: async () => ({ refusal: SUBMIT_SCOPE_REFUSAL }) },\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   }
 ]

@@ -48,6 +48,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | [0034](0034-launch-is-the-first-effect-class-operation.md) | Launch is the first effect-class operation, and B11 arrives with it | Authority before capability, one byte-identical refusal, and the timing pin lands in the same commit as the operation it pins |
 | [0035](0035-the-browser-is-read-through-its-own-protocol.md) | The browser is read through its own protocol, over a hand-rolled channel | One recordable exchange seam over the debugging endpoint - discovery included - so the offline lane replays a real browser; Playwright rejected for hiding the wire |
 | [0036](0036-grants-live-in-a-file-the-daemon-owns.md) | Grants live in a file the daemon owns | Deny-by-default observe visibility from a daemon-local permissions file ∪ session flags ∪ launch permits, enforced inside the walk so an ungranted subtree is never read; the one permitted read is the name |
+| [0037](0037-the-other-three-classes-are-on-the-wire-before-they-are-possible.md) | The other three classes are on the wire before they are possible | schema version 1.2.0 defines editElement/activateElement/submitElement as refused-by-name methods that never touch a backend; attestation required in the contract from day one; classes live in the B11-pinned dispatch table, not the schema |
 
 ## Writing a new one
 

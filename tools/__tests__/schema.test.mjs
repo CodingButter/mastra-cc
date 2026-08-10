@@ -15,8 +15,19 @@ const schemaText = readFileSync(join(repoRoot, "protocol", "schema.json"), "utf8
 const schema = JSON.parse(schemaText);
 
 describe("protocol/schema.json v1", () => {
-  it("declares exactly three methods - the 1.0.0 pair plus 1.1.0's openApplication (ADR-0034) - and no fourth", () => {
-    expect(Object.keys(schema.methods)).toEqual(["queryElements", "attestElement", "openApplication"]);
+  it("declares exactly six methods - the 1.0.0 pair, 1.1.0's openApplication (ADR-0034), and 1.2.0's defined-and-refused trio (ADR-0037) - and no seventh", () => {
+    expect(Object.keys(schema.methods)).toEqual([
+      "queryElements",
+      "attestElement",
+      "openApplication",
+      "editElement",
+      "activateElement",
+      "submitElement",
+    ]);
+  });
+
+  it("makes submitElement's attestation required - waiving it is inexpressible (ADR-0021)", () => {
+    expect(schema.methods.submitElement.params.attestation.required).toBe(true);
   });
 
   it("pins semanticElement.id to the twelve-hex identity pattern", () => {
