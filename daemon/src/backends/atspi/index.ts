@@ -6,6 +6,7 @@ import type {
   SemanticElement,
 } from "@mastra-cc/protocol-types";
 import type { Backend } from "../../backend.js";
+import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { nameMatches } from "./names.js";
@@ -39,12 +40,17 @@ interface NativeRef {
 export class AtspiBackend implements Backend {
   readonly name = "atspi";
   private readonly channel: Channel;
+  // The observe-visibility set (M2.3, ADR-0036): applications not in it are
+  // ABSENT from every answer - their subtrees are never read. Deny-by-default
+  // is this backend's own posture: when no visibility is given, nothing is.
+  private readonly visibility: Visibility;
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
 
-  constructor(channel: Channel) {
+  constructor(channel: Channel, visibility: Visibility = new Set()) {
     this.channel = channel;
+    this.visibility = visibility;
   }
 
   private async children(ref: NativeRef): Promise<NativeRef[]> {
@@ -127,6 +133,20 @@ export class AtspiBackend implements Backend {
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     for (const app of apps) {
+      // The visibility gate (ADR-0036). The application's NAME is the one
+      // permitted read of an ungranted application - you cannot decide
+      // visibility without it - and it is read BEFORE readElement, so an
+      // ungranted application's subtree is never walked, its states never
+      // read, its element never answered.
+      try {
+        if (!isVisible(this.visibility, await this.nameOf(app))) continue;
+      } catch (error) {
+        // an off-tape read under replay is ignorance, and ignorance surfaces
+        // as a refusal - never a skip; a dying app that cannot state its name
+        // cannot be granted, so it is skipped like any dying node
+        if (error instanceof UnrecordedExchangeError) throw error;
+        continue;
+      }
       // depth-first per application, in the order the bus lists them
       const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: app, depth: 0 }];
       let inThisApp = 0;

@@ -10,7 +10,9 @@ import { handleRequest } from "../server.js";
 // timing B11 pins; everything else beyond the schema still dies at the gate.
 
 describe("the effect-class gate", () => {
-  const backend = registry.replay();
+  // visibility mirrors the union main.ts composes at boot: the tape's yad must
+  // be findable or the openApplication handler escapes into a real spawn
+  const backend = registry.replay({ visibility: new Set(["yad"]) });
 
   it("refuses a method the schema does not define, naming the gate", async () => {
     const response = await handleRequest({ type: "request", id: 1, method: "editElement", params: {} }, backend);

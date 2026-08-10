@@ -20,7 +20,9 @@ for (const [name, factory] of Object.entries(registry)) {
   const suite = LIVE_BACKENDS.has(name) && !LIVE ? describe.skip : describe;
   const lane = LIVE_BACKENDS.has(name) ? " (live lane: MASTRA_CC_LIVE=1)" : "";
   suite(`backend "${name}" conforms to the backend interface${lane}`, { timeout: 120_000 }, () => {
-    const backend = factory();
+    // visibility "all": this suite's job is reader conformance, not grant
+    // policy - deny-by-default (ADR-0036) is witnessed by invisibility.test.ts
+    const backend = factory({ visibility: "all" });
 
     it("implements every method the interface names", () => {
       for (const method of BACKEND_METHODS) {

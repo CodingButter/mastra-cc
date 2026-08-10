@@ -35,7 +35,8 @@ describe("the daemon refuses malformed lines loudly instead of swallowing them",
   const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-malformed-")), "daemon.sock");
 
   beforeAll(async () => {
-    server = await startServer({ socketPath, backend: registry.replay() });
+    // visibility "all": this file witnesses wire framing, not grant policy
+    server = await startServer({ socketPath, backend: registry.replay({ visibility: "all" }) });
   });
   afterAll(() => {
     server.close();

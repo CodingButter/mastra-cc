@@ -45,7 +45,10 @@ async function spawnSleep(): Promise<number> {
 }
 
 describe("launch authority", () => {
-  const backend = registry.replay();
+  // visibility mirrors the union main.ts composes at boot (a permit implies an
+  // observe grant); tests here construct backend and LaunchContext separately,
+  // so the tape's yad is granted by hand
+  const backend = registry.replay({ visibility: new Set(["yad"]) });
   const catalogued: LaunchCatalog = { "test-app": { argv: ["sleep", "30"], env: {} } };
 
   it("a: an unpermitted known name and an unknown name refuse byte-identically", async () => {
