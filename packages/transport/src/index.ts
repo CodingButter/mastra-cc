@@ -4,6 +4,8 @@ import {
   SCHEMA_DIGEST,
   type AttestElementParams,
   type AttestElementResult,
+  type OpenApplicationParams,
+  type OpenApplicationResult,
   type QueryElementsParams,
   type QueryElementsResult,
 } from "@mastra-cc/protocol-types";
@@ -35,6 +37,7 @@ interface Response {
 export interface TransportClient {
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult>;
   attestElement(params: AttestElementParams): Promise<AttestElementResult>;
+  openApplication(params: OpenApplicationParams): Promise<OpenApplicationResult>;
   close(): void;
 }
 
@@ -125,6 +128,7 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
   return {
     queryElements: (params) => call("queryElements", params) as Promise<QueryElementsResult>,
     attestElement: (params) => call("attestElement", params) as Promise<AttestElementResult>,
+    openApplication: (params) => call("openApplication", params) as Promise<OpenApplicationResult>,
     close: () => void (socket as Socket).end(),
   };
 }

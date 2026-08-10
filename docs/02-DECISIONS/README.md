@@ -45,6 +45,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | [0031](0031-the-agent-emits-a-plan-a-model-free-interpreter-runs-it.md) | The agent emits a plan; a model-free interpreter runs it | A transcript cannot be reviewed, replayed, or measured |
 | [0032](0032-the-page-layer-is-an-instrument-not-a-gate.md) | The page layer is an instrument, not a gate | Five of eight paths observed — a gate with holes is worse than none |
 | [0033](0033-the-schema-arrives-at-one-point-oh.md) | The schema arrives at 1.0.0, and its introduction goes through its own gate | A gate whose first act is an exemption has taught everyone how to ask for the second one |
+| [0034](0034-launch-is-the-first-effect-class-operation.md) | Launch is the first effect-class operation, and B11 arrives with it | Authority before capability, one byte-identical refusal, and the timing pin lands in the same commit as the operation it pins |
 
 ## Writing a new one
 

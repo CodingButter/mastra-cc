@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -123,6 +123,28 @@
           "type": "string",
           "required": false,
           "description": "Present when it does not; names the reason."
+        }
+      }
+    },
+    "openApplication": {
+      "description": "Open an application by name, with its readability applied at the moment it starts. The first effect-class method: visible to the person, trivially reversible. Authority is checked before anything else, and a refusal never reveals whether an application exists on this machine.",
+      "params": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "The human-facing application name. Neutral vocabulary; no platform identifiers. Comparisons normalise to NFKC first."
+        }
+      },
+      "returns": {
+        "application": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the application was opened (or was already ours) and became readable."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the reason without revealing what is available to other sessions."
         }
       }
     }

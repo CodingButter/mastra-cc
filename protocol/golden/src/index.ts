@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.0.0
+// Mastra CC protocol v1.1.0
 
-export const PROTOCOL_VERSION = "1.0.0";
-export const SCHEMA_DIGEST = "9578d0d3331473c7a123fc385704668dc286b5f019264a3a4b1579eb0e885465";
+export const PROTOCOL_VERSION = "1.1.0";
+export const SCHEMA_DIGEST = "abf9715e4c7eb9b6f2a19739034602e32700b5893b441959b51ab6c161dff85e";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -10,7 +10,7 @@ export const STATES = ["enabled","visible","focused","selected","checked","expan
 export type State = (typeof STATES)[number];
 export const ACTIONS = ["press","focus","select","expand"] as const;
 export type ActionName = (typeof ACTIONS)[number];
-export const METHOD_NAMES = ["queryElements","attestElement"] as const;
+export const METHOD_NAMES = ["queryElements","attestElement","openApplication"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -62,6 +62,19 @@ export interface AttestElementResult {
   /** Present when the id still resolves. */
   element?: SemanticElement;
   /** Present when it does not; names the reason. */
+  refusal?: string;
+}
+
+/** Open an application by name, with its readability applied at the moment it starts. The first effect-class method: visible to the person, trivially reversible. Authority is checked before anything else, and a refusal never reveals whether an application exists on this machine. */
+export interface OpenApplicationParams {
+  /** The human-facing application name. Neutral vocabulary; no platform identifiers. Comparisons normalise to NFKC first. */
+  name: string;
+}
+
+export interface OpenApplicationResult {
+  /** Present when the application was opened (or was already ours) and became readable. */
+  application?: SemanticElement;
+  /** Present otherwise; names the reason without revealing what is available to other sessions. */
   refusal?: string;
 }
 
