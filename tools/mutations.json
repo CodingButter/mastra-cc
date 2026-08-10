@@ -103,5 +103,19 @@
     "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
+  },
+  {
+    "name": "cdp-replay-invents-replies",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "      if (!table.has(key)) {\n        throw new UnrecordedCdpExchangeError(`no recorded exchange for ${key} - refusing to invent a reply`);\n      }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel.test.ts"
+  },
+  {
+    "name": "cdp-attest-answers-unknown-id",
+    "file": "daemon/src/backends/cdp/index.ts",
+    "find": "    if (ref === undefined) {\n      return { refusal: `no element with id \"${params.id}\" was ever answered by this daemon - nothing to attest` };\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/backend-conformance.test.ts"
   }
 ]

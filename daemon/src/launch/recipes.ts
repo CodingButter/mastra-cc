@@ -11,6 +11,8 @@
 // never contributes argv content. Platform strings (GTK_MODULES) are legal
 // here in daemon source and illegal on the wire (B10).
 
+import { DEBUG_PORT, PAGE_PORT } from "../backends/cdp/channel.js";
+
 export interface LaunchRecipe {
   readonly argv: readonly string[];
   readonly env: Readonly<Record<string, string>>;
@@ -26,5 +28,24 @@ export const CATALOG: LaunchCatalog = {
   yad: {
     argv: ["yad", "--title", "launched by the daemon", "--text", "launched by the daemon", "--button", "OK"],
     env: { GTK_MODULES: "gail:atk-bridge" },
+  },
+  // The browser's enabling is its debugging port, not an accessibility env:
+  // this recipe is read by the cdp backend through the browser's own protocol,
+  // never the platform bus. Chrome >=136 ignores --remote-debugging-port
+  // unless --user-data-dir is non-default (measured in M0.5,
+  // docs/proofs/what-the-browser-protocol-gives-us.md). The argv is still
+  // static data built once at module load - the ports are imported constants
+  // (one source of truth with the backend), and wire input still only ever
+  // selects the catalog key.
+  chrome: {
+    argv: [
+      "google-chrome",
+      `--remote-debugging-port=${DEBUG_PORT}`,
+      "--user-data-dir=/tmp/mastra-cc/chrome-profile",
+      "--no-first-run",
+      "--no-default-browser-check",
+      `http://127.0.0.1:${PAGE_PORT}/page.html`,
+    ],
+    env: {},
   },
 };
