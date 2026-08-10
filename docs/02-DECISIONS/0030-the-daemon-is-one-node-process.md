@@ -70,6 +70,15 @@ exist.
    is what makes an audit record attributable, and the downside of serialising is latency
    while the downside of being wrong is a process abort. **M1 owes a measurement here** —
    the same spike, pointed at the Node route.
+
+   *Update, 2026-08-09 — the debt is paid.* The measurement exists:
+   [is concurrent accessibility safe on the Node route](../proofs/is-concurrent-accessibility-safe-on-the-node-route.md).
+   Sequential controls, concurrent setup and concurrent use at 2, 4 and 8 connections,
+   three repetitions each — nothing aborted. This is a new statement of what is now
+   known, not an edit of the paragraph above: "unmeasured" was true when this record
+   was accepted, and it stopped being true when the artifact landed. The rule itself
+   does not move — the daemon keeps serialising accessibility access, because
+   attributability of the audit record never depended on the safety question.
 4. **Windows and macOS are unresolved and marked as such.** UI Automation is a COM API and
    the macOS Accessibility API is Objective-C; both are reachable from Node through a
    native addon, and **neither has been run**. They are recorded as read-not-verified. This

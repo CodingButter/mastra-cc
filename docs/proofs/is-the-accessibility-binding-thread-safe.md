@@ -52,6 +52,12 @@ sequential read on each, and only then read concurrently. If that survives, the
 hazard is setup and not use. M1 owes it, on the Node route — recorded as an owed
 measurement in ADR-0030 clause 3.
 
+*Update, 2026-08-09 — the owed measurement was taken:*
+[is concurrent accessibility safe on the Node route](is-concurrent-accessibility-safe-on-the-node-route.md).
+On the Node route neither concurrent setup nor concurrent use aborted. That is a
+new statement of what is now known about a different route; nothing above — the
+Python-route abort, its boundary, or its reproduction — is revised by it.
+
 ## Why the control run is the important half
 
 A crash on its own proves nothing about concurrency — it could mean the binding

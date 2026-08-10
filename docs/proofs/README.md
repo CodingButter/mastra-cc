@@ -1,7 +1,7 @@
 # Proofs
 
-Sixteen measurements taken during M0.5, and the record of how the milestone
-checked itself. Each measurement answers a question in
+Sixteen measurements taken during M0.5 plus one taken during M1, and the record
+of how the milestone checked itself. Each measurement answers a question in
 [09-QUESTIONS.md](../09-QUESTIONS.md) that could not be answered by argument.
 
 ## The convention
@@ -44,6 +44,7 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 | [what a plan can say without a model](what-a-plan-can-say-without-a-model.md) | G4, G5 — go; and scroll is a verb, not a capability |
 | [does the second run cost less](does-the-second-run-cost-less.md) | G1 — steps yes, tokens not at this sample size |
 | [how this milestone checked itself](how-this-milestone-checked-itself.md) | The cold-reader test, the review, and what none of it established |
+| [is concurrent accessibility safe on the Node route](is-concurrent-accessibility-safe-on-the-node-route.md) | ADR-0030 clause 3's owed measurement, paid during M1 — setup and use separated; neither aborted. Produced by `tools/proofs/concurrent-accessibility.mjs`, which still exists |
 
 ## Release-gate checks
 

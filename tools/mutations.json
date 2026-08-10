@@ -56,6 +56,13 @@
     "testFile": "src/backends/atspi/__tests__/normalisation.test.ts"
   },
   {
+    "name": "concurrency-proof-writes-a-table-with-a-missing-duration",
+    "file": "tools/proofs/concurrent-accessibility.mjs",
+    "find": "        if (!Number.isFinite(run.wallMs)) {\n          throw new Error(`partial result: run ${mode} n=${n} rep=${rep} has no duration - writing nothing`);\n        }\n",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/concurrent-accessibility.test.mjs"
+  },
+  {
     "name": "atspi-ambiguity-refusal-takes-first-match",
     "file": "daemon/src/backends/atspi/resolve.ts",
     "find": "  if (candidates.length > 1) return { refusal: ambiguityRefusal(candidates, query) };",
