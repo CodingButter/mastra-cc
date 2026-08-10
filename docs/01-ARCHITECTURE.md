@@ -50,6 +50,7 @@ That second diagram is the whole reason the first one says "ZERO audio bytes". S
 ### Daemon — *the only thing that touches the desktop*
 
 - Owns every read and write against the accessibility layer. No other process in the system may import an accessibility binding. This is enforced by a boundary test, not by convention (§7).
+- Owns every backend behind one seam ([ADR-0017](02-DECISIONS/0017-platform-backends-live-inside-the-daemon.md)): the Linux accessibility backend reads the platform bus (M1), the browser backend reads a Chromium's own debugging protocol ([ADR-0035](02-DECISIONS/0035-the-browser-is-read-through-its-own-protocol.md), M2.2), and each ships with a replay twin that answers the offline test lane from a captured tape. The wire cannot tell which backend answered — the vocabulary is neutral by [ADR-0018](02-DECISIONS/0018-the-protocol-speaks-a-neutral-element-vocabulary.md).
 - Owns scope enforcement. A request arriving without the scope for its operation class is refused *at the daemon*, so a compromised or buggy hub cannot widen its own reach.
 - Emits the change stream. The desktop talks first (prototype `08-01 10:07`); clients subscribe.
 - Attributes every effect. A change is `external` (a human did it) or carries a cause id (the agent did it). This is what makes "the human outranks the agent" (issue #25) enforceable.
