@@ -1,20 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { registry } from "../backends/registry.js";
+import { CATALOG } from "../launch/recipes.js";
+import { OwnershipTable } from "../launch/table.js";
 import { handleRequest } from "../server.js";
 
-// Anything beyond observe is refused with the check named (ADR-0019:
-// capability is not authority). M1's schema defines only observe-class
-// methods, so the refusal path must exist before the first effect-class
-// method does - B11 will pin its timing when M2 lands one.
+// Anything the schema does not define is refused with the check named
+// (ADR-0019: capability is not authority). Since M2.1 the dispatch table
+// carries one activate-class entry - openApplication - whose enforcement
+// timing B11 pins; everything else beyond the schema still dies at the gate.
 
-describe("the daemon refuses anything beyond observe", () => {
+describe("the effect-class gate", () => {
   const backend = registry.replay();
 
-  it("refuses a method the schema does not define, naming the effect-class gate", async () => {
+  it("refuses a method the schema does not define, naming the gate", async () => {
     const response = await handleRequest({ type: "request", id: 1, method: "editElement", params: {} }, backend);
     expect(response.refusal).toContain("effect-class gate");
     expect(response.refusal).toContain("editElement");
-    expect(response.refusal).toContain("observe");
+    expect(response.refusal).toContain("schema");
     expect(response.result).toBeUndefined();
   });
 
@@ -30,5 +32,18 @@ describe("the daemon refuses anything beyond observe", () => {
     // an unknown id is a backend refusal inside a served method, not a gate refusal
     expect(attest.refusal).toBeUndefined();
     expect((attest.result as { refusal?: string }).refusal).toContain("el-000000000000");
+  });
+
+  it("no longer refuses openApplication at the gate when the session permits it", async () => {
+    // Permitted, so the gate and the authority check both pass; the tape's
+    // yad is already running and unowned, so the result is a served-method
+    // refusal - which is the point: the class gate did not fire.
+    const response = await handleRequest(
+      { type: "request", id: 4, method: "openApplication", params: { name: "yad" } },
+      backend,
+      { permits: new Set(["yad"]), catalog: CATALOG, table: new OwnershipTable(), pollBudgetMs: 50, pollIntervalMs: 10 },
+    );
+    expect(response.refusal).toBeUndefined();
+    expect(response.result).toBeDefined();
   });
 });

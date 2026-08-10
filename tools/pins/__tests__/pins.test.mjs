@@ -29,6 +29,12 @@ const cases = [
   ["b1", "packages/leak/src/leak.ts", 'import dbus from "dbus-native";\n', 'D-Bus binding "dbus-native"'],
   ["b5", "apps/rogue/src/socket.ts", 'import net from "node:net";\n', "socket implementation outside packages/transport"],
   ["b8", "daemon/src/input.ts", 'spawnSync("xdotool", ["key", "Return"]);\n', 'raw input tool "xdotool"'],
+  [
+    "b11",
+    "daemon/src/server.ts",
+    'const DISPATCH = {\n  openApplication: { effectClass: "activate", enforcement: "at-result" },\n};\n',
+    'not marked enforcement "before-call"',
+  ],
 ];
 
 for (const [pin, plantPath, plantSource, expectedMessage] of cases) {
@@ -57,4 +63,14 @@ test("b8: a comment mentioning a banned tool is not a violation", () => {
   const r = runPin("b8", ["--root", root]);
   expect(r.output).toContain("pin-b8: ok");
   expect(r.status).toBe(0);
+});
+
+test("b11: an observe-only dispatch table fails rather than passing vacuously", () => {
+  const root = plant(
+    "daemon/src/server.ts",
+    'const DISPATCH = {\n  queryElements: { effectClass: "observe", enforcement: "at-result" },\n};\n',
+  );
+  const r = runPin("b11", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("would pass vacuously");
 });

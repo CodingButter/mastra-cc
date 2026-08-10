@@ -89,5 +89,19 @@
     "find": " && entry.starttime === stat.starttime",
     "cwd": "daemon",
     "testFile": "src/launch/__tests__/ownership-table.test.ts"
+  },
+  {
+    "name": "b11-enforcement-marking-removed",
+    "file": "daemon/src/server.ts",
+    "find": ", enforcement: \"before-call\"",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "launch-skips-the-permit-check",
+    "file": "daemon/src/server.ts",
+    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/launch-authority.test.ts"
   }
 ]
