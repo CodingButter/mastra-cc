@@ -10,7 +10,7 @@ import {
 import type { Backend } from "./backend.js";
 import { normalise } from "./backends/atspi/names.js";
 import { CATALOG, type LaunchCatalog } from "./launch/recipes.js";
-import { launchApplication } from "./launch/spawn.js";
+import { launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
@@ -43,6 +43,11 @@ export const UNAVAILABLE_REFUSAL = "no application by that name is available to 
 export const ALREADY_RUNNING_REFUSAL =
   "that application is already running and was not opened by this daemon - launching a second copy is refused; the running copy must be closed first";
 
+// A spawn that fails after authority and catalog both passed. The constant
+// names nothing about the command or the filesystem - a raw spawn error would
+// leak argv[0], which is platform vocabulary the wire must never carry (B10).
+export const COULD_NOT_START_REFUSAL = "the application could not be started";
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -50,6 +55,8 @@ export const ALREADY_RUNNING_REFUSAL =
 // observe, because filtering a response does not unsend the email. The
 // enforcement TIMING itself is pinned by the ordering test in
 // __tests__/launch-authority.test.ts; the pin and the test together are B11.
+// Keep each entry on ONE line: b11.mjs parses entries line-by-line, and a
+// multi-line entry would silently escape its scrutiny.
 type Handler = (params: unknown, backend: Backend, launch: LaunchContext) => Promise<unknown>;
 const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
   queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b) => b.queryElements((p ?? {}) as never) },
@@ -95,7 +102,11 @@ async function openApplication(
     try {
       await launchApplication(name, launch.catalog, launch.table);
     } catch (error) {
-      return { refusal: (error as Error).message };
+      // The no-recipe refusal is already honest and leak-free; anything else
+      // (a spawn failure) is normalised to a constant so a raw system error
+      // never reaches the wire.
+      const message = (error as Error).message;
+      return { refusal: message === NO_RECIPE_REFUSAL ? message : COULD_NOT_START_REFUSAL };
     }
   }
   const deadline = Date.now() + budget;

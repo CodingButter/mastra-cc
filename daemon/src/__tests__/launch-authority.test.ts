@@ -5,7 +5,13 @@ import type { Backend } from "../backend.js";
 import { registry } from "../backends/registry.js";
 import type { LaunchCatalog } from "../launch/recipes.js";
 import { OwnershipTable } from "../launch/table.js";
-import { ALREADY_RUNNING_REFUSAL, UNAVAILABLE_REFUSAL, handleRequest, type LaunchContext } from "../server.js";
+import {
+  ALREADY_RUNNING_REFUSAL,
+  COULD_NOT_START_REFUSAL,
+  UNAVAILABLE_REFUSAL,
+  handleRequest,
+  type LaunchContext,
+} from "../server.js";
 
 // Authority before capability, and the no-leak property (ADR-0019, ADR-0034).
 // The refusal-equality assertions use toBe on the exact strings: byte
@@ -63,6 +69,18 @@ describe("launch authority", () => {
     for (const entry of table.entries()) process.kill(entry.pid, "SIGKILL");
   });
 
+  it("a spawn failure after authority and catalog pass is normalised - no raw system error on the wire", async () => {
+    // permitted AND catalogued, but the binary does not exist: Node's spawn
+    // ENOENT names argv[0], which must never reach the wire.
+    const broken: LaunchCatalog = { "test-app": { argv: ["zz-no-such-binary-m21", "30"], env: {} } };
+    const context = launch({ permits: new Set(["test-app"]), catalog: broken });
+    const result = resultOf(await open("test-app", backend, context));
+    expect(result.refusal).toBe(COULD_NOT_START_REFUSAL);
+    expect(result.refusal).not.toContain("zz-no-such-binary-m21");
+    expect(result.refusal).not.toContain("ENOENT");
+    expect(context.table.entries()).toHaveLength(0);
+  });
+
   it("c: authority runs before capability - an unpermitted name never reaches the catalog or the tree", async () => {
     let catalogTouched = false;
     const trap: LaunchCatalog = new Proxy(
@@ -84,6 +102,14 @@ describe("launch authority", () => {
     expect(result.refusal).toBe(UNAVAILABLE_REFUSAL);
     expect(catalogTouched).toBe(false);
     expect(treeTouched).toBe(false);
+  });
+
+  it("a missing or non-string name refuses like any unknown name", async () => {
+    const context = launch({ permits: new Set(["test-app"]), catalog: catalogued });
+    const missing = resultOf(
+      await handleRequest({ type: "request", id: 1, method: "openApplication", params: {} }, backend, context),
+    );
+    expect(missing.refusal).toBe(UNAVAILABLE_REFUSAL);
   });
 
   it("d: the refusal names no path, no command, and nothing about what is installed", () => {

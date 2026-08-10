@@ -20,7 +20,7 @@ describe("the effect-class gate", () => {
     expect(response.result).toBeUndefined();
   });
 
-  it("serves the two observe-class methods the schema defines", async () => {
+  it("serves both observe-class methods the schema defines", async () => {
     const query = await handleRequest({ type: "request", id: 2, method: "queryElements", params: {} }, backend);
     expect(query.refusal).toBeUndefined();
     expect((query.result as { elements: unknown[] }).elements.length).toBeGreaterThan(0);
