@@ -82,5 +82,12 @@
     "find": "  if (candidates.length > 1) return { refusal: ambiguityRefusal(candidates, query) };",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/ambiguity.test.ts"
+  },
+  {
+    "name": "ownership-ignores-start-time",
+    "file": "daemon/src/launch/table.ts",
+    "find": " && entry.starttime === stat.starttime",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/ownership-table.test.ts"
   }
 ]
