@@ -69,7 +69,14 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
     } catch {
       throw new CdpUnreachableError(`no debugging endpoint answered at ${endpoint}${path}`);
     }
-    return response.json();
+    try {
+      if (!response.ok) throw new Error();
+      return await response.json();
+    } catch {
+      // A proxy page or an endpoint mid-shutdown is honestly "unreachable",
+      // not a raw SyntaxError from the parse.
+      throw new CdpUnreachableError(`the endpoint at ${endpoint}${path} did not answer usable JSON`);
+    }
   }
 
   function socketFor(targetId: string): Promise<WebSocket> {
@@ -93,6 +100,9 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
         },
         { once: true },
       );
+      // A dead socket must not stay cached: the next exchange redials
+      // instead of sending into a closed connection.
+      ws.addEventListener("close", () => sockets.delete(targetId), { once: true });
     });
     sockets.set(targetId, opened);
     return opened;
@@ -100,17 +110,32 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
 
   function rpc(ws: WebSocket, method: string, params: unknown): Promise<unknown> {
     const id = nextId++;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      // A hang is not a refusal (refuses-malformed-lines.test.ts:10-12): if
+      // the socket dies before the reply arrives - tab closed, browser
+      // crashed, terminateOwned mid-query - the pending call must reject, or
+      // the server's serialised chain never advances again for any client.
+      const onGone = () => {
+        cleanup();
+        reject(new CdpUnreachableError(`the debugging socket closed before "${method}" was answered`));
+      };
       const onMessage = (event: MessageEvent) => {
         const message = JSON.parse(String(event.data)) as { id?: number };
         if (message.id !== id) return;
-        ws.removeEventListener("message", onMessage);
+        cleanup();
         // The reply is stored minus the connection-local id, so tapes are
         // connection-independent: {result} or {error}, never {id, ...}.
         const { id: _connectionLocal, ...reply } = message;
         resolve(reply);
       };
+      const cleanup = () => {
+        ws.removeEventListener("message", onMessage);
+        ws.removeEventListener("close", onGone);
+        ws.removeEventListener("error", onGone);
+      };
       ws.addEventListener("message", onMessage);
+      ws.addEventListener("close", onGone);
+      ws.addEventListener("error", onGone);
       ws.send(JSON.stringify({ id, method, params: params ?? {} }));
     });
   }

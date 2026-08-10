@@ -29,9 +29,12 @@ google-chrome --headless=new "--remote-debugging-port=$DEBUG_PORT" \
   "http://127.0.0.1:$PAGE_PORT/page.html" >/dev/null 2>&1 &
 CHROME_PID=$!
 
-# wait for the endpoint to answer
-for _ in $(seq 1 50); do
-  curl -sf "http://127.0.0.1:$DEBUG_PORT/json/version" >/dev/null 2>&1 && break
+# wait for the endpoint to answer - fail loudly on exhaustion, never fall
+# through into a confusing downstream error
+i=0
+until curl -sf "http://127.0.0.1:$DEBUG_PORT/json/version" >/dev/null 2>&1; do
+  i=$((i + 1))
+  [ "$i" -gt 50 ] && { echo "capture: chrome's debugging endpoint never answered"; exit 1; }
   sleep 0.2
 done
 
