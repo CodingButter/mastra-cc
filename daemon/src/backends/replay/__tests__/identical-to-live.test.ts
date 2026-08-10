@@ -50,14 +50,15 @@ describe("the replay backend answers identically to the live capture", () => {
     const { elements } = await backend.queryElements({ name: "OK" });
     await backend.close();
 
-    // The live gtk-dialog capture found a button and two labels named OK.
-    // Identity derives from bus name + object path, both on the tape, so the
-    // replayed ids are the very ids the live run printed.
+    // The capture (yad on the sandboxed headless bus - re-captured there so no
+    // personal desktop strings ride the tape) found a button and a label named
+    // OK. Identity derives from bus name + object path, both on the tape, so
+    // the replayed ids are the very ids the live run printed.
     const buttons = elements.filter((e) => e.role === "button");
     expect(buttons).toHaveLength(1);
     expect(buttons[0].name).toBe("OK");
     expect(buttons[0].id).toMatch(new RegExp(ID_PATTERN));
-    expect(elements.length).toBe(3);
+    expect(elements.length).toBe(2);
   });
 
   it("attests an element it answered, without any bus existing", async () => {

@@ -25,8 +25,9 @@ describe("the hub prints the element the daemon answers", () => {
     const lines: string[] = [];
     const code = await run(["--query", "OK", "--socket", socketPath], (l) => lines.push(l));
     expect(code).toBe(0);
-    // the live capture found a button and two labels named OK; all three replay
-    expect(lines).toHaveLength(3);
+    // the capture (yad, sandboxed headless bus) found a button and a label
+    // named OK; both replay
+    expect(lines).toHaveLength(2);
     expect(lines.filter((l) => /^element: role=button name="OK" id=el-[0-9a-f]{12}$/.test(l))).toHaveLength(1);
   });
 
