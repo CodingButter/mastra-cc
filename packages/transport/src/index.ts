@@ -55,7 +55,17 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
       buffer = buffer.slice(newline + 1);
       newline = buffer.indexOf("\n");
       if (!line.trim()) continue;
-      const message = JSON.parse(line) as Hello | Response | { type: "refusal"; refusal: string };
+      let message: Hello | Response | { type: "refusal"; refusal: string };
+      try {
+        message = JSON.parse(line);
+      } catch {
+        // A peer that emits a non-JSON line is not the daemon this client was
+        // built for. Refuse loudly and stop, mirroring the daemon's own
+        // handling of the same case - never die in an event handler.
+        failAll(new Error(`transport: peer at ${socketPath} sent a non-JSON line - refusing to continue`));
+        socket.destroy();
+        return;
+      }
       if (message.type === "hello" && helloResolve) {
         helloResolve(message);
         helloResolve = null;

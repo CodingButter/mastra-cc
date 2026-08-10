@@ -63,6 +63,20 @@
     "testFile": "proofs/__tests__/concurrent-accessibility.test.mjs"
   },
   {
+    "name": "server-swallows-a-malformed-post-hello-line",
+    "file": "daemon/src/server.ts",
+    "find": "              refusal: 'daemon: a message after hello must be {type:\"request\", id:number, method:string} - refusing a malformed line',\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-malformed-lines.test.ts"
+  },
+  {
+    "name": "transport-dies-on-a-non-json-line",
+    "file": "packages/transport/src/index.ts",
+    "find": "        failAll(new Error(`transport: peer at ${socketPath} sent a non-JSON line - refusing to continue`));\n        socket.destroy();\n        return;\n",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/digest-agreement.test.ts"
+  },
+  {
     "name": "atspi-ambiguity-refusal-takes-first-match",
     "file": "daemon/src/backends/atspi/resolve.ts",
     "find": "  if (candidates.length > 1) return { refusal: ambiguityRefusal(candidates, query) };",

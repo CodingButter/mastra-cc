@@ -63,6 +63,39 @@ describe("a transport built against a different schema digest than the daemon's 
     await expect(connect({ socketPath: mock.socketPath })).rejects.toThrow(refusal);
   });
 
+  it("refuses a non-JSON line from the peer with a named error instead of dying in the event handler", async () => {
+    const mock = mockServer((socket, line) => {
+      const message = JSON.parse(line) as { type: string };
+      if (message.type === "hello") {
+        // A foreign process squatting the socket path: answers with garbage.
+        socket.write("this is not json\n");
+      }
+    });
+    server = mock.server;
+    await new Promise<void>((resolve) => mock.server.listen(mock.socketPath, resolve));
+
+    await expect(connect({ socketPath: mock.socketPath })).rejects.toThrow(
+      /transport: peer at .* sent a non-JSON line - refusing to continue/,
+    );
+  });
+
+  it("rejects an in-flight request when the peer turns to garbage mid-session, rather than hanging it", async () => {
+    const mock = mockServer((socket, line) => {
+      const message = JSON.parse(line) as { type: string };
+      if (message.type === "hello") {
+        socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+      } else {
+        socket.write("garbage after a clean handshake\n");
+      }
+    });
+    server = mock.server;
+    await new Promise<void>((resolve) => mock.server.listen(mock.socketPath, resolve));
+
+    const client = await connect({ socketPath: mock.socketPath });
+    await expect(client.queryElements({})).rejects.toThrow(/sent a non-JSON line/);
+    client.close();
+  });
+
   it("connects and carries a round trip when the digests agree", async () => {
     const mock = mockServer((socket, line) => {
       const message = JSON.parse(line) as { type: string; id?: number; digest?: string };

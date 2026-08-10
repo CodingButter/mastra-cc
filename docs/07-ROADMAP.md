@@ -72,12 +72,12 @@
 - Catalog-aligned dependency versions per [04-INTEGRATION-PLAN.md §3](04-INTEGRATION-PLAN.md).
 
 **Exit gate:**
-- [ ] `turbo run build lint typecheck test` exits 0.
-- [ ] `tools/dry-run-integration.sh` exits 0 against a pristine monorepo checkout, **including the catalog-divergence check**.
-- [ ] The freeze gate **fails** on a deliberate one-character edit to `schema.json` with no ADR — verified by doing it and watching it go red.
-- [ ] The generator determinism check **fails** on a deliberate hand-edit to a generated file — same method.
-- [ ] `infra/apply.sh` runs clean on a fresh machine and the installed keeper-style script executes from its installed path.
-- [ ] **The debt M0.5 recorded is paid:** concurrent accessibility access is measured on the Node route, with every connection established and read sequentially first, so the result separates *concurrent setup aborts* from *concurrent use is unsafe* ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md), [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3). Either answer is acceptable; leaving it unmeasured is not, because the serialisation rule is currently kept on judgement alone.
+- [x] `turbo run build lint typecheck test` exits 0. (Ticked on `feat/m1-skeleton`: 14 of 14 tasks, 81 tests passing plus 5 live-lane skips, witnessed by CI on every phase commit.)
+- [x] `tools/dry-run-integration.sh` exits 0 against a pristine monorepo checkout, **including the catalog-divergence check**. (Ticked: `catalog-check: 4 pin(s) compared, aligned with the destination`, run in CI step 9 on every commit.)
+- [x] The freeze gate **fails** on a deliberate one-character edit to `schema.json` with no ADR — verified by doing it and watching it go red. (Ticked in both directions, in CI: break commits `c4ad135` and `4755573` went red at steps 1 and 2 of run 31336286331 and run 31336328347, the revert went green in run 31336346452. Transcripts: the freeze red/green pair recorded in commit `318e140`.)
+- [x] The generator determinism check **fails** on a deliberate hand-edit to a generated file — same method. (Ticked: `tools/determinism.mjs` regenerates into a temporary directory and diffs, because regenerating in place silently repairs the tampering; the hand-edit case is pinned red by the `freeze-gate-golden-staleness-check-removed` and determinism mutations in `tools/mutations.json`, all of which draw at least one red test.)
+- [x] `infra/apply.sh` runs clean on a fresh machine and the installed keeper-style script executes from its installed path. (Ticked: fresh-prefix run under `MASTRA_CC_PREFIX` applied 2 changes, exit 0, and `<prefix>/.local/libexec/mastra-cc/health.sh` executed from the installed path reporting unit, socket and accessibility-bus state.)
+- [x] **The debt M0.5 recorded is paid:** concurrent accessibility access is measured on the Node route, with every connection established and read sequentially first, so the result separates *concurrent setup aborts* from *concurrent use is unsafe* ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md), [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3). Either answer is acceptable; leaving it unmeasured is not, because the serialisation rule is currently kept on judgement alone. (Ticked: [is concurrent accessibility safe on the Node route](proofs/is-concurrent-accessibility-safe-on-the-node-route.md) — 27 runs, both orderings at 2/4/8 connections, three repetitions each, every run exit 0. Neither failure mode was observed; the daemon keeps serialising for audit attributability, a reason the measurement does not touch.)
 
 **Note on the third and fourth items:** a gate is not proven by passing. It is proven by failing when it should. Do both, record both.
 
@@ -100,6 +100,8 @@ Written for a reader with no memory of the conversations that produced this repo
 The prototype's freeze was prose. The schema changed 23 times after being frozen and nothing ever failed — [ADR-0002](02-DECISIONS/0002-schema-freeze-is-a-ci-job.md). Both directions of that gate get recorded in the commit message, because a gate that has only ever passed is indistinguishable from a gate that is not wired up.
 
 **Two backends exist and M1 builds neither fully.** The browser-protocol adapter covers Chrome and every Electron application from one implementation; the Linux accessibility adapter covers native toolkits. M1 wires *one* of them to *one* method. Choosing which is an M1 decision, not a prerequisite — the protocol vocabulary is neutral by [ADR-0018](02-DECISIONS/0018-the-protocol-speaks-a-neutral-element-vocabulary.md), so the caller cannot tell which answered.
+
+**Resolved during M1 (2026-08-09):** the user chose the **accessibility route** — "there are less questions about chromium. so lets focus early on the accessibility route." The browser protocol's open questions were fewer and cheaper to answer later; the accessibility route carried the unknowns worth burning down first (whether Node could read the bus without a native addon, whether real trees were walkable, whether concurrency aborted). M1 built the Linux AT-SPI backend; the browser-protocol adapter remains the next backend, behind the same interface and the same conformance suite.
 
 **What M1 must not do:** no wake detection, no voice, no dashboard features, no consent UI, no second protocol method added for completeness. Those are M2 onward, and the exit gate above is the whole of the work.
 

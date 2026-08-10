@@ -149,6 +149,8 @@ Each boundary below is a rule, a reason, and a test. If it has no test, it is a 
 | B11 | No effect-class operation relies solely on post-hoc enforcement | source-level test over the daemon's dispatch table |
 | B12 | Every dependency carries a permissive licence | CI job over every manifest, against an allowlist |
 
+**Which of these exist in M1:** four source pins are wired — B1, B5, B8 and B10 — plus B6 and B7 as CI steps and B12 as its own CI job. B2, B3, B4, B9 and B11 are deliberately absent because their subjects (audio, credentials, microphones, transcribers, effect-class operations) do not exist yet; [tools/pins/README.md](../tools/pins/README.md) records each absence with its reason, and B11 must arrive in the same commit as the first effect-class operation, not after it.
+
 **B10** keeps a platform's words out of the wire. Each backend owns its own native→neutral
 map, so a role named after one toolkit's widget set cannot leak into a protocol that three
 platforms have to speak. It costs nothing today and saves a version bump later.

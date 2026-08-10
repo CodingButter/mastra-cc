@@ -122,6 +122,16 @@ export function startServer(options: { socketPath: string; backend: Backend }): 
           void handleRequest(message as Request, backend).then((response) => {
             if (!socket.destroyed) socket.write(`${JSON.stringify(response)}\n`);
           });
+        } else {
+          // Valid JSON that is not a well-formed request gets a named refusal,
+          // never silence - a swallowed line leaves the client's promise
+          // pending forever, which is a hang, not a refusal.
+          socket.write(
+            `${JSON.stringify({
+              type: "refusal",
+              refusal: 'daemon: a message after hello must be {type:"request", id:number, method:string} - refusing a malformed line',
+            })}\n`,
+          );
         }
       }
     });
