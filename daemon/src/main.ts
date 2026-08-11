@@ -4,6 +4,7 @@ import { registry } from "./backends/registry.js";
 import { normalise } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
 import { effectiveVisibility, loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
+import { composeCatalog, loadProfilesFile, MalformedProfilesFileError } from "./launch/profiles.js";
 import { CATALOG } from "./launch/recipes.js";
 import { terminateOwned } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
@@ -25,6 +26,9 @@ import { startServer } from "./server.js";
 // union grants-file ∪ --grant ∪ --permit (a launch permit implies an observe
 // grant for the launched name, or a permitted launch would be unreadable
 // forever), composed ONCE here at boot and nowhere else.
+// --profiles <file> names the daemon-local browser-profiles file (ADR-0038)
+// whose entries become launch identities: one catalog recipe per named
+// profile, each launching the browser against its own profile directory.
 
 function arg(name: string): string | null {
   const i = process.argv.indexOf(name);
@@ -77,6 +81,21 @@ const visibility = (() => {
 })();
 const backend = registry[backendName]({ capture, fixture, visibility });
 
+// The operator's browser identities, composed into the catalog once at boot
+// (ADR-0038). A malformed profiles file fails startup loudly, like grants.
+const catalog = (() => {
+  try {
+    const profiles = arg("--profiles") !== null ? loadProfilesFile(arg("--profiles") as string) : [];
+    return composeCatalog(CATALOG, profiles);
+  } catch (error) {
+    if (error instanceof MalformedProfilesFileError) {
+      console.error(`daemon: ${error.message}`);
+      process.exit(2);
+    }
+    throw error;
+  }
+})();
+
 const query = arg("--query");
 const resolve = arg("--resolve");
 
@@ -110,7 +129,7 @@ const socketPath =
 
 const table = new OwnershipTable();
 
-const server = await startServer({ socketPath, backend, launch: { permits, catalog: CATALOG, table } });
+const server = await startServer({ socketPath, backend, launch: { permits, catalog, table } });
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);
 
 // The daemon owns what it launched, including cleaning it up: on shutdown it

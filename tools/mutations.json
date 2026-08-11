@@ -159,5 +159,12 @@
     "find": "  submitElement: { effectClass: \"submit\", enforcement: \"before-call\", handler: async () => ({ refusal: SUBMIT_SCOPE_REFUSAL }) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "malformed-profiles-file-composes-nothing",
+    "file": "daemon/src/launch/profiles.ts",
+    "find": "  try {\n    parsed = JSON.parse(text);\n  } catch {\n    throw new MalformedProfilesFileError(\n      `the profiles file at ${path} is not valid JSON - a file naming browser identities that cannot be parsed must not silently become \"no profiles\"`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/profiles.test.ts"
   }
 ]
