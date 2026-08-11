@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AttestElementParams, AttestElementResult, QueryElementsParams, QueryElementsResult } from "@mastra-cc/protocol-types";
 import type { Backend } from "../../backend.js";
+import type { Visibility } from "../../grants.js";
 import { AtspiBackend } from "../atspi/index.js";
 import {
   type Channel,
@@ -57,8 +58,10 @@ export class ReplayBackend implements Backend {
   readonly name = "replay";
   private readonly inner: AtspiBackend;
 
-  constructor(fixture: string) {
-    this.inner = new AtspiBackend(replayChannel(fixture));
+  // Visibility threads through to the same reader: the replay lane enforces
+  // deny-by-default exactly as the live lane does (same guard, same code).
+  constructor(fixture: string, visibility?: Visibility) {
+    this.inner = new AtspiBackend(replayChannel(fixture), visibility);
   }
 
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {

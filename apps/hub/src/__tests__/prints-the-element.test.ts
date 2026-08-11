@@ -13,7 +13,9 @@ import { run } from "../index.js";
 // @mastra-cc/transport.
 
 const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-hub-")), "daemon.sock");
-const serverPromise = startServer({ socketPath, backend: registry.replay() });
+// visibility "all": this file witnesses hub printing, not grant policy
+// (deny-by-default is the daemon's invisibility.test.ts's job)
+const serverPromise = startServer({ socketPath, backend: registry.replay({ visibility: "all" }) });
 
 afterAll(async () => {
   (await serverPromise).close();

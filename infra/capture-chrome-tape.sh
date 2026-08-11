@@ -38,7 +38,10 @@ until curl -sf "http://127.0.0.1:$DEBUG_PORT/json/version" >/dev/null 2>&1; do
   sleep 0.2
 done
 
-node "$ROOT/daemon/dist/main.mjs" --backend cdp --capture chrome-page --query "OK"
+# --grant chrome: this browser was started by the script, not launched by the
+# daemon - without a session observe grant, deny-by-default (ADR-0036) would
+# answer an empty tree and the tape would capture nothing (the vacuous-pass trap).
+node "$ROOT/daemon/dist/main.mjs" --backend cdp --capture chrome-page --grant chrome --query "OK"
 
 TAPE="$ROOT/daemon/fixtures/chrome-page/tape.json"
 [ -s "$TAPE" ] || { echo "capture: no tape written at $TAPE"; exit 1; }

@@ -55,6 +55,25 @@ export const COULD_NOT_START_REFUSAL = "the application could not be started";
 // a browser this session cannot read.
 export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this session's backend";
 
+// The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
+// submit classes' element methods so a client can ask about them and hear a
+// refusal that names itself - "not a method of the schema" cannot distinguish
+// "not built yet" from "hidden". The handlers below are pure refusals: they
+// never touch a backend (the Backend seam does not even carry these methods),
+// and each constant names the check that ran, the method's class, and what
+// would change the answer. Authority is checked before capability (ADR-0019),
+// so submitElement's refusal is the scope gate's - never a claim about the
+// attestation's validity, even though the contract requires one (ADR-0021:
+// waiving it is inexpressible on the wire).
+export const EDIT_SCOPE_REFUSAL =
+  'refused by the scope gate: "editElement" is edit-class and this session holds no edit authority for any application - the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
+
+export const ACTIVATE_SCOPE_REFUSAL =
+  'refused by the scope gate: "activateElement" is activate-class and this session holds no activate authority for any element - the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
+
+export const SUBMIT_SCOPE_REFUSAL =
+  'refused by the scope gate: "submitElement" is submit-class and this session holds no submit authority for any application - authority is checked before the attestation is ever examined, the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -69,6 +88,9 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b) => b.queryElements((p ?? {}) as never) },
   attestElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b) => b.attestElement((p ?? {}) as never) },
   openApplication: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => openApplication((p ?? {}) as { name?: string }, b, l) },
+  editElement: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: EDIT_SCOPE_REFUSAL }) },
+  activateElement: { effectClass: "activate", enforcement: "before-call", handler: async () => ({ refusal: ACTIVATE_SCOPE_REFUSAL }) },
+  submitElement: { effectClass: "submit", enforcement: "before-call", handler: async () => ({ refusal: SUBMIT_SCOPE_REFUSAL }) },
 };
 
 const POLL_BUDGET_MS = 10_000; // how long a launched app gets to become readable

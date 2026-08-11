@@ -6,6 +6,7 @@ import type {
   SemanticElement,
 } from "@mastra-cc/protocol-types";
 import type { Backend } from "../../backend.js";
+import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
 import { type CdpChannel, replayCdpChannel } from "./channel.js";
@@ -58,12 +59,16 @@ function productName(version: VersionReply): string {
 export class CdpBackend implements Backend {
   readonly name: string = "cdp";
   protected readonly channel: CdpChannel;
+  // The observe-visibility set (M2.3, ADR-0036). Deny-by-default is this
+  // backend's own posture: when no visibility is given, nothing is.
+  private readonly visibility: Visibility;
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
 
-  constructor(channel: CdpChannel) {
+  constructor(channel: CdpChannel, visibility: Visibility = new Set()) {
     this.channel = channel;
+    this.visibility = visibility;
   }
 
   private async version(): Promise<VersionReply> {
@@ -134,7 +139,18 @@ export class CdpBackend implements Backend {
       (params.role === undefined || element.role === params.role) &&
       (params.name === undefined || nameMatches(element.name, params.name));
 
-    const application = this.applicationElement(await this.version());
+    // The visibility gate (ADR-0036), the symmetric analog of the atspi name
+    // read: the version exchange is the ONE permitted read - the application's
+    // name derives from it - and an ungranted browser answers empty having
+    // issued only that exchange: never list, never a target dial, never
+    // Accessibility.*. Nothing was registered as answered, so attestation
+    // naturally refuses too.
+    const version = await this.version();
+    if (!isVisible(this.visibility, productName(version))) {
+      return { elements: [] };
+    }
+
+    const application = this.applicationElement(version);
     if (matches(application)) {
       elements.push(application);
       if (params.limit !== undefined && elements.length >= params.limit) return { elements };
@@ -199,7 +215,7 @@ export class CdpBackend implements Backend {
 export class CdpReplayBackend extends CdpBackend {
   override readonly name: string = "cdp-replay";
 
-  constructor(fixture: string) {
-    super(replayCdpChannel(fixture));
+  constructor(fixture: string, visibility?: Visibility) {
+    super(replayCdpChannel(fixture), visibility);
   }
 }

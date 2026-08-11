@@ -1,4 +1,5 @@
 import type { Backend } from "../backend.js";
+import type { Visibility } from "../grants.js";
 import { captureChannel, liveChannel } from "./atspi/channel.js";
 import { AtspiBackend } from "./atspi/index.js";
 import { captureCdpChannel, DEBUG_PORT, liveCdpChannel } from "./cdp/channel.js";
@@ -16,6 +17,10 @@ import { ReplayBackend } from "./replay/index.js";
 export interface BackendOptions {
   capture?: string;
   fixture?: string;
+  // The observe-visibility set (M2.3, ADR-0036). When absent, backends fall
+  // back to their own default - the EMPTY set. Deny-by-default is the
+  // backend's own posture, not something a caller opts into.
+  visibility?: Visibility;
 }
 
 // The committed corpora the fixture-less replay flavours answer from.
@@ -25,14 +30,14 @@ export const DEFAULT_CDP_FIXTURE = "chrome-page";
 export const registry: Record<string, (options?: BackendOptions) => Backend> = {
   atspi: (options) => {
     const channel = options?.capture ? captureChannel(liveChannel(), options.capture) : liveChannel();
-    return new AtspiBackend(channel);
+    return new AtspiBackend(channel, options?.visibility);
   },
-  replay: (options) => new ReplayBackend(options?.fixture ?? DEFAULT_FIXTURE),
+  replay: (options) => new ReplayBackend(options?.fixture ?? DEFAULT_FIXTURE, options?.visibility),
   cdp: (options) => {
     const live = liveCdpChannel(`http://127.0.0.1:${DEBUG_PORT}`);
-    return new CdpBackend(options?.capture ? captureCdpChannel(live, options.capture) : live);
+    return new CdpBackend(options?.capture ? captureCdpChannel(live, options.capture) : live, options?.visibility);
   },
-  "cdp-replay": (options) => new CdpReplayBackend(options?.fixture ?? DEFAULT_CDP_FIXTURE),
+  "cdp-replay": (options) => new CdpReplayBackend(options?.fixture ?? DEFAULT_CDP_FIXTURE, options?.visibility),
 };
 
 // Which backends need a live desktop (or a live browser at its debugging

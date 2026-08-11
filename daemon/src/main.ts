@@ -3,6 +3,7 @@ import { SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
 import { registry } from "./backends/registry.js";
 import { normalise } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
+import { effectiveVisibility, loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
 import { CATALOG } from "./launch/recipes.js";
 import { terminateOwned } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
@@ -16,8 +17,14 @@ import { startServer } from "./server.js";
 // tape the replay backend answers from. --query / --resolve are one-shot
 // operator modes: ask the backend directly, print, exit - no socket.
 // --permit <name> (repeatable) is the SESSION-SCOPED authority for
-// openApplication (ADR-0034): the permit set dies with this process, and a
-// durable store is M2.3's decision, deliberately not taken here.
+// openApplication (ADR-0034): the permit set dies with this process.
+// --grants <file> names the daemon-local permissions file (ADR-0036) whose
+// "applications" entries are durable observe grants; --grant <name>
+// (repeatable) is the session-scoped observe analog of --permit, for reading
+// applications this daemon did not launch. The effective observe set is the
+// union grants-file ∪ --grant ∪ --permit (a launch permit implies an observe
+// grant for the launched name, or a permitted launch would be unreadable
+// forever), composed ONCE here at boot and nowhere else.
 
 function arg(name: string): string | null {
   const i = process.argv.indexOf(name);
@@ -51,7 +58,24 @@ if (!backendName || !registry[backendName]) {
 
 const capture = arg("--capture") ?? undefined;
 const fixture = arg("--fixture") ?? undefined;
-const backend = registry[backendName]({ capture, fixture });
+
+// The effective observe set, composed once at boot (ADR-0036). A malformed
+// grants file fails startup loudly: the operator meant something, and the
+// daemon must not silently run with "no grants" in its place.
+const permits: ReadonlySet<string> = new Set(argAll("--permit").map(normalise));
+const visibility = (() => {
+  try {
+    const file = arg("--grants") !== null ? loadGrantsFile(arg("--grants") as string) : new Set<string>();
+    return effectiveVisibility({ file, flags: new Set(argAll("--grant").map(normalise)), permits });
+  } catch (error) {
+    if (error instanceof MalformedGrantsFileError) {
+      console.error(`daemon: ${error.message}`);
+      process.exit(2);
+    }
+    throw error;
+  }
+})();
+const backend = registry[backendName]({ capture, fixture, visibility });
 
 const query = arg("--query");
 const resolve = arg("--resolve");
@@ -84,7 +108,6 @@ if (query !== null || resolve !== null) {
 const socketPath =
   arg("--socket") ?? join(process.env.XDG_RUNTIME_DIR ?? "/tmp", "mastra-cc", "daemon.sock");
 
-const permits: ReadonlySet<string> = new Set(argAll("--permit").map(normalise));
 const table = new OwnershipTable();
 
 const server = await startServer({ socketPath, backend, launch: { permits, catalog: CATALOG, table } });

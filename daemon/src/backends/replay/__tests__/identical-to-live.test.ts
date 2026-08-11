@@ -37,7 +37,9 @@ describe("the replay backend answers identically to the live capture", () => {
     const recorded = recordedDistinctNames();
     expect(recorded.size).toBeGreaterThan(1); // a one-name corpus would prove nothing
 
-    const backend = new ReplayBackend("gtk-dialog");
+    // visibility "all": this file witnesses reader fidelity against the raw
+    // tape, not grant policy (deny-by-default lives in invisibility.test.ts)
+    const backend = new ReplayBackend("gtk-dialog", "all");
     const { elements } = await backend.queryElements({});
     await backend.close();
 
@@ -46,7 +48,7 @@ describe("the replay backend answers identically to the live capture", () => {
   });
 
   it("answers the demo query with the same button the live read found, ids and all", async () => {
-    const backend = new ReplayBackend("gtk-dialog");
+    const backend = new ReplayBackend("gtk-dialog", "all");
     const { elements } = await backend.queryElements({ name: "OK" });
     await backend.close();
 
@@ -62,7 +64,7 @@ describe("the replay backend answers identically to the live capture", () => {
   });
 
   it("attests an element it answered, without any bus existing", async () => {
-    const backend = new ReplayBackend("gtk-dialog");
+    const backend = new ReplayBackend("gtk-dialog", "all");
     const { elements } = await backend.queryElements({ name: "OK", role: "button" });
     const attested = await backend.attestElement({ id: elements[0].id });
     await backend.close();
