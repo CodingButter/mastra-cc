@@ -2,7 +2,15 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { effectiveVisibility, isVisible, loadGrantsFile, MalformedGrantsFileError } from "../../grants.js";
+import {
+  effectiveVisibility,
+  isVisible,
+  loadGrantsFile,
+  MalformedGrantsFileError,
+  type Visibility,
+} from "../../grants.js";
+import { composeBootNames, composeCatalog } from "../../launch/profiles.js";
+import { CATALOG } from "../../launch/recipes.js";
 import { CdpBackend } from "../cdp/index.js";
 import { type CdpChannel, type CdpExchange, replayCdpChannel } from "../cdp/channel.js";
 import { ReplayBackend } from "../replay/index.js";
@@ -111,5 +119,50 @@ describe("the grants file", () => {
     const union = effectiveVisibility({ file: new Set(), flags: "all", permits: new Set() });
     expect(union).toBe("all");
     expect(isVisible(union, "anything")).toBe(true);
+  });
+});
+
+// Boot-time expansion (M2.3b, ADR-0038): the browser reports its product name
+// whichever profile it opened, so a session that may launch chrome-work has to
+// be able to SEE "chrome" or the launch it just performed would answer with an
+// invisible desktop. The expansion is observe-side only.
+describe("a permitted profile identity is visible under the name the browser reports", () => {
+  const composed = composeCatalog(CATALOG, [{ name: "chrome-work", directory: "/var/tmp/m23b-work" }]);
+
+  function browser(visibility: Visibility) {
+    const issued: CdpExchange[] = [];
+    const inner = replayCdpChannel("chrome-page");
+    const recording: CdpChannel = {
+      exchange: (e) => (issued.push(e), inner.exchange(e)),
+      close: () => inner.close(),
+    };
+    return { backend: new CdpBackend(recording, visibility), issued };
+  }
+
+  it("permitting chrome-work makes the launched browser readable", async () => {
+    const { visibility } = composeBootNames({
+      permits: new Set(["chrome-work"]),
+      grants: new Set(),
+      flags: new Set(),
+      catalog: composed,
+    });
+    const { backend } = browser(visibility);
+    const { elements } = await backend.queryElements({});
+    await backend.close();
+    expect(elements.length).toBeGreaterThan(0);
+  });
+
+  it("permitting nothing leaves it invisible, still at exactly one version exchange", async () => {
+    const { visibility } = composeBootNames({
+      permits: new Set(),
+      grants: new Set(),
+      flags: new Set(),
+      catalog: composed,
+    });
+    const { backend, issued } = browser(visibility);
+    const { elements } = await backend.queryElements({});
+    await backend.close();
+    expect(elements).toEqual([]);
+    expect(issued).toEqual([{ kind: "version" }]);
   });
 });

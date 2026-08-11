@@ -10,7 +10,7 @@ import {
 import type { Backend } from "./backend.js";
 import { normalise } from "./backends/atspi/names.js";
 import { CATALOG, type LaunchCatalog } from "./launch/recipes.js";
-import { launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
+import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
@@ -42,6 +42,14 @@ export const UNAVAILABLE_REFUSAL = "no application by that name is available to 
 
 export const ALREADY_RUNNING_REFUSAL =
   "that application is already running and was not opened by this daemon - launching a second copy is refused; the running copy must be closed first";
+
+// Two browser identities cannot run at once through this daemon: the browser
+// backend dials ONE debugging endpoint (backends/cdp/channel.ts), so a second
+// profile would fight the first for it. ALREADY_RUNNING_REFUSAL cannot serve
+// here - it says "was not opened by this daemon", which would be a lie about a
+// browser this daemon launched itself (ADR-0038). Nothing is killed to make
+// room (ADR-0027). Keep this on ONE line: a byte-comparison test copies it.
+export const ONE_BROWSER_IDENTITY_REFUSAL = "refused by the launch gate: another browser identity opened by this daemon is already using the browser's debugging endpoint - one browser identity at a time; close it before opening another";
 
 // A spawn that fails after authority and catalog both passed. The constant
 // names nothing about the command or the filesystem - a raw spawn error would
@@ -104,6 +112,15 @@ const POLL_INTERVAL_MS = 250;
 // per-tick exception is "not ready yet" within the poll budget) - without it,
 // opening the browser while the browser is down would refuse instead of
 // launching.
+// The appears-as join (ADR-0038). A composed profile identity launches a
+// browser that still calls itself "chrome" in the semantic tree, because the
+// browser reports its own product name whichever profile it opened
+// (backends/cdp/index.ts). So the tree is queried under the name the recipe
+// says it will answer to, never the catalog key.
+function treeNameOf(name: string, catalog: LaunchCatalog): string {
+  return normalise(findRecipe(name, catalog)?.appearsAs ?? name);
+}
+
 async function findApplication(backend: Backend, name: string): Promise<SemanticElement | undefined> {
   try {
     const { elements } = await backend.queryElements({ role: "application", name });
@@ -129,12 +146,24 @@ async function openApplication(
   }
   const budget = launch.pollBudgetMs ?? POLL_BUDGET_MS;
   const interval = launch.pollIntervalMs ?? POLL_INTERVAL_MS;
+  const treeName = treeNameOf(name, launch.catalog);
+  // The identity conflict guard (ADR-0038). It runs after authority and
+  // BEFORE the already-running check below, and the order is the point: a
+  // running chrome-work answers to the tree name "chrome", so the check below
+  // would call our own browser one we did not open. Catalog keys are iterated
+  // rather than table.entries(), because ownsName re-verifies (pid, starttime)
+  // and so cannot fire on a process that has exited.
+  for (const key of Object.keys(launch.catalog)) {
+    if (normalise(key) === normalise(name)) continue;
+    if (treeNameOf(key, launch.catalog) !== treeName) continue;
+    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL };
+  }
   // Idempotent re-open: a live entry of ours wins - no second spawn, no
   // refusal, even when a foreign same-name copy is also running (the by-name
   // tree match cannot distinguish the two copies per element at this
   // segment's name-only granularity; M2.4's pid join will).
   if (launch.table.ownsName(name) === undefined) {
-    const running = await findApplication(backend, name);
+    const running = await findApplication(backend, treeName);
     if (running !== undefined) {
       // Running, and not ours: refuse, never kill (ADR-0027 - the asking
       // surface arrives with a later milestone).
@@ -152,7 +181,7 @@ async function openApplication(
   }
   const deadline = Date.now() + budget;
   for (;;) {
-    const application = await findApplication(backend, name);
+    const application = await findApplication(backend, treeName);
     if (application !== undefined) return { application };
     if (Date.now() >= deadline) {
       return {

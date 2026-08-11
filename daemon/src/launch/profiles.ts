@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
 import { normalise } from "../backends/atspi/names.js";
+import { effectiveVisibility, type Visibility } from "../grants.js";
 import { CATALOG, DEFAULT_CHROME_PROFILE_DIR } from "./recipes.js";
 import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
 import { findRecipe } from "./spawn.js";
@@ -142,4 +143,43 @@ export function expandThroughAppearsAs(
     if (appearsAs !== undefined) expanded.add(normalise(appearsAs));
   }
   return expanded;
+}
+
+export interface BootNameSources {
+  /** --permit names: launch authority for this session */
+  readonly permits: ReadonlySet<string>;
+  /** names read from the grants file */
+  readonly grants: Visibility;
+  /** --grant flag names */
+  readonly flags: Visibility;
+  readonly catalog: LaunchCatalog;
+}
+
+export interface BootNames {
+  readonly launchPermits: ReadonlySet<string>;
+  readonly visibility: Visibility;
+}
+
+/**
+ * The boot-time split, in one testable place. Two sets leave here and they are
+ * not the same set: what this session may LAUNCH, and what it may SEE.
+ *
+ * main.ts is the daemon's entry script and no test can import it, so composing
+ * this inline there would leave the milestone's sharpest hazard defended by a
+ * human reading a diff.
+ */
+export function composeBootNames({ permits, grants, flags, catalog }: BootNameSources): BootNames {
+  // Launch authority is returned EXACTLY as given (ADR-0038). Expanding it
+  // through appearsAs would turn --permit chrome-work into permission to
+  // launch the built-in chrome on its own profile - a different identity, and
+  // a silent authority leak.
+  const launchPermits: ReadonlySet<string> = new Set([...permits].map(normalise));
+  // Observe is the opposite: the union law stays in grants.ts (ADR-0036,
+  // including "all" winning outright), and every name a session may see is
+  // then expanded to what actually answers in the tree - or a permitted launch
+  // is unreadable forever and a durable chrome-work grant in the permissions
+  // file is inert.
+  const union = effectiveVisibility({ file: grants, flags, permits });
+  const visibility = union === "all" ? "all" : expandThroughAppearsAs(union, catalog);
+  return { launchPermits, visibility };
 }

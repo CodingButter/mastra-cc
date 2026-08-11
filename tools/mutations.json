@@ -166,5 +166,26 @@
     "find": "  try {\n    parsed = JSON.parse(text);\n  } catch {\n    throw new MalformedProfilesFileError(\n      `the profiles file at ${path} is not valid JSON - a file naming browser identities that cannot be parsed must not silently become \"no profiles\"`,\n    );\n  }\n",
     "cwd": "daemon",
     "testFile": "src/launch/__tests__/profiles.test.ts"
+  },
+  {
+    "name": "second-identity-conflict-never-checked",
+    "file": "daemon/src/server.ts",
+    "find": "  for (const key of Object.keys(launch.catalog)) {\n    if (normalise(key) === normalise(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/profile-launch.test.ts"
+  },
+  {
+    "name": "boot-composition-expands-launch-authority",
+    "file": "daemon/src/launch/profiles.ts",
+    "find": "  const launchPermits: ReadonlySet<string> = new Set([...permits].map(normalise));\n",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/profiles.test.ts"
+  },
+  {
+    "name": "permit-implies-observe-skips-appears-as",
+    "file": "daemon/src/launch/profiles.ts",
+    "find": "    const appearsAs = findRecipe(name, catalog)?.appearsAs;\n    if (appearsAs !== undefined) expanded.add(normalise(appearsAs));\n",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/profiles.test.ts"
   }
 ]

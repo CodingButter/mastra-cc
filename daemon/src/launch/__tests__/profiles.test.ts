@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  composeBootNames,
   composeCatalog,
   expandThroughAppearsAs,
   loadProfilesFile,
@@ -164,5 +165,75 @@ describe("expandThroughAppearsAs", () => {
     const names = new Set(["chrome-work"]);
     expandThroughAppearsAs(names, composed);
     expect([...names]).toEqual(["chrome-work"]);
+  });
+});
+
+// The boot split (ADR-0038, decision 6). These are the milestone's sharpest
+// hazard's only automated defence: main.ts cannot be imported by a test, so
+// "which set is handed to the launch context" is only answerable here. A
+// server-level test asserting an unpermitted name refuses would be VACUOUS -
+// it passes on an unchanged server, which refuses whatever is not in the set
+// it was handed. The question is which set that is.
+describe("composeBootNames", () => {
+  const composed = composeCatalog(CATALOG, [
+    { name: "chrome-work", directory: "/var/tmp/m23b-work" },
+    { name: "chrome-personal", directory: "/var/tmp/m23b-personal" },
+  ]);
+  const none = new Set<string>();
+
+  it("never expands launch authority through appearsAs - permitting one identity is not permitting the built-in", () => {
+    const { launchPermits } = composeBootNames({
+      permits: new Set(["chrome-work"]),
+      grants: none,
+      flags: none,
+      catalog: composed,
+    });
+    expect([...launchPermits]).toEqual(["chrome-work"]);
+    expect(launchPermits.has("chrome")).toBe(false);
+    expect(launchPermits.has("chrome-personal")).toBe(false);
+  });
+
+  it("expands the observe set, so a permitted identity is readable once it launches", () => {
+    const { visibility } = composeBootNames({
+      permits: new Set(["chrome-work"]),
+      grants: none,
+      flags: none,
+      catalog: composed,
+    });
+    expect(visibility).not.toBe("all");
+    expect([...(visibility as ReadonlySet<string>)].sort()).toEqual(["chrome", "chrome-work"]);
+  });
+
+  it("expands grants-file entries and --grant flags too - a durable grant must not be inert", () => {
+    const fromFile = composeBootNames({
+      permits: none,
+      grants: new Set(["chrome-work"]),
+      flags: none,
+      catalog: composed,
+    });
+    const fromFlag = composeBootNames({
+      permits: none,
+      grants: none,
+      flags: new Set(["chrome-personal"]),
+      catalog: composed,
+    });
+    expect([...(fromFile.visibility as ReadonlySet<string>)].sort()).toEqual(["chrome", "chrome-work"]);
+    expect([...(fromFlag.visibility as ReadonlySet<string>)].sort()).toEqual([
+      "chrome",
+      "chrome-personal",
+    ]);
+    // neither is authority: a grant lets a session SEE, never LAUNCH
+    expect([...fromFile.launchPermits]).toEqual([]);
+    expect([...fromFlag.launchPermits]).toEqual([]);
+  });
+
+  it("keeps the grants file's own laws - 'all' still wins outright", () => {
+    const { visibility } = composeBootNames({
+      permits: new Set(["chrome-work"]),
+      grants: "all",
+      flags: none,
+      catalog: composed,
+    });
+    expect(visibility).toBe("all");
   });
 });
