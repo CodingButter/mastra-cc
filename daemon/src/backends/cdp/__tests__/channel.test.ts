@@ -46,6 +46,9 @@ function stubChannel(replies: Map<string, unknown>): CdpChannel {
       if (reply === undefined) throw new Error(`stub: no reply prepared for ${exchangeKey(e)}`);
       return reply;
     },
+    async watch() {
+      throw new Error("stub: this test never watches");
+    },
     async close() {},
   };
 }

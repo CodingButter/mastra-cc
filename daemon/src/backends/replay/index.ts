@@ -1,16 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AttestElementParams, AttestElementResult, QueryElementsParams, QueryElementsResult } from "@mastra-cc/protocol-types";
-import type { Backend } from "../../backend.js";
+import { type Backend, type BackendChange, type BackendSubscription, replayWatch } from "../../backend.js";
 import type { Visibility } from "../../grants.js";
 import { AtspiBackend } from "../atspi/index.js";
-import {
-  type Channel,
-  exchangeKey,
-  fixturesDir,
-  type TapeEntry,
-  UnrecordedExchangeError,
-} from "../atspi/channel.js";
+import { asTape, type Channel, exchangeKey, fixturesDir, type Tape, UnrecordedExchangeError } from "../atspi/channel.js";
 
 // The replay backend: the SAME reader as the live backend, fed from a tape
 // the Phase 4 capture path recorded off a real desktop. Nothing here invents
@@ -24,7 +18,7 @@ export function tapePath(fixture: string): string {
   return join(fixturesDir(), fixture, "tape.json");
 }
 
-export function loadTape(fixture: string): TapeEntry[] {
+export function loadTape(fixture: string): Tape {
   const file = tapePath(fixture);
   let text: string;
   try {
@@ -32,14 +26,14 @@ export function loadTape(fixture: string): TapeEntry[] {
   } catch {
     throw new Error(`replay: no tape at ${file} - fixtures are captured with --capture, never hand-authored`);
   }
-  return JSON.parse(text) as TapeEntry[];
+  return asTape(JSON.parse(text));
 }
 
 export function replayChannel(fixture: string): Channel {
   let table: Map<string, unknown[]> | null = null;
   return {
     async call(exchange) {
-      if (table === null) table = new Map(loadTape(fixture).map((e) => [exchangeKey(e), e.reply]));
+      if (table === null) table = new Map(loadTape(fixture).exchanges.map((e) => [exchangeKey(e), e.reply]));
       const reply = table.get(exchangeKey(exchange));
       if (reply === undefined) {
         throw new UnrecordedExchangeError(
@@ -47,6 +41,11 @@ export function replayChannel(fixture: string): Channel {
         );
       }
       return reply;
+    },
+    async watch(subscribedTo, sink) {
+      // A tape that recorded no events answers a watch normally and says
+      // nothing. That is a valid recording of a quiet subtree, not an error.
+      return replayWatch(loadTape(fixture).events, subscribedTo, sink);
     },
     async close() {
       // no bus was ever contacted; nothing to release
@@ -70,6 +69,14 @@ export class ReplayBackend implements Backend {
 
   attestElement(params: AttestElementParams): Promise<AttestElementResult> {
     return this.inner.attestElement(params);
+  }
+
+  subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
+    return this.inner.subscribeElement(id, sink);
+  }
+
+  unsubscribeElement(subscriptionId: string): Promise<void> {
+    return this.inner.unsubscribeElement(subscriptionId);
   }
 
   close(): Promise<void> {

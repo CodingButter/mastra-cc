@@ -5,7 +5,15 @@ import type {
   QueryElementsResult,
   SemanticElement,
 } from "@mastra-cc/protocol-types";
-import type { Backend } from "../../backend.js";
+import {
+  type Backend,
+  type BackendChange,
+  type BackendSubscription,
+  type ChannelWatch,
+  mintSubscriptionId,
+  UnknownSubscriptionError,
+  UnwatchableElementError,
+} from "../../backend.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
@@ -47,6 +55,13 @@ export class AtspiBackend implements Backend {
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
+  // id -> the name of the application whose subtree the element was read from.
+  // A tree fact, recorded while the walk already knows it (the application's
+  // name is read before its subtree is entered); the server needs it to decide
+  // attribution and cannot derive it from an id.
+  private readonly applicationOf = new Map<string, string>();
+  // Live watches by subscription id. The channel is what feeds them.
+  private readonly watches = new Map<string, ChannelWatch>();
 
   constructor(channel: Channel, visibility: Visibility = new Set()) {
     this.channel = channel;
@@ -108,13 +123,14 @@ export class AtspiBackend implements Backend {
     return [0, 0];
   }
 
-  private async readElement(ref: NativeRef): Promise<SemanticElement> {
+  private async readElement(ref: NativeRef, application?: string): Promise<SemanticElement> {
     const nativeRole = await this.nativeRoleOf(ref);
     const name = await this.nameOf(ref);
     const [lower, upper] = await this.statesOf(ref);
     const { role, diagnostic } = toNeutralRole(nativeRole);
     const id = deriveId(role, ref.busName, ref.objectPath);
     this.answered.set(id, ref);
+    if (application !== undefined) this.applicationOf.set(id, application);
     return {
       id,
       role,
@@ -138,8 +154,10 @@ export class AtspiBackend implements Backend {
       // visibility without it - and it is read BEFORE readElement, so an
       // ungranted application's subtree is never walked, its states never
       // read, its element never answered.
+      let applicationName: string;
       try {
-        if (!isVisible(this.visibility, await this.nameOf(app))) continue;
+        applicationName = await this.nameOf(app);
+        if (!isVisible(this.visibility, applicationName)) continue;
       } catch (error) {
         // an off-tape read under replay is ignorance, and ignorance surfaces
         // as a refusal - never a skip; a dying app that cannot state its name
@@ -160,7 +178,7 @@ export class AtspiBackend implements Backend {
         // trees contain dying processes and dead references, and one of them
         // must not take down the whole query.
         try {
-          const element = await this.readElement(ref);
+          const element = await this.readElement(ref, applicationName);
           const roleMatches = params.role === undefined || element.role === params.role;
           const queryNameMatches = params.name === undefined || nameMatches(element.name, params.name);
           if (roleMatches && queryNameMatches) {
@@ -198,7 +216,41 @@ export class AtspiBackend implements Backend {
     }
   }
 
+  // A watch is only ever established on an element this backend has already
+  // answered. An id it never answered may name an element that does not exist
+  // or one inside an application this session cannot see - the same refusal
+  // covers both, deliberately (ADR-0036).
+  async subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
+    if (!this.answered.has(id)) {
+      throw new UnwatchableElementError(`no element with id "${id}" was ever answered by this daemon - nothing to watch`);
+    }
+    const watch = await this.channel.watch(id, sink);
+    const subscriptionId = mintSubscriptionId();
+    this.watches.set(subscriptionId, watch);
+    return {
+      subscriptionId,
+      application: this.applicationOf.get(id) ?? "",
+      close: async () => {
+        this.watches.delete(subscriptionId);
+        await watch.close();
+      },
+    };
+  }
+
+  async unsubscribeElement(subscriptionId: string): Promise<void> {
+    const watch = this.watches.get(subscriptionId);
+    if (watch === undefined) {
+      throw new UnknownSubscriptionError(`no watch on this backend is named "${subscriptionId}" - nothing to end`);
+    }
+    this.watches.delete(subscriptionId);
+    await watch.close();
+  }
+
   async close(): Promise<void> {
+    // Closing the reader closes what it was watching: a watch outliving its
+    // backend would be fed by a channel that is gone.
+    for (const watch of this.watches.values()) await watch.close();
+    this.watches.clear();
     await this.channel.close();
   }
 }

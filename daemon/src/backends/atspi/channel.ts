@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import dbus from "dbus-native";
 import type { DbusBus } from "dbus-native";
+import { type BackendChange, type ChannelWatch, type TapeEvent, WatchUnsupportedError } from "../../backend.js";
 
 // The channel: every D-Bus exchange the backend performs goes through exactly
 // one call() seam. The live channel talks to the real accessibility bus; the
@@ -21,6 +22,11 @@ export interface Exchange {
 
 export interface Channel {
   call(exchange: Exchange): Promise<unknown[]>;
+  // The second direction on the same seam (ADR-0039): the caller registers a
+  // sink and the channel feeds it, rather than the caller asking. No second
+  // socket, no polling - a channel that cannot yet be told anything refuses by
+  // name rather than accepting a watch that would stay silent.
+  watch(subscribedTo: string, sink: (change: BackendChange) => void): Promise<ChannelWatch>;
   close(): Promise<void>;
 }
 
@@ -79,6 +85,14 @@ export function liveChannel(): Channel {
     async call(exchange) {
       return invoke(await a11yBus(), exchange);
     },
+    async watch() {
+      // The bus signal registration lands with the accessibility stream
+      // (Phase 4). Until it does, this route says so instead of handing back a
+      // watch that would never speak.
+      throw new WatchUnsupportedError(
+        "the accessibility route cannot watch a subtree yet - it has registered for no signals, and a watch that reports nothing is indistinguishable from a quiet desktop",
+      );
+    },
     async close() {
       a11y?.connection.end();
       session?.connection.end();
@@ -90,6 +104,21 @@ export function liveChannel(): Channel {
 
 export interface TapeEntry extends Exchange {
   reply: unknown[];
+}
+
+export interface Tape {
+  exchanges: TapeEntry[];
+  events: TapeEvent[];
+}
+
+// Tapes recorded before the channel had a second direction are a bare array of
+// exchanges. They are read as what they are - a recording with no events - and
+// never rewritten: a tape is what the world did, not what we would like it to
+// have done.
+export function asTape(recorded: unknown): Tape {
+  if (Array.isArray(recorded)) return { exchanges: recorded as TapeEntry[], events: [] };
+  const tape = recorded as Partial<Tape>;
+  return { exchanges: tape.exchanges ?? [], events: tape.events ?? [] };
 }
 
 // Fixtures live under daemon/fixtures/, found by walking up from this module
@@ -109,18 +138,32 @@ export function fixturesDir(): string {
 }
 
 export function captureChannel(inner: Channel, captureName: string): Channel {
-  const tape: TapeEntry[] = [];
+  const exchanges: TapeEntry[] = [];
+  const events: TapeEvent[] = [];
   return {
     async call(exchange) {
       const reply = await inner.call(exchange);
-      tape.push({ ...exchange, reply });
+      exchanges.push({ ...exchange, reply });
       return reply;
+    },
+    async watch(subscribedTo, sink) {
+      // Changes are recorded as they arrive, on the way through to the caller:
+      // a capture of a watch is a recording of what the desktop said, in the
+      // order it said it.
+      const began = Date.now();
+      return inner.watch(subscribedTo, (change) => {
+        events.push({ afterMs: Date.now() - began, subscribedTo, change });
+        sink(change);
+      });
     },
     async close() {
       const dir = join(fixturesDir(), captureName);
       mkdirSync(dir, { recursive: true });
+      const tape: Tape = { exchanges, events };
       writeFileSync(join(dir, "tape.json"), `${JSON.stringify(tape, null, 1)}\n`);
-      console.log(`capture: ${tape.length} exchange(s) recorded to daemon/fixtures/${captureName}/tape.json`);
+      console.log(
+        `capture: ${exchanges.length} exchange(s) and ${events.length} event(s) recorded to daemon/fixtures/${captureName}/tape.json`,
+      );
       await inner.close();
     },
   };

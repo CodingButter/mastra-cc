@@ -5,7 +5,15 @@ import type {
   QueryElementsResult,
   SemanticElement,
 } from "@mastra-cc/protocol-types";
-import type { Backend } from "../../backend.js";
+import {
+  type Backend,
+  type BackendChange,
+  type BackendSubscription,
+  type ChannelWatch,
+  mintSubscriptionId,
+  UnknownSubscriptionError,
+  UnwatchableElementError,
+} from "../../backend.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
@@ -65,6 +73,9 @@ export class CdpBackend implements Backend {
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
+  // subscription id -> the channel watch feeding it. Per backend, closed when
+  // the backend closes.
+  private readonly watches = new Map<string, ChannelWatch>();
 
   constructor(channel: CdpChannel, visibility: Visibility = new Set()) {
     this.channel = channel;
@@ -203,7 +214,44 @@ export class CdpBackend implements Backend {
     return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again` };
   }
 
+  // A watch is only ever established on an element this backend has already
+  // answered. An id it never answered may name a node that does not exist or
+  // one in a browser this session cannot see - the same refusal covers both,
+  // deliberately (ADR-0036).
+  async subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
+    if (!this.answered.has(id)) {
+      throw new UnwatchableElementError(`no element with id "${id}" was ever answered by this daemon - nothing to watch`);
+    }
+    const watch = await this.channel.watch(id, sink);
+    const subscriptionId = mintSubscriptionId();
+    this.watches.set(subscriptionId, watch);
+    return {
+      subscriptionId,
+      // Every element this backend answers is read out of the browser at its
+      // endpoint, so the application a watched node belongs to is the browser
+      // itself, under the name the version reply derives.
+      application: productName(await this.version()),
+      close: async () => {
+        this.watches.delete(subscriptionId);
+        await watch.close();
+      },
+    };
+  }
+
+  async unsubscribeElement(subscriptionId: string): Promise<void> {
+    const watch = this.watches.get(subscriptionId);
+    if (watch === undefined) {
+      throw new UnknownSubscriptionError(`no watch on this backend is named "${subscriptionId}" - nothing to end`);
+    }
+    this.watches.delete(subscriptionId);
+    await watch.close();
+  }
+
   async close(): Promise<void> {
+    // Closing the reader closes what it was watching: a watch outliving its
+    // backend would be fed by a channel that is gone.
+    for (const watch of this.watches.values()) await watch.close();
+    this.watches.clear();
     await this.channel.close();
   }
 }

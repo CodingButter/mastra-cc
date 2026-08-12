@@ -101,6 +101,12 @@ describe("the scope gate: edit, activate and submit are defined and refused by n
       attestElement: async () => {
         throw new Error("the scope gate touched the backend");
       },
+      subscribeElement: async () => {
+        throw new Error("the scope gate touched the backend");
+      },
+      unsubscribeElement: async () => {
+        throw new Error("the scope gate touched the backend");
+      },
       close: async () => {
         throw new Error("the scope gate touched the backend");
       },

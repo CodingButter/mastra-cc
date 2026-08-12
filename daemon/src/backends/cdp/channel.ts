@@ -1,5 +1,12 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  type BackendChange,
+  type ChannelWatch,
+  replayWatch,
+  type TapeEvent,
+  WatchUnsupportedError,
+} from "../../backend.js";
 import { fixturesDir } from "../atspi/channel.js";
 
 // The browser channel: every debugging-protocol exchange the CDP backend
@@ -21,6 +28,11 @@ export type CdpExchange =
 
 export interface CdpChannel {
   exchange(e: CdpExchange): Promise<unknown>;
+  // The second direction on the same seam (ADR-0039). Protocol messages that
+  // answer no request are exactly what an event is, and rpc() already sees
+  // them (it discards anything without a matching id, :122-124) - so the
+  // routing point exists; the browser stream fills it in Phase 3.
+  watch(subscribedTo: string, sink: (change: BackendChange) => void): Promise<ChannelWatch>;
   close(): Promise<void>;
 }
 
@@ -154,6 +166,14 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
           return rpc(await socketFor(e.targetId), e.method, e.params);
       }
     },
+    async watch() {
+      // The page-side observer and its push binding land with the browser
+      // stream (Phase 3). Until they do, this route says so instead of handing
+      // back a watch that would never speak.
+      throw new WatchUnsupportedError(
+        "the browser route cannot watch a subtree yet - no page-side observer is installed, and a watch that reports nothing is indistinguishable from a quiet page",
+      );
+    },
     async close() {
       for (const pending of sockets.values()) {
         try {
@@ -177,7 +197,24 @@ export function cdpTapePath(fixture: string): string {
   return join(fixturesDir(), fixture, "tape.json");
 }
 
-export function loadCdpTape(fixture: string): CdpTapeEntry[] {
+// The browser tape. Same two directions as the D-Bus tape, its own shape:
+// exchanges are CDP-shaped, and the recorded events are seam vocabulary.
+export interface CdpTape {
+  exchanges: CdpTapeEntry[];
+  events: TapeEvent[];
+}
+
+// Tapes recorded before the channel had a second direction are a bare array of
+// exchanges. They are read as what they are - a recording with no events - and
+// never rewritten: a tape is what the world did, not what we would like it to
+// have done.
+export function asCdpTape(recorded: unknown): CdpTape {
+  if (Array.isArray(recorded)) return { exchanges: recorded as CdpTapeEntry[], events: [] };
+  const tape = recorded as Partial<CdpTape>;
+  return { exchanges: tape.exchanges ?? [], events: tape.events ?? [] };
+}
+
+export function loadCdpTape(fixture: string): CdpTape {
   const file = cdpTapePath(fixture);
   let text: string;
   try {
@@ -185,22 +222,36 @@ export function loadCdpTape(fixture: string): CdpTapeEntry[] {
   } catch {
     throw new Error(`replay: no tape at ${file} - fixtures are captured with --capture, never hand-authored`);
   }
-  return JSON.parse(text) as CdpTapeEntry[];
+  return asCdpTape(JSON.parse(text));
 }
 
 export function captureCdpChannel(inner: CdpChannel, captureName: string): CdpChannel {
-  const tape: CdpTapeEntry[] = [];
+  const exchanges: CdpTapeEntry[] = [];
+  const events: TapeEvent[] = [];
   return {
     async exchange(e) {
       const reply = await inner.exchange(e);
-      tape.push({ exchange: e, reply });
+      exchanges.push({ exchange: e, reply });
       return reply;
+    },
+    async watch(subscribedTo, sink) {
+      // Changes are recorded as they arrive, on the way through to the caller:
+      // a capture of a watch is a recording of what the page said, in the
+      // order it said it.
+      const began = Date.now();
+      return inner.watch(subscribedTo, (change) => {
+        events.push({ afterMs: Date.now() - began, subscribedTo, change });
+        sink(change);
+      });
     },
     async close() {
       const dir = join(fixturesDir(), captureName);
       mkdirSync(dir, { recursive: true });
+      const tape: CdpTape = { exchanges, events };
       writeFileSync(join(dir, "tape.json"), `${JSON.stringify(tape, null, 1)}\n`);
-      console.log(`capture: ${tape.length} exchange(s) recorded to daemon/fixtures/${captureName}/tape.json`);
+      console.log(
+        `capture: ${exchanges.length} exchange(s) and ${events.length} event(s) recorded to daemon/fixtures/${captureName}/tape.json`,
+      );
       await inner.close();
     },
   };
@@ -210,12 +261,19 @@ export function replayCdpChannel(fixture: string): CdpChannel {
   let table: Map<string, unknown> | null = null;
   return {
     async exchange(e) {
-      if (table === null) table = new Map(loadCdpTape(fixture).map((entry) => [exchangeKey(entry.exchange), entry.reply]));
+      if (table === null) {
+        table = new Map(loadCdpTape(fixture).exchanges.map((entry) => [exchangeKey(entry.exchange), entry.reply]));
+      }
       const key = exchangeKey(e);
       if (!table.has(key)) {
         throw new UnrecordedCdpExchangeError(`no recorded exchange for ${key} - refusing to invent a reply`);
       }
       return table.get(key);
+    },
+    async watch(subscribedTo, sink) {
+      // A tape that recorded no events answers a watch normally and says
+      // nothing. That is a valid recording of a quiet page, not an error.
+      return replayWatch(loadCdpTape(fixture).events, subscribedTo, sink);
     },
     async close() {
       // no browser was ever contacted; nothing to release

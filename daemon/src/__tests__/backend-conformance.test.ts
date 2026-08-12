@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
-import { BACKEND_METHODS } from "../backend.js";
+import { BACKEND_METHODS, UnknownSubscriptionError, WatchUnsupportedError } from "../backend.js";
 import { LIVE_BACKENDS, registry } from "../backends/registry.js";
 
 // Live-lane gating: backends that need a real desktop run through this suite
@@ -57,6 +57,39 @@ for (const [name, factory] of Object.entries(registry)) {
       const attested = await backend.attestElement({ id: "el-000000000000" });
       expect(attested.element).toBeUndefined();
       expect(attested.refusal).toContain("el-000000000000");
+    });
+
+    // The subscription half of the seam (ADR-0039). A route that cannot watch
+    // anything yet still conforms - by REFUSING BY NAME. What no backend may
+    // do is accept a watch and then say nothing, because that is
+    // indistinguishable from a quiet desktop.
+    it("either watches an element it answered or refuses the watch by name", async () => {
+      const { elements } = await backend.queryElements({});
+      let subscription: Awaited<ReturnType<typeof backend.subscribeElement>> | undefined;
+      try {
+        subscription = await backend.subscribeElement(elements[0].id, () => undefined);
+      } catch (error) {
+        expect(error, `backend "${name}" must refuse a watch by name, never with a raw error`).toBeInstanceOf(
+          WatchUnsupportedError,
+        );
+        return;
+      }
+      expect(subscription.subscriptionId).not.toBe("");
+      expect(subscription.application).not.toBe("");
+      // Two watches on the same element are two different watches: a client
+      // holding both must be able to end one of them.
+      const second = await backend.subscribeElement(elements[0].id, () => undefined);
+      expect(second.subscriptionId).not.toBe(subscription.subscriptionId);
+      await backend.unsubscribeElement(second.subscriptionId);
+      await backend.unsubscribeElement(subscription.subscriptionId);
+    });
+
+    it("refuses a watch on an element it never answered, echoing the id", async () => {
+      await expect(backend.subscribeElement("el-000000000000", () => undefined)).rejects.toThrow(/el-000000000000/);
+    });
+
+    it("refuses to end a watch it does not hold, by name rather than by raw error", async () => {
+      await expect(backend.unsubscribeElement("sub-000000-000000")).rejects.toBeInstanceOf(UnknownSubscriptionError);
     });
   });
 }

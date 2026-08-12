@@ -53,6 +53,10 @@ function spyBackend(elements: SemanticElement[]) {
       return { elements: elements.filter((el) => query.name === undefined || el.name === query.name) };
     },
     attestElement: async () => ({}),
+    subscribeElement: async () => {
+      throw new Error("this test never watches");
+    },
+    unsubscribeElement: async () => undefined,
     close: async () => undefined,
   };
   return { backend, asked };
@@ -105,6 +109,13 @@ describe("a launched profile is readable", () => {
       name: "spy",
       queryElements: async () => ((treeTouched = true), { elements: [] }),
       attestElement: async () => ((treeTouched = true), {}),
+      subscribeElement: async () => {
+        treeTouched = true;
+        throw new Error("the authority gate touched the backend");
+      },
+      unsubscribeElement: async () => {
+        treeTouched = true;
+      },
       close: async () => undefined,
     };
     const result = resultOf(await open("chrome-work", backend, launch({ catalog: trap })));
