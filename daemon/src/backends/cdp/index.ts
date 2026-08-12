@@ -3,6 +3,7 @@ import type {
   AttestElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  Role,
   SemanticElement,
 } from "@mastra-cc/protocol-types";
 import {
@@ -73,6 +74,11 @@ export class CdpBackend implements Backend {
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
+  // The role this backend gave each id, and the reverse lookup a watch needs:
+  // target/backend-node-id -> the id and role the walk already minted. Both
+  // are filled while walking, where the answer is already known.
+  private readonly roleOf = new Map<string, Role>();
+  private readonly mintedByNode = new Map<string, { id: string; role: Role }>();
   // subscription id -> the channel watch feeding it. Per backend, closed when
   // the backend closes.
   private readonly watches = new Map<string, ChannelWatch>();
@@ -130,6 +136,10 @@ export class CdpBackend implements Backend {
       backendDOMNodeId: node.backendDOMNodeId,
       nodeId: node.nodeId,
     });
+    this.roleOf.set(id, role);
+    if (node.backendDOMNodeId !== undefined) {
+      this.mintedByNode.set(`${targetId}/${node.backendDOMNodeId}`, { id, role });
+    }
     return {
       id,
       role,
@@ -219,10 +229,20 @@ export class CdpBackend implements Backend {
   // one in a browser this session cannot see - the same refusal covers both,
   // deliberately (ADR-0036).
   async subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
-    if (!this.answered.has(id)) {
+    const ref = this.answered.get(id);
+    if (ref === undefined) {
       throw new UnwatchableElementError(`no element with id "${id}" was ever answered by this daemon - nothing to watch`);
     }
-    const watch = await this.channel.watch(id, sink);
+    const watch = await this.channel.watch(id, sink, {
+      targetId: ref.kind === "node" ? ref.targetId : "",
+      ...(ref.kind === "node"
+        ? { backendDOMNodeId: ref.backendDOMNodeId, nodeId: ref.nodeId }
+        : {}),
+      role: this.roleOf.get(id) ?? "generic",
+      // A change to an element the walk already named is reported under THAT
+      // id: a pointer the client cannot attest would be no pointer at all.
+      known: (backendNodeId) => this.mintedByNode.get(`${ref.kind === "node" ? ref.targetId : ""}/${backendNodeId}`),
+    });
     const subscriptionId = mintSubscriptionId();
     this.watches.set(subscriptionId, watch);
     return {

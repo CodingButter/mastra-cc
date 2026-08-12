@@ -23,6 +23,7 @@ import {
   WatchUnsupportedError,
 } from "./backend.js";
 import { normalise } from "./backends/atspi/names.js";
+import { isVisible, type Visibility } from "./grants.js";
 import { CATALOG, type LaunchCatalog } from "./launch/recipes.js";
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
@@ -197,7 +198,14 @@ interface OpenSubscription {
 // the client that asked for it.
 export class SubscriptionBook {
   private readonly open = new Map<string, OpenSubscription>();
-  constructor(private readonly emit: (event: ChangeEvent) => void) {}
+  constructor(
+    private readonly emit: (event: ChangeEvent) => void,
+    // Visibility is re-checked where events are STAMPED, not only where
+    // subscriptions are created: a grant is a statement about now, and an
+    // application that has left the visible set must stop being narrated
+    // mid-watch (ADR-0036).
+    private readonly visibility: Visibility = "all",
+  ) {}
 
   async subscribe(backend: Backend, id: string, priority: Priority): Promise<string> {
     // The sink is installed before the subscription id exists, so it captures
@@ -223,6 +231,10 @@ export class SubscriptionBook {
   private deliver(subscriptionId: string, change: BackendChange): void {
     const entry = this.open.get(subscriptionId);
     if (entry === undefined || !entry.alive) return;
+    // An application outside the visible set is ABSENT, not filtered-with-a-
+    // notice: nothing is emitted at all, which is byte-identical to the quiet
+    // desktop an ungranted application is supposed to look like.
+    if (!isVisible(this.visibility, entry.application)) return;
     const stamp = attribute(entry.application);
     this.emit({
       subscriptionId,
@@ -491,8 +503,10 @@ export function startServer(options: {
   socketPath: string;
   backend: Backend;
   launch?: LaunchContext;
+  /** the observe set composed at boot; events are filtered against it at emission */
+  visibility?: Visibility;
 }): Promise<Server> {
-  const { socketPath, backend, launch } = options;
+  const { socketPath, backend, launch, visibility = "all" } = options;
   mkdirSync(dirname(socketPath), { recursive: true });
   rmSync(socketPath, { force: true });
 
@@ -504,7 +518,7 @@ export function startServer(options: {
     // client that is gets it without having asked twice.
     const book = new SubscriptionBook((event) => {
       if (!socket.destroyed) socket.write(`${JSON.stringify({ type: "event", event })}\n`);
-    });
+    }, visibility);
     // A watch belongs to the connection that asked for it. When the socket
     // goes, the watches go with it - closed at the BACKEND, not merely
     // forgotten here: a forgotten watch is still being fed.

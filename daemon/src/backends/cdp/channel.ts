@@ -8,6 +8,7 @@ import {
   WatchUnsupportedError,
 } from "../../backend.js";
 import { fixturesDir } from "../atspi/channel.js";
+import { type CdpWatchAnchor, openSubtreeStream } from "./subtree-stream.js";
 
 // The browser channel: every debugging-protocol exchange the CDP backend
 // performs goes through exactly one exchange() seam, mirroring the posture of
@@ -29,10 +30,16 @@ export type CdpExchange =
 export interface CdpChannel {
   exchange(e: CdpExchange): Promise<unknown>;
   // The second direction on the same seam (ADR-0039). Protocol messages that
-  // answer no request are exactly what an event is, and rpc() already sees
-  // them (it discards anything without a matching id, :122-124) - so the
-  // routing point exists; the browser stream fills it in Phase 3.
-  watch(subscribedTo: string, sink: (change: BackendChange) => void): Promise<ChannelWatch>;
+  // answer no request are exactly what an event is, and rpc() already saw
+  // them - it discarded anything without a matching id; now they are routed.
+  // The anchor is what the walk recorded about the watched node: the live
+  // channel installs the observer on it, and a recorded channel ignores it
+  // because a tape is keyed by the subscription, not by the page.
+  watch(
+    subscribedTo: string,
+    sink: (change: BackendChange) => void,
+    anchor: CdpWatchAnchor,
+  ): Promise<ChannelWatch>;
   close(): Promise<void>;
 }
 
@@ -73,6 +80,9 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
   const sockets = new Map<string, Promise<WebSocket>>();
   let targets: DiscoveredTarget[] = [];
   let nextId = 1;
+  // The event direction, per target. rpc() ignores messages that answer no
+  // request; these listeners are what they are for (ADR-0039).
+  const eventListeners = new Map<string, Set<(method: string, params: Record<string, unknown>) => void>>();
 
   async function http(path: string): Promise<unknown> {
     let response: Response;
@@ -115,6 +125,21 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
       // A dead socket must not stay cached: the next exchange redials
       // instead of sending into a closed connection.
       ws.addEventListener("close", () => sockets.delete(targetId), { once: true });
+      // Every message without an id is an event. One reader per socket fans
+      // them out; a socket with no watches has an empty listener set and the
+      // messages go nowhere, which is what discarding them was.
+      ws.addEventListener("message", (event) => {
+        const listeners = eventListeners.get(targetId);
+        if (listeners === undefined || listeners.size === 0) return;
+        let message: { id?: number; method?: string; params?: Record<string, unknown> };
+        try {
+          message = JSON.parse(String(event.data));
+        } catch {
+          return;
+        }
+        if (message.id !== undefined || message.method === undefined) return;
+        for (const listener of listeners) listener(message.method, message.params ?? {});
+      });
     });
     sockets.set(targetId, opened);
     return opened;
@@ -166,12 +191,29 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
           return rpc(await socketFor(e.targetId), e.method, e.params);
       }
     },
-    async watch() {
-      // The page-side observer and its push binding land with the browser
-      // stream (Phase 3). Until they do, this route says so instead of handing
-      // back a watch that would never speak.
-      throw new WatchUnsupportedError(
-        "the browser route cannot watch a subtree yet - no page-side observer is installed, and a watch that reports nothing is indistinguishable from a quiet page",
+    async watch(subscribedTo, sink, anchor) {
+      // The browser at the endpoint is the only application this route ever
+      // reads, and its own application element is not a subtree of anything -
+      // there is no node to anchor an observer on.
+      if (anchor.backendDOMNodeId === undefined && anchor.nodeId === undefined) {
+        throw new WatchUnsupportedError(
+          "the browser's own application element names no node in a page - a watch needs a subtree to anchor on, and accepting one that could never report would be indistinguishable from a quiet page",
+        );
+      }
+      const ws = await socketFor(anchor.targetId);
+      return openSubtreeStream(
+        {
+          call: (method, params) => rpc(ws, method, params),
+          onProtocolEvent: (listener) => {
+            const listeners = eventListeners.get(anchor.targetId) ?? new Set();
+            listeners.add(listener);
+            eventListeners.set(anchor.targetId, listeners);
+            return () => listeners.delete(listener);
+          },
+        },
+        anchor,
+        subscribedTo,
+        sink,
       );
     },
     async close() {
@@ -234,15 +276,19 @@ export function captureCdpChannel(inner: CdpChannel, captureName: string): CdpCh
       exchanges.push({ exchange: e, reply });
       return reply;
     },
-    async watch(subscribedTo, sink) {
+    async watch(subscribedTo, sink, anchor) {
       // Changes are recorded as they arrive, on the way through to the caller:
       // a capture of a watch is a recording of what the page said, in the
       // order it said it.
       const began = Date.now();
-      return inner.watch(subscribedTo, (change) => {
-        events.push({ afterMs: Date.now() - began, subscribedTo, change });
-        sink(change);
-      });
+      return inner.watch(
+        subscribedTo,
+        (change) => {
+          events.push({ afterMs: Date.now() - began, subscribedTo, change });
+          sink(change);
+        },
+        anchor,
+      );
     },
     async close() {
       const dir = join(fixturesDir(), captureName);
@@ -272,7 +318,9 @@ export function replayCdpChannel(fixture: string): CdpChannel {
     },
     async watch(subscribedTo, sink) {
       // A tape that recorded no events answers a watch normally and says
-      // nothing. That is a valid recording of a quiet page, not an error.
+      // nothing. That is a valid recording of a quiet page, not an error. The
+      // anchor is not consulted: what the page did is on the tape, and a
+      // recording is not re-derived from the page it was recorded from.
       return replayWatch(loadCdpTape(fixture).events, subscribedTo, sink);
     },
     async close() {

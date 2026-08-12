@@ -146,6 +146,7 @@ const server = await startServer({
   socketPath,
   backend,
   launch: { permits: launchPermits, catalog, table },
+  visibility,
 });
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);
 

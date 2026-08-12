@@ -56,7 +56,7 @@ describe("an ungranted application is invisible", () => {
     const inner = replayCdpChannel("chrome-page");
     const recording: CdpChannel = {
       exchange: (e) => (issued.push(e), inner.exchange(e)),
-      watch: (subscribedTo, sink) => inner.watch(subscribedTo, sink),
+      watch: (subscribedTo, sink, anchor) => inner.watch(subscribedTo, sink, anchor),
       close: () => inner.close(),
     };
     const backend = new CdpBackend(recording, new Set());
@@ -135,7 +135,7 @@ describe("a permitted profile identity is visible under the name the browser rep
     const inner = replayCdpChannel("chrome-page");
     const recording: CdpChannel = {
       exchange: (e) => (issued.push(e), inner.exchange(e)),
-      watch: (subscribedTo, sink) => inner.watch(subscribedTo, sink),
+      watch: (subscribedTo, sink, anchor) => inner.watch(subscribedTo, sink, anchor),
       close: () => inner.close(),
     };
     return { backend: new CdpBackend(recording, visibility), issued };

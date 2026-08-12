@@ -201,5 +201,19 @@
     "find": "    const teardown = () => {\n      void book.closeAll();\n    };\n    socket.on(\"close\", teardown);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-lifetime.test.ts"
+  },
+  {
+    "name": "event-delivery-skips-the-visibility-check",
+    "file": "daemon/src/server.ts",
+    "find": "    if (!isVisible(this.visibility, entry.application)) return;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/subscription-visibility.test.ts"
+  },
+  {
+    "name": "a-dead-root-is-silently-forgotten",
+    "file": "daemon/src/backends/cdp/subtree-stream.ts",
+    "find": "    sink({ id: watchedId, role: anchor.role, kind: \"watchEnded\" });\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
   }
 ]
