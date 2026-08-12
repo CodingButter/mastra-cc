@@ -16,9 +16,21 @@ import { DEBUG_PORT, PAGE_PORT } from "../backends/cdp/channel.js";
 export interface LaunchRecipe {
   readonly argv: readonly string[];
   readonly env: Readonly<Record<string, string>>;
+  // The name this application answers to in the semantic tree when it differs
+  // from the catalog key: a browser launched under a profile identity still
+  // calls itself "chrome" (the cdp backend derives the name from the browser's
+  // own version reply, backends/cdp/index.ts). Static data like argv - wire
+  // input selects a catalog key and never contributes this.
+  readonly appearsAs?: string;
 }
 
 export type LaunchCatalog = Readonly<Record<string, LaunchRecipe>>;
+
+// The built-in browser's profile directory. Exported so profile composition
+// (launch/profiles.ts) substitutes one identified argv element instead of
+// string-matching, and so a profile naming this directory can be refused - it
+// would share the built-in identity's cookie jar.
+export const DEFAULT_CHROME_PROFILE_DIR = "/tmp/mastra-cc/chrome-profile";
 
 // GTK3 enabling: the atk-bridge module registers the process on the
 // accessibility bus (measured in M0.5; ADR-0027). yad is the proven headless
@@ -41,11 +53,12 @@ export const CATALOG: LaunchCatalog = {
     argv: [
       "google-chrome",
       `--remote-debugging-port=${DEBUG_PORT}`,
-      "--user-data-dir=/tmp/mastra-cc/chrome-profile",
+      `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`,
       "--no-first-run",
       "--no-default-browser-check",
       `http://127.0.0.1:${PAGE_PORT}/page.html`,
     ],
     env: {},
+    appearsAs: "chrome",
   },
 };
