@@ -4,10 +4,15 @@ import {
   SCHEMA_DIGEST,
   type AttestElementParams,
   type AttestElementResult,
+  type ChangeEvent,
   type OpenApplicationParams,
   type OpenApplicationResult,
   type QueryElementsParams,
   type QueryElementsResult,
+  type SubscribeElementParams,
+  type SubscribeElementResult,
+  type UnsubscribeElementParams,
+  type UnsubscribeElementResult,
 } from "@mastra-cc/protocol-types";
 
 // The one and only daemon client (B5, ADR-0003). Newline-delimited JSON over a
@@ -34,10 +39,28 @@ interface Response {
   refusal?: string;
 }
 
+// The daemon's one server-initiated message (ADR-0039). It carries no `id`
+// because it answers nothing, which is exactly how the read loop below tells
+// it apart from a reply.
+interface EventMessage {
+  type: "event";
+  event: ChangeEvent;
+}
+
 export interface TransportClient {
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult>;
   attestElement(params: AttestElementParams): Promise<AttestElementResult>;
+  subscribeElement(params: SubscribeElementParams): Promise<SubscribeElementResult>;
+  unsubscribeElement(params: UnsubscribeElementParams): Promise<UnsubscribeElementResult>;
   openApplication(params: OpenApplicationParams): Promise<OpenApplicationResult>;
+  /**
+   * Register a listener for pushed change events. Returns a function that
+   * removes it. Events are delivered as they arrive and are never buffered:
+   * a listener registered after an event has been and gone does not receive
+   * it, because a change stream that replays history is a different product
+   * from one that reports the present.
+   */
+  onChangeEvent(listener: (event: ChangeEvent) => void): () => void;
   close(): void;
 }
 
@@ -45,6 +68,7 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
   const socketPath = options.socketPath ?? defaultSocketPath();
   const socket = createConnection(socketPath);
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+  const listeners = new Set<(event: ChangeEvent) => void>();
   let nextId = 1;
   let buffer = "";
   let helloResolve: ((h: Hello) => void) | null = null;
@@ -58,7 +82,7 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
       buffer = buffer.slice(newline + 1);
       newline = buffer.indexOf("\n");
       if (!line.trim()) continue;
-      let message: Hello | Response | { type: "refusal"; refusal: string };
+      let message: Hello | Response | EventMessage | { type: "refusal"; refusal: string };
       try {
         message = JSON.parse(line);
       } catch {
@@ -80,6 +104,21 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
         }
         for (const p of pending.values()) p.reject(error);
         pending.clear();
+      } else if (message.type === "event") {
+        // An event answers no request, so it never touches the pending table.
+        // It is handed to every listener even if none of them asked for this
+        // subscription: the client is the one that knows whether it still
+        // cares, and a transport that silently drops protocol traffic is a
+        // transport that hides the daemon from its own client. A throwing
+        // listener must not take the read loop - or the other listeners - down
+        // with it.
+        for (const listener of listeners) {
+          try {
+            listener(message.event);
+          } catch {
+            // a listener's failure is the listener's problem
+          }
+        }
       } else if (message.type === "response") {
         const p = pending.get(message.id);
         if (p) {
@@ -128,7 +167,13 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
   return {
     queryElements: (params) => call("queryElements", params) as Promise<QueryElementsResult>,
     attestElement: (params) => call("attestElement", params) as Promise<AttestElementResult>,
+    subscribeElement: (params) => call("subscribeElement", params) as Promise<SubscribeElementResult>,
+    unsubscribeElement: (params) => call("unsubscribeElement", params) as Promise<UnsubscribeElementResult>,
     openApplication: (params) => call("openApplication", params) as Promise<OpenApplicationResult>,
+    onChangeEvent: (listener) => {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
     close: () => void (socket as Socket).end(),
   };
 }

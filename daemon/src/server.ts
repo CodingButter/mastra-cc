@@ -82,6 +82,19 @@ export const ACTIVATE_SCOPE_REFUSAL =
 export const SUBMIT_SCOPE_REFUSAL =
   'refused by the scope gate: "submitElement" is submit-class and this session holds no submit authority for any application - authority is checked before the attestation is ever examined, the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
 
+// The change stream (ADR-0039). Both subscription methods are observe-class:
+// a watch reads and cannot cause anything. They are on the wire before either
+// route can serve them, on ADR-0037's reasoning - the contract is the thing
+// being frozen, and a method that does not exist cannot be refused honestly.
+// Until a backend can watch a subtree, these name the check that ran and what
+// would change the answer; the behaviour arrives route by route, and the
+// refusal for a route that will never serve it stays exactly here.
+export const SUBSCRIBE_UNSUPPORTED_REFUSAL =
+  'refused by the change stream: "subscribeElement" is defined by the schema but this session\'s backend cannot yet watch an element for changes - the watch would be accepted and then say nothing, which is indistinguishable from a quiet desktop, so it is refused instead';
+
+export const UNSUBSCRIBE_UNKNOWN_REFUSAL =
+  'refused by the change stream: "unsubscribeElement" was given a subscription this connection does not hold - a watch is per-connection state, and ending one that was never established would report a change of state that did not happen';
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -95,6 +108,8 @@ type Handler = (params: unknown, backend: Backend, launch: LaunchContext) => Pro
 const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
   queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b) => b.queryElements((p ?? {}) as never) },
   attestElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b) => b.attestElement((p ?? {}) as never) },
+  subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: async () => ({ refusal: SUBSCRIBE_UNSUPPORTED_REFUSAL }) },
+  unsubscribeElement: { effectClass: "observe", enforcement: "at-result", handler: async () => ({ refusal: UNSUBSCRIBE_UNKNOWN_REFUSAL }) },
   openApplication: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => openApplication((p ?? {}) as { name?: string }, b, l) },
   editElement: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: EDIT_SCOPE_REFUSAL }) },
   activateElement: { effectClass: "activate", enforcement: "before-call", handler: async () => ({ refusal: ACTIVATE_SCOPE_REFUSAL }) },

@@ -55,6 +55,40 @@ describe("the daemon refuses malformed lines loudly instead of swallowing them",
     socket.destroy();
   });
 
+  it("refuses a client that sends an event line, because the push direction is server to client only", async () => {
+    // ADR-0039 gives the daemon one server-initiated message. Nothing makes
+    // the reverse meaningful: a client cannot inject a change into its own
+    // stream, and the same malformed-line path that catches typos catches
+    // this. Tested because "the wire is one-directional" is a claim, and an
+    // untested claim about a direction is how the other direction appears.
+    const socket = netConnect(socketPath);
+    const received = lines(socket, 3);
+    socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+    socket.write(
+      `${JSON.stringify({
+        type: "event",
+        event: {
+          subscriptionId: "sub-1",
+          id: "el-0123456789ab",
+          role: "textbox",
+          kind: "changed",
+          attribution: "self",
+          causeId: "cause-1",
+          priority: "high",
+          at: 1,
+        },
+      })}\n`,
+    );
+    socket.write(`${JSON.stringify({ type: "request", id: 1, method: "queryElements", params: {} })}\n`);
+    const [, refusal, response] = await received;
+    const parsed = JSON.parse(refusal) as { type: string; refusal: string };
+    expect(parsed.type).toBe("refusal");
+    expect(parsed.refusal).toContain('{type:"request", id:number, method:string}');
+    // and the connection is still serving afterwards
+    expect((JSON.parse(response) as { id: number }).id).toBe(1);
+    socket.destroy();
+  });
+
   it("answers a non-JSON line with a refusal and keeps serving the connection", async () => {
     const socket = netConnect(socketPath);
     const received = lines(socket, 3);

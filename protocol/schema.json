@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -22,6 +22,9 @@
   ],
   "states": ["enabled", "visible", "focused", "selected", "checked", "expanded", "offscreen"],
   "actions": ["press", "focus", "select", "expand"],
+  "priorities": ["low", "medium", "high"],
+  "changeKinds": ["appeared", "disappeared", "changed", "watchEnded"],
+  "attributions": ["self", "external", "unattributed"],
   "types": {
     "semanticElement": {
       "description": "One element, named for what a person means by it.",
@@ -56,6 +59,73 @@
           "type": "diagnostic",
           "required": false,
           "description": "Debug-only carrier and the only exemption from the neutral-vocabulary rule: native identifiers may appear here for a human reading a log, and are never load-bearing."
+        }
+      }
+    },
+    "subscription": {
+      "description": "A live watch on one element and everything beneath it. Holding one means the daemon will push a change event whenever the watched subtree changes, until the subscription is ended by the client, by the element vanishing, or by the connection closing.",
+      "fields": {
+        "subscriptionId": {
+          "type": "string",
+          "required": true,
+          "description": "Names this watch for the life of the connection. Ending a watch and matching an event to it both use this."
+        },
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The watched element, echoed back so a client holding several subscriptions can bind this answer to the request that asked for it without keeping its own book."
+        },
+        "priority": {
+          "type": "priority",
+          "required": true,
+          "description": "The urgency the subscriber declared. The daemon stores it and stamps it onto every event of this watch; it never reads it, branches on it, or reorders anything by it. What an urgency means is decided entirely by whoever is holding the other end."
+        }
+      }
+    },
+    "changeEvent": {
+      "description": "One change in a watched subtree, pushed by the daemon without being asked. It is a pointer, never a payload: it names what changed and who caused it, and carries no content whatsoever - reading the element is a separate call that runs the visibility gate again.",
+      "fields": {
+        "subscriptionId": {
+          "type": "string",
+          "required": true,
+          "description": "The watch this event belongs to."
+        },
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element that changed: the watched element itself or something beneath it."
+        },
+        "role": {
+          "type": "role",
+          "required": true,
+          "description": "The neutral role of the element that changed, so a subscriber can decide whether to look without looking."
+        },
+        "kind": {
+          "type": "changeKind",
+          "required": true,
+          "description": "What happened to it."
+        },
+        "attribution": {
+          "type": "attribution",
+          "required": true,
+          "description": "Who caused it. Never guessed: when it cannot be decided the answer is the undecidable one, not the flattering one."
+        },
+        "causeId": {
+          "type": "string",
+          "required": false,
+          "description": "Names the call this change was caused by. Present if and only if the attribution is self; its absence anywhere else is the contract, not an omission."
+        },
+        "priority": {
+          "type": "priority",
+          "required": true,
+          "description": "The urgency the subscriber declared when it asked for this watch, carried back unread."
+        },
+        "at": {
+          "type": "number",
+          "required": true,
+          "description": "When the daemon observed the change, in milliseconds since the epoch."
         }
       }
     },
@@ -123,6 +193,56 @@
           "type": "string",
           "required": false,
           "description": "Present when it does not; names the reason."
+        }
+      }
+    },
+    "subscribeElement": {
+      "description": "Watch one element and everything beneath it, and be told when any of it changes. Observation only: a subscription reads, and cannot cause anything to happen. Scope is the point - a watch on one subtree is the difference between being told what matters and being told everything. Defined on the wire before either route can serve it; until a route can, every call is refused by name.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element to watch, together with its descendants."
+        },
+        "priority": {
+          "type": "priority",
+          "required": true,
+          "description": "How urgent this subscriber considers changes here. Carried on every resulting event and never interpreted by the daemon."
+        }
+      },
+      "returns": {
+        "subscription": {
+          "type": "subscription",
+          "required": false,
+          "description": "Present when the watch was established."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer."
+        }
+      }
+    },
+    "unsubscribeElement": {
+      "description": "End a watch. Observation only. Ending a watch that is already over is not an error: the answer says the watch is not running, which is the state the caller wanted either way.",
+      "params": {
+        "subscriptionId": {
+          "type": "string",
+          "required": true,
+          "description": "The watch to end, as named when it was established."
+        }
+      },
+      "returns": {
+        "ended": {
+          "type": "boolean",
+          "required": false,
+          "description": "Present when the watch is no longer running - true when this call ended it, false when it had already ended on its own."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer."
         }
       }
     },
