@@ -88,4 +88,15 @@ export const CATALOG: LaunchCatalog = {
     env: {},
     appearsAs: "chrome",
   },
+  // Qt6 enabling (M2.5, Q05 - measured on minibeast, Qt 6.4): without a knob
+  // the process registers an application root on the accessibility bus but
+  // publishes NO subtree (ChildCount stays 0); QT_ACCESSIBILITY=1 - the
+  // Qt5-era knob - changes nothing; QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1 makes
+  // the full widget tree appear. So this recipe bakes the one knob that
+  // measured true, the same launch-time posture as yad's GTK_MODULES
+  // (ADR-0027: readability is decided once at process start).
+  qt6ct: {
+    argv: ["qt6ct"],
+    env: { QT_LINUX_ACCESSIBILITY_ALWAYS_ON: "1" },
+  },
 };
