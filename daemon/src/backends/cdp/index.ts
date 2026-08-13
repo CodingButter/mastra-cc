@@ -3,9 +3,18 @@ import type {
   AttestElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  Role,
   SemanticElement,
 } from "@mastra-cc/protocol-types";
-import type { Backend } from "../../backend.js";
+import {
+  type Backend,
+  type BackendChange,
+  type BackendSubscription,
+  type ChannelWatch,
+  mintSubscriptionId,
+  UnknownSubscriptionError,
+  UnwatchableElementError,
+} from "../../backend.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
@@ -65,6 +74,14 @@ export class CdpBackend implements Backend {
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
+  // The role this backend gave each id, and the reverse lookup a watch needs:
+  // target/backend-node-id -> the id and role the walk already minted. Both
+  // are filled while walking, where the answer is already known.
+  private readonly roleOf = new Map<string, Role>();
+  private readonly mintedByNode = new Map<string, { id: string; role: Role }>();
+  // subscription id -> the channel watch feeding it. Per backend, closed when
+  // the backend closes.
+  private readonly watches = new Map<string, ChannelWatch>();
 
   constructor(channel: CdpChannel, visibility: Visibility = new Set()) {
     this.channel = channel;
@@ -119,6 +136,10 @@ export class CdpBackend implements Backend {
       backendDOMNodeId: node.backendDOMNodeId,
       nodeId: node.nodeId,
     });
+    this.roleOf.set(id, role);
+    if (node.backendDOMNodeId !== undefined) {
+      this.mintedByNode.set(`${targetId}/${node.backendDOMNodeId}`, { id, role });
+    }
     return {
       id,
       role,
@@ -203,7 +224,54 @@ export class CdpBackend implements Backend {
     return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again` };
   }
 
+  // A watch is only ever established on an element this backend has already
+  // answered. An id it never answered may name a node that does not exist or
+  // one in a browser this session cannot see - the same refusal covers both,
+  // deliberately (ADR-0036).
+  async subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
+    const ref = this.answered.get(id);
+    if (ref === undefined) {
+      throw new UnwatchableElementError(`no element with id "${id}" was ever answered by this daemon - nothing to watch`);
+    }
+    const watch = await this.channel.watch(id, sink, {
+      targetId: ref.kind === "node" ? ref.targetId : "",
+      ...(ref.kind === "node"
+        ? { backendDOMNodeId: ref.backendDOMNodeId, nodeId: ref.nodeId }
+        : {}),
+      role: this.roleOf.get(id) ?? "generic",
+      // A change to an element the walk already named is reported under THAT
+      // id: a pointer the client cannot attest would be no pointer at all.
+      known: (backendNodeId) => this.mintedByNode.get(`${ref.kind === "node" ? ref.targetId : ""}/${backendNodeId}`),
+    });
+    const subscriptionId = mintSubscriptionId();
+    this.watches.set(subscriptionId, watch);
+    return {
+      subscriptionId,
+      // Every element this backend answers is read out of the browser at its
+      // endpoint, so the application a watched node belongs to is the browser
+      // itself, under the name the version reply derives.
+      application: productName(await this.version()),
+      close: async () => {
+        this.watches.delete(subscriptionId);
+        await watch.close();
+      },
+    };
+  }
+
+  async unsubscribeElement(subscriptionId: string): Promise<void> {
+    const watch = this.watches.get(subscriptionId);
+    if (watch === undefined) {
+      throw new UnknownSubscriptionError(`no watch on this backend is named "${subscriptionId}" - nothing to end`);
+    }
+    this.watches.delete(subscriptionId);
+    await watch.close();
+  }
+
   async close(): Promise<void> {
+    // Closing the reader closes what it was watching: a watch outliving its
+    // backend would be fed by a channel that is gone.
+    for (const watch of this.watches.values()) await watch.close();
+    this.watches.clear();
     await this.channel.close();
   }
 }

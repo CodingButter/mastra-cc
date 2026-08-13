@@ -10,8 +10,26 @@ declare module "dbus-native" {
     body?: unknown[];
   }
 
+  // The raw wire message shape dbus-native parses and emits. Only the fields
+  // the at-spi backend reads or writes are declared; `type` is the D-Bus
+  // message type (4 = signal).
+  export interface DbusWireMessage {
+    type?: number;
+    serial?: number;
+    sender?: string;
+    destination?: string;
+    path?: string;
+    interface?: string;
+    member?: string;
+    signature?: string;
+    body?: unknown[];
+  }
+
   export interface DbusConnection {
     end(): void;
+    message(msg: DbusWireMessage): void;
+    on(event: "message", listener: (msg: DbusWireMessage) => void): void;
+    removeListener(event: "message", listener: (msg: DbusWireMessage) => void): void;
   }
 
   export interface DbusBus {

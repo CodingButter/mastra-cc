@@ -99,6 +99,13 @@ describe("launch authority", () => {
       name: "spy",
       queryElements: async () => ((treeTouched = true), { elements: [] }),
       attestElement: async () => ((treeTouched = true), {}),
+      subscribeElement: async () => {
+        treeTouched = true;
+        throw new Error("the authority gate touched the backend");
+      },
+      unsubscribeElement: async () => {
+        treeTouched = true;
+      },
       close: async () => undefined,
     };
     const result = resultOf(await open("test-app", spy, launch({ catalog: trap })));

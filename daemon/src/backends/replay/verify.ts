@@ -17,12 +17,14 @@ export interface VerifyReport {
 }
 
 export async function verifyTape(fixture: string, log: (line: string) => void): Promise<VerifyReport> {
-  const tape = loadTape(fixture);
+  // Only the exchanges are replayed against the live bus: a recorded event is
+  // something the desktop volunteered, and there is no request to re-issue.
+  const exchanges = loadTape(fixture).exchanges;
   const live = liveChannel();
   let unchanged = 0;
   const samples: string[] = [];
   try {
-    for (const entry of tape) {
+    for (const entry of exchanges) {
       try {
         const reply = await live.call(entry);
         if (JSON.stringify(reply) === JSON.stringify(entry.reply)) {
@@ -37,13 +39,13 @@ export async function verifyTape(fixture: string, log: (line: string) => void): 
   } finally {
     await live.close();
   }
-  const drifted = tape.length - unchanged;
-  log(`verify-tape: ${tape.length} exchange(s) replayed against the live bus - ${unchanged} unchanged, ${drifted} drifted`);
+  const drifted = exchanges.length - unchanged;
+  log(`verify-tape: ${exchanges.length} exchange(s) replayed against the live bus - ${unchanged} unchanged, ${drifted} drifted`);
   for (const sample of samples) log(`verify-tape:   ${sample}`);
   if (drifted > 0) {
     log(
       "verify-tape: drift is the desktop changing, not a bug - if the corpus should follow, re-capture and record the diff",
     );
   }
-  return { total: tape.length, unchanged, drifted, samples };
+  return { total: exchanges.length, unchanged, drifted, samples };
 }

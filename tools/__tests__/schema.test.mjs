@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// The schema's own invariants: exactly six methods, the id pattern, and a
+// The schema's own invariants: exactly eight methods, the id pattern, and a
 // golden fixture cut from exactly these schema bytes. The planted-vocabulary
 // cases for the B10 pin live in tools/pins/__tests__/b10.test.mjs, where the
 // planted platform terms sit inside the one directory every pin excludes.
@@ -15,14 +15,33 @@ const schemaText = readFileSync(join(repoRoot, "protocol", "schema.json"), "utf8
 const schema = JSON.parse(schemaText);
 
 describe("protocol/schema.json v1", () => {
-  it("declares exactly six methods - the 1.0.0 pair, 1.1.0's openApplication (ADR-0034), and 1.2.0's defined-and-refused trio (ADR-0037) - and no seventh", () => {
+  it("declares exactly eight methods - the 1.0.0 pair, 1.3.0's subscription pair (ADR-0039), 1.1.0's openApplication (ADR-0034), and 1.2.0's defined-and-refused trio (ADR-0037) - and no ninth", () => {
     expect(Object.keys(schema.methods)).toEqual([
       "queryElements",
       "attestElement",
+      "subscribeElement",
+      "unsubscribeElement",
       "openApplication",
       "editElement",
       "activateElement",
       "submitElement",
+    ]);
+  });
+
+  it("gives changeEvent no field that could carry content - a pointer, never a payload (ADR-0032 clause 2)", () => {
+    const fields = Object.keys(schema.types.changeEvent.fields);
+    expect(fields).not.toContain("name");
+    expect(fields).not.toContain("value");
+    expect(fields).not.toContain("text");
+    expect(fields).toEqual([
+      "subscriptionId",
+      "id",
+      "role",
+      "kind",
+      "attribution",
+      "causeId",
+      "priority",
+      "at",
     ]);
   });
 

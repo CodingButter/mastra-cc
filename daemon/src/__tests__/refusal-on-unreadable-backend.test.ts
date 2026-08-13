@@ -96,6 +96,10 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
         return { elements: [application] };
       },
       attestElement: async () => ({}),
+      subscribeElement: async () => {
+        throw new Error("this test never watches");
+      },
+      unsubscribeElement: async () => undefined,
       close: async () => undefined,
     };
     const table = new OwnershipTable();

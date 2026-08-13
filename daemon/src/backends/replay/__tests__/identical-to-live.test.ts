@@ -23,7 +23,7 @@ function unwrapName(reply: unknown[]): string {
 
 function recordedDistinctNames(): Set<string> {
   const names = new Set<string>();
-  for (const entry of loadTape("gtk-dialog")) {
+  for (const entry of loadTape("gtk-dialog").exchanges) {
     if (entry.member === "Get" && Array.isArray(entry.body) && entry.body[0] === ACCESSIBLE && entry.body[1] === "Name") {
       const name = unwrapName(entry.reply);
       if (name !== "") names.add(name);

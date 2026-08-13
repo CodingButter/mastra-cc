@@ -50,6 +50,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | [0036](0036-grants-live-in-a-file-the-daemon-owns.md) | Grants live in a file the daemon owns | Deny-by-default observe visibility from a daemon-local permissions file ∪ session flags ∪ launch permits, enforced inside the walk so an ungranted subtree is never read; the one permitted read is the name |
 | [0037](0037-the-other-three-classes-are-on-the-wire-before-they-are-possible.md) | The other three classes are on the wire before they are possible | schema version 1.2.0 defines editElement/activateElement/submitElement as refused-by-name methods that never touch a backend; attestation required in the contract from day one; classes live in the B11-pinned dispatch table, not the schema |
 | [0038](0038-a-browser-profile-is-a-launch-identity.md) | A browser profile is a launch identity | Named browser profiles are catalog keys composed at boot from an operator file, not a schema parameter; observe names expand through the recipe's appears-as tree name while launch authority never does; the daemon never looks inside a profile directory |
+| [0039](0039-the-desktop-talks-first.md) | The desktop talks first | schema version 1.3.0 adds subtree-scoped subscriptions and a server-initiated change event; priority is carried and never interpreted; an event is a pointer with no content field; attribution is exactly self, external and unattributed, produced mechanically from the one serialised call in flight and never read off the screen |
 
 ## Writing a new one
 
