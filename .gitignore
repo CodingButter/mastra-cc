@@ -5,6 +5,8 @@ dist/
 # Plans, progress and proof scratch. Never committed; also skipped by
 # scripts/check-docs.mjs, which walks the filesystem rather than the index.
 .mastracode/
+.proof/
+.playwright-mcp/
 
 # Throwaway browser profiles used by M0.5 spikes.
 spikes/**/.profile*

@@ -121,14 +121,14 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 - Both test lanes.
 
 **Exit gate:**
-- [ ] `--no-live` suite green in CI.
-- [ ] Live suite green on bigbeast.
-- [ ] Boundary pin B1 passes and **fails** when an accessibility import is added to a non-daemon package.
-- [ ] Proof artifact: `an-unpermitted-application-is-invisible.md`, produced on real hardware.
-- [ ] A refusal for an out-of-scope operation names the check that produced it.
-- [ ] **The two questions M0.5 could not close, closed here:** live Gmail end to end, against a profile the operator signed into by hand; and Qt's per-process enabling knob, on a machine with Qt6 installed. Both are named in [09-QUESTIONS.md §6](09-QUESTIONS.md).
+- [x] `--no-live` suite green in CI. Evidence: [CI run 31656176860](https://github.com/CodingButter/mastra-cc/actions/runs/31656176860) (master, 2026-08-13, success).
+- [x] Live suite green on real hardware, with the machine and session type recorded in the receipt. Evidence: [the live suite on real hardware](proofs/the-live-suite-on-real-hardware.md) — 37/37 both lanes, minibeast, Wayland.
+- [x] Boundary pin B1 passes and **fails** when an accessibility import is added to a non-daemon package. Evidence: [the pin fails when provoked](proofs/the-live-suite-on-real-hardware.md#the-pin-fails-when-provoked) — red names the file and binding, green counts 23 files scanned.
+- [x] Proof artifact: `an-unpermitted-application-is-invisible.md`, produced on real hardware. Evidence: [an unpermitted application is invisible](proofs/an-unpermitted-application-is-invisible.md) — both routes, refusals byte-identical on the full constant.
+- [x] A refusal for an out-of-scope operation names the check that produced it. Evidence: the refusal constants open with `refused by the effect-class gate:` ([daemon/src/server.ts](../daemon/src/server.ts)) and [the tests](../daemon/src/__tests__/refuses-beyond-observe.test.ts) assert the gate is named in every before-call refusal.
+- [x] **The two questions M0.5 could not close, closed here:** live Gmail end to end, against a profile the operator signed into by hand; and Qt's per-process enabling knob, on a machine with Qt6 installed. Evidence: Q03 and Q05 closes in [09-QUESTIONS.md §6](09-QUESTIONS.md), receipts in [real Gmail through the daemon](proofs/real-gmail-through-the-daemon.md) and [the Qt6 accessibility knob, measured](proofs/the-qt6-accessibility-knob-measured.md).
 
-**A visibility verdict must carry its route.** M0.5 asked both routes to decide whether a person can actually see an element, judged against layout ground truth: the browser route scored 10 of 10, the platform route 6 of 10 — it cannot detect a fully transparent element, and its hit test returns *self* for an element covered by an opaque panel. **Bounds alone is a liar**: a covered button has a perfect rectangle. A bare boolean hides which instrument produced it, so the verdict carries its route. See [what hidden actually means](proofs/what-hidden-actually-means.md).
+**A visibility verdict carries its route — implemented in M2.5.** M0.5 asked both routes to decide whether a person can actually see an element, judged against layout ground truth: the browser route scored 10 of 10, the platform route 6 of 10 — it cannot detect a fully transparent element, and its hit test returns *self* for an element covered by an opaque panel. **Bounds alone is a liar**: a covered button has a perfect rectangle. A bare boolean hides which instrument produced it, so every element answer now stamps `diagnostic["mastra-cc/visibility-route"]` with the instrument that produced it — [ADR-0040](02-DECISIONS/0040-a-visibility-verdict-carries-its-route.md). See [what hidden actually means](proofs/what-hidden-actually-means.md).
 
 ---
 

@@ -19,7 +19,7 @@ import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
 import { type CdpChannel, replayCdpChannel } from "./channel.js";
-import { actionsForRole, toNeutralRole, toNeutralStates } from "./roles.js";
+import { actionsForRole, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
 // The browser backend: reads the page's own semantic tree over the browser's
 // debugging protocol, through the CdpChannel seam - every exchange it performs
@@ -123,6 +123,8 @@ export class CdpBackend implements Backend {
       name: productName(version),
       states: ["enabled", "visible"],
       actions: [],
+      // ADR-0040: the application answer names its instrument too.
+      diagnostic: stampVisibilityRoute(),
     };
   }
 
@@ -146,9 +148,13 @@ export class CdpBackend implements Backend {
       name: String(node.name?.value ?? ""),
       states: toNeutralStates(node.properties ?? []),
       actions: actionsForRole(role),
-      ...(diagnostic !== undefined
-        ? { diagnostic: { ...diagnostic, nativeId: `${targetId}/${node.backendDOMNodeId ?? node.nodeId}` } }
-        : {}),
+      // ADR-0040: every answer names its instrument; the unmapped-role
+      // diagnostic (ADR-0018 clause 3) merges in when present.
+      diagnostic: stampVisibilityRoute(
+        diagnostic !== undefined
+          ? { ...diagnostic, nativeId: `${targetId}/${node.backendDOMNodeId ?? node.nodeId}` }
+          : undefined,
+      ),
     };
   }
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { SemanticElement } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
 import { registry } from "../backends/registry.js";
-import type { LaunchCatalog } from "../launch/recipes.js";
+import { CATALOG, type LaunchCatalog } from "../launch/recipes.js";
 import { OwnershipTable } from "../launch/table.js";
 import {
   ALREADY_RUNNING_REFUSAL,
@@ -112,6 +112,34 @@ describe("launch authority", () => {
     expect(result.refusal).toBe(UNAVAILABLE_REFUSAL);
     expect(catalogTouched).toBe(false);
     expect(treeTouched).toBe(false);
+  });
+
+  it("an unpermitted gmail refuses byte-identically to an unknown name (M2.5) - the real catalog leaks nothing", async () => {
+    // authority runs before capability, so the real catalog's gmail entry is
+    // never consulted and no browser can spawn here
+    const context = launch({ catalog: CATALOG });
+    const gmail = resultOf(await open("gmail", backend, context));
+    const unknown = resultOf(await open("zz-no-such-app", backend, context));
+    expect(gmail.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(gmail.refusal).toBe(unknown.refusal);
+    expect(gmail.application).toBeUndefined();
+    expect(context.table.entries()).toHaveLength(0);
+  });
+
+  it("an unpermitted qt6ct refuses byte-identically to an unknown name (M2.5) - and its recipe bakes the measured knob", async () => {
+    // Same authority-before-capability shape as the gmail case above.
+    const context = launch({ catalog: CATALOG });
+    const qt6ct = resultOf(await open("qt6ct", backend, context));
+    const unknown = resultOf(await open("zz-no-such-app", backend, context));
+    expect(qt6ct.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(qt6ct.refusal).toBe(unknown.refusal);
+    expect(context.table.entries()).toHaveLength(0);
+    // The enabling is launch-time data (ADR-0027): the one knob that measured
+    // true on Qt 6.4 rides the recipe; the Qt5-era QT_ACCESSIBILITY does not
+    // (it measured as a no-op and baking it would claim otherwise).
+    expect(CATALOG.qt6ct.env.QT_LINUX_ACCESSIBILITY_ALWAYS_ON).toBe("1");
+    expect(CATALOG.qt6ct.env.QT_ACCESSIBILITY).toBeUndefined();
+    expect(CATALOG.qt6ct.argv).toEqual(["qt6ct"]);
   });
 
   it("a missing or non-string name refuses like any unknown name", async () => {

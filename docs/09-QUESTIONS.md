@@ -153,6 +153,18 @@ subject and date are separable fields.
 > [what a plan can say without a model](proofs/what-a-plan-can-say-without-a-model.md)
 > against real Gmail. Until then, no claim about Gmail's specific field separation appears
 > in any document. What is claimed is only what was measured.
+>
+> *The bookmark's unanswered half, closed observe-only (M2.5, 2026-08-13):* the operator
+> signed in by hand once, and the daemon launched the signed-in profile and read real
+> Gmail through the wire — predicates answered as observe queries, one element attested,
+> the inbox subtree watched live, all in
+> [real Gmail through the daemon](proofs/real-gmail-through-the-daemon.md). The uncited
+> node count finally has a receipt: **at least 502 nodes, budget-capped** — the walk's
+> per-page budget truncated the count, so it is a floor, and the old few-thousand figure
+> stays uncited. The structure question is answered on the real thing: the inbox is a
+> grid of one hundred rows of gridcells, visible today only in the diagnostic because
+> those native roles are not yet in the neutral map. The plan-interpreter re-run against
+> real Gmail — the bookmark's letter — is recorded as M3's first live task.
 
 **Q04 — Is Wayland accessibility at parity with X11, and what is missing?**
 *What changes:* whether "works on Linux" means one backend or two. Note the observed
@@ -189,22 +201,30 @@ named rather than averaged away.
 needs a per-toolkit layer beneath it.
 *Answer requires:* one confirmed example per toolkit, with whatever step was needed.
 
-> **CLOSED — Answered for GTK, Chromium and Electron; Qt is bookmarked and named as
-> unverified rather than assumed.**
+> **CLOSED — Answered for GTK, Chromium, Electron and Qt, each with a measured receipt.**
 >
 > | Toolkit | Enabling step | Receipt |
 > |---|---|---|
 > | GTK | `GTK_MODULES=gail:atk-bridge` at launch | a GTK dialog published nothing until launched with it; the accessibility desktop went from 18 applications to 19 |
 > | Chromium | `--force-renderer-accessibility` at launch | [which condition makes a browser readable](proofs/which-condition-makes-a-browser-readable.md) |
 > | Electron | none needed over the browser protocol | [which apps the browser adapter covers](proofs/which-apps-the-browser-adapter-covers.md) — the flag made no difference at all, 505 nodes with and without |
-> | Qt | **unverified** | `QT_ACCESSIBILITY` was not found in the Qt5 library on the test machine and Qt6 is not installed there. Not disproven — unmeasured. |
+> | Qt | `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` at launch | measured M2.5 on minibeast (Qt 6.4, `qt6ct` 0.9): bare launch registers an application root on the bus but publishes **no subtree** (ChildCount 0); `QT_ACCESSIBILITY=1` — the Qt5-era knob — is a **no-op** (still 0 widgets); with the always-on variable the full widget tree appears and the daemon's own recipe launch read 3/3 probed widget names. Receipt: [the Qt6 accessibility knob, measured](proofs/the-qt6-accessibility-knob-measured.md) (three states, asserted; produced by the untracked leg `.proof/qt6.sh`) |
 >
 > The shape of the answer matters more than the table: **every enabling step is
 > launch-time**, which is why they collapse into one rule rather than three. See
 > [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md).
 >
-> *Qt's bookmark:* the Qt Accessibility documentation, and a machine with Qt6 installed.
-> Cheap to close; it simply was not closable here.
+> *Qt's close (M2.5):* the Qt documentation states applications become accessible when
+> the AT-SPI DBus properties are set, with `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` as the
+> stated alternative. Measured with every session property false (`org.a11y.Status
+> IsEnabled`, `ScreenReaderEnabled`, `toolkit-accessibility` — no screen reader running):
+> only the always-on variable made the tree appear, so it is the knob the `qt6ct` launch
+> recipe bakes (`daemon/src/launch/recipes.ts`), same launch-time posture as GTK's.
+> Two honest wrinkles, recorded not smoothed: `qt6ct` registers **two** application
+> roots on the bus and one stays permanently empty even with the knob; and the atspi
+> walk's 150-node-per-application budget truncates this tree before its deeper tab
+> and button rows — the daemon reads real widgets, not necessarily all of them.
+> Claimed only for the states tested, on this machine.
 
 **Q06 — How do existing screen readers solve the problems we are about to hit?**
 *What changes:* potentially everything below it — this is the prior-art question that
@@ -778,8 +798,8 @@ starts with an accurate picture of its own ignorance rather than a false one.
 
 | Open item | Why it was not closed | Where it gets closed |
 |---|---|---|
-| Live Gmail, end to end | Needs an authenticated session; credentials are not the agent's to hold | M2's live proof, after the operator signs in once by hand |
-| Qt's per-process accessibility knob | Qt6 absent from the test machines | M2, on a machine with Qt6 |
+| Live Gmail, end to end | Needs an authenticated session; credentials are not the agent's to hold | Closed in M2.5: [real gmail through the daemon](proofs/real-gmail-through-the-daemon.md), after the operator signed in once by hand |
+| Qt's per-process accessibility knob | Qt6 absent from the test machines | Closed in M2.5: measured on minibeast — see Q05's table (`QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1`; the Qt5-era knob is a no-op) |
 | Windows and macOS accessibility from Node | Read from platform documentation, never run | M7, and marked *read, not verified* until then |
 | The Silero VAD licence conflict | Two sources from the same project disagree | M5, by reading the LICENSE file at a pinned commit |
 | Whether a permissively-licensed wake **model** exists | openWakeWord's shipped weights are non-commercial | M5; training a custom phrase may resolve licence and capability together |

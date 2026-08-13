@@ -10,7 +10,8 @@
 
 | Host | Role |
 |---|---|
-| **bigbeast** | the desk. Ubuntu 24.04 LTS, GNOME 46, X11, RTX 4090. Runs the daemon, hub, and widget. **The only host where live desktop proofs can be produced.** |
+| **bigbeast** | the desk. Ubuntu 24.04 LTS, GNOME 46, X11, RTX 4090. Runs the daemon, hub, and widget. A host where live desktop proofs can be produced. |
+| **minibeast** | the work machine. Wayland session. Produced the M2.5 live proofs — the live suite, the Gmail and Qt6 receipts, and the invisibility artifact ([proofs/](proofs/)). |
 | **dev-beast** | the factory. Runs the agent-factory service, its Postgres, its Redis, and the keeper cron. |
 
 **The host-split trap.** The factory service, its logs, and its database live *only* on dev-beast. Running `systemctl`, tailing the log, or opening `psql` on bigbeast produces output that looks like a dead service and is in fact a wrong host. The prototype lost time to this more than once. **Every factory command in this document runs over SSH to dev-beast.**

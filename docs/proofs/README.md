@@ -1,8 +1,9 @@
 # Proofs
 
-Sixteen measurements taken during M0.5 plus one taken during M1, and the record
-of how the milestone checked itself. Each measurement answers a question in
-[09-QUESTIONS.md](../09-QUESTIONS.md) that could not be answered by argument.
+Sixteen measurements taken during M0.5, one taken during M1, four taken during
+M2.5, and the record of how the milestone checked itself. Each measurement
+answers a question in [09-QUESTIONS.md](../09-QUESTIONS.md) that could not be
+answered by argument.
 
 ## The convention
 
@@ -45,6 +46,10 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 | [does the second run cost less](does-the-second-run-cost-less.md) | G1 — steps yes, tokens not at this sample size |
 | [how this milestone checked itself](how-this-milestone-checked-itself.md) | The cold-reader test, the review, and what none of it established |
 | [is concurrent accessibility safe on the Node route](is-concurrent-accessibility-safe-on-the-node-route.md) | ADR-0030 clause 3's owed measurement, paid during M1 — setup and use separated; neither aborted. Produced by `tools/proofs/concurrent-accessibility.mjs`, which still exists |
+| [the live suite on real hardware](the-live-suite-on-real-hardware.md) | M2 exit gate — both live lanes green on minibeast under Wayland, machine and session recorded; includes the B1 pin failing when provoked. Produced by the untracked leg `.proof/live-suite.sh` |
+| [real Gmail through the daemon](real-gmail-through-the-daemon.md) | Q03 — a surface we did not author, observe-only, zero content committed. Produced by the untracked leg `.proof/gmail.sh` |
+| [an unpermitted application is invisible](an-unpermitted-application-is-invisible.md) | Deny-by-default on real hardware, both routes — absent, not filtered. Produced by the untracked leg `.proof/invisible.sh` |
+| [the Qt6 accessibility knob, measured](the-qt6-accessibility-knob-measured.md) | Q05's Qt row — three states asserted; the always-on variable is the knob, the Qt5-era knob is a no-op. Produced by the untracked leg `.proof/qt6.sh` |
 
 ## Release-gate checks
 
