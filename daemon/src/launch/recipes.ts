@@ -11,6 +11,7 @@
 // never contributes argv content. Platform strings (GTK_MODULES) are legal
 // here in daemon source and illegal on the wire (B10).
 
+import { homedir } from "node:os";
 import { DEBUG_PORT, PAGE_PORT } from "../backends/cdp/channel.js";
 
 export interface LaunchRecipe {
@@ -31,6 +32,15 @@ export type LaunchCatalog = Readonly<Record<string, LaunchRecipe>>;
 // string-matching, and so a profile naming this directory can be refused - it
 // would share the built-in identity's cookie jar.
 export const DEFAULT_CHROME_PROFILE_DIR = "/tmp/mastra-cc/chrome-profile";
+
+// The gmail identity's profile directory: persistent, under the operator's
+// home, because the operator signs into it BY HAND once (M2.5, Q03) and a
+// signed-in identity must survive reboots - /tmp would sign it out. The daemon
+// never sees the sign-in and never creates, lists or reads this directory
+// itself; it only hands the path to the browser. Exported for the same reason
+// as DEFAULT_CHROME_PROFILE_DIR: a profiles-file entry naming this directory
+// would share the signed-in jar and must be refused.
+export const GMAIL_PROFILE_DIR = `${homedir()}/.local/share/mastra-cc/gmail-profile`;
 
 // GTK3 enabling: the atk-bridge module registers the process on the
 // accessibility bus (measured in M0.5; ADR-0027). yad is the proven headless
@@ -57,6 +67,23 @@ export const CATALOG: LaunchCatalog = {
       "--no-first-run",
       "--no-default-browser-check",
       `http://127.0.0.1:${PAGE_PORT}/page.html`,
+    ],
+    env: {},
+    appearsAs: "chrome",
+  },
+  // The same browser under the operator's signed-in Gmail identity (M2.5).
+  // Identical shape to the chrome entry - only the profile directory and the
+  // start URL differ. It answers to "chrome" in the semantic tree like every
+  // browser identity, and the one-browser-identity-at-a-time guard applies:
+  // both entries want the same debugging endpoint.
+  gmail: {
+    argv: [
+      "google-chrome",
+      `--remote-debugging-port=${DEBUG_PORT}`,
+      `--user-data-dir=${GMAIL_PROFILE_DIR}`,
+      "--no-first-run",
+      "--no-default-browser-check",
+      "https://mail.google.com",
     ],
     env: {},
     appearsAs: "chrome",

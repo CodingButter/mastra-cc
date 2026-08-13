@@ -9,7 +9,7 @@ import {
   loadProfilesFile,
   MalformedProfilesFileError,
 } from "../profiles.js";
-import { CATALOG, DEFAULT_CHROME_PROFILE_DIR } from "../recipes.js";
+import { CATALOG, DEFAULT_CHROME_PROFILE_DIR, GMAIL_PROFILE_DIR } from "../recipes.js";
 import type { LaunchCatalog } from "../recipes.js";
 import { findRecipe } from "../spawn.js";
 
@@ -165,6 +165,43 @@ describe("expandThroughAppearsAs", () => {
     const names = new Set(["chrome-work"]);
     expandThroughAppearsAs(names, composed);
     expect([...names]).toEqual(["chrome-work"]);
+  });
+});
+
+// The gmail identity (M2.5): a built-in recipe for the browser under the
+// operator's hand-signed-in profile. Offline: pure catalog data, no browser.
+describe("the gmail identity", () => {
+  it("is resolvable by name, including its NFKC forms, through the spawner's own lookup", () => {
+    expect(findRecipe("gmail", CATALOG)).toBeDefined();
+    // math-bold "gmail" - normalisation precedes every comparison (M0.5)
+    expect(findRecipe("\u{1D420}\u{1D426}\u{1D41A}\u{1D422}\u{1D425}", CATALOG)).toBe(
+      findRecipe("gmail", CATALOG),
+    );
+  });
+
+  it("launches the browser on the persistent gmail profile directory, never the built-in jar", () => {
+    const gmail = findRecipe("gmail", CATALOG);
+    const dirs = gmail?.argv.filter((argument) => argument.startsWith("--user-data-dir="));
+    expect(dirs).toEqual([`--user-data-dir=${GMAIL_PROFILE_DIR}`]);
+    expect(GMAIL_PROFILE_DIR).not.toBe(DEFAULT_CHROME_PROFILE_DIR);
+    // persistence is the point: a signed-in identity must survive reboots
+    expect(GMAIL_PROFILE_DIR.startsWith("/tmp")).toBe(false);
+    expect(gmail?.argv).toContain("https://mail.google.com");
+  });
+
+  it("answers to the browser's tree name, so the one-identity guard covers it and observe expands", () => {
+    expect(findRecipe("gmail", CATALOG)?.appearsAs).toBe("chrome");
+    expect([...expandThroughAppearsAs(new Set(["gmail"]), CATALOG)].sort()).toEqual([
+      "chrome",
+      "gmail",
+    ]);
+  });
+
+  it("refuses a profiles-file entry pointing at the gmail jar - that jar is the operator's signed-in identity", () => {
+    const path = profilesFile(
+      `{"browserProfiles": [{"name": "chrome-work", "directory": "${GMAIL_PROFILE_DIR}"}]}`,
+    );
+    expect(() => loadProfilesFile(path)).toThrow(/would share one cookie jar/);
   });
 });
 

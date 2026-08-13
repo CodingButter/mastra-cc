@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
 import { normalise } from "../backends/atspi/names.js";
 import { effectiveVisibility, type Visibility } from "../grants.js";
-import { CATALOG, DEFAULT_CHROME_PROFILE_DIR } from "./recipes.js";
+import { CATALOG, DEFAULT_CHROME_PROFILE_DIR, GMAIL_PROFILE_DIR } from "./recipes.js";
 import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
 import { findRecipe } from "./spawn.js";
 
@@ -65,9 +65,13 @@ export function loadProfilesFile(path: string): readonly BrowserProfile[] {
   }));
 
   const seenNames = new Set<string>();
-  // The built-in browser recipe's own directory is already spoken for: a
-  // profile pointing at it would share that jar.
-  const seenDirectories = new Map<string, string>([[DEFAULT_CHROME_PROFILE_DIR, "chrome"]]);
+  // The built-in browser recipes' own directories are already spoken for: a
+  // profile pointing at either would share that jar - and the gmail jar is
+  // the operator's signed-in identity (M2.5).
+  const seenDirectories = new Map<string, string>([
+    [DEFAULT_CHROME_PROFILE_DIR, "chrome"],
+    [GMAIL_PROFILE_DIR, "gmail"],
+  ]);
   for (const profile of profiles) {
     if (!isAbsolute(profile.directory)) {
       throw new MalformedProfilesFileError(
