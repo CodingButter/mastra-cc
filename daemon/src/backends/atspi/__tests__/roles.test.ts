@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ROLES } from "@mastra-cc/protocol-types";
-import { mappedNeutralRoles, toNeutralRole, toNeutralStates } from "../roles.js";
+import { mappedNeutralRoles, stampVisibilityRoute, toNeutralRole, toNeutralStates, VISIBILITY_ROUTE } from "../roles.js";
 
 // The native-to-neutral map (B10, ADR-0018 clause 3): every emitted role is
 // neutral vocabulary, and the deny-list the pin enforces on the schema is
@@ -42,6 +42,21 @@ describe("the native-to-neutral role map", () => {
         expect(role.toLowerCase()).not.toContain(term);
       }
     }
+  });
+});
+
+// ADR-0040: the stamp is provenance, and it must never destroy the clause-3
+// diagnostic it merges with - an unmapped role's native word and the route
+// travel together.
+describe("the visibility route stamp", () => {
+  it("stamps the route on an answer with no other diagnostic", () => {
+    expect(stampVisibilityRoute()["mastra-cc/visibility-route"]).toBe(VISIBILITY_ROUTE);
+  });
+
+  it("preserves the unmapped-role diagnostic it merges with", () => {
+    const stamped = stampVisibilityRoute({ nativeRole: "flux capacitor lever" });
+    expect(stamped.nativeRole).toBe("flux capacitor lever");
+    expect(stamped["mastra-cc/visibility-route"]).toBe(VISIBILITY_ROUTE);
   });
 });
 

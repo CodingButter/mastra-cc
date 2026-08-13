@@ -19,7 +19,7 @@ import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
-import { actionsForRole, toNeutralRole, toNeutralStates } from "./roles.js";
+import { actionsForRole, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
 // The real Linux accessibility backend. Reads the desktop's accessibility
 // tree over plain D-Bus through the Channel seam - every exchange it performs
@@ -143,9 +143,11 @@ export class AtspiBackend implements Backend {
       name,
       states: toNeutralStates(lower, upper),
       actions: actionsForRole(role),
-      ...(diagnostic !== undefined
-        ? { diagnostic: { ...diagnostic, nativeId: `${ref.busName}${ref.objectPath}` } }
-        : {}),
+      // ADR-0040: every answer names its instrument; the unmapped-role
+      // diagnostic (ADR-0018 clause 3) merges in when present.
+      diagnostic: stampVisibilityRoute(
+        diagnostic !== undefined ? { ...diagnostic, nativeId: `${ref.busName}${ref.objectPath}` } : undefined,
+      ),
     };
   }
 

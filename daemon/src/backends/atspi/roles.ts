@@ -45,6 +45,19 @@ export function mappedNeutralRoles(): Role[] {
   return [...new Set(Object.values(NATIVE_TO_NEUTRAL))];
 }
 
+// ADR-0040: a visibility verdict carries its route. Every element this
+// backend answers is stamped with the instrument that produced its
+// visibility-related states - here the desktop accessibility bus (a replayed
+// answer keeps this label: the tape recorded that same instrument). The
+// namespaced key lives inside the diagnostic subtree, the single exemption
+// from the neutral-vocabulary rule (B10); the label names WHICH instrument
+// answered, never that the instrument is right.
+export const VISIBILITY_ROUTE = "accessibility-bus";
+
+export function stampVisibilityRoute(diagnostic?: Diagnostic): Diagnostic & { "mastra-cc/visibility-route": string } {
+  return { ...diagnostic, "mastra-cc/visibility-route": VISIBILITY_ROUTE };
+}
+
 // Native state bitfield to neutral states, as data. Bit numbers are the
 // accessibility bus's state enum; the live probe on this machine read a
 // dialog button as bits {11, 24, 25, 30} - note bit 24 (the toolkit's

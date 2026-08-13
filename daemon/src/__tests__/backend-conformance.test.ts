@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
 import { BACKEND_METHODS, UnknownSubscriptionError, WatchUnsupportedError } from "../backend.js";
+import { VISIBILITY_ROUTE as ACCESSIBILITY_BUS_ROUTE } from "../backends/atspi/roles.js";
+import { VISIBILITY_ROUTE as BROWSER_PROTOCOL_ROUTE } from "../backends/cdp/roles.js";
 import { LIVE_BACKENDS, registry } from "../backends/registry.js";
+
+// ADR-0040: which instrument each registry backend answers through. The
+// replay flavours run the SAME reader as their live counterpart, so a
+// replayed answer carries the route of the instrument the tape recorded.
+const EXPECTED_ROUTE: Record<string, string> = {
+  atspi: ACCESSIBILITY_BUS_ROUTE,
+  replay: ACCESSIBILITY_BUS_ROUTE,
+  cdp: BROWSER_PROTOCOL_ROUTE,
+  "cdp-replay": BROWSER_PROTOCOL_ROUTE,
+};
 
 // Live-lane gating: backends that need a real desktop run through this suite
 // only when MASTRA_CC_LIVE=1 (a machine with an accessibility bus). CI runs
@@ -91,5 +103,26 @@ for (const [name, factory] of Object.entries(registry)) {
     it("refuses to end a watch it does not hold, by name rather than by raw error", async () => {
       await expect(backend.unsubscribeElement("sub-000000-000000")).rejects.toBeInstanceOf(UnknownSubscriptionError);
     });
+
+    // ADR-0040: a visibility verdict carries its route. Every element answer
+    // names the instrument that produced it in the namespaced diagnostic
+    // field - so a downstream reader can weight "visible" by which instrument
+    // said so, instead of trusting a bare verdict.
+    it("stamps every element answer with the visibility route naming its own instrument", async () => {
+      const { elements } = await backend.queryElements({});
+      expect(elements.length).toBeGreaterThan(0);
+      for (const element of elements) {
+        const diagnostic = element.diagnostic as Record<string, unknown> | undefined;
+        expect(diagnostic?.["mastra-cc/visibility-route"], `backend "${name}"`).toBe(EXPECTED_ROUTE[name]);
+      }
+    });
   });
 }
+
+// The route is provenance, not decoration: if both backends declared the same
+// label, the stamp would say nothing about WHICH instrument answered.
+describe("the visibility route distinguishes the instruments (ADR-0040)", () => {
+  it("the two backends name different routes", () => {
+    expect(ACCESSIBILITY_BUS_ROUTE).not.toBe(BROWSER_PROTOCOL_ROUTE);
+  });
+});

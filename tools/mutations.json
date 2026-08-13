@@ -217,6 +217,13 @@
     "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
   },
   {
+    "name": "the-verdict-forgets-its-instrument",
+    "file": "daemon/src/backends/atspi/roles.ts",
+    "find": "  return { ...diagnostic, \"mastra-cc/visibility-route\": VISIBILITY_ROUTE };\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/roles.test.ts"
+  },
+  {
     "name": "a-deaf-subscription-is-returned-anyway",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
     "find": "  if (!probeHeard) {\n    detach();\n    pending = null;\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard it within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
