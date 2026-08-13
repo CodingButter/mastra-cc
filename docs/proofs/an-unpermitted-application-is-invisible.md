@@ -67,6 +67,12 @@ indistinguishable (ADR-0019, ADR-0034). This proof measures exactly that
 property on live hardware: the byte-identical comparisons in steps 2 and 3
 are the security property, witnessed rather than trusted.
 
+One structural note the comparisons rely on: **refusals carry no `diagnostic`
+subtree.** The visibility-route stamp (ADR-0040) rides only on element
+answers, so it cannot perturb a refusal's bytes — the full-constant
+comparisons above would catch it if it ever did, which is precisely why they
+compare whole responses and not just the interesting fields.
+
 ## The limit of this result
 
 One machine, one session type, two applications, one run each. The

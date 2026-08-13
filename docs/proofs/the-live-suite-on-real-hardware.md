@@ -47,13 +47,20 @@ Both invocations, same counts:
 
 ```
 Test Files  1 passed (1)
-     Tests  32 passed (32)
+     Tests  37 passed (37)
 ```
 
-**32 passed, 0 skipped.** The offline run of this suite reports 16 passed and
-16 skipped; the difference — the 16 tests that only run against a live
+**37 passed, 0 skipped.** The offline run of this suite reports 19 passed and
+18 skipped; the difference — the 18 tests that only run against a live
 accessibility bus and a live browser endpoint — is exactly what this receipt
 witnesses. Both lanes exited 0.
+
+The count moved during this milestone and the receipt moved with it: the
+Phase 1 run of this suite reported 32 tests; Phase 4 then added the
+visibility-route assertions (four per-backend route pins and one asserting the
+two backends name different routes), and the final rerun on the closing commit
+reports 37. The transcript this document quotes is that final rerun — the
+number here is the number the command produces on the shipped tree.
 
 ## The limit of this result
 

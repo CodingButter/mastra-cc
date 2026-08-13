@@ -98,7 +98,7 @@ Consent is a product feature here, not a compliance checkbox, because the thing 
 
 **Depth.** Reach is earned, not assumed. The prototype shipped a depth ceiling, then retracted its own justification when it found the ceiling had been derived from an instrument setting rather than from measured behaviour (issue #42, "name the real one — our depth ceiling"), then re-derived it as *deeper walks are earned* (issues #45, #58, #60). Keep the corrected version: a deeper read is a thing the system asks for with a reason.
 
-**Applications.** Deny by default. An application the user has not permitted is not merely blocked — it is *invisible* (prototype proof artifact `an-unpermitted-application-is-invisible-until-the-user-says-otherwise.md`). This matters: a visible-but-blocked app tells the agent something about the user's machine that the user did not agree to share.
+**Applications.** Deny by default. An application the user has not permitted is not merely blocked — it is *invisible* (proven on real hardware in M2.5: [an unpermitted application is invisible](proofs/an-unpermitted-application-is-invisible.md); the prototype's artifact of the longer name `an-unpermitted-application-is-invisible-until-the-user-says-otherwise.md` was its forerunner and died with the prototype). This matters: a visible-but-blocked app tells the agent something about the user's machine that the user did not agree to share.
 
 Invisibility is a rule about *applications*, and only about applications, because which software a person runs is their private business. It is not a rule about the assistant's own tools. A tool the user has not enabled is refused and *named*, with what it would need — because a refusal that cannot explain itself is indistinguishable from a bug, and because a hidden capability cannot be asked for. Hiding our own surface would make the assistant unable to say "I could do that, if you let me."
 
@@ -163,7 +163,7 @@ Every milestone in [07-ROADMAP.md](07-ROADMAP.md) is scored against this list, a
 | widget permissions = `["media"]`, `screenCapture: false` | `clients/widget/src/boundaries.test.ts` |
 | minted tool surface read-only | hub token-mint tool list; launch tool tracked as issue #183 |
 | "Never give the key to the agent…" | prototype `ROADMAP.md`, quoted verbatim |
-| unpermitted app invisible | `docs/proofs/an-unpermitted-application-is-invisible-until-the-user-says-otherwise.md` |
+| unpermitted app invisible | [docs/proofs/an-unpermitted-application-is-invisible.md](proofs/an-unpermitted-application-is-invisible.md) (M2.5, real hardware; supersedes the prototype artifact of the longer name) |
 | depth-ceiling retraction | issue #42; re-derived in #45, #58, #60 |
 | browser-unreadable-not-absent | commit `6657915` |
 | refusals explain themselves | PR #220 (closes issue #184) |

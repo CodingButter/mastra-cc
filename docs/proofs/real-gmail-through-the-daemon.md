@@ -9,7 +9,10 @@ surprise its author*. This document is the surface we did not author.
 
 **Zero Gmail content appears here, by design and by gate.** No subject lines,
 no addresses, no sender names — the wire client that produced this transcript
-never prints an element's name. Counts, roles, and structural facts only.
+never prints an element's name read from the surface. The one exception is the
+literal name strings the client itself queried for (`"Compose"` below): those
+are our own input echoed back, not content read from the inbox. Counts, roles,
+and structural facts only.
 
 ## How the surface was reached
 
@@ -62,9 +65,14 @@ is beneath it; with no `list` role on this wire, the window is the honest
 subtree root). The wire stayed open for a 30-second watch window in which the
 daemon caused nothing. What arrived:
 
-- **302 change events**: 61 appeared, 61 disappeared, 180 changed.
-- Every event carried **exactly the seven contract fields** and no content
-  field — pointer, never payload, re-witnessed on a surface we did not author.
+- **~300 change events** in the window — this run counted 302 (61 appeared,
+  61 disappeared, 180 changed); a rerun on the closing commit counted 300
+  (60/60/180). Nothing is staged, so the exact counts are one window's weather,
+  not a contract.
+- Every event carried **exactly the seven contract fields** (plus the wire's
+  message-type discriminator, which the client strips before counting) and no
+  content field — pointer, never payload, re-witnessed on a surface we did not
+  author.
 - Every event was attributed **`external` or `unattributed`**, and no event
   carried a `causeId` — the attribution contract's exact shape for changes the
   daemon did not cause. Real Gmail is simply this busy on its own.
@@ -82,7 +90,8 @@ This is the re-measurement, with its context and its cap:
   budget, so this count is a floor, not a total. The budgeted walk cannot
   confirm or deny the old few-thousand figure; it measures what the daemon
   actually reads.
-- Role histogram (neutral vocabulary): `generic` 419, `text` 51, `button` 21,
+- Role histogram (neutral vocabulary, one run's walk — a rerun drifts by a
+  node or two as the live page redraws): `generic` 419, `text` 51, `button` 21,
   `link` 8, `window` 2, `application` 1.
 - Native roles behind the generic bucket (diagnostic tally, structural words
   only): `gridcell` 154, `row` 100, `tab` 5, `image` 6, `LineBreak` 3, and one
