@@ -46,6 +46,14 @@ export class UnknownSubscriptionError extends Error {}
 // is accepted and then says nothing is indistinguishable from a quiet desktop.
 export class WatchUnsupportedError extends Error {}
 
+// This route registered for its signals, caused one of its own, and never
+// heard it come back. A subclass of WatchUnsupportedError because it is the
+// same promise being kept - no route may hand back a watch that will never
+// speak - but named separately because the cause is different: not "not built
+// yet" but "built, and deaf right now" (the M0.5 spike's finding: a missing
+// registration fails silently and looks identical to a calm desktop).
+export class DeafWatchError extends WatchUnsupportedError {}
+
 // A registered watch on a channel's own reader. Closing it stops the sink
 // being fed; it never closes the channel. Seam vocabulary, not transport
 // vocabulary: both routes register watches, and neither borrows the other's

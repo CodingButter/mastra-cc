@@ -18,6 +18,7 @@ import {
   type Backend,
   type BackendChange,
   type BackendSubscription,
+  DeafWatchError,
   UnknownSubscriptionError,
   UnwatchableElementError,
   WatchUnsupportedError,
@@ -123,6 +124,15 @@ export const SUBSCRIBE_PRIORITY_REFUSAL =
 
 export const SUBSCRIBE_UNSUPPORTED_REFUSAL =
   'refused by the change stream: "subscribeElement" is defined by the schema but this session\'s backend cannot yet watch an element for changes - the watch would be accepted and then say nothing, which is indistinguishable from a quiet desktop, so it is refused instead';
+
+// The route is built and DEAF RIGHT NOW: it registered for its signals,
+// caused one of its own as a probe, and the probe never arrived. Distinct
+// from "not built yet" above because the remedy is different, and the
+// distinction must be legible in the transcript - a deaf daemon must never
+// run as if it could hear (the M0.5 spike: a missing registration fails
+// silently and looks identical to a calm desktop).
+export const SUBSCRIBE_DEAF_REFUSAL =
+  "refused by the change stream: the accessibility route registered for its signals, caused one of its own, and never heard it come back - a watch handed back deaf is indistinguishable from a quiet desktop, so no watch was established";
 
 export const UNSUBSCRIBE_UNKNOWN_REFUSAL =
   'refused by the change stream: "unsubscribeElement" was given a subscription this connection does not hold - a watch is per-connection state, and ending one that was never established would report a change of state that did not happen';
@@ -297,6 +307,10 @@ async function subscribeElement(
     return { subscription: { subscriptionId, id, priority: priority as Priority } };
   } catch (error) {
     if (error instanceof UnwatchableElementError) return { refusal: SUBSCRIBE_UNKNOWN_REFUSAL };
+    // Deaf before unsupported: DeafWatchError is the narrower promise-keeping
+    // (built, and cannot hear right now) and must not be reported as "not
+    // built yet".
+    if (error instanceof DeafWatchError) return { refusal: SUBSCRIBE_DEAF_REFUSAL };
     if (error instanceof WatchUnsupportedError) return { refusal: SUBSCRIBE_UNSUPPORTED_REFUSAL };
     throw error;
   }

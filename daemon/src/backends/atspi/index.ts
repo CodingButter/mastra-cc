@@ -17,6 +17,7 @@ import {
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
+import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
 import { actionsForRole, toNeutralRole, toNeutralStates } from "./roles.js";
 
@@ -60,6 +61,10 @@ export class AtspiBackend implements Backend {
   // name is read before its subtree is entered); the server needs it to decide
   // attribution and cannot derive it from an id.
   private readonly applicationOf = new Map<string, string>();
+  // (busName, objectPath) -> the id and role the walk answered for it, so a
+  // signal about an element the client has actually seen is reported under
+  // the SAME id the walk gave it - never a second identity for the same node.
+  private readonly byNative = new Map<string, { id: string; role: SemanticElement["role"] }>();
   // Live watches by subscription id. The channel is what feeds them.
   private readonly watches = new Map<string, ChannelWatch>();
 
@@ -130,6 +135,7 @@ export class AtspiBackend implements Backend {
     const { role, diagnostic } = toNeutralRole(nativeRole);
     const id = deriveId(role, ref.busName, ref.objectPath);
     this.answered.set(id, ref);
+    this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
     if (application !== undefined) this.applicationOf.set(id, application);
     return {
       id,
@@ -221,10 +227,18 @@ export class AtspiBackend implements Backend {
   // or one inside an application this session cannot see - the same refusal
   // covers both, deliberately (ADR-0036).
   async subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
-    if (!this.answered.has(id)) {
+    const ref = this.answered.get(id);
+    if (ref === undefined) {
       throw new UnwatchableElementError(`no element with id "${id}" was ever answered by this daemon - nothing to watch`);
     }
-    const watch = await this.channel.watch(id, sink);
+    // The anchor: which bus connection owns the watched root (the sender
+    // scope), and the walk's own book of answered nodes (so a change is
+    // reported under the id the client already holds).
+    const anchor: AtspiWatchAnchor = {
+      busName: ref.busName,
+      known: (busName, objectPath) => this.byNative.get(`${busName}\0${objectPath}`),
+    };
+    const watch = await this.channel.watch(id, sink, anchor);
     const subscriptionId = mintSubscriptionId();
     this.watches.set(subscriptionId, watch);
     return {
