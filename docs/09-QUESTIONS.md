@@ -153,6 +153,18 @@ subject and date are separable fields.
 > [what a plan can say without a model](proofs/what-a-plan-can-say-without-a-model.md)
 > against real Gmail. Until then, no claim about Gmail's specific field separation appears
 > in any document. What is claimed is only what was measured.
+>
+> *The bookmark's unanswered half, closed observe-only (M2.5, 2026-08-13):* the operator
+> signed in by hand once, and the daemon launched the signed-in profile and read real
+> Gmail through the wire — predicates answered as observe queries, one element attested,
+> the inbox subtree watched live, all in
+> [real Gmail through the daemon](proofs/real-gmail-through-the-daemon.md). The uncited
+> node count finally has a receipt: **at least 502 nodes, budget-capped** — the walk's
+> per-page budget truncated the count, so it is a floor, and the old few-thousand figure
+> stays uncited. The structure question is answered on the real thing: the inbox is a
+> grid of one hundred rows of gridcells, visible today only in the diagnostic because
+> those native roles are not yet in the neutral map. The plan-interpreter re-run against
+> real Gmail — the bookmark's letter — is recorded as M3's first live task.
 
 **Q04 — Is Wayland accessibility at parity with X11, and what is missing?**
 *What changes:* whether "works on Linux" means one backend or two. Note the observed
