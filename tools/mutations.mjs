@@ -11,10 +11,34 @@ import { fileURLToPath } from "node:url";
 // the step, because that is the guarantee whose test asserts nothing.
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const table = JSON.parse(readFileSync(join(root, "tools", "mutations.json"), "utf8"));
+// --table exists so the guards below can be proven to fail on purpose against a
+// scratch table; CI passes nothing and reads the committed one.
+const tableArg = process.argv.indexOf("--table");
+const tablePath = tableArg >= 0 ? process.argv[tableArg + 1] : join(root, "tools", "mutations.json");
+const table = JSON.parse(readFileSync(tablePath, "utf8"));
 
 if (table.length === 0) {
   console.error("mutations: the table is empty - the step would pass vacuously");
+  process.exit(1);
+}
+
+// A find string locates ONE site: the mutation below removes the first match,
+// so a find that matches twice silently mutates whichever site comes first and
+// the red test can go red for the wrong reason (issue #9). Checked for the
+// whole table BEFORE any file is touched, so an ambiguous locator is a red step
+// rather than a mutation run against a site nobody chose.
+const ambiguous = [];
+for (const mutation of table) {
+  const occurrences = readFileSync(join(root, mutation.file), "utf8").split(mutation.find).length - 1;
+  if (occurrences > 1) {
+    ambiguous.push(
+      `mutation ${mutation.name}: find string matches ${occurrences} sites in ${mutation.file} - a mutation must name exactly one`,
+    );
+  }
+}
+if (ambiguous.length > 0) {
+  for (const problem of ambiguous) console.error(problem);
+  console.error(`mutations: ${ambiguous.length} ambiguous find string(s) - extend each with surrounding context`);
   process.exit(1);
 }
 

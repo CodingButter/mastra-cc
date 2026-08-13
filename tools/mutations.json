@@ -37,7 +37,7 @@
   {
     "name": "effect-class-gate-name-dropped-from-refusal",
     "file": "daemon/src/server.ts",
-    "find": "refused by the effect-class gate: ",
+    "find": "refused by the effect-class gate: \"${request.method}\" is not a method of ",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
@@ -93,7 +93,7 @@
   {
     "name": "b11-enforcement-marking-removed",
     "file": "daemon/src/server.ts",
-    "find": ", enforcement: \"before-call\"",
+    "find": ", enforcement: \"before-call\", handler: (",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },

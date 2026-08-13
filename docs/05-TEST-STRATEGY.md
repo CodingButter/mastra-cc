@@ -64,6 +64,8 @@ A passing test suite proves the tests pass. It does not prove they would fail if
 
 **And the detail that makes it trustworthy: each mutation asserts that it applied before running the suite.** A patch that silently fails to apply produces a green run, which reads as "the guarantee is untested" but is actually "the experiment did not happen." The keeper's mutation suite does the same — it inverts each gate in turn and *requires* red.
 
+**Applied is not enough: it must have applied where the table said.** `tools/mutations.mjs` removes the first match of each entry's `find` string, so a `find` that matches two sites mutates whichever one comes first — the suite still goes red, but for a site nobody chose, and that choice moves silently as the file is edited. Every entry's `find` therefore names exactly one site, checked for the whole table before any file is touched (issue #9).
+
 ### What gets a mutation test
 
 Not everything. Mutation tests are expensive to write and to maintain. Apply them to:
