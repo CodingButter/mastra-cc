@@ -122,7 +122,7 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 **Exit gate:**
 - [ ] `--no-live` suite green in CI.
-- [ ] Live suite green on bigbeast.
+- [ ] Live suite green on real hardware, with the machine and session type recorded in the receipt.
 - [ ] Boundary pin B1 passes and **fails** when an accessibility import is added to a non-daemon package.
 - [ ] Proof artifact: `an-unpermitted-application-is-invisible.md`, produced on real hardware.
 - [ ] A refusal for an out-of-scope operation names the check that produced it.
