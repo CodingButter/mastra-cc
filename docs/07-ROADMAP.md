@@ -128,7 +128,7 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 - [ ] A refusal for an out-of-scope operation names the check that produced it.
 - [ ] **The two questions M0.5 could not close, closed here:** live Gmail end to end, against a profile the operator signed into by hand; and Qt's per-process enabling knob, on a machine with Qt6 installed. Both are named in [09-QUESTIONS.md §6](09-QUESTIONS.md).
 
-**A visibility verdict must carry its route.** M0.5 asked both routes to decide whether a person can actually see an element, judged against layout ground truth: the browser route scored 10 of 10, the platform route 6 of 10 — it cannot detect a fully transparent element, and its hit test returns *self* for an element covered by an opaque panel. **Bounds alone is a liar**: a covered button has a perfect rectangle. A bare boolean hides which instrument produced it, so the verdict carries its route. See [what hidden actually means](proofs/what-hidden-actually-means.md).
+**A visibility verdict carries its route — implemented in M2.5.** M0.5 asked both routes to decide whether a person can actually see an element, judged against layout ground truth: the browser route scored 10 of 10, the platform route 6 of 10 — it cannot detect a fully transparent element, and its hit test returns *self* for an element covered by an opaque panel. **Bounds alone is a liar**: a covered button has a perfect rectangle. A bare boolean hides which instrument produced it, so every element answer now stamps `diagnostic["mastra-cc/visibility-route"]` with the instrument that produced it — [ADR-0040](02-DECISIONS/0040-a-visibility-verdict-carries-its-route.md). See [what hidden actually means](proofs/what-hidden-actually-means.md).
 
 ---
 
