@@ -66,3 +66,27 @@ an X11 concern and is out of this run's reach. No X11 claim is made here.
 A rerun is one paste: the repository keeps an untracked proof leg that runs
 both lanes and tees the transcript, and the two commands above are the whole
 of what it does.
+
+## The pin fails when provoked
+
+Boundary pin B1 forbids a D-Bus or accessibility binding outside `daemon/`.
+A pin that has never been seen red proves nothing, so it was provoked on
+purpose: a temporary, never-committed `import "dbus-native"` was appended to
+`packages/transport/src/index.ts`, the pin runner ran, the line was reverted,
+and the runner ran again. Excerpt from the transcript (2026-08-13, minibeast):
+
+```text
+== RED: temporary uncommitted dbus-native import added to packages/transport/src/index.ts ==
+pin-b1: D-Bus binding "dbus-native" referenced outside daemon/ at packages/transport/src/index.ts
+pins: 1 pin(s) red
+RED_EXIT=1
+
+== GREEN: pins re-run on the reverted tree ==
+pin-b1: ok - 23 file(s), no D-Bus binding outside daemon/
+pins: all 5 wired pin(s) green
+GREEN_EXIT=0
+```
+
+The failure names the file and the binding; the pass counts the files it
+scanned. The provocation file was restored by `git checkout --` before the
+green run — nothing of it survives in this branch.
