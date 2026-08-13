@@ -116,7 +116,7 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 - The launch mechanism from [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md), including the ownership table from [ADR-0029](02-DECISIONS/0029-the-daemon-knows-what-it-launched.md). Without it, applications are unreadable and nothing else in this milestone can be demonstrated.
 - `observe` scope end to end; `edit`, `activate`, `submit` defined and refused.
 - The change stream — the desktop talks first. Both routes have a push channel; the browser one was measured at 253ms from cause to observation.
-- Effect attribution: `external` versus a cause id. Unmatched effects are **labelled, never flagged** — [ADR-0032](02-DECISIONS/0032-the-page-layer-is-an-instrument-not-a-gate.md).
+- Effect attribution, with the glossary's locked triple: `self` (with a cause id), `external`, `unattributed`. Unmatched effects are **labelled, never flagged** — [ADR-0032](02-DECISIONS/0032-the-page-layer-is-an-instrument-not-a-gate.md).
 - Deny-by-default application visibility.
 - Both test lanes.
 
