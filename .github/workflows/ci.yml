@@ -51,6 +51,51 @@ jobs:
       - name: "lint (workspace hygiene; not one of the nine steps)"
         run: pnpm turbo run lint
 
+  # The live accessibility lane (issue #1). The ci job above runs the --no-live
+  # lane, where every at-spi test skips itself for want of an accessibility bus
+  # - and a suite that skips is indistinguishable from a suite that passes.
+  # This job builds the bus it needs (a virtual display, a private session bus,
+  # at-spi2-core launched into it, a real GTK3 window) and runs the committed
+  # witness, infra/demo.sh, on it. The job is green only when that script
+  # prints its lock line, so an at-spi backend that stops reading real elements
+  # turns this job red instead of quietly skipping.
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # ubuntu-latest ships none of these: xvfb is the virtual display,
+      # dbus-x11 pulls in the dbus-daemon package that carries
+      # dbus-run-session, at-spi2-core carries the accessibility bus launcher,
+      # and yad is the GTK3 application that provably registers on that bus
+      # (zenity 4.x is GTK4 and does not - see infra/apply.sh).
+      - name: "install the desktop this runner does not have"
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y xvfb dbus-x11 at-spi2-core yad
+      - name: "generate protocol-types (build output, ADR-0009)"
+        run: node protocol/generate.mjs
+      - run: pnpm install --frozen-lockfile
+      # the lane reads the BUILT daemon, the artefact a machine would run
+      - run: pnpm turbo run build
+
+      # The lock line is asserted, not eyeballed. demo.sh already exits
+      # non-zero on every failure path, but a script whose proof line silently
+      # stopped printing would still exit 0; requiring the line by name is what
+      # makes "goes red when PROOF: GREEN is absent" true of this job.
+      - name: "live lane: infra/demo.sh must print its proof line"
+        run: |
+          set -o pipefail
+          bash infra/demo.sh 2>&1 | tee demo.log
+          grep -q "^PROOF: GREEN" demo.log || {
+            echo "live: infra/demo.sh did not print PROOF: GREEN - the live lane was not witnessed" >&2
+            exit 1
+          }
+
   # B12 is a CI job over every manifest, not a source pin
   # (docs/01-ARCHITECTURE.md:139-150).
   licences:
