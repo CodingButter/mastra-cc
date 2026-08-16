@@ -826,3 +826,69 @@ proximity must not be offered as a hint. And search is the *less* reliable route
 contact whose display name uses mathematical-bold characters returns nothing for a plain
 search while scrolling finds them. **Search narrows; scrolling proves.** An empty search
 result is never permission to report absence.
+
+---
+
+## 7. Questions opened after M0.5
+
+Recorded here rather than as decisions, in the format §1 requires: what changes if the
+answer goes one way rather than the other, and what answering it would actually take.
+
+**Q21 — Is a "developer mode" a separate product surface, or does it fall out of the
+desktop the daemon already drives?**
+*Opened 2026-08-16.*
+
+The target user is general — the person at their desk who wants their computer to do
+things. But a developer is a plausible and valuable second audience, and the shape Jamie
+described is real: talk to the orb, and have actual work happen on an actual project.
+File the issue. Fix the bug. Open the pull request. Steer the agents already doing the
+work. The orchestrator dispatches to a *coding* agent instead of a desktop one, and the
+coding runtime is already built and optimised for exactly that
+([Q13](#q13--what-comes-free-precisely), and `mastracode` is a sibling per
+[Q12](#q12--is-mastra-cc-a-plugin-a-sibling-package-or-a-fork)).
+
+*What changes:* whether the product grows a second, non-desktop execution path — with its
+own tool surface, its own permission model and its own failure modes — or whether the
+developer story is simply *the desktop story, aimed at developer applications*.
+
+**The question splits cleanly, and the two halves have very different prices.**
+
+*The half that is free.* Driving developer tooling **through the browser** costs nothing
+new. A signed-in session in the assistant's own Chrome profile — its own account, so its
+actions are attributable to it and not to the user — is a desktop the daemon already
+knows how to read and act on. Moving a card from intake to triage is a press on an
+element; talking to a working agent is text into a textbox; filing an issue is a form.
+This was proven on real hardware in M2.5 against a live, hand-signed-in Gmail
+([real gmail through the daemon](proofs/real-gmail-through-the-daemon.md)), and profile-as-
+launch-identity is already decided
+([ADR-0038](02-DECISIONS/0038-a-browser-profile-is-a-launch-identity.md)). **This half
+requires no new product surface at all. It falls out of finishing the daemon's verb set.**
+
+*The half that is not free.* Git as a subprocess — worktrees, branches, commits, the CLI —
+is command execution, and [00-PRODUCT.md](00-PRODUCT.md) §6 non-goal 1 is *not a remote
+shell*: the agent never gets arbitrary command execution as a desktop-control primitive.
+That ban is not squeamishness about developers; it is the thing that keeps every other
+permission meaningful, because a shell is a universal bypass of the element-level model.
+Reaching this half means either a genuinely new sandboxed execution surface with its own
+consent model, or an exception to the product's first non-goal. Neither is cheap and
+neither is currently justified.
+
+*Answer requires:* not research — **evidence from the free half first.** Drive a real
+developer workflow end to end through the browser route, on real hardware, the way Gmail
+was driven, and see what it actually cannot reach. Only a workflow that provably cannot
+be done through an application the daemon can drive is evidence that a second execution
+path is needed. Anything less is a second path built on a guess.
+
+> *Jamie's own example is the argument for the cheap half.* He described the assistant
+> going to the factory board in its own browser session, moving an issue through triage,
+> and talking to the agent doing the work — and none of that needs a shell. It needs a
+> browser the daemon can drive and an account of its own.
+
+> *And there is a version of this that is a trap.* The daemon could open an editor and
+> type code into it, visibly, like a person. It would be a hell of a demo and a terrible
+> way to get work done — impressive rather than useful. If the developer path is taken, it
+> is taken because it is faster than doing the work yourself, not because watching it is
+> entertaining.
+
+*Blocking:* nothing. The daemon's capability work is upstream of this question and
+narrows it. Revisit once the verb set is complete.
