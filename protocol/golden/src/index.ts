@@ -1,22 +1,26 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.3.0
+// Mastra CC protocol v1.4.0
 
-export const PROTOCOL_VERSION = "1.3.0";
-export const SCHEMA_DIGEST = "6259a2d17036a46458e0e55970f05f2cb72fe4569c5e3eda65a0c293dee02d65";
+export const PROTOCOL_VERSION = "1.4.0";
+export const SCHEMA_DIGEST = "1d125f7b5694c7f829145b5eb8554db84f990897499fdda69432d510c40e2ee1";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
 export const STATES = ["enabled","visible","focused","selected","checked","expanded","offscreen"] as const;
 export type State = (typeof STATES)[number];
-export const ACTIONS = ["press","focus","select","expand"] as const;
-export type ActionName = (typeof ACTIONS)[number];
+export const AVAILABILITY_STATES = ["available","disabled-by-configuration","not-exposed"] as const;
+export type AvailabilityState = (typeof AVAILABILITY_STATES)[number];
+export const OPERATION_NAMES = ["setValue","setText","setCaret","reveal"] as const;
+export type OperationName = (typeof OPERATION_NAMES)[number];
+export const CAPABILITY_NAMES = ["observe","launch","edit","activate","submit"] as const;
+export type CapabilityName = (typeof CAPABILITY_NAMES)[number];
 export const PRIORITIES = ["low","medium","high"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as const;
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","attestElement","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement"] as const;
+export const METHOD_NAMES = ["queryElements","attestElement","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -29,10 +33,72 @@ export interface SemanticElement {
   name: string;
   /** The states currently true of the element. */
   states: State[];
-  /** What a later call could be asked to do. M1 implements none of them. */
-  actions: ActionName[];
+  /** The verbs this element itself publishes, read from the element and never from a table the daemon wrote. Names are open text in the element's own vocabulary and are never normalised into synonyms; two names that look alike are two names. */
+  actions: Action[];
+  /** The argument-carrying operations this element can serve. When a route reports them it reports all of them, so an operation the element does not publish is present and not-exposed rather than missing - within this field, absence of an entry would be a silence and the entry is a reading. The field itself is absent only where a route does not answer the question at all, which is a fact about the route and is visible as one. */
+  operations?: Operation[];
   /** Debug-only carrier and the only exemption from the neutral-vocabulary rule: native identifiers may appear here for a human reading a log, and are never load-bearing. */
   diagnostic?: Diagnostic;
+}
+
+/** One verb an element publishes, carried whole: the platform's own name for it, the platform's own words about it, and whether it can be performed right now. The name is open text because a closed list of verbs is a list somebody invented; the availability beside it is a closed vocabulary because there are exactly three ways an action can fail to be performable and they must never be collapsed into one. */
+export interface Action {
+  /** The element's own word for this verb, verbatim and unnormalised. Performing it names this word; it is never translated into a synonym the daemon preferred. */
+  name: string;
+  /** The element's own sentence about what this verb does, when it offers one. Carried so a reader judging intent reads the application's words rather than a meaning the daemon assigned. */
+  description?: string;
+  /** The element's display wording for this verb, when it differs from the name. Present for a human reading a log; the name is what a call names. */
+  localizedName?: string;
+  /** available: it can be performed now. disabled-by-configuration: this machine's owner turned it off, and disabledBy names which setting. not-exposed: the element never offered it, and no setting would change that. The middle case is a fact about configuration and the last is a fact about the application, so an agent told the wrong one forms a false belief about what is possible. */
+  availability: AvailabilityState;
+  /** Present exactly when the availability is disabled-by-configuration: the setting a person would change to allow it. Absent everywhere else, because naming a setting where none applies invents a remedy that does not exist. */
+  disabledBy?: string;
+}
+
+/** The bounds an element publishes for its own magnitude, in the element's own units. A percentage is a reading of this range and never a unit the daemon imposes; where an element publishes no range, no percentage is computed anywhere. */
+export interface Range {
+  /** The smallest value the element accepts, as the element reports it. */
+  minimum: number;
+  /** The largest value the element accepts, as the element reports it. */
+  maximum: number;
+  /** What the element holds right now, in the same units as the bounds. */
+  current: number;
+  /** The smallest change the element declares as meaningful, when it declares one. Absent means the element published none, never that the step is zero. */
+  step?: number;
+}
+
+/** One argument-carrying operation, reported per element. Operations exist because a verb cannot carry a magnitude: performing an action names only which action, on every platform this contract targets, so anything with a quantity is a separate designed thing rather than a verb with a number stapled to it. */
+export interface Operation {
+  /** Which operation this entry reports on: setValue moves a magnitude within a published range, setText replaces or inserts content at an offset, setCaret places the insertion point, reveal brings the element into view. */
+  operation: OperationName;
+  /** Read the same three ways as an action's: performable now, turned off by a named setting, or never offered by this element. An element whose role suggests an operation it does not back is not-exposed, which is a fact about the application rather than a refusal a setting could lift. */
+  availability: AvailabilityState;
+  /** Present exactly when the availability is disabled-by-configuration: the setting a person would change to allow it. */
+  disabledBy?: string;
+  /** Present only where the element publishes bounds for this operation - a magnitude operation on an element that declares one. Its absence is the element's own silence, and nothing downstream may substitute a range of its own. */
+  range?: Range;
+}
+
+/** One application this machine has, as the daemon can honestly describe it from outside: that it exists, what may be done with it, and which setting decides each answer. Nothing from inside the application appears here - no window, no element, no text. Existence and permission are readable; content is not. */
+export interface InstalledApplication {
+  /** The human-facing application name, the same name a call would use to ask for it. Comparisons normalise to NFKC first. */
+  name: string;
+  /** One entry per capability the contract defines, always all of them. A capability that is off is present and off with its setting named, because an application reported as absent invites a person to install what they already have. */
+  capabilities: Capability[];
+  /** Whether this daemon knows how to start it. An application can be installed and honestly not launchable; that is a statement about the daemon's own recipes, never about permission. */
+  launchable: boolean;
+  /** Debug-only carrier for the backend's own identifiers, on the same terms as an element's: never load-bearing. */
+  diagnostic?: Diagnostic;
+}
+
+/** One capability against one application, and the setting that decides it. This is the fence around the application, described from outside it. */
+export interface Capability {
+  /** Which capability this entry answers for. */
+  capability: CapabilityName;
+  /** available: this session may do it. disabled-by-configuration: a setting withholds it, and disabledBy names which. not-exposed: this daemon has no path to it at all, so no setting would grant it. */
+  availability: AvailabilityState;
+  /** Present exactly when the availability is disabled-by-configuration: the setting a person would change. Naming the setting is the whole point - a refusal that cannot be acted on is a wall, not an answer. */
+  disabledBy?: string;
 }
 
 /** A live watch on one element and everything beneath it. Holding one means the daemon will push a change event whenever the watched subtree changes, until the subscription is ended by the client, by the element vanishing, or by the connection closing. */
@@ -161,8 +227,8 @@ export interface EditElementResult {
 export interface ActivateElementParams {
   /** The element the action would be performed on. */
   id: string;
-  /** One of the element's advertised actions. */
-  action: ActionName;
+  /** One of the element's advertised actions, named exactly as the element published it. A name the element did not publish is refused by name rather than attempted. */
+  action: string;
 }
 
 export interface ActivateElementResult {
@@ -187,8 +253,79 @@ export interface SubmitElementResult {
   refusal?: string;
 }
 
-const FIELD_SPECS = {"semanticElement":{"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"name":{"type":"string","required":true,"pattern":null},"states":{"type":"state[]","required":true,"pattern":null},"actions":{"type":"action[]","required":true,"pattern":null},"diagnostic":{"type":"diagnostic","required":false,"pattern":null}},"subscription":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"priority":{"type":"priority","required":true,"pattern":null}},"changeEvent":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"kind":{"type":"changeKind","required":true,"pattern":null},"attribution":{"type":"attribution","required":true,"pattern":null},"causeId":{"type":"string","required":false,"pattern":null},"priority":{"type":"priority","required":true,"pattern":null},"at":{"type":"number","required":true,"pattern":null}},"diagnostic":{"nativeRole":{"type":"string","required":false,"pattern":null},"nativeId":{"type":"string","required":false,"pattern":null}}} as const;
-const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"action":["press","focus","select","expand"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
+/** Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+export interface SetElementValueParams {
+  /** The element whose magnitude would move. */
+  id: string;
+  /** The value the element would hold afterwards, in the units of the range the element itself published. */
+  value: number;
+}
+
+export interface SetElementValueResult {
+  /** Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer. */
+  refusal?: string;
+}
+
+/** Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+export interface SetElementTextParams {
+  /** The element whose text would change. */
+  id: string;
+  /** The text to place. */
+  text: string;
+  /** Where to insert, in the element's own offsets. Absent replaces the whole content. An offset beyond the element's text is refused rather than silently moved to the end, because a write that lands somewhere other than where it was aimed is a wrong write that returned success. */
+  offset?: number;
+}
+
+export interface SetElementTextResult {
+  /** Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer. */
+  refusal?: string;
+}
+
+/** Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+export interface SetElementCaretParams {
+  /** The element whose insertion point would move. */
+  id: string;
+  /** Where to place it, in the element's own offsets. Absent places it at the end of the element's text. */
+  offset?: number;
+}
+
+export interface SetElementCaretResult {
+  /** Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer. */
+  refusal?: string;
+}
+
+/** Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+export interface RevealElementParams {
+  /** The element to bring into view. */
+  id: string;
+}
+
+export interface RevealElementResult {
+  /** Present when the operation was performed; the element as it reads afterwards, re-read so a reveal that changed nothing is reported as one rather than assumed to have worked. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer. */
+  refusal?: string;
+}
+
+/** List the applications this machine has, each with what may be done with it and the setting behind every refusal. Observation only, and observation of the fence rather than of anything behind it: an application this session may not touch is present here with its capabilities off and their settings named. Withholding its existence would teach a reader it is absent, and a reader who believes that recommends installing what is already installed. How the inventory is discovered belongs to the platform underneath, which is why nothing in this result names a mechanism. */
+export interface ListApplicationsParams {
+}
+
+export interface ListApplicationsResult {
+  /** Present when the inventory could be read; every application found, permitted or not. */
+  applications?: InstalledApplication[];
+  /** Present otherwise; names the check that ran and what would change the answer. */
+  refusal?: string;
+}
+
+const FIELD_SPECS = {"semanticElement":{"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"name":{"type":"string","required":true,"pattern":null},"states":{"type":"state[]","required":true,"pattern":null},"actions":{"type":"action[]","required":true,"pattern":null},"operations":{"type":"operation[]","required":false,"pattern":null},"diagnostic":{"type":"diagnostic","required":false,"pattern":null}},"action":{"name":{"type":"string","required":true,"pattern":null},"description":{"type":"string","required":false,"pattern":null},"localizedName":{"type":"string","required":false,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null}},"range":{"minimum":{"type":"number","required":true,"pattern":null},"maximum":{"type":"number","required":true,"pattern":null},"current":{"type":"number","required":true,"pattern":null},"step":{"type":"number","required":false,"pattern":null}},"operation":{"operation":{"type":"operationName","required":true,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null},"range":{"type":"range","required":false,"pattern":null}},"installedApplication":{"name":{"type":"string","required":true,"pattern":null},"capabilities":{"type":"capability[]","required":true,"pattern":null},"launchable":{"type":"boolean","required":true,"pattern":null},"diagnostic":{"type":"diagnostic","required":false,"pattern":null}},"capability":{"capability":{"type":"capabilityName","required":true,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null}},"subscription":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"priority":{"type":"priority","required":true,"pattern":null}},"changeEvent":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"kind":{"type":"changeKind","required":true,"pattern":null},"attribution":{"type":"attribution","required":true,"pattern":null},"causeId":{"type":"string","required":false,"pattern":null},"priority":{"type":"priority","required":true,"pattern":null},"at":{"type":"number","required":true,"pattern":null}},"diagnostic":{"nativeRole":{"type":"string","required":false,"pattern":null},"nativeId":{"type":"string","required":false,"pattern":null}}} as const;
+const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
 
 type FieldSpec = { type: string; required: boolean; pattern: string | null };
 
@@ -226,12 +363,39 @@ function problemsFor(typeName: keyof typeof FIELD_SPECS, value: unknown): string
       problems.push(`${String(typeName)}.${field}: ${JSON.stringify(v)} does not match the id pattern`);
     }
   }
+  problems.push(...availabilityProblems(String(typeName), specs, record));
+  return problems;
+}
+
+/**
+ * The rule the field specs cannot express, enforced wherever an availability
+ * appears: a thing withheld by configuration names the setting that withheld
+ * it, and nothing else names a setting at all. This is what keeps the three
+ * availability states from collapsing into each other. "Turned off by a
+ * setting" and "never offered by the platform" look alike to a caller and are
+ * opposites to anyone deciding what to do next: the first is a door with a
+ * key, the second is a wall. A withheld thing with no setting named is an
+ * unanswerable refusal, and an unexposed thing that names one invents a remedy
+ * that does not exist.
+ */
+function availabilityProblems(typeName: string, specs: Record<string, FieldSpec>, record: Record<string, unknown>): string[] {
+  if (!("availability" in specs)) return [];
+  const problems: string[] = [];
+  const withheld = record.availability === "disabled-by-configuration";
+  const names = typeof record.disabledBy === "string" && record.disabledBy.length > 0;
+  if (withheld && !names) problems.push(`${typeName}.disabledBy: an availability withheld by configuration must name the setting that withholds it`);
+  if (!withheld && record.disabledBy !== undefined) problems.push(`${typeName}.disabledBy: present on an availability of ${JSON.stringify(record.availability)} - only a configuration-withheld one names a setting`);
   return problems;
 }
 
 /** Validate a semanticElement; returns an empty array when it conforms. */
 export function validateSemanticElement(value: unknown): string[] {
   return problemsFor("semanticElement", value);
+}
+
+/** Validate one installedApplication as the listing reports it; returns an empty array when it conforms. */
+export function validateInstalledApplication(value: unknown): string[] {
+  return problemsFor("installedApplication", value);
 }
 
 /**

@@ -101,6 +101,12 @@ const ACTIONS_BY_ROLE: Readonly<Partial<Record<Role, ReadonlyArray<"press" | "fo
   textbox: ["focus"],
 };
 
-export function actionsForRole(role: Role): Array<"press" | "focus" | "select" | "expand"> {
-  return [...(ACTIONS_BY_ROLE[role] ?? [])];
+// Schema version 1.4.0 carries an action as a record, so this table's output is
+// translated into that shape. The words are unchanged and remain invented: the
+// old wire had no availability at all, so every action it listed was implicitly
+// performable, and "available" is what that meant. This whole function is
+// deleted in the phase that reads actions off the element - the shape moved
+// here, the lie did not get any smaller.
+export function actionsForRole(role: Role): Array<{ name: string; availability: "available" }> {
+  return (ACTIONS_BY_ROLE[role] ?? []).map((name) => ({ name, availability: "available" }));
 }

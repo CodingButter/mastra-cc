@@ -70,7 +70,7 @@ describe("the scope gate: edit, activate and submit are defined and refused by n
 
   it("refuses activateElement naming the scope gate, the method and its class", async () => {
     const response = await handleRequest(
-      { type: "request", id: 6, method: "activateElement", params: { id: "el-000000000000", action: "press" } },
+      { type: "request", id: 6, method: "activateElement", params: { id: "el-000000000000", action: "click" } },
       backend,
     );
     const refusal = (response.result as { refusal?: string }).refusal;
@@ -113,7 +113,7 @@ describe("the scope gate: edit, activate and submit are defined and refused by n
     };
     for (const [id, method, params] of [
       [8, "editElement", { id: "el-000000000000", value: "x" }],
-      [9, "activateElement", { id: "el-000000000000", action: "press" }],
+      [9, "activateElement", { id: "el-000000000000", action: "click" }],
       [10, "submitElement", { id: "el-000000000000", attestation: "commits nothing" }],
     ] as const) {
       const response = await handleRequest({ type: "request", id, method, params }, untouchable);

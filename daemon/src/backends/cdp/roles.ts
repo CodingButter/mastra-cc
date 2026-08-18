@@ -90,6 +90,9 @@ const ACTIONS_BY_ROLE: Readonly<Partial<Record<Role, ReadonlyArray<"press" | "fo
   textbox: ["focus"],
 };
 
-export function actionsForRole(role: Role): Array<"press" | "focus" | "select" | "expand"> {
-  return [...(ACTIONS_BY_ROLE[role] ?? [])];
+// Schema version 1.4.0 carries an action as a record; see the note on the
+// desktop route's copy of this function. Same invented words, new shape,
+// deleted by the phase that derives actions from the node itself.
+export function actionsForRole(role: Role): Array<{ name: string; availability: "available" }> {
+  return (ACTIONS_BY_ROLE[role] ?? []).map((name) => ({ name, availability: "available" }));
 }

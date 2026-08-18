@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -21,7 +21,9 @@
     "generic"
   ],
   "states": ["enabled", "visible", "focused", "selected", "checked", "expanded", "offscreen"],
-  "actions": ["press", "focus", "select", "expand"],
+  "availabilityStates": ["available", "disabled-by-configuration", "not-exposed"],
+  "operationNames": ["setValue", "setText", "setCaret", "reveal"],
+  "capabilityNames": ["observe", "launch", "edit", "activate", "submit"],
   "priorities": ["low", "medium", "high"],
   "changeKinds": ["appeared", "disappeared", "changed", "watchEnded"],
   "attributions": ["self", "external", "unattributed"],
@@ -53,12 +55,142 @@
         "actions": {
           "type": "action[]",
           "required": true,
-          "description": "What a later call could be asked to do. M1 implements none of them."
+          "description": "The verbs this element itself publishes, read from the element and never from a table the daemon wrote. Names are open text in the element's own vocabulary and are never normalised into synonyms; two names that look alike are two names."
+        },
+        "operations": {
+          "type": "operation[]",
+          "required": false,
+          "description": "The argument-carrying operations this element can serve. When a route reports them it reports all of them, so an operation the element does not publish is present and not-exposed rather than missing - within this field, absence of an entry would be a silence and the entry is a reading. The field itself is absent only where a route does not answer the question at all, which is a fact about the route and is visible as one."
         },
         "diagnostic": {
           "type": "diagnostic",
           "required": false,
           "description": "Debug-only carrier and the only exemption from the neutral-vocabulary rule: native identifiers may appear here for a human reading a log, and are never load-bearing."
+        }
+      }
+    },
+    "action": {
+      "description": "One verb an element publishes, carried whole: the platform's own name for it, the platform's own words about it, and whether it can be performed right now. The name is open text because a closed list of verbs is a list somebody invented; the availability beside it is a closed vocabulary because there are exactly three ways an action can fail to be performable and they must never be collapsed into one.",
+      "fields": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "The element's own word for this verb, verbatim and unnormalised. Performing it names this word; it is never translated into a synonym the daemon preferred."
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "The element's own sentence about what this verb does, when it offers one. Carried so a reader judging intent reads the application's words rather than a meaning the daemon assigned."
+        },
+        "localizedName": {
+          "type": "string",
+          "required": false,
+          "description": "The element's display wording for this verb, when it differs from the name. Present for a human reading a log; the name is what a call names."
+        },
+        "availability": {
+          "type": "availabilityState",
+          "required": true,
+          "description": "available: it can be performed now. disabled-by-configuration: this machine's owner turned it off, and disabledBy names which setting. not-exposed: the element never offered it, and no setting would change that. The middle case is a fact about configuration and the last is a fact about the application, so an agent told the wrong one forms a false belief about what is possible."
+        },
+        "disabledBy": {
+          "type": "string",
+          "required": false,
+          "description": "Present exactly when the availability is disabled-by-configuration: the setting a person would change to allow it. Absent everywhere else, because naming a setting where none applies invents a remedy that does not exist."
+        }
+      }
+    },
+    "range": {
+      "description": "The bounds an element publishes for its own magnitude, in the element's own units. A percentage is a reading of this range and never a unit the daemon imposes; where an element publishes no range, no percentage is computed anywhere.",
+      "fields": {
+        "minimum": {
+          "type": "number",
+          "required": true,
+          "description": "The smallest value the element accepts, as the element reports it."
+        },
+        "maximum": {
+          "type": "number",
+          "required": true,
+          "description": "The largest value the element accepts, as the element reports it."
+        },
+        "current": {
+          "type": "number",
+          "required": true,
+          "description": "What the element holds right now, in the same units as the bounds."
+        },
+        "step": {
+          "type": "number",
+          "required": false,
+          "description": "The smallest change the element declares as meaningful, when it declares one. Absent means the element published none, never that the step is zero."
+        }
+      }
+    },
+    "operation": {
+      "description": "One argument-carrying operation, reported per element. Operations exist because a verb cannot carry a magnitude: performing an action names only which action, on every platform this contract targets, so anything with a quantity is a separate designed thing rather than a verb with a number stapled to it.",
+      "fields": {
+        "operation": {
+          "type": "operationName",
+          "required": true,
+          "description": "Which operation this entry reports on: setValue moves a magnitude within a published range, setText replaces or inserts content at an offset, setCaret places the insertion point, reveal brings the element into view."
+        },
+        "availability": {
+          "type": "availabilityState",
+          "required": true,
+          "description": "Read the same three ways as an action's: performable now, turned off by a named setting, or never offered by this element. An element whose role suggests an operation it does not back is not-exposed, which is a fact about the application rather than a refusal a setting could lift."
+        },
+        "disabledBy": {
+          "type": "string",
+          "required": false,
+          "description": "Present exactly when the availability is disabled-by-configuration: the setting a person would change to allow it."
+        },
+        "range": {
+          "type": "range",
+          "required": false,
+          "description": "Present only where the element publishes bounds for this operation - a magnitude operation on an element that declares one. Its absence is the element's own silence, and nothing downstream may substitute a range of its own."
+        }
+      }
+    },
+    "installedApplication": {
+      "description": "One application this machine has, as the daemon can honestly describe it from outside: that it exists, what may be done with it, and which setting decides each answer. Nothing from inside the application appears here - no window, no element, no text. Existence and permission are readable; content is not.",
+      "fields": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "The human-facing application name, the same name a call would use to ask for it. Comparisons normalise to NFKC first."
+        },
+        "capabilities": {
+          "type": "capability[]",
+          "required": true,
+          "description": "One entry per capability the contract defines, always all of them. A capability that is off is present and off with its setting named, because an application reported as absent invites a person to install what they already have."
+        },
+        "launchable": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether this daemon knows how to start it. An application can be installed and honestly not launchable; that is a statement about the daemon's own recipes, never about permission."
+        },
+        "diagnostic": {
+          "type": "diagnostic",
+          "required": false,
+          "description": "Debug-only carrier for the backend's own identifiers, on the same terms as an element's: never load-bearing."
+        }
+      }
+    },
+    "capability": {
+      "description": "One capability against one application, and the setting that decides it. This is the fence around the application, described from outside it.",
+      "fields": {
+        "capability": {
+          "type": "capabilityName",
+          "required": true,
+          "description": "Which capability this entry answers for."
+        },
+        "availability": {
+          "type": "availabilityState",
+          "required": true,
+          "description": "available: this session may do it. disabled-by-configuration: a setting withholds it, and disabledBy names which. not-exposed: this daemon has no path to it at all, so no setting would grant it."
+        },
+        "disabledBy": {
+          "type": "string",
+          "required": false,
+          "description": "Present exactly when the availability is disabled-by-configuration: the setting a person would change. Naming the setting is the whole point - a refusal that cannot be acted on is a wall, not an answer."
         }
       }
     },
@@ -306,9 +438,9 @@
           "description": "The element the action would be performed on."
         },
         "action": {
-          "type": "action",
+          "type": "string",
           "required": true,
-          "description": "One of the element's advertised actions."
+          "description": "One of the element's advertised actions, named exactly as the element published it. A name the element did not publish is refused by name rather than attempted."
         }
       },
       "returns": {
@@ -344,6 +476,134 @@
           "type": "semanticElement",
           "required": false,
           "description": "Present when the commit was performed; the element as it reads afterwards."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer."
+        }
+      }
+    },
+    "setElementValue": {
+      "description": "Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element whose magnitude would move."
+        },
+        "value": {
+          "type": "number",
+          "required": true,
+          "description": "The value the element would hold afterwards, in the units of the range the element itself published."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer."
+        }
+      }
+    },
+    "setElementText": {
+      "description": "Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element whose text would change."
+        },
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "The text to place."
+        },
+        "offset": {
+          "type": "number",
+          "required": false,
+          "description": "Where to insert, in the element's own offsets. Absent replaces the whole content. An offset beyond the element's text is refused rather than silently moved to the end, because a write that lands somewhere other than where it was aimed is a wrong write that returned success."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer."
+        }
+      }
+    },
+    "setElementCaret": {
+      "description": "Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element whose insertion point would move."
+        },
+        "offset": {
+          "type": "number",
+          "required": false,
+          "description": "Where to place it, in the element's own offsets. Absent places it at the end of the element's text."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer."
+        }
+      }
+    },
+    "revealElement": {
+      "description": "Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element to bring into view."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the operation was performed; the element as it reads afterwards, re-read so a reveal that changed nothing is reported as one rather than assumed to have worked."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer."
+        }
+      }
+    },
+    "listApplications": {
+      "description": "List the applications this machine has, each with what may be done with it and the setting behind every refusal. Observation only, and observation of the fence rather than of anything behind it: an application this session may not touch is present here with its capabilities off and their settings named. Withholding its existence would teach a reader it is absent, and a reader who believes that recommends installing what is already installed. How the inventory is discovered belongs to the platform underneath, which is why nothing in this result names a mechanism.",
+      "params": {},
+      "returns": {
+        "applications": {
+          "type": "installedApplication[]",
+          "required": false,
+          "description": "Present when the inventory could be read; every application found, permitted or not."
         },
         "refusal": {
           "type": "string",

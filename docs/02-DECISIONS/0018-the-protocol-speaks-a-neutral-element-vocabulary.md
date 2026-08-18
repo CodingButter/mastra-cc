@@ -1,6 +1,6 @@
 # ADR-0018 — The protocol speaks a neutral element vocabulary
 
-**Status:** accepted
+**Status:** accepted; clause 2 amended in part by [ADR-0047](0047-the-wire-carries-words-we-did-not-invent.md) (2026-08-18) — action *names* are open text read off the element, because a closed list of verbs is a list we invented and the shipped one shared zero words with the live desktop. Roles, states, and every other vocabulary the daemon itself decides remain closed and versioned with the schema, and B10 still governs the schema text unchanged.
 **Date:** 2026-08-08
 **Depends on [ADR-0017](0017-platform-backends-live-inside-the-daemon.md). Introduces boundary B10.**
 **Forward decision, not back-filled.** The prototype had no reason to avoid AT-SPI vocabulary and, as far as the schema shows, made no effort to.

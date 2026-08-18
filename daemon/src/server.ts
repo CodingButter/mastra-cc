@@ -98,6 +98,38 @@ export const ACTIVATE_SCOPE_REFUSAL =
 export const SUBMIT_SCOPE_REFUSAL =
   'refused by the scope gate: "submitElement" is submit-class and this session holds no submit authority for any application - authority is checked before the attestation is ever examined, the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
 
+// The four operations (schema version 1.4.0, ADR-0045 and ADR-0047). They are
+// on the wire for the same reason the three verbs above have been since 1.2.0:
+// the contract is what is being frozen, and a method absent from the schema
+// cannot be refused honestly - "not a method of the schema" cannot distinguish
+// "not built yet" from "hidden". They are entered here rather than left out of
+// the table because a defined method with no entry would be answered by the
+// gate's not-a-method-of-the-schema refusal, which of these would be false.
+// Each names the operation's own class: moving a magnitude, placing text and
+// placing a caret change what an element holds, and revealing one causes the
+// surface to do something visible and trivially reversible.
+export const SET_VALUE_SCOPE_REFUSAL =
+  'refused by the scope gate: "setElementValue" is edit-class and this session holds no edit authority for any application - the backend seam carries no operation yet, and until it does this method always refuses';
+
+export const SET_TEXT_SCOPE_REFUSAL =
+  'refused by the scope gate: "setElementText" is edit-class and this session holds no edit authority for any application - the backend seam carries no operation yet, and until it does this method always refuses';
+
+export const SET_CARET_SCOPE_REFUSAL =
+  'refused by the scope gate: "setElementCaret" is edit-class and this session holds no edit authority for any application - the backend seam carries no operation yet, and until it does this method always refuses';
+
+export const REVEAL_SCOPE_REFUSAL =
+  'refused by the scope gate: "revealElement" is activate-class and this session holds no activate authority for any element - the backend seam carries no operation yet, and until it does this method always refuses';
+
+// The application listing (schema version 1.4.0, ADR-0042). Observe-class: it
+// reads the fence around an application and never anything behind it. It is
+// defined and refused here because the inventory is a platform question and
+// the seam does not yet carry it (ADR-0017); segment 3 implements it. The
+// refusal names the seam rather than the application, so it says nothing about
+// what this machine has - which is the property ADR-0042 changes, not one it
+// keeps.
+export const LIST_APPLICATIONS_REFUSAL =
+  'refused by the inventory gate: "listApplications" is observe-class and no backend on this session can enumerate what is installed - reading an installed inventory is a platform question and the backend seam does not carry it yet, and until it does this method always refuses';
+
 // The change stream (ADR-0039). Both subscription methods are observe-class:
 // a watch reads and cannot cause anything. They are on the wire before either
 // route can serve them, on ADR-0037's reasoning - the contract is the thing
@@ -349,6 +381,11 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   editElement: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: EDIT_SCOPE_REFUSAL }) },
   activateElement: { effectClass: "activate", enforcement: "before-call", handler: async () => ({ refusal: ACTIVATE_SCOPE_REFUSAL }) },
   submitElement: { effectClass: "submit", enforcement: "before-call", handler: async () => ({ refusal: SUBMIT_SCOPE_REFUSAL }) },
+  setElementValue: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_VALUE_SCOPE_REFUSAL }) },
+  setElementText: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_TEXT_SCOPE_REFUSAL }) },
+  setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_CARET_SCOPE_REFUSAL }) },
+  revealElement: { effectClass: "activate", enforcement: "before-call", handler: async () => ({ refusal: REVEAL_SCOPE_REFUSAL }) },
+  listApplications: { effectClass: "observe", enforcement: "at-result", handler: async () => ({ refusal: LIST_APPLICATIONS_REFUSAL }) },
 };
 
 const POLL_BUDGET_MS = 10_000; // how long a launched app gets to become readable
