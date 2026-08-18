@@ -102,6 +102,63 @@ describe("reading the verbs an element publishes", () => {
     expect(published.diagnostic?.["mastra-cc/actions-unreadable"]).toContain("Failed");
   });
 
+  it("stays readable when the element cannot even say which interfaces it carries", async () => {
+    // The pre-flight measured 721 of 721 clean, but a sample is not a proof and
+    // gnome-shell errors on other Accessible calls. If this error escaped, the
+    // walk's catch would drop the WHOLE element - a reader that cannot list its
+    // verbs would become a reader nobody can see.
+    const published = await readPublishedActions(
+      scriptedChannel({
+        GetInterfaces: () => {
+          throw new Error("org.freedesktop.DBus.Error.Failed: object went away");
+        },
+      }),
+      REF,
+    );
+    expect(published.actions).toEqual([]);
+    expect(published.diagnostic?.["mastra-cc/actions-unreadable"]).toContain("org.freedesktop.DBus.Error.Failed");
+  });
+
+  it("drops an action it cannot name, rather than publishing the display wording or losing the element", async () => {
+    // The element counted two actions and will not name the second. The bulk
+    // cell holds display wording ("Menu"), never the word a call names, so
+    // publishing it would invent a verb the element will not answer to.
+    const published = await readPublishedActions(
+      scriptedChannel({
+        GetInterfaces: [["org.a11y.atspi.Action"]],
+        GetActions: [
+          [
+            ["Click", "Clicks the button", ""],
+            ["Menu", "Opens the menu", ""],
+          ],
+        ],
+        "GetName:0": ["click"],
+        "GetName:1": () => {
+          throw new Error("org.freedesktop.DBus.Error.Failed: index went away");
+        },
+      }),
+      REF,
+    );
+    expect(published.actions.map((action) => action.name)).toEqual(["click"]);
+    expect(published.diagnostic?.["mastra-cc/action-name-unreadable"]).toContain("1:");
+    expect(published.diagnostic?.["mastra-cc/action-name-unreadable"]).toContain("org.freedesktop.DBus.Error.Failed");
+  });
+
+  it("carries the bus error's name unsliced, since the name is what a reader matches on", async () => {
+    const published = await readPublishedActions(
+      scriptedChannel({
+        GetInterfaces: [["org.a11y.atspi.Action"]],
+        GetActions: () => {
+          throw new Error(`org.freedesktop.DBus.Error.ServiceUnknown: ${"x".repeat(400)}`);
+        },
+      }),
+      REF,
+    );
+    expect(published.diagnostic?.["mastra-cc/actions-unreadable"]).toContain(
+      "org.freedesktop.DBus.Error.ServiceUnknown",
+    );
+  });
+
   it("lets an off-tape read refuse rather than answering it with an empty list", async () => {
     // Ignorance surfaces as a refusal. An empty action list here would look
     // exactly like a measured absence, which is the lie this milestone exists

@@ -206,7 +206,8 @@ have to measure it.
 
 **The invented tables must now go.** This version makes the two `actionsForRole`
 tables and the hardcoded empty list unreachable as correct implementations, but
-it does not delete them; the readers in Phases 2 and 3 do. Between this commit
+it does not delete them; the readers in Phases 2 and 3 do — as they since have,
+on this branch. Between this commit
 and those, the wire permits a vocabulary no backend emits. That gap is
 deliberate and one phase long: the alternative order — readers first — reds the
 offline suite, because the generated validator enforces the closed enum at
@@ -217,10 +218,10 @@ backend, replay included.
 
 | Claim | Receipt |
 |---|---|
-| The shipped enum and the live vocabulary share zero words | `press/focus/select/expand` (`protocol/schema.json:24` at `9dfb6cf`) versus `activate`, `doDefault`, `showContextMenu`, `click`, `menu` — 2,497 elements surveyed on minibeast, 55 publishing actions, 2026-08-17 |
+| The shipped enum and the live vocabulary share zero words | `press/focus/select/expand` (`protocol/schema.json:24` at `9dfb6cf`) versus `activate`, `doDefault`, `showContextMenu`, `click`, `menu` — the execution probe, asking `Action.GetActions` on 2,497 elements on minibeast, 55 publishing, 2026-08-17. An earlier draft-time probe of the same desktop asked `Properties.Get(NActions)` instead and found 13 publishing and four names; the counts differ because the question and the open-window population differed, and the vocabulary is a superset either way. Counts are a census of one moment; the names are the finding |
 | The invented tables and the third invented answer | `daemon/src/backends/atspi/roles.ts:94-106`, `daemon/src/backends/cdp/roles.ts:83-94`, `daemon/src/backends/cdp/index.ts:125` |
 | An action cannot carry a parameter | `Action.DoAction(in index:i) -> b`, `PROPS: NActions:i`, introspected live; `IAccessible::accDoDefaultAction` and `AXUIElementPerformAction` share the shape ([ADR-0045](0045-actions-are-verbs-operations-carry-magnitudes.md)) |
-| Bulk action names are unreliable, so names are read per index | 263 action-publishing elements surveyed: 10 returned all-empty names from bulk `GetActions`; a re-run measured bulk returning the *display* form (`Click`) where the per-index name was the real word (`click`) in every sampled case, 2026-08-17 |
+| Bulk action names are unreliable, so names are read per index | the execution probe: of 55 publishing elements, 10 returned an all-blank name from bulk `GetActions` while `GetName(index)` named them, and the remaining 45 returned the *display* form (`Click`) where the per-index name was the real word (`click`) — the two answers disagree in every publishing case, 2026-08-17. A draft-time survey of 263 action-publishing elements reported the same blank-name failure; that is a different walk on a different population, cited here as corroboration and not as the same number |
 | A magnitude element publishes its own range | a live `level bar` reporting `MinimumValue=0`, `MaximumValue=1`, `CurrentValue=0.9852447509765625`, `MinimumIncrement=0` |
 | Scroll is not an action | zero scroll actions across 2,497 elements; the action interface carries `GetDescription/GetName/GetLocalizedName/GetKeyBinding/GetActions/DoAction` and nothing else |
 | Two incompatible unit systems for scroll on one platform | an enum of positions versus a pixel coordinate pair, both live on the component interface, introspected 2026-08-17 |

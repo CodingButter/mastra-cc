@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// The schema's own invariants: exactly eight methods, the id pattern, and a
+// The schema's own invariants: exactly thirteen methods, the id pattern, and a
 // golden fixture cut from exactly these schema bytes. The planted-vocabulary
 // cases for the B10 pin live in tools/pins/__tests__/b10.test.mjs, where the
 // planted platform terms sit inside the one directory every pin excludes.

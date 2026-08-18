@@ -62,6 +62,16 @@ export interface PublishedActions {
   diagnostic?: ActionDiagnostic;
 }
 
+// What a failed read is allowed to say. The D-Bus error NAME
+// (org.freedesktop.DBus.Error.Failed) is what a reader matches on, so it is
+// carried whole; the free-text message is the part that can run long and is
+// the part that gets truncated.
+function describeError(error: unknown): string {
+  const raw = String((error as Error)?.message ?? error);
+  const match = raw.match(/org\.[A-Za-z0-9_.]*Error\.[A-Za-z0-9_]+/);
+  return match === null ? raw.slice(0, 200) : `${match[0]} ${raw.slice(0, 200)}`;
+}
+
 function decodeBulk(rows: unknown): Array<{ name: string; description: string }> {
   if (!Array.isArray(rows)) return [];
   return rows.map((row) => {
@@ -90,13 +100,25 @@ export async function readPublishedActions(
   // Without it, an element that errors live becomes an UNRECORDED exchange on
   // replay, and the only ways out are to relax replay's refusal (nailed shut
   // deliberately - see the mutation that pins it) or to invent an answer.
-  const [listed] = await channel.call({
-    destination: ref.busName,
-    path: ref.objectPath,
-    iface: ACCESSIBLE_IFACE,
-    member: "GetInterfaces",
-  });
-  const interfaces = Array.isArray(listed) ? listed.map(String) : [];
+  let interfaces: string[];
+  try {
+    const [listed] = await channel.call({
+      destination: ref.busName,
+      path: ref.objectPath,
+      iface: ACCESSIBLE_IFACE,
+      member: "GetInterfaces",
+    });
+    interfaces = Array.isArray(listed) ? listed.map(String) : [];
+  } catch (error) {
+    // The 721-of-721 sample says this call does not error. A sample is not a
+    // proof, and gnome-shell demonstrably errors on OTHER Accessible calls, so
+    // the failure has a home: an element that cannot say which interfaces it
+    // carries publishes no actions AND says why. Letting the error escape would
+    // delete the whole element from the answer at the walk's catch - a reader
+    // that cannot list its verbs would become a reader nobody can see.
+    if (error instanceof UnrecordedExchangeError) throw error;
+    return { actions: [], diagnostic: { "mastra-cc/actions-unreadable": describeError(error) } };
+  }
   if (!interfaces.includes(ACTION_IFACE)) return { actions: [] };
 
   let rows: Array<{ name: string; description: string }>;
@@ -115,29 +137,62 @@ export async function readPublishedActions(
     // published none, so the distinction is recorded rather than flattened.
     // Rethrown errors (an off-tape replay read) are the caller's business.
     if (error instanceof UnrecordedExchangeError) throw error;
-    return { actions: [], diagnostic: { "mastra-cc/actions-unreadable": String((error as Error)?.message ?? error).slice(0, 200) } };
+    return { actions: [], diagnostic: { "mastra-cc/actions-unreadable": describeError(error) } };
   }
 
   const actions: Action[] = [];
   const disagreements: string[] = [];
   const denied: string[] = [];
 
+  const unnamed: string[] = [];
+
   for (let index = 0; index < rows.length; index += 1) {
     const bulk = rows[index] as { name: string; description: string };
-    const [reply] = await channel.call({
-      destination: ref.busName,
-      path: ref.objectPath,
-      iface: ACTION_IFACE,
-      member: "GetName",
-      signature: "i",
-      body: [index],
-    });
+    let reply: unknown;
+    try {
+      [reply] = await channel.call({
+        destination: ref.busName,
+        path: ref.objectPath,
+        iface: ACTION_IFACE,
+        member: "GetName",
+        signature: "i",
+        body: [index],
+      });
+    } catch (error) {
+      // The element counted this action but will not name it. The bulk cell
+      // holds display wording, never the word a call names (finding 5), so
+      // there is nothing here that could be performed - the action is dropped
+      // and its absence is stated. The alternatives are worse: publishing the
+      // display form invents a verb the element will not answer to, and
+      // letting the error escape deletes the entire element from the answer.
+      if (error instanceof UnrecordedExchangeError) throw error;
+      unnamed.push(`${index}:${describeError(error)}`);
+      continue;
+    }
     const name = String(reply ?? "");
     if (bulk.name !== name) disagreements.push(`${index}:${JSON.stringify(bulk.name)}!=${JSON.stringify(name)}`);
     const hits = deniedTermsIn(name);
     if (hits.length > 0) denied.push(`${JSON.stringify(name)}:${hits.join(",")}`);
     actions.push({
       name,
+      // MEASURED, and not yet fully answered here. A GTK button with
+      // sensitivity off still enumerates its actions: a probe on this machine
+      // found an insensitive button publishing ["click"] while its state set
+      // carried neither `enabled` nor `sensitive`. So "available" is, for that
+      // element, a claim the platform contradicts.
+      //
+      // It is not corrected by picking a different word from the closed three:
+      // the element DID publish the verb, so it is not `not-exposed`, and no
+      // setting of ours turned it off, so it is not `disabled-by-configuration`
+      // - naming a setting that does not exist is the false-remedy failure
+      // ADR-0042 exists to kill. The missing state is "the application itself
+      // disabled it", and inventing it here is a schema change this segment is
+      // not allowed to make.
+      //
+      // What saves the caller meanwhile: the fact is not lost. The element
+      // carries its own `states`, and an insensitive control answers without
+      // `enabled` right beside this list. Segment 3 owns the meaning of the
+      // three action states (03-existence-is-readable.md) and closes this.
       availability: "available",
       ...(bulk.description !== "" ? { description: bulk.description } : {}),
       // The bulk reply's wording is display wording when it differs from the
@@ -148,6 +203,7 @@ export async function readPublishedActions(
   }
 
   const diagnostic: ActionDiagnostic = {};
+  if (unnamed.length > 0) diagnostic["mastra-cc/action-name-unreadable"] = unnamed.join(" ");
   if (disagreements.length > 0) diagnostic["mastra-cc/action-name-disagreement"] = disagreements.join(" ");
   if (denied.length > 0) diagnostic["mastra-cc/action-name-platform-term"] = denied.join(" ");
   return { actions, ...(Object.keys(diagnostic).length > 0 ? { diagnostic } : {}) };
