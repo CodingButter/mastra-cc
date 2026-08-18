@@ -1,25 +1,51 @@
 import type {
+  ActivateElementParams,
+  ActivateElementResult,
   AttestElementParams,
   AttestElementResult,
+  EditElementParams,
+  EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  RevealElementParams,
+  RevealElementResult,
   SemanticElement,
+  SetElementCaretParams,
+  SetElementCaretResult,
+  SetElementTextParams,
+  SetElementTextResult,
+  SetElementValueParams,
+  SetElementValueResult,
+  SubmitElementParams,
+  SubmitElementResult,
 } from "@mastra-cc/protocol-types";
 import {
   type Backend,
   type BackendChange,
   type BackendSubscription,
   type ChannelWatch,
+  commitDescription,
   mintSubscriptionId,
   UnknownSubscriptionError,
+  UnperformableElementError,
   UnwatchableElementError,
+  WriteNotObservedError,
 } from "../../backend.js";
+import {
+  insertText,
+  performAction,
+  scrollIntoView,
+  setCaretOffset,
+  setTextContents,
+  setValue,
+} from "./effects.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
 import { readPublishedActions } from "./actions.js";
+import { readPublishedOperations } from "./magnitudes.js";
 import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
 // The real Linux accessibility backend. Reads the desktop's accessibility
@@ -138,6 +164,10 @@ export class AtspiBackend implements Backend {
     // same call() seam as every other exchange, so capture records the action
     // reads and replay answers them from the tape.
     const published = await readPublishedActions(this.channel, ref);
+    // ADR-0045 clause 4: the magnitudes an element carries are read the same
+    // way, off the element, in the element's own units. An element that
+    // publishes no range gets none here, and nothing downstream computes one.
+    const magnitudes = await readPublishedOperations(this.channel, ref);
     const id = deriveId(role, ref.busName, ref.objectPath);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
@@ -148,12 +178,14 @@ export class AtspiBackend implements Backend {
       name,
       states: toNeutralStates(lower, upper),
       actions: published.actions,
+      operations: magnitudes.operations,
       // ADR-0040: every answer names its instrument; the unmapped-role
-      // diagnostic (ADR-0018 clause 3) and the action reader's own
-      // measurements merge in when present.
+      // diagnostic (ADR-0018 clause 3) and the action and magnitude readers'
+      // own measurements merge in when present.
       diagnostic: stampVisibilityRoute({
         ...diagnostic,
         ...published.diagnostic,
+        ...magnitudes.diagnostic,
         ...(diagnostic !== undefined ? { nativeId: `${ref.busName}${ref.objectPath}` } : {}),
       }),
     };
@@ -259,6 +291,131 @@ export class AtspiBackend implements Backend {
         await watch.close();
       },
     };
+  }
+
+  // Filled while walking, where the answering application is already known. An
+  // id this backend never answered is absent, and absence is the answer.
+  applicationOfElement(id: string): string | undefined {
+    return this.applicationOf.get(id);
+  }
+
+  // THE EFFECT HALF.
+  //
+  // Every verb below runs the same three steps in the same order, and the order
+  // is the point: resolve the element this backend actually answered, perform
+  // through an interface the element itself publishes, then RE-READ. The third
+  // step is not politeness. Measured on this machine, the platform clamps an
+  // out-of-bounds write, performs it somewhere else, and returns true; a window
+  // move returns true and moves nothing. The return value is a claim. The
+  // re-read is the evidence.
+  // The effect's own return value is deliberately unused here: whatever it
+  // claims, the element read afterwards is what this backend answers with.
+  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<unknown>): Promise<{ element: SemanticElement } & T> {
+    const ref = this.answered.get(id);
+    if (ref === undefined) {
+      // Byte-identical to the refusal for an element that does not exist: an id
+      // inside an application this session cannot see must not be told apart
+      // from one that was never real (ADR-0008 rule 6, ADR-0036).
+      throw new UnperformableElementError(
+        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    await effect(ref);
+    return { element: await this.readElement(ref) } as { element: SemanticElement } & T;
+  }
+
+  async editElement(params: EditElementParams): Promise<EditElementResult> {
+    return this.performing(params.id, (ref) => setTextContents(this.channel, ref, params.value));
+  }
+
+  async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
+    return this.performing(params.id, (ref) => performAction(this.channel, ref, params.action));
+  }
+
+  // Submit commits by performing the element's own single published verb, and
+  // only after the daemon has written its OWN description of what that commit
+  // does. The description is derived here, from the element as it stands right
+  // now, because that is the only place it can be honest: the walk's remembered
+  // list could name a verb the application has since withdrawn, and a
+  // description assembled from an id would be a sentence about nothing.
+  //
+  // Two elements cannot be described, and both refuse rather than commit:
+  // one that publishes no verb at all (there is nothing to say would happen),
+  // and one that publishes several (which of them fires is a guess, and a guess
+  // is what a reviewer would be asked to approve). The caller's attestation is
+  // carried through untouched - it is their restatement, not a claim the daemon
+  // can check - and the daemon's own description is what makes the commit
+  // reviewable (ADR-0008 rule 2, ADR-0021).
+  async submitElement(params: SubmitElementParams): Promise<SubmitElementResult> {
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      // Byte-identical to every other unperformable id (ADR-0008 rule 6).
+      throw new UnperformableElementError(
+        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    const element = await this.readElement(ref);
+    // Throws AttestationFailedError when the daemon cannot write the sentence.
+    // Asked BEFORE the commit, because a description produced afterwards would
+    // describe something that has already happened.
+    commitDescription(element);
+    const performed = await performAction(this.channel, ref, element.actions[0]!.name);
+    if (!performed) {
+      // The platform declined, in its own words, before anything happened. This
+      // is the one place a return value is evidence, and only in this
+      // direction: the tolerated omission below cannot tell a commit that
+      // landed and closed the window from a commit that was refused and left
+      // the world untouched. Without this, a decline followed by any unrelated
+      // read failure would be answered as a commit.
+      throw new WriteNotObservedError(
+        `the application declined to perform "${element.actions[0]!.name}" on ${JSON.stringify(element.name)} - nothing was committed`,
+      );
+    }
+
+    // A commit is the one verb whose success can REMOVE the thing it acted on,
+    // and the afterwards-read is then asking a window that has already closed.
+    // Measured on this session: DoAction on a dialog's OK button is answered in
+    // about a millisecond, and the very next read of the same element fails
+    // with NoReply because the application disconnected from the bus.
+    //
+    // So the read failing here is not the same event as the read failing for
+    // edit or activate, where the element is expected to survive. Letting it
+    // throw would send "the desktop could not be read by this session's
+    // backend" for a commit that demonstrably landed - a refusal, for something
+    // that already happened and cannot be taken back. That is the single worst
+    // direction for this daemon to be wrong in: a caller reading a refusal will
+    // reasonably conclude nothing was committed, and commit again.
+    //
+    // The element is therefore OMITTED rather than invented, which the wire
+    // already allows (submitElement's element field is not required). What is
+    // never done is echoing back the pre-commit element as though it were the
+    // afterwards read: that would be a return value wearing the evidence's
+    // clothes, which is the mistake the whole seam exists to refuse.
+    try {
+      return { element: await this.readElement(ref) };
+    } catch {
+      return {};
+    }
+  }
+
+  async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {
+    return this.performing(params.id, (ref) => setValue(this.channel, ref, params.value));
+  }
+
+  async setElementText(params: SetElementTextParams): Promise<SetElementTextResult> {
+    return this.performing(params.id, (ref) =>
+      params.offset === undefined
+        ? setTextContents(this.channel, ref, params.text)
+        : insertText(this.channel, ref, params.text, params.offset),
+    );
+  }
+
+  async setElementCaret(params: SetElementCaretParams): Promise<SetElementCaretResult> {
+    return this.performing(params.id, (ref) => setCaretOffset(this.channel, ref, params.offset));
+  }
+
+  async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
+    return this.performing(params.id, (ref) => scrollIntoView(this.channel, ref));
   }
 
   async unsubscribeElement(subscriptionId: string): Promise<void> {

@@ -19,5 +19,13 @@
       <summary>More about this page</summary>
       <p>A disclosure the daemon can read, open by default.</p>
     </details>
+    <!-- A range input is the only element on this page that publishes bounds
+         for its own magnitude (valuemin / valuemax / valuetext, measured). Its
+         desktop-route counterpart is the slider the gtk-dialog world gained for
+         the same reason: without one, the captured world could only ever record
+         an absent range, and a test asserting a range would have to invent the
+         numbers it checked. Note what it does NOT publish: a step. That absence
+         is the element's own silence, and it is recorded as absence. -->
+    <label>Volume <input type="range" min="0" max="100" value="42" /></label>
   </body>
 </html>

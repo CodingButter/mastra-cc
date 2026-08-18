@@ -1,6 +1,39 @@
 import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
-import { BACKEND_METHODS, UnknownSubscriptionError, WatchUnsupportedError } from "../backend.js";
+import type { Backend } from "../backend.js";
+import {
+  AttestationFailedError,
+  BACKEND_METHODS,
+  EffectUnsupportedError,
+  MagnitudeOutOfRangeError,
+  OperationNotExposedError,
+  RecordingNotPerformableError,
+  TextOffsetOutOfRangeError,
+  UnknownSubscriptionError,
+  UnperformableElementError,
+  UnpublishedActionError,
+  WatchUnsupportedError,
+  WriteNotObservedError,
+} from "../backend.js";
+
+// The seam's whole refusal vocabulary. A route that cannot do something says so
+// in one of these; anything else reaching a caller is an unhandled failure, and
+// the conformance suite is where that distinction is kept honest.
+const REFUSAL_CLASSES = [
+  AttestationFailedError,
+  EffectUnsupportedError,
+  MagnitudeOutOfRangeError,
+  OperationNotExposedError,
+  RecordingNotPerformableError,
+  TextOffsetOutOfRangeError,
+  UnperformableElementError,
+  UnpublishedActionError,
+  WriteNotObservedError,
+] as const;
+import { AtspiBackend } from "../backends/atspi/index.js";
+import { CdpBackend } from "../backends/cdp/index.js";
+import { replayCdpChannel } from "../backends/cdp/channel.js";
+import { replayChannel } from "../backends/replay/index.js";
 import { VISIBILITY_ROUTE as ACCESSIBILITY_BUS_ROUTE } from "../backends/atspi/roles.js";
 import { VISIBILITY_ROUTE as BROWSER_PROTOCOL_ROUTE } from "../backends/cdp/roles.js";
 import { LIVE_BACKENDS, registry } from "../backends/registry.js";
@@ -149,8 +182,154 @@ for (const [name, factory] of Object.entries(registry)) {
         expect(diagnostic?.["mastra-cc/visibility-route"], `backend "${name}"`).toBe(EXPECTED_ROUTE[name]);
       }
     });
+
+    // THE EFFECT HALF.
+    //
+    // A verb either performs or refuses BY NAME - there is no third answer, and
+    // the assertion below is written to make the third answer impossible to
+    // ship. A route that quietly returned the element unchanged would look
+    // exactly like a route that worked, which is the failure the observe half
+    // already refuses to allow for a silent watch (WatchUnsupportedError).
+    //
+    // The refusal branch is not a weaker pass. Routes genuinely differ in what
+    // they can do - a recording cannot be acted upon at all - and ADR-0040's
+    // whole posture is that unequal fidelity stays visible rather than being
+    // faked into parity. What conformance pins is that the difference is
+    // ANNOUNCED, in a class a caller can catch.
+    //
+    // WHAT THIS AIMS AT, on the live lane. Every verb below is real there, and
+    // elements[0] is whatever the operator's desktop happened to answer first.
+    // A single-verb element in that position would be COMMITTED - the suite
+    // would click a stranger's button to prove a point about error classes.
+    // So the live lane aims at an id no application answers: the refusal for an
+    // unanswered id is byte-identical to the refusal for one that never existed
+    // (ADR-0008 rule 6), which is exactly the "refuses by name" branch this
+    // test asserts, reached without touching anyone's window. The replay lanes
+    // keep aiming at a real recorded element, because a tape cannot be harmed
+    // and the performing branch has to be exercised somewhere.
+    it("either performs an effect or refuses it by name, never silently doing nothing", async () => {
+      const { elements } = await backend.queryElements({});
+      const id = LIVE_BACKENDS.has(name) ? "el-000000000000" : elements[0].id;
+      const attempts: [string, () => Promise<{ element?: unknown }>][] = [
+        ["editElement", () => backend.editElement({ id, value: "conformance" })],
+        ["activateElement", () => backend.activateElement({ id, action: "click" })],
+        ["submitElement", () => backend.submitElement({ id, attestation: "conformance" })],
+        ["setElementValue", () => backend.setElementValue({ id, value: 0 })],
+        ["setElementText", () => backend.setElementText({ id, text: "conformance" })],
+        ["setElementCaret", () => backend.setElementCaret({ id })],
+        ["revealElement", () => backend.revealElement({ id })],
+      ];
+      for (const [verb, attempt] of attempts) {
+        try {
+          const result = await attempt();
+          // Performed. Then the contract's other half holds: the answer is a
+          // re-read of the tree, not an echo, so it must be a real element.
+          expect(result.element, `backend "${name}" answered ${verb} without the element it claims to have changed`)
+            .toBeDefined();
+          expect(validateSemanticElement(result.element as Parameters<typeof validateSemanticElement>[0])).toEqual([]);
+        } catch (error) {
+          // "By name" means one of the seam's OWN classes. Accepting any Error
+          // with a non-empty message would have been satisfied by a TypeError
+          // from a bug inside the verb, which is the opposite of announcing a
+          // difference - it is a crash wearing a refusal's clothes.
+          expect(
+            REFUSAL_CLASSES.some((refusal) => error instanceof refusal),
+            `backend "${name}" failed ${verb} with ${(error as Error)?.constructor?.name ?? typeof error}, which is not one of the seam's refusal classes - a route that cannot perform must say so by name`,
+          ).toBe(true);
+          expect(
+            (error as Error).message,
+            `backend "${name}" refused ${verb} without saying anything`,
+          ).not.toBe("");
+        }
+      }
+    });
+
+    it("refuses an effect on an element it never answered", async () => {
+      // Byte-identical to the refusal for an element that does not exist: the
+      // refusal must not become an existence oracle (ADR-0008 rule 6).
+      await expect(backend.editElement({ id: "el-000000000000", value: "x" })).rejects.toBeInstanceOf(Error);
+    });
   });
 }
+
+// A recording cannot be acted upon, and both replay flavours must say so rather
+// than inventing an outcome - the performing-side twin of the mutation
+// `replay-invents-a-reply-for-an-unrecorded-exchange`. This is asserted
+// SEPARATELY from the conformance loop above, which accepts either answer:
+// here, performing at all is the failure.
+describe("a recording refuses to be acted upon", () => {
+  for (const name of ["replay", "cdp-replay"] as const) {
+    it(`backend "${name}" refuses every effect verb by name`, async () => {
+      const backend = registry[name]({ visibility: "all" });
+      const { elements } = await backend.queryElements({});
+      expect(elements.length).toBeGreaterThan(0);
+      const id = elements[0].id;
+      const attempts: [string, () => Promise<unknown>][] = [
+        ["editElement", () => backend.editElement({ id, value: "x" })],
+        ["activateElement", () => backend.activateElement({ id, action: "click" })],
+        ["submitElement", () => backend.submitElement({ id, attestation: "x" })],
+        ["setElementValue", () => backend.setElementValue({ id, value: 0 })],
+        ["setElementText", () => backend.setElementText({ id, text: "x" })],
+        ["setElementCaret", () => backend.setElementCaret({ id })],
+        ["revealElement", () => backend.revealElement({ id })],
+      ];
+      for (const [verb, attempt] of attempts) {
+        await expect(attempt(), `backend "${name}" performed ${verb} against a tape`).rejects.toBeInstanceOf(
+          RecordingNotPerformableError,
+        );
+      }
+      await backend.close();
+    });
+  }
+});
+
+// THE SECOND EFFECT-HALF INVARIANT, and the one this milestone exists for.
+//
+// The two routes reach their action vocabularies through completely different
+// instruments - AT-SPI reads a real Action interface off the element, CDP has
+// no such interface and derives names from published properties - so the lists
+// differ by design and parity is NOT the claim (ADR-0040). What both routes owe
+// equally is that a word the element never published is REFUSED, rather than
+// resolved to the nearest thing that would work. Performing the nearest match
+// is the ACTIONS_BY_ROLE mistake wearing a search function (ADR-0045 clause 2),
+// and a parity test would pass it happily.
+//
+// Driven through each route's PERFORMING class over its recorded world. The
+// replay flavours are deliberately not the instrument here: they refuse as a
+// tape before any action is looked at, so this assertion would pass on them
+// without ever reaching the check it exists to pin - measured, by reinstating
+// nearest-match on both routes and watching it stay green.
+describe("neither route performs an action the element never published", () => {
+  const performingOverARecording: Record<string, () => Backend> = {
+    "the accessibility bus": () => new AtspiBackend(replayChannel("gtk-dialog"), "all"),
+    "the browser protocol": () => new CdpBackend(replayCdpChannel("chrome-page"), "all"),
+  };
+
+  for (const [route, open] of Object.entries(performingOverARecording)) {
+    it(`${route} refuses it by name, and names what the element does publish`, async () => {
+      const backend = open();
+      const { elements } = await backend.queryElements({});
+      const performer = elements.find((element) => element.actions.length > 0);
+      expect(performer, `${route}: the recorded world publishes no action at all - a re-capture failed`).toBeDefined();
+
+      // A word no platform publishes and no derivation grounds. It is not a
+      // near-miss of anything: a route that matched it would have had to invent
+      // the match outright.
+      const unpublished = "flurb";
+      const published = (performer as NonNullable<typeof performer>).actions.map((action) => action.name);
+      expect(published, "the recorded world published the word this test assumes impossible").not.toContain(
+        unpublished,
+      );
+
+      await expect(
+        backend.activateElement({ id: (performer as NonNullable<typeof performer>).id, action: unpublished }),
+        `${route} performed an action the element never published`,
+      ).rejects.toBeInstanceOf(UnpublishedActionError);
+
+      await backend.close();
+    });
+  }
+});
 
 // The four words schema 1.3.0 declared - measured against real applications
 // and found to share ZERO vocabulary with what either platform publishes.

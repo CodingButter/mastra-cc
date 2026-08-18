@@ -30,9 +30,18 @@ const cases = [
   ["b5", "apps/rogue/src/socket.ts", 'import net from "node:net";\n', "socket implementation outside packages/transport"],
   ["b8", "daemon/src/input.ts", 'spawnSync("xdotool", ["key", "Return"]);\n', 'raw input tool "xdotool"'],
   [
+    // The plant carries the three element verbs correctly declared, because
+    // b11 requires them present and complains about absence first. Their
+    // presence is what leaves openApplication's timing as the single planted
+    // violation, which is the one this case exists to catch.
     "b11",
     "daemon/src/server.ts",
-    'const DISPATCH = {\n  openApplication: { effectClass: "activate", enforcement: "at-result" },\n};\n',
+    'const DISPATCH = {\n' +
+      '  openApplication: { effectClass: "activate", enforcement: "at-result" },\n' +
+      '  editElement: { effectClass: "edit", enforcement: "before-call" },\n' +
+      '  activateElement: { effectClass: "activate", enforcement: "before-call" },\n' +
+      '  submitElement: { effectClass: "submit", enforcement: "before-call" },\n' +
+      "};\n",
     'not marked enforcement "before-call"',
   ],
 ];

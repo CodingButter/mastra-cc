@@ -3,14 +3,31 @@ import { describe, expect, it } from "vitest";
 import { registry } from "../backends/registry.js";
 import { CATALOG } from "../launch/recipes.js";
 import { OwnershipTable } from "../launch/table.js";
-import { EDIT_SCOPE_REFUSAL, handleRequest } from "../server.js";
+import { BACKEND_METHODS } from "../backend.js";
+import {
+  EDIT_SCOPE_REFUSAL,
+  REVEAL_SCOPE_REFUSAL,
+  SET_CARET_SCOPE_REFUSAL,
+  SET_TEXT_SCOPE_REFUSAL,
+  SET_VALUE_SCOPE_REFUSAL,
+  handleRequest,
+} from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // Anything the schema does not define is refused with the check named
 // (ADR-0019: capability is not authority). Since M2.1 the dispatch table
 // carries one activate-class entry - openApplication - whose enforcement
 // timing B11 pins; since M2.3 (schema 1.2.0, ADR-0037) the edit, activate and
-// submit element methods are DEFINED and refused by the scope gate, naming
-// themselves; everything else beyond the schema still dies at the gate.
+// submit element methods are DEFINED; everything else beyond the schema still
+// dies at the gate.
+//
+// What changed under those three verbs, and what did not: the seam behind them
+// now performs, and every session in this file is started without effect
+// authority, so the scope gate still answers each call. That is why these tests
+// are kept rather than rewritten - the refusal is now a DECISION rather than
+// the only thing the daemon could do, and a decision has to keep answering the
+// same way for a session that holds nothing. The authority-held direction, and
+// the timing of the check, live in launch-authority.test.ts.
 
 describe("the effect-class gate", () => {
   // visibility mirrors the union main.ts composes at boot: the tape's yad must
@@ -55,7 +72,65 @@ describe("the effect-class gate", () => {
   });
 });
 
-describe("the scope gate: edit, activate and submit are defined and refused by name", () => {
+// THE FOUR OPERATIONS, AND THE WORDS THEY REFUSE WITH.
+//
+// These four wire methods refuse unconditionally in this segment, and for a
+// while they refused with a sentence that had quietly become false: it claimed
+// the backend seam carried no operation, and it claimed the session held no
+// authority. The seam had grown all four operations, and no authority check
+// runs on this path at all. Nothing failed, because nothing checked the words -
+// only that some refusal arrived. A refusal names the check that actually ran
+// (ADR-0008 clause 5), so the sentence is the assertion here, and it is
+// asserted against the world rather than against itself.
+describe("the four operations refuse without claiming a reason that is not true", () => {
+  const backend = registry.replay({ visibility: new Set(["yad"]) });
+
+  const operations = [
+    ["setElementValue", SET_VALUE_SCOPE_REFUSAL],
+    ["setElementText", SET_TEXT_SCOPE_REFUSAL],
+    ["setElementCaret", SET_CARET_SCOPE_REFUSAL],
+    ["revealElement", REVEAL_SCOPE_REFUSAL],
+  ] as const;
+
+  it("never claims the seam carries no operation, because the seam carries all four", () => {
+    for (const [method, refusal] of operations) {
+      // The claim and the world in the same assertion: the seam declares the
+      // method, so a refusal saying otherwise is a false statement on the wire.
+      expect(BACKEND_METHODS).toContain(method);
+      expect(refusal).not.toContain("seam carries no operation");
+      expect(refusal).toContain(method);
+    }
+  });
+
+  it("never claims the session holds no authority, because no authority check runs here", async () => {
+    // Held and unheld, byte for byte. The refusal is the same sentence either
+    // way - which is precisely why it must not blame the session's authority.
+    for (const [index, [method, refusal]] of operations.entries()) {
+      const held = await handleRequest(
+        { type: "request", id: 20 + index, method, params: { id: "el-000000000000" } },
+        backend,
+        {
+          permits: new Set<string>(),
+          allows: new Set(["edit", "activate", "submit"] as const),
+          catalog: CATALOG,
+          table: new OwnershipTable(),
+        },
+      );
+      const unheld = await handleRequest(
+        { type: "request", id: 30 + index, method, params: { id: "el-000000000000" } },
+        backend,
+      );
+
+      const heldRefusal = (held.result as { refusal?: string }).refusal;
+      expect(heldRefusal).toBe((unheld.result as { refusal?: string }).refusal);
+      expect(heldRefusal).toBe(refusal);
+      expect(refusal).not.toContain("holds no edit authority");
+      expect(refusal).not.toContain("holds no activate authority");
+    }
+  });
+});
+
+describe("the scope gate: a session holding no effect authority is refused by name", () => {
   const backend = registry.replay({ visibility: new Set(["yad"]) });
 
   it("refuses editElement with the full byte-stable constant", async () => {
@@ -94,6 +169,7 @@ describe("the scope gate: edit, activate and submit are defined and refused by n
     // every backend method throws if called: the refusal must be answerable
     // without a desktop existing at all
     const untouchable: Backend = {
+      ...observeOnlyEffects,
       name: "untouchable",
       queryElements: async () => {
         throw new Error("the scope gate touched the backend");
@@ -104,6 +180,7 @@ describe("the scope gate: edit, activate and submit are defined and refused by n
       subscribeElement: async () => {
         throw new Error("the scope gate touched the backend");
       },
+      applicationOfElement: () => undefined,
       unsubscribeElement: async () => {
         throw new Error("the scope gate touched the backend");
       },

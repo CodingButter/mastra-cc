@@ -142,21 +142,21 @@
   {
     "name": "scope-gate-serves-edit",
     "file": "daemon/src/server.ts",
-    "find": "  editElement: { effectClass: \"edit\", enforcement: \"before-call\", handler: async () => ({ refusal: EDIT_SCOPE_REFUSAL }) },\n",
+    "find": "  editElement: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => editElement((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "scope-gate-serves-activate",
     "file": "daemon/src/server.ts",
-    "find": "  activateElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: async () => ({ refusal: ACTIVATE_SCOPE_REFUSAL }) },\n",
+    "find": "  activateElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: (p, b, l) => activateElement((p ?? {}) as { id?: unknown; action?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "scope-gate-serves-submit",
     "file": "daemon/src/server.ts",
-    "find": "  submitElement: { effectClass: \"submit\", enforcement: \"before-call\", handler: async () => ({ refusal: SUBMIT_SCOPE_REFUSAL }) },\n",
+    "find": "  submitElement: { effectClass: \"submit\", enforcement: \"before-call\", handler: (p, b, l) => submitElement((p ?? {}) as { id?: unknown; attestation?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },

@@ -1,6 +1,16 @@
 # 0037 — The other three classes are on the wire before they are possible
 
-Status: accepted, 2026-08-10 (M2.3)
+Status: accepted, 2026-08-10 (M2.3); **fulfilled 2026-08-18 (M2.6 segment 2)** —
+the three methods now perform. Clause 1 ("defined and refused, never
+implemented") described the placeholder state and no longer describes the code:
+the Backend seam carries the effect verbs, the handlers reach it, and the scope
+gate now *decides* rather than always refusing. What did not change is the part
+this ADR existed to fix — every one of the three is still a named entry in the
+dispatch table, still marked `enforcement: "before-call"`, and still refuses by
+name when the session holds no authority for its class. Clause 2 (attestation
+required from the method's first day) and clause 4 (destructive stays absent)
+stand unamended. No new ADR: implementing a contract this ADR froze is the
+outcome it planned for, not a decision that departs from it.
 
 ## Context
 

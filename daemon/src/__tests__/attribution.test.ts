@@ -3,16 +3,25 @@ import type { Attribution, ChangeEvent, SemanticElement } from "@mastra-cc/proto
 import { type Backend, type BackendChange, mintSubscriptionId, UnknownSubscriptionError } from "../backend.js";
 import { OwnershipTable } from "../launch/table.js";
 import { attribute, handleRequest, type LaunchContext, SubscriptionBook } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // The attribution rule, exercised on all three of its answers (ADR-0039).
 //
-// THIS FILE IS THE ONLY PLACE `self` IS EXERCISED IN THIS MILESTONE, and it is
-// exercised offline. The reason is honest rather than technical: the only
-// effect verb the daemon serves today is openApplication, and an application
-// that does not exist yet cannot have been subscribed to before its launch. So
-// a live transcript of M2.4 shows `external` and `unattributed` and no `self`
-// at all. `self` becomes reachable live when the element verbs arrive; until
-// then the rule is proven here, against the same function the server calls.
+// `self` was, for one milestone, reachable only through openApplication: an
+// application that does not exist yet cannot have been subscribed to before
+// its own launch, so a live M2.4 transcript showed `external` and
+// `unattributed` and no `self` at all. The element verbs are the case that
+// changes it - a verb performed on an element inside an application already
+// being watched - and the last describe below exercises exactly that, through
+// the server, against a subscription that was open before the verb was called.
+//
+// That path needed a fact the server could not previously ask for. A cause id
+// alone does not produce `self`: attribute() answers `self` only when the
+// cause NAMES the application, and an element verb carries an id, not a name.
+// The seam answers it now (Backend.applicationOfElement), and the test below
+// is what proves the wiring rather than assuming it - a verb that mints a
+// cause and names nothing leaves its own change `unattributed`, which is the
+// bug this describe exists to catch.
 //
 // The third answer is the one the milestone is really about. An effect is
 // LABELLED, never flagged: `external` is news, not an alarm (ADR-0032 clause
@@ -87,6 +96,7 @@ describe("a change inside the application our launch is opening is attributed to
     let sink: ((change: BackendChange) => void) | undefined;
     let polls = 0;
     const backend: Backend = {
+      ...observeOnlyEffects,
       // The poll that waits for the launched application is where the change
       // is injected: it happens while the verb is open, which is exactly the
       // window a real one would land in.
@@ -102,6 +112,7 @@ describe("a change inside the application our launch is opening is attributed to
         sink = s;
         return { subscriptionId: mintSubscriptionId(), application: "test-app", close: async () => undefined };
       },
+      applicationOfElement: () => undefined,
       unsubscribeElement: async () => {
         throw new UnknownSubscriptionError("nothing to end");
       },
@@ -145,5 +156,98 @@ describe("a change inside the application our launch is opening is attributed to
       await book.closeAll();
       for (const entry of table.entries()) process.kill(entry.pid, "SIGKILL");
     }
+  });
+});
+
+// The element verbs, attributed. This is the case openApplication could never
+// reach: a watch that was already open when the verb ran, inside the same
+// application the verb touched.
+describe("a change caused by an element verb is attributed to that verb", () => {
+  const WATCHED = "el-0123456789ab";
+  const EDITED: SemanticElement = {
+    id: WATCHED,
+    role: "textbox",
+    name: "Recipient",
+    states: ["enabled", "visible"],
+    actions: [],
+  };
+
+  // A backend that knows which application its elements live in, and reports a
+  // change from inside the edit - the way a real one does, because the write
+  // lands before the read-back returns.
+  function editing(application: string | undefined) {
+    let sink: ((change: BackendChange) => void) | undefined;
+    const backend: Backend = {
+      ...observeOnlyEffects,
+      name: "editing",
+      queryElements: async () => ({ elements: [EDITED] }),
+      attestElement: async () => ({ element: EDITED }),
+      subscribeElement: async (_id, s) => {
+        sink = s;
+        return { subscriptionId: mintSubscriptionId(), application: "test-app", close: async () => undefined };
+      },
+      applicationOfElement: () => application,
+      unsubscribeElement: async () => undefined,
+      editElement: async () => {
+        sink?.({ id: WATCHED, role: "textbox", kind: "changed" });
+        return { element: EDITED };
+      },
+      close: async () => undefined,
+    };
+    return backend;
+  }
+
+  async function editUnder(backend: Backend): Promise<ChangeEvent[]> {
+    const events: ChangeEvent[] = [];
+    const book = new SubscriptionBook((event) => events.push(event));
+    const launch: LaunchContext = {
+      permits: new Set(),
+      catalog: {},
+      table: new OwnershipTable(),
+      allows: new Set(["edit"]),
+    };
+    await handleRequest(
+      { type: "request", id: 1, method: "subscribeElement", params: { id: WATCHED, priority: "high" } },
+      backend,
+      launch,
+      book,
+    );
+    const edited = await handleRequest(
+      { type: "request", id: 2, method: "editElement", params: { id: WATCHED, value: "someone@example.com" } },
+      backend,
+      launch,
+      book,
+    );
+    expect((edited.result as { element?: SemanticElement }).element?.id).toBe(WATCHED);
+    await book.closeAll();
+    return events;
+  }
+
+  it("stamps self with the verb's cause id when the backend names the application", async () => {
+    const events = await editUnder(editing("test-app"));
+    expect(events).toHaveLength(1);
+    expect(events[0].attribution).toBe("self");
+    // Minted per call, never derived from the request id (ADR-0039).
+    expect(events[0].causeId).toMatch(/^cause-[0-9a-f]{12}$/);
+  });
+
+  it("abstains rather than guessing when the backend cannot name the application", async () => {
+    // An id this backend never answered names nothing. The verb is open and a
+    // cause is minted, so the daemon knows a change MIGHT be ours and refuses
+    // to decide: `unattributed`, never `self` (which would claim it was) and
+    // never `external` (which would claim it was not).
+    const events = await editUnder(editing(undefined));
+    expect(events).toHaveLength(1);
+    expect(events[0].attribution).toBe("unattributed");
+    expect(events[0].causeId).toBeUndefined();
+  });
+
+  it("leaves a change in a different application unattributed while our verb is open", async () => {
+    // The verb names one application; the watch reports another. Nothing binds
+    // this change to our verb, and the daemon says so.
+    const events = await editUnder(editing("some-other-app"));
+    expect(events).toHaveLength(1);
+    expect(events[0].attribution).toBe("unattributed");
+    expect(events[0].causeId).toBeUndefined();
   });
 });

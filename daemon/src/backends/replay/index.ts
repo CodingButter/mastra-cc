@@ -1,7 +1,25 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { AttestElementParams, AttestElementResult, QueryElementsParams, QueryElementsResult } from "@mastra-cc/protocol-types";
-import { type Backend, type BackendChange, type BackendSubscription, replayWatch } from "../../backend.js";
+import type {
+  ActivateElementResult,
+  AttestElementParams,
+  AttestElementResult,
+  EditElementResult,
+  QueryElementsParams,
+  QueryElementsResult,
+  RevealElementResult,
+  SetElementCaretResult,
+  SetElementTextResult,
+  SetElementValueResult,
+  SubmitElementResult,
+} from "@mastra-cc/protocol-types";
+import {
+  type Backend,
+  type BackendChange,
+  type BackendSubscription,
+  RecordingNotPerformableError,
+  replayWatch,
+} from "../../backend.js";
 import type { Visibility } from "../../grants.js";
 import { AtspiBackend } from "../atspi/index.js";
 import { asTape, type Channel, exchangeKey, fixturesDir, type Tape, UnrecordedExchangeError } from "../atspi/channel.js";
@@ -75,8 +93,57 @@ export class ReplayBackend implements Backend {
     return this.inner.subscribeElement(id, sink);
   }
 
+  // Shares the live reader here, as with every observe-side question: the
+  // recorded world names its applications exactly as the live one does.
+  applicationOfElement(id: string): string | undefined {
+    return this.inner.applicationOfElement(id);
+  }
+
   unsubscribeElement(subscriptionId: string): Promise<void> {
     return this.inner.unsubscribeElement(subscriptionId);
+  }
+
+  // A recording cannot be acted upon, and this is the ONE place the replay lane
+  // deliberately stops sharing the live reader. Reading is delegated because a
+  // tape holds real answers to real questions; performing has no answer on a
+  // tape at all, and the two ways of pretending otherwise - inventing an
+  // outcome, or letting the write fall through to a channel that would refuse
+  // the exchange anyway - both end with a test that says a verb worked when
+  // nothing happened. It refuses by name instead, which is the same promise
+  // `replay-invents-a-reply-for-an-unrecorded-exchange` already pins on the
+  // reading side.
+  private refuseToPerform(verb: string): never {
+    throw new RecordingNotPerformableError(
+      `the replay route cannot ${verb}: it answers from a recording, and a recording cannot be acted upon`,
+    );
+  }
+
+  async editElement(): Promise<EditElementResult> {
+    this.refuseToPerform("edit an element");
+  }
+
+  async activateElement(): Promise<ActivateElementResult> {
+    this.refuseToPerform("perform an action");
+  }
+
+  async submitElement(): Promise<SubmitElementResult> {
+    this.refuseToPerform("submit");
+  }
+
+  async setElementValue(): Promise<SetElementValueResult> {
+    this.refuseToPerform("set a value");
+  }
+
+  async setElementText(): Promise<SetElementTextResult> {
+    this.refuseToPerform("set text");
+  }
+
+  async setElementCaret(): Promise<SetElementCaretResult> {
+    this.refuseToPerform("place the caret");
+  }
+
+  async revealElement(): Promise<RevealElementResult> {
+    this.refuseToPerform("reveal an element");
   }
 
   close(): Promise<void> {

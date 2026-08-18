@@ -80,6 +80,19 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/root",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Application",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/root",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     [
@@ -122,6 +135,19 @@
     [
      1126170882,
      0
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/1",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
     ]
    ]
   },
@@ -208,6 +234,19 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/2",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/2",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     [
@@ -254,6 +293,19 @@
     [
      1124090112,
      0
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/4",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
     ]
    ]
   },
@@ -328,6 +380,19 @@
     [
      553648384,
      0
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/6",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
     ]
    ]
   },
@@ -435,6 +500,21 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/7",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Action",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Image",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/7",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     []
@@ -516,6 +596,21 @@
    ],
    "reply": [
     "click"
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/8",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Action",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Image",
+     "org.a11y.atspi.Collection"
+    ]
    ]
   },
   {
@@ -609,6 +704,21 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/9",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Action",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Image",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/9",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     []
@@ -646,6 +756,19 @@
     [
      1660944640,
      0
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/5",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
     ]
    ]
   },
@@ -734,6 +857,21 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/10",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Text",
+     "org.a11y.atspi.Hypertext",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/10",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     []
@@ -793,6 +931,21 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/11",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Text",
+     "org.a11y.atspi.Hypertext",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/11",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     []
@@ -830,6 +983,19 @@
     [
      1660944640,
      0
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/3",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
     ]
    ]
   },
@@ -916,6 +1082,19 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/12",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/12",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     [
@@ -978,12 +1157,29 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/14",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/14",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     [
      [
       ":1.0",
       "/org/a11y/atspi/accessible/15"
+     ],
+     [
+      ":1.0",
+      "/org/a11y/atspi/accessible/16"
      ]
     ]
    ]
@@ -1042,6 +1238,224 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/15",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Text",
+     "org.a11y.atspi.Hypertext",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/15",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetChildren",
+   "reply": [
+    []
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/16",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetRoleName",
+   "reply": [
+    "filler"
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/16",
+   "iface": "org.freedesktop.DBus.Properties",
+   "member": "Get",
+   "signature": "ss",
+   "body": [
+    "org.a11y.atspi.Accessible",
+    "Name"
+   ],
+   "reply": [
+    ""
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/16",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetState",
+   "reply": [
+    [
+     1124090112,
+     0
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/16",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/16",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/16",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetChildren",
+   "reply": [
+    [
+     [
+      ":1.0",
+      "/org/a11y/atspi/accessible/17"
+     ]
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetRoleName",
+   "reply": [
+    "slider"
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.freedesktop.DBus.Properties",
+   "member": "Get",
+   "signature": "ss",
+   "body": [
+    "org.a11y.atspi.Accessible",
+    "Name"
+   ],
+   "reply": [
+    ""
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetState",
+   "reply": [
+    [
+     1124096256,
+     0
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Value",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Value",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.freedesktop.DBus.Properties",
+   "member": "Get",
+   "signature": "ss",
+   "body": [
+    "org.a11y.atspi.Value",
+    "MinimumValue"
+   ],
+   "reply": [
+    0
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.freedesktop.DBus.Properties",
+   "member": "Get",
+   "signature": "ss",
+   "body": [
+    "org.a11y.atspi.Value",
+    "MaximumValue"
+   ],
+   "reply": [
+    100
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.freedesktop.DBus.Properties",
+   "member": "Get",
+   "signature": "ss",
+   "body": [
+    "org.a11y.atspi.Value",
+    "CurrentValue"
+   ],
+   "reply": [
+    0
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.freedesktop.DBus.Properties",
+   "member": "Get",
+   "signature": "ss",
+   "body": [
+    "org.a11y.atspi.Value",
+    "MinimumIncrement"
+   ],
+   "reply": [
+    1
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/17",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     []
@@ -1099,19 +1513,32 @@
    "destination": ":1.0",
    "path": "/org/a11y/atspi/accessible/13",
    "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/13",
+   "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
     [
      [
       ":1.0",
-      "/org/a11y/atspi/accessible/16"
+      "/org/a11y/atspi/accessible/18"
      ]
     ]
    ]
   },
   {
    "destination": ":1.0",
-   "path": "/org/a11y/atspi/accessible/16",
+   "path": "/org/a11y/atspi/accessible/18",
    "iface": "org.a11y.atspi.Accessible",
    "member": "GetRoleName",
    "reply": [
@@ -1120,7 +1547,7 @@
   },
   {
    "destination": ":1.0",
-   "path": "/org/a11y/atspi/accessible/16",
+   "path": "/org/a11y/atspi/accessible/18",
    "iface": "org.freedesktop.DBus.Properties",
    "member": "Get",
    "signature": "ss",
@@ -1134,19 +1561,19 @@
   },
   {
    "destination": ":1.0",
-   "path": "/org/a11y/atspi/accessible/16",
+   "path": "/org/a11y/atspi/accessible/18",
    "iface": "org.a11y.atspi.Accessible",
    "member": "GetState",
    "reply": [
     [
-     1124079872,
+     1124075776,
      0
     ]
    ]
   },
   {
    "destination": ":1.0",
-   "path": "/org/a11y/atspi/accessible/16",
+   "path": "/org/a11y/atspi/accessible/18",
    "iface": "org.a11y.atspi.Accessible",
    "member": "GetInterfaces",
    "reply": [
@@ -1161,7 +1588,7 @@
   },
   {
    "destination": ":1.0",
-   "path": "/org/a11y/atspi/accessible/16",
+   "path": "/org/a11y/atspi/accessible/18",
    "iface": "org.a11y.atspi.Action",
    "member": "GetActions",
    "reply": [
@@ -1176,7 +1603,7 @@
   },
   {
    "destination": ":1.0",
-   "path": "/org/a11y/atspi/accessible/16",
+   "path": "/org/a11y/atspi/accessible/18",
    "iface": "org.a11y.atspi.Action",
    "member": "GetName",
    "signature": "i",
@@ -1189,7 +1616,22 @@
   },
   {
    "destination": ":1.0",
-   "path": "/org/a11y/atspi/accessible/16",
+   "path": "/org/a11y/atspi/accessible/18",
+   "iface": "org.a11y.atspi.Accessible",
+   "member": "GetInterfaces",
+   "reply": [
+    [
+     "org.a11y.atspi.Accessible",
+     "org.a11y.atspi.Action",
+     "org.a11y.atspi.Component",
+     "org.a11y.atspi.Image",
+     "org.a11y.atspi.Collection"
+    ]
+   ]
+  },
+  {
+   "destination": ":1.0",
+   "path": "/org/a11y/atspi/accessible/18",
    "iface": "org.a11y.atspi.Accessible",
    "member": "GetChildren",
    "reply": [
