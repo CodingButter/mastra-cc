@@ -44,6 +44,7 @@ import { deriveId } from "./identity.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
 import { readPublishedActions } from "./actions.js";
+import { readPublishedOperations } from "./magnitudes.js";
 import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
 // The real Linux accessibility backend. Reads the desktop's accessibility
@@ -162,6 +163,10 @@ export class AtspiBackend implements Backend {
     // same call() seam as every other exchange, so capture records the action
     // reads and replay answers them from the tape.
     const published = await readPublishedActions(this.channel, ref);
+    // ADR-0045 clause 4: the magnitudes an element carries are read the same
+    // way, off the element, in the element's own units. An element that
+    // publishes no range gets none here, and nothing downstream computes one.
+    const magnitudes = await readPublishedOperations(this.channel, ref);
     const id = deriveId(role, ref.busName, ref.objectPath);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
@@ -172,12 +177,14 @@ export class AtspiBackend implements Backend {
       name,
       states: toNeutralStates(lower, upper),
       actions: published.actions,
+      operations: magnitudes.operations,
       // ADR-0040: every answer names its instrument; the unmapped-role
-      // diagnostic (ADR-0018 clause 3) and the action reader's own
-      // measurements merge in when present.
+      // diagnostic (ADR-0018 clause 3) and the action and magnitude readers'
+      // own measurements merge in when present.
       diagnostic: stampVisibilityRoute({
         ...diagnostic,
         ...published.diagnostic,
+        ...magnitudes.diagnostic,
         ...(diagnostic !== undefined ? { nativeId: `${ref.busName}${ref.objectPath}` } : {}),
       }),
     };
