@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Withdrawn
+Hidden=true
+Exec=/usr/bin/withdrawn

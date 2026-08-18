@@ -31,6 +31,7 @@ import {
   UnwatchableElementError,
   WriteNotObservedError,
 } from "../../backend.js";
+import { desktopEntryDirectories, type InventoryEntry, scanInstalledApplications } from "../../inventory.js";
 import {
   insertText,
   performAction,
@@ -297,6 +298,16 @@ export class AtspiBackend implements Backend {
   // id this backend never answered is absent, and absence is the answer.
   applicationOfElement(id: string): string | undefined {
     return this.applicationOf.get(id);
+  }
+
+  // What this machine has installed (ADR-0042). Read from the desktop entry
+  // directories, which is the same catalogue the machine's own menu reads -
+  // NOT from the accessibility bus. The bus answers what is RUNNING, and an
+  // application that is installed and not running is exactly the case a person
+  // asks about before starting it. Nothing here opens an application or reads
+  // anything inside one.
+  async installedApplications(): Promise<InventoryEntry[]> {
+    return scanInstalledApplications(desktopEntryDirectories());
   }
 
   // THE EFFECT HALF.

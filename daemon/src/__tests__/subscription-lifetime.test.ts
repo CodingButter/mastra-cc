@@ -235,7 +235,12 @@ describe("a watch lives and dies with the connection that asked for it", () => {
     const refusal = (answer.result as { refusal?: string }).refusal ?? "";
     expect(refusal).toContain("no element with that id was ever answered");
     // The refusal names the check, not the element: an id that names nothing
-    // and an id inside an invisible application must be indistinguishable.
+    // and an id inside an unreadable application must be indistinguishable.
+    //
+    // ADR-0042 did not touch this. What became readable is EXISTENCE and
+    // PERMISSION, answered by listApplications; an element id is content, and
+    // whether a particular id is alive inside an application this session
+    // cannot read is exactly what stays protected.
     expect(refusal).not.toContain("el-ffffffffffff");
   });
 

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type { InventoryEntry } from "./inventory.js";
 import type {
   ActivateElementParams,
   ActivateElementResult,
@@ -116,6 +117,14 @@ export class TextOffsetOutOfRangeError extends Error {}
 // that reported that call as an edit would be describing a world that does not
 // exist, so the disagreement is raised rather than smoothed over.
 export class WriteNotObservedError extends Error {}
+
+// This route cannot enumerate what the machine has installed. A fact about the
+// route, never about the machine: the browser protocol answers for one browser
+// and a recorded tape recorded a tree rather than a catalogue, so neither can
+// say what is installed and neither pretends to. An empty list would be a
+// claim that nothing is installed, which is the false belief ADR-0042 exists
+// to prevent, so the seam refuses instead of answering emptily.
+export class InventoryUnsupportedError extends Error {}
 
 // The element does not publish the action that was named. The published list is
 // the only vocabulary a call may use, and a name outside it is refused rather
@@ -264,6 +273,21 @@ export interface Backend {
   // unattributed. The daemon abstains rather than guessing (ADR-0039).
   applicationOfElement(id: string): string | undefined;
 
+  // What this machine has installed, read from OUTSIDE every application
+  // (ADR-0042). Names only: no window, no element, no text, no path and no
+  // command line - the fence around an application described from outside it.
+  //
+  // It is on the seam because discovery is a platform question (ADR-0017): a
+  // desktop entry directory is a Linux fact, and a route that has no way to
+  // enumerate throws InventoryUnsupportedError rather than answering an empty
+  // list. Empty means "this machine has nothing installed", and a route that
+  // said that when it simply could not look would teach a caller the exact
+  // falsehood this milestone exists to correct.
+  //
+  // Permission is NOT decided here. The backend says what exists; the server
+  // says what may be done with it, from the same tables that enforce it.
+  installedApplications(): Promise<InventoryEntry[]>;
+
   // The three effect verbs (schema 1.2.0's contracts, unchanged and not
   // redesigned here). Each throws UnperformableElementError for an id this
   // backend never answered, and EffectUnsupportedError where the route does not
@@ -299,6 +323,7 @@ export const BACKEND_METHODS = [
   "subscribeElement",
   "unsubscribeElement",
   "applicationOfElement",
+  "installedApplications",
   "editElement",
   "activateElement",
   "submitElement",

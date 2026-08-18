@@ -1,5 +1,5 @@
 import type { Backend } from "../../backend.js";
-import { EffectUnsupportedError } from "../../backend.js";
+import { EffectUnsupportedError, InventoryUnsupportedError } from "../../backend.js";
 
 // The effect half of a test double that exists to exercise the OBSERVE half.
 //
@@ -14,8 +14,13 @@ import { EffectUnsupportedError } from "../../backend.js";
 // conformance suite's non-vacuity guards exist to prevent. If one of these
 // suites ever does call a verb, it fails loudly here rather than passing on a
 // fiction.
+// The inventory is observe-class and still belongs here, for the same reason:
+// a hand-built double has no machine behind it, and answering an empty list
+// would say "nothing is installed" rather than "this double cannot look" -
+// the collapse ADR-0042 exists to prevent, in a test helper.
 export const observeOnlyEffects: Pick<
   Backend,
+  | "installedApplications"
   | "editElement"
   | "activateElement"
   | "submitElement"
@@ -24,6 +29,9 @@ export const observeOnlyEffects: Pick<
   | "setElementCaret"
   | "revealElement"
 > = {
+  installedApplications: async () => {
+    throw new InventoryUnsupportedError("this test double has no machine behind it and cannot enumerate what is installed");
+  },
   editElement: async () => {
     throw new EffectUnsupportedError("this test double observes only");
   },

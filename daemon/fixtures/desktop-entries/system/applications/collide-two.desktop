@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Same Display Name
+Exec=/usr/bin/collide-two

@@ -3,11 +3,14 @@ import { createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
 import {
+  CAPABILITY_NAMES,
   SCHEMA_DIGEST,
   PRIORITIES,
   PROTOCOL_VERSION,
   type Attribution,
+  type Capability,
   type CapabilityName,
+  type ListApplicationsResult,
   type ChangeEvent,
   type OpenApplicationResult,
   type Priority,
@@ -20,6 +23,7 @@ import {
   type BackendChange,
   type BackendSubscription,
   AttestationFailedError,
+  InventoryUnsupportedError,
   DeafWatchError,
   EffectUnsupportedError,
   MagnitudeOutOfRangeError,
@@ -34,6 +38,7 @@ import {
 } from "./backend.js";
 import { normalise } from "./backends/atspi/names.js";
 import {
+  OBSERVE_SETTING,
   withheldBy,
   WITHHOLDS_NOTHING,
   type CapabilityConfiguration,
@@ -85,6 +90,13 @@ export interface LaunchContext {
    * reason (capabilities.ts).
    */
   capabilities?: CapabilityConfiguration;
+  /**
+   * The observe set composed at boot (ADR-0036), carried here so the listing
+   * can report the observe capability from the SAME set that filters events
+   * and hides subtrees. startServer fills it from its own visibility option, so
+   * there is one composed set and not two that could drift.
+   */
+  visibility?: Visibility;
 }
 
 const NO_PERMITS: LaunchContext = { permits: new Set(), catalog: CATALOG, table: new OwnershipTable() };
@@ -176,10 +188,23 @@ function observedWithConfiguration<T extends { elements?: SemanticElement[]; ele
   return stamped;
 }
 
-// ONE constant for both the unknown name and the unpermitted name. The
-// byte-equality IS the security property (ADR-0008 rule 6): a refusal must
-// never reveal whether an application is installed on this machine.
-export const UNAVAILABLE_REFUSAL = "no application by that name is available to this session";
+// ONE constant for both the unknown name and the unpermitted name, still: the
+// two answers remain byte-identical, because the refusal itself is not where
+// existence is readable. THAT is what ADR-0042 changes - the listing says what
+// this machine has and which setting withholds each capability, so a caller
+// asking the right question gets the whole truth, and a caller guessing names
+// at the launch method learns nothing from the guess.
+//
+// Rewritten from "no application by that name is available to this session"
+// (M2, docs/proofs/an-unpermitted-application-is-invisible.md, which stays on
+// disk as the accurate record of what M2 shipped). The sentence now names the
+// capability and the place the answer lives, and still names nothing about
+// this machine's contents: no path, no command, no installed-or-not.
+// One sentence that is TRUE of both cases rather than a euphemism for one of
+// them: no application of that name is one this session may launch, which is
+// exactly as true of a name that does not exist as of one that does.
+export const UNAVAILABLE_REFUSAL =
+  "refused by the launch gate: no application by that name is one this session may launch - listApplications names every application this machine has, each capability's state, and the setting behind every refusal";
 
 export const ALREADY_RUNNING_REFUSAL =
   "that application is already running and was not opened by this daemon - launching a second copy is refused; the running copy must be closed first";
@@ -271,7 +296,98 @@ export const REVEAL_SCOPE_REFUSAL =
 // what this machine has - which is the property ADR-0042 changes, not one it
 // keeps.
 export const LIST_APPLICATIONS_REFUSAL =
-  'refused by the inventory gate: "listApplications" is observe-class and no backend on this session can enumerate what is installed - reading an installed inventory is a platform question and the backend seam does not carry it yet, and until it does this method always refuses';
+  'refused by the inventory gate: "listApplications" is observe-class and this session\'s backend cannot enumerate what this machine has installed - the answer would have to be an empty list, which would say the machine has nothing rather than that this route cannot look';
+
+// THE ONE SOURCE OF TRUTH FOR WHAT MAY BE DONE WITH AN APPLICATION.
+//
+// The listing and the enforcement are the same function, asked at two
+// different moments. This is the requirement the agreement test pins: two
+// hand-maintained lists that happen to match today are a divergence waiting to
+// ship, and the divergence is worse than either error alone - a listing that
+// promises what the gate refuses teaches a caller a capability it does not
+// have, and a listing that withholds what the gate would allow teaches a limit
+// that is not real.
+//
+// The order below is the enforcement order, and it has to be: session
+// authority first (ADR-0019 - what this daemon was started with), the user's
+// configuration second (ADR-0043 clause 4 - what the machine's owner turned
+// off), and the daemon's own reach last. Each answers with a different remedy,
+// which is why the states are not collapsed: a capability withheld by
+// configuration NAMES its setting and a capability this daemon has no path to
+// says so, because no setting would grant it.
+export function capabilityStateFor(
+  launch: LaunchContext,
+  capability: CapabilityName,
+  application: string,
+): Capability {
+  // What this daemon can do AT ALL for this application, before any question
+  // of permission. Launch needs a recipe; the element verbs need an element,
+  // which is a question about a running application rather than about this
+  // one, so they are reported on their own terms below.
+  if (capability === "launch" && findRecipe(application, launch.catalog) === undefined) {
+    return { capability, availability: "not-exposed" };
+  }
+  // Observe is the grants file's, and it is the one capability whose session
+  // answer is a NAME set rather than a class: an application this session may
+  // not read is still listed (that is the reversal), with observe off.
+  const held =
+    capability === "observe"
+      ? // Deny by default when nothing was composed (ADR-0036, the grants
+        // file's own posture): a context with no observe set has been granted
+        // nothing, and reporting "all" here would advertise a read the reader
+        // would then refuse. startServer always passes the set it composed, so
+        // this fallback answers for a context built without a server at all.
+        isVisible(launch.visibility ?? new Set(), application)
+      : capability === "launch"
+        ? launch.permits.has(normalise(application))
+        : holdsEffectAuthority(launch, capability);
+  if (!held) {
+    return {
+      capability,
+      availability: "disabled-by-configuration",
+      disabledBy: capability === "observe" ? OBSERVE_SETTING : sessionSettingFor(capability),
+    };
+  }
+  const withheld = configurationWithholding(launch, capability, application);
+  if (withheld !== undefined) {
+    return { capability, availability: "disabled-by-configuration", disabledBy: withheld };
+  }
+  return { capability, availability: "available" };
+}
+
+// The session flag that would change a session-scoped answer. It is a setting
+// like any other from the caller's side - the difference is that changing it
+// means restarting the daemon rather than editing a file, and saying which
+// flag is what makes that actionable.
+function sessionSettingFor(capability: CapabilityName): string {
+  return capability === "launch" ? "the session flag --permit <application>" : `the session flag --allow ${capability}`;
+}
+
+// The listing (ADR-0042). Existence and permission are readable; nothing from
+// inside an application is. The backend answers WHAT EXISTS and this function
+// answers WHAT MAY BE DONE - the second half from the same tables the gates
+// enforce, never from a list written beside them.
+async function listApplications(backend: Backend, launch: LaunchContext): Promise<ListApplicationsResult> {
+  let installed;
+  try {
+    installed = await backend.installedApplications();
+  } catch (error) {
+    // A route that cannot enumerate refuses by name rather than answering
+    // emptily. Any other failure is the daemon's usual opaque backstop.
+    if (error instanceof InventoryUnsupportedError) return { refusal: LIST_APPLICATIONS_REFUSAL };
+    throw error;
+  }
+  return {
+    applications: installed.map((entry) => ({
+      name: entry.name,
+      capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(launch, capability, entry.name)),
+      // A statement about this daemon's own recipes, never about permission:
+      // an application can be installed and honestly not launchable.
+      launchable: findRecipe(entry.name, launch.catalog) !== undefined,
+      ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
+    })),
+  };
+}
 
 // The change stream (ADR-0039). Both subscription methods are observe-class:
 // a watch reads and cannot cause anything. They are on the wire before either
@@ -610,7 +726,7 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   setElementText: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_TEXT_SCOPE_REFUSAL }) },
   setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_CARET_SCOPE_REFUSAL }) },
   revealElement: { effectClass: "activate", enforcement: "before-call", handler: async () => ({ refusal: REVEAL_SCOPE_REFUSAL }) },
-  listApplications: { effectClass: "observe", enforcement: "at-result", handler: async () => ({ refusal: LIST_APPLICATIONS_REFUSAL }) },
+  listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
 };
 
 const POLL_BUDGET_MS = 10_000; // how long a launched app gets to become readable
@@ -789,7 +905,11 @@ export function startServer(options: {
   /** the observe set composed at boot; events are filtered against it at emission */
   visibility?: Visibility;
 }): Promise<Server> {
-  const { socketPath, backend, launch, visibility = "all" } = options;
+  const { socketPath, backend, visibility = "all" } = options;
+  // ONE composed observe set, carried into the launch context rather than
+  // passed twice: the listing reports the observe capability from the same set
+  // that filters events and hides subtrees, so the two can never disagree.
+  const launch = options.launch === undefined ? undefined : { ...options.launch, visibility };
   mkdirSync(dirname(socketPath), { recursive: true });
   rmSync(socketPath, { force: true });
 

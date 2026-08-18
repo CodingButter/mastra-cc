@@ -17,9 +17,11 @@ import {
   type Backend,
   type BackendChange,
   type BackendSubscription,
+  InventoryUnsupportedError,
   RecordingNotPerformableError,
   replayWatch,
 } from "../../backend.js";
+import type { InventoryEntry } from "../../inventory.js";
 import type { Visibility } from "../../grants.js";
 import { AtspiBackend } from "../atspi/index.js";
 import { asTape, type Channel, exchangeKey, fixturesDir, type Tape, UnrecordedExchangeError } from "../atspi/channel.js";
@@ -97,6 +99,18 @@ export class ReplayBackend implements Backend {
   // recorded world names its applications exactly as the live one does.
   applicationOfElement(id: string): string | undefined {
     return this.inner.applicationOfElement(id);
+  }
+
+  // NOT delegated, unlike every other observe-side question. The live reader
+  // would scan the machine THIS process is running on, and a tape's answers
+  // would then be mixed with a live fact from somewhere else entirely - an
+  // offline lane reporting the developer's own installed applications as if
+  // they were the recording's. A tape records a tree; it never recorded a
+  // catalogue, so this route says so by name.
+  async installedApplications(): Promise<InventoryEntry[]> {
+    throw new InventoryUnsupportedError(
+      "this session's backend answers from a recording, and the recording holds a tree rather than a list of what is installed",
+    );
   }
 
   unsubscribeElement(subscriptionId: string): Promise<void> {

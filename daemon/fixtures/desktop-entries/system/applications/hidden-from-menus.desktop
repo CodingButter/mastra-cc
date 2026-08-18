@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Hidden From Menus
+NoDisplay=true
+Exec=/usr/bin/hidden-from-menus

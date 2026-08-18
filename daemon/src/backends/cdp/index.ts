@@ -27,6 +27,7 @@ import {
   type BackendSubscription,
   type ChannelWatch,
   commitDescription,
+  InventoryUnsupportedError,
   MagnitudeOutOfRangeError,
   mintSubscriptionId,
   OperationNotExposedError,
@@ -37,6 +38,7 @@ import {
   UnwatchableElementError,
   WriteNotObservedError,
 } from "../../backend.js";
+import type { InventoryEntry } from "../../inventory.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
@@ -146,6 +148,18 @@ export class CdpBackend implements Backend {
   // reply - never a guessed name (ADR-0039).
   applicationOfElement(id: string): string | undefined {
     return this.applicationOf.get(id);
+  }
+
+  // This route talks to ONE browser through its debugging protocol. That
+  // protocol can say a great deal about the browser and nothing at all about
+  // the machine's installed applications, so this refuses rather than
+  // answering an empty list - empty would claim nothing is installed, and the
+  // browser route has no standing to make that claim (ADR-0040: unequal
+  // fidelity stays visible instead of being faked into parity).
+  async installedApplications(): Promise<InventoryEntry[]> {
+    throw new InventoryUnsupportedError(
+      "this session's backend speaks to one browser and cannot enumerate what this machine has installed - it would have to answer an empty list, which would say the machine has nothing",
+    );
   }
 
   private recordApplication(id: string): void {

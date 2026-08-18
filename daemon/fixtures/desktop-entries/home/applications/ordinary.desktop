@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Ordinary (home copy)
+Exec=/home/example/.local/bin/ordinary

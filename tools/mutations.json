@@ -257,5 +257,26 @@
     "find": "  if (stamped.elements !== undefined) stamped.elements = stamped.elements.map(stamp);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/capability-configuration.test.ts"
+  },
+  {
+    "name": "a-hidden-entry-is-dropped-from-the-inventory",
+    "file": "daemon/src/inventory.ts",
+    "find": "    found.set(id, { name: id, diagnostic });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "precedence-is-decided-by-directory-order-only",
+    "file": "daemon/src/inventory.ts",
+    "find": "      if (!found.has(id)) found.set(id, entry);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "the-listing-answers-from-its-own-table-not-the-gate",
+    "file": "daemon/src/server.ts",
+    "find": "  const withheld = configurationWithholding(launch, capability, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
   }
 ]
