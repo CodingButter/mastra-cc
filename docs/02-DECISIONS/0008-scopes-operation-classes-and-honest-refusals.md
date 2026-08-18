@@ -1,6 +1,6 @@
 # ADR-0008 — Scopes, operation classes, and refusals that explain themselves
 
-**Status:** accepted; **superseded in part 2026-08-09 by [ADR-0028](0028-trust-is-a-mode-and-the-default-asks-almost-nothing.md)**.
+**Status:** accepted; **superseded in part 2026-08-09 by [ADR-0028](0028-trust-is-a-mode-and-the-default-asks-almost-nothing.md)**; **rule 6 superseded 2026-08-16 by [ADR-0042](0042-existence-is-readable-content-is-not.md)**.
 **Date:** 2026-08-08
 **Carried forward from the prototype, with the depth-ceiling correction applied.**
 
@@ -39,7 +39,7 @@
 3. **Depth is earned, not fixed.** Any ceiling must cite measured behaviour. A limit justified by an instrument setting is a bug, and the prototype's #42 retraction is the precedent for how to handle finding one: file it, name it, replace the justification.
 4. **A refusal names the check that produced it.** Every refusal carries: which check ran, what it observed, and what would change the answer. Landed in the prototype as PR #220.
 5. **A refusal must be derived from a check that actually ran** — not from a plausible-sounding cause. Issue #194 exists because that distinction was violated.
-6. **Deny by default at the application level**, and denial is *invisibility*: an unpermitted application does not appear as blocked, it does not appear at all. A blocked-but-visible application leaks the fact that it is installed.
+6. ~~**Deny by default at the application level**, and denial is *invisibility*: an unpermitted application does not appear as blocked, it does not appear at all. A blocked-but-visible application leaks the fact that it is installed.~~ — **Superseded 2026-08-16 by [ADR-0042](0042-existence-is-readable-content-is-not.md).** Deny-by-default survives; invisibility does not. Existence and permitted capabilities are readable; contents remain behind the grant. The rule is left standing here because the reason it was made is part of the record: it was reversed for producing a *false belief* in the agent rather than ignorance, which is a cost this version never weighed.
 7. **The person wins.** Ownership holds, human-outranks-agent, and an `emergencyStop` in the protocol that is not advisory.
 
 ## Consequences

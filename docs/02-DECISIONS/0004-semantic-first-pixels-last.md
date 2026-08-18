@@ -1,8 +1,10 @@
 # ADR-0004 — Semantic first; pixels are a last resort, addressed by window
 
-**Status:** accepted
+**Status:** accepted; one clause amended by [ADR-0046](0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md) (2026-08-17)
 **Date:** 2026-08-08
 **Carried forward from the prototype unchanged.** This is the founding bet and it held.
+
+> **Amendment, 2026-08-17.** The semantic-first decision stands in full. The outright ban on raw input synthesis in *Decision* below is replaced by [ADR-0046](0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md): raw input becomes the most restricted operation class — off by default, never self-granted by an agent, never reachable as a fallback from a semantic failure, always attributed as its own class, and enabled only by a decision the user makes. The reasoning at `:43` — that the ban existed to make the shortcut a *visible act* — is preserved as the cost this amendment knowingly pays, and B8 becomes a containment test rather than an absence test. Addressed capture (`:33`) and the pixels-are-never-resolution rule are untouched.
 
 ## Context
 
@@ -29,7 +31,7 @@ What it cost: applications with poor accessibility support are genuinely harder,
 
 Concretely:
 
-- **Banned everywhere, enforced by boundary test B8:** `xdotool`, `wmctrl`, `uinput`, and any equivalent raw-input path.
+- ~~**Banned everywhere, enforced by boundary test B8:** `xdotool`, `wmctrl`, `uinput`, and any equivalent raw-input path.~~ — **struck 2026-08-17 by [ADR-0046](0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md).** The reason is preserved: the ban made the shortcut a visible act. It is replaced by containment, not by permission — raw input is the most restricted operation class, off by default, never self-granted, never reachable as a fallback, and B8 now asserts the tools appear *only* inside that class.
 - **Capture is addressed.** A screenshot is taken *of a named window or element* that was resolved through the tree. It is never a full-desktop grab handed to a model to search. The prototype's element-scoped capture work (issue #197) and window-addressed capture (`08-01 12:22`) are the shape.
 - **Vision is a deferred tier**, listed in the deferred set with app-native integration and compositor access — not a fallback that quietly becomes the primary path when the tree is inconvenient.
 - **When the tree cannot answer, the system says so.** A refusal names the check that produced it (see [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md)). It does not fall back to guessing.

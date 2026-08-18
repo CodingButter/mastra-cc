@@ -87,20 +87,7 @@ export function toNeutralStates(lower: number, upper: number): State[] {
   return [...states];
 }
 
-// What a later call could be asked to do, by role, as data. M1 implements
-// none of them (the daemon refuses everything beyond observe); this is the
-// vocabulary M2's effect-class operations will arrive against - together with
-// B11, in the same commit.
-const ACTIONS_BY_ROLE: Readonly<Partial<Record<Role, ReadonlyArray<"press" | "focus" | "select" | "expand">>>> = {
-  button: ["press", "focus"],
-  checkbox: ["press", "focus"],
-  link: ["press", "focus"],
-  menuitem: ["press", "focus"],
-  menu: ["expand", "focus"],
-  listitem: ["select", "focus"],
-  textbox: ["focus"],
-};
-
-export function actionsForRole(role: Role): Array<"press" | "focus" | "select" | "expand"> {
-  return [...(ACTIONS_BY_ROLE[role] ?? [])];
-}
+// There is deliberately no role-to-action table in this file. An element's
+// verbs are read from the element (ADR-0043, actions.ts); the table that used
+// to live here claimed a button could be "pressed", a word no application on
+// this machine has ever published.

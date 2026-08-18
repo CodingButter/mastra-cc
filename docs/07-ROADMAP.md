@@ -132,6 +132,36 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 ---
 
+## M2.6 — The daemon acts
+
+**Goal:** every desktop interaction a person performs, available and enforced at the daemon — decided, frozen into the schema, implemented on both routes, and proven on real hardware.
+
+> **Why this milestone exists, and why it is numbered 2.6.** M2's contract was deliberately *"`observe` scope end to end; `edit`, `activate`, `submit` defined and refused"*, and it delivered exactly that. But no milestone after it ever implemented those three verbs: M3 is the hub, M4 the face, M5 wake, and M6 casually assumes *"one semantic action against a real mail client"* works. **The plan froze three verbs and then, four milestones later, assumed they had been thawed.** That is a hole, not a sequencing preference. It is numbered 2.6 rather than inserted as a new M3 because 49 references to M3–M8 exist across this documentation tree, and a renumbering reshape is the exact churn that cost the prototype an outage ([03-LESSONS.md](03-LESSONS.md) Family 5, PR #227 — 179 files, 135 renames). The number is cheap; the reshape is not.
+
+**The ordering ruling behind it** ([ADR-0043](02-DECISIONS/0043-an-element-publishes-its-own-actions.md) clause 6): layers are finished before layers are built on them. A hub that mints a tool surface over an incomplete verb set is configuring a capability list that does not exist. The daemon is the foundation; it gets completed first.
+
+**Deliverables:**
+- **The capability set, decided.** Not "the verbs we thought of" — the set is derived from what elements actually publish, per [ADR-0043](02-DECISIONS/0043-an-element-publishes-its-own-actions.md). Deciding the set is the milestone's first task and its first artifact.
+- **Actions read from the element, never from a role table.** `actionsForRole` deleted from both backends; the closed four-value action enum replaced by an open vocabulary carrying unmapped natives under their own names.
+- **The three action states** — available / disabled-by-configuration / not-exposed — distinguishable on the wire and never collapsed.
+- **`edit`, `activate` and `submit` implemented**, on both routes, with attestation before `submit` as [ADR-0008](02-DECISIONS/0008-scopes-operation-classes-and-honest-refusals.md) rule 2 requires. The refusal-only stubs from [ADR-0037](02-DECISIONS/0037-the-other-three-classes-are-on-the-wire-before-they-are-possible.md) are replaced by the operations they were placeholders for.
+- **Window management**, to the extent the accessibility layer exposes it — and an honest, recorded boundary where it does not. Compositor-level access stays deferred (§8); what cannot be done through the tree is named as a limitation, not quietly omitted.
+- **The application listing** from [ADR-0042](02-DECISIONS/0042-existence-is-readable-content-is-not.md): installed applications, their permitted capabilities, and the setting behind each refusal.
+- **Focus preservation on launch** ([ADR-0044](02-DECISIONS/0044-the-assistant-does-not-take-the-desk.md)), with the Wayland restoration route measured rather than assumed.
+- **User-facing capability configuration** — per application and globally, with defaults that are ours and policy that is the user's.
+
+**Exit gate:**
+- [x] An element's published actions come from the platform. Evidence: `actionsForRole` is gone from both backends, and a source-level assertion pins it out (`daemon/src/backends/cdp/__tests__/actions.test.ts`); the mutations `the-reader-asks-every-element-for-verbs-it-never-published` and `the-browser-route-advertises-a-verb-on-a-disabled-control` (`tools/mutations.json`) redden tests when the reading is broken; both replay worlds publish a name outside the four invented words, asserted at `daemon/src/__tests__/backend-conformance.test.ts` (desktop `click`, browser `collapse`); and the live leg read `click` off real window-chrome buttons that the deleted table would have called `press`.
+- [x] The three action states are distinguishable, and collapsing two of them reddens a test. Evidence: `packages/transport/src/__tests__/open-actions.test.ts` — the three states each carry a different obligation, and a configuration-withheld action naming no setting, a not-exposed action naming one, and an available action naming one are each refused.
+- [ ] Each of `edit`, `activate` and `submit` performs a real change on real hardware, observed and attributed — and each is refused, before the call, when configuration disables it (B11).
+- [ ] `submit` refuses with `ATTESTATION_FAILED` when the daemon cannot describe what it is about to commit.
+- [ ] The application listing agrees with the dispatch table: a capability reported *refused* is refused in fact, and a capability reported *available* is not refused. A test fails if the listing and the enforcement disagree.
+- [ ] Launching an application does not move focus, verified on real hardware while a text field holds it; a launch that cannot restore focus says so rather than reporting a clean launch.
+- [ ] Proof artifact: `every-action-the-desktop-offers.md`, produced on real hardware, naming the applications exercised and the session type.
+- [ ] Both lanes green; the offline lane replays recorded elements carrying real action lists, not fixtures we authored.
+
+---
+
 ## M3 — The hub thinks
 
 **Goal:** an agent that can drive the daemon, with credentials it never hands out.

@@ -34,10 +34,19 @@ const pascal = (s) => s[0].toUpperCase() + s.slice(1);
 // field spec writes as its type. Adding a vocabulary here is the ONLY thing a
 // new closed enum needs - the emitted validator reads this table too, so a
 // vocabulary can never be declared but left unchecked.
+// An action NAME is deliberately absent from this table (schema version 1.4.0,
+// ADR-0047): names are read off the element, so the set of them is the
+// desktop's to decide and not ours to enumerate. What stayed closed is
+// everything the daemon itself decides - roles, states, and the three ways a
+// capability can be unavailable. Opening the name while closing the
+// availability beside it is the whole design: a word we did not invent,
+// answered by a verdict we did.
 const VOCABULARIES = [
   { key: "roles", constant: "ROLES", type: "Role", base: "role" },
   { key: "states", constant: "STATES", type: "State", base: "state" },
-  { key: "actions", constant: "ACTIONS", type: "ActionName", base: "action" },
+  { key: "availabilityStates", constant: "AVAILABILITY_STATES", type: "AvailabilityState", base: "availabilityState" },
+  { key: "operationNames", constant: "OPERATION_NAMES", type: "OperationName", base: "operationName" },
+  { key: "capabilityNames", constant: "CAPABILITY_NAMES", type: "CapabilityName", base: "capabilityName" },
   { key: "priorities", constant: "PRIORITIES", type: "Priority", base: "priority" },
   { key: "changeKinds", constant: "CHANGE_KINDS", type: "ChangeKind", base: "changeKind" },
   { key: "attributions", constant: "ATTRIBUTIONS", type: "Attribution", base: "attribution" },
@@ -146,12 +155,39 @@ function problemsFor(typeName: keyof typeof FIELD_SPECS, value: unknown): string
       problems.push(\`\${String(typeName)}.\${field}: \${JSON.stringify(v)} does not match the id pattern\`);
     }
   }
+  problems.push(...availabilityProblems(String(typeName), specs, record));
+  return problems;
+}
+
+/**
+ * The rule the field specs cannot express, enforced wherever an availability
+ * appears: a thing withheld by configuration names the setting that withheld
+ * it, and nothing else names a setting at all. This is what keeps the three
+ * availability states from collapsing into each other. "Turned off by a
+ * setting" and "never offered by the platform" look alike to a caller and are
+ * opposites to anyone deciding what to do next: the first is a door with a
+ * key, the second is a wall. A withheld thing with no setting named is an
+ * unanswerable refusal, and an unexposed thing that names one invents a remedy
+ * that does not exist.
+ */
+function availabilityProblems(typeName: string, specs: Record<string, FieldSpec>, record: Record<string, unknown>): string[] {
+  if (!("availability" in specs)) return [];
+  const problems: string[] = [];
+  const withheld = record.availability === "disabled-by-configuration";
+  const names = typeof record.disabledBy === "string" && record.disabledBy.length > 0;
+  if (withheld && !names) problems.push(\`\${typeName}.disabledBy: an availability withheld by configuration must name the setting that withholds it\`);
+  if (!withheld && record.disabledBy !== undefined) problems.push(\`\${typeName}.disabledBy: present on an availability of \${JSON.stringify(record.availability)} - only a configuration-withheld one names a setting\`);
   return problems;
 }
 
 /** Validate a semanticElement; returns an empty array when it conforms. */
 export function validateSemanticElement(value: unknown): string[] {
   return problemsFor("semanticElement", value);
+}
+
+/** Validate one installedApplication as the listing reports it; returns an empty array when it conforms. */
+export function validateInstalledApplication(value: unknown): string[] {
+  return problemsFor("installedApplication", value);
 }
 
 /**

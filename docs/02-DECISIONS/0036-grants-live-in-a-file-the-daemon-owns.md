@@ -1,6 +1,12 @@
 # 0036 — Grants live in a file the daemon owns
 
-Status: accepted, 2026-08-10 (M2.3)
+Status: accepted, 2026-08-10 (M2.3); **amended 2026-08-16 by [ADR-0042](0042-existence-is-readable-content-is-not.md)**
+
+> **What the amendment changes.** The grants file, its composition at boot, and
+> enforcement *inside the walk* are all unchanged — that mechanism is what still
+> protects an application's contents. What changes is the subject of concealment:
+> an ungranted application is no longer absent from the world. Its existence and
+> its permitted capabilities are readable; everything inside it is not.
 
 ## Context
 

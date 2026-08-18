@@ -58,6 +58,39 @@ for (const [name, factory] of Object.entries(registry)) {
       }
     });
 
+    // ADR-0043's cost, made a test. A closed enum could be asserted
+    // exhaustively; a vocabulary read off live applications cannot, so
+    // conformance asserts INVARIANTS about actions rather than a list of them.
+    //
+    // This is deliberately not a parity assertion. The two routes have
+    // genuinely different fidelity - the accessibility bus publishes an Action
+    // interface that names its own verbs, while a browser node publishes no
+    // verb at all and the route derives one from properties it did publish.
+    // Requiring identical answers would force one route to invent the other's.
+    // What must hold on both is that no answer was predicted from the role.
+    it("publishes named actions and never the word the deleted tables invented", async () => {
+      const { elements } = await backend.queryElements({});
+      expect(elements.length).toBeGreaterThan(0); // a vacuous pass would satisfy the loops below
+
+      // A nameless action is the shape of a reader that trusted a bulk reply:
+      // measured on this machine, 10 of 263 elements answered a bulk action
+      // query with all-empty names while naming them one index at a time.
+      for (const element of elements) {
+        for (const action of element.actions) {
+          expect(
+            action.name.length,
+            `backend "${name}" published a nameless action`,
+          ).toBeGreaterThan(0);
+        }
+      }
+
+      // "press" was the deleted tables' word for a button, and no platform
+      // measured here has ever published it on either route. Its reappearance
+      // means a role-keyed table came back under some new name.
+      const published = new Set(elements.flatMap((e) => e.actions.map((a) => a.name)));
+      expect(published.has("press"), `backend "${name}" published "press", a word this project invented`).toBe(false);
+    });
+
     it("attests an element it previously answered", async () => {
       const { elements } = await backend.queryElements({});
       const attested = await backend.attestElement({ id: elements[0].id });
@@ -118,6 +151,41 @@ for (const [name, factory] of Object.entries(registry)) {
     });
   });
 }
+
+// The four words schema 1.3.0 declared - measured against real applications
+// and found to share ZERO vocabulary with what either platform publishes.
+// They are not a subset of reality; they are what this project made up.
+const THE_INVENTED_FOUR = ["press", "focus", "select", "expand"];
+
+// The offline lane's own standard, from this segment: a tape that carries no
+// action data is a FAILED CAPTURE, not a captured absence. Both worlds were
+// re-captured from real software for exactly this assertion - the desktop
+// world from a real GTK dialog over the accessibility bus, the browser world
+// from a real headless Chrome. If either tape is ever replaced by one recorded
+// against a world that publishes nothing, this reddens instead of passing
+// quietly on an empty list.
+//
+// Only the REPLAY backends are asserted here. A live backend reads whatever
+// happens to be on the desktop or in the browser at the moment, and no such
+// claim can be grounded in advance; the fixtures are committed worlds and can
+// be.
+describe("each replayed world publishes a verb the deleted tables never held", () => {
+  for (const name of ["replay", "cdp-replay"] as const) {
+    it(`backend "${name}" replays at least one action named outside the invented four`, async () => {
+      const backend = registry[name]({ visibility: "all" });
+      const { elements } = await backend.queryElements({});
+      expect(elements.length).toBeGreaterThan(0);
+
+      const published = elements.flatMap((element) => element.actions.map((action) => action.name));
+      const beyond = published.filter((action) => !THE_INVENTED_FOUR.includes(action));
+      expect(
+        beyond,
+        `backend "${name}" replayed only ${JSON.stringify([...new Set(published)])} - a tape carrying no action data is a failed capture, not a captured absence`,
+      ).not.toEqual([]);
+      await backend.close();
+    });
+  }
+});
 
 // The route is provenance, not decoration: if both backends declared the same
 // label, the stamp would say nothing about WHICH instrument answered.
