@@ -357,7 +357,31 @@ export class AtspiBackend implements Backend {
     // describe something that has already happened.
     commitDescription(element);
     await performAction(this.channel, ref, element.actions[0]!.name);
-    return { element: await this.readElement(ref) };
+
+    // A commit is the one verb whose success can REMOVE the thing it acted on,
+    // and the afterwards-read is then asking a window that has already closed.
+    // Measured on this session: DoAction on a dialog's OK button is answered in
+    // about a millisecond, and the very next read of the same element fails
+    // with NoReply because the application disconnected from the bus.
+    //
+    // So the read failing here is not the same event as the read failing for
+    // edit or activate, where the element is expected to survive. Letting it
+    // throw would send "the desktop could not be read by this session's
+    // backend" for a commit that demonstrably landed - a refusal, for something
+    // that already happened and cannot be taken back. That is the single worst
+    // direction for this daemon to be wrong in: a caller reading a refusal will
+    // reasonably conclude nothing was committed, and commit again.
+    //
+    // The element is therefore OMITTED rather than invented, which the wire
+    // already allows (submitElement's element field is not required). What is
+    // never done is echoing back the pre-commit element as though it were the
+    // afterwards read: that would be a return value wearing the evidence's
+    // clothes, which is the mistake the whole seam exists to refuse.
+    try {
+      return { element: await this.readElement(ref) };
+    } catch {
+      return {};
+    }
   }
 
   async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {

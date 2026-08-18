@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AttestationFailedError, commitDescription } from "../backend.js";
+import type { Channel } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
 import { replayChannel } from "../backends/replay/index.js";
 
@@ -148,6 +149,66 @@ describe("the daemon refuses to commit what it cannot describe", () => {
     expect(careful).toBeInstanceOf(AttestationFailedError);
     expect(empty).toBeInstanceOf(AttestationFailedError);
     expect((careful as Error).message).toBe((empty as Error).message);
+    await backend.close();
+  });
+
+  // A commit is the only verb whose success can destroy what it acted on, and
+  // that makes the afterwards-read a different question here than it is for
+  // edit or activate. Measured live on this session (proof leg s): DoAction on
+  // a dialog's OK button was answered `true` in about a millisecond, and the
+  // next read of the same element failed with NoReply - the application had
+  // already disconnected from the bus, because committing is what closed it.
+  //
+  // The first live run of the proof reported that commit as "the desktop could
+  // not be read by this session's backend". The commit had landed; the dialog
+  // printed the committed form. A caller hearing a refusal for a commit that
+  // happened would reasonably commit a second time, which is the one failure
+  // this project cannot answer for - it is beyond the machine's ability to take
+  // back, by definition.
+  it("a commit whose success closes the application is reported as a commit, not as an unreadable desktop", async () => {
+    const { backend, elements } = await recordedWorld();
+    const describable = elements.find(
+      (element) => element.name === "Close" && element.actions.length === 1,
+    );
+    expect(describable).toBeDefined();
+
+    // The channel answers everything the tape holds until the commit is
+    // performed, and refuses every exchange after it - the disappearance of the
+    // application, expressed as the only thing the platform actually does when
+    // it happens.
+    const tape = replayChannel("gtk-dialog");
+    let committed = false;
+    const dyingChannel: Channel = {
+      async call(exchange) {
+        if (committed) throw new Error("Message recipient disconnected from message bus without replying");
+        if (exchange.member === "DoAction") {
+          committed = true;
+          return [true];
+        }
+        return tape.call(exchange);
+      },
+      watch: (subscribedTo, sink, anchor) => tape.watch(subscribedTo, sink, anchor),
+      close: () => tape.close(),
+    };
+
+    const dying = new AtspiBackend(dyingChannel, new Set(["yad"]));
+    const seen = await dying.queryElements({});
+    const target = seen.elements.find(
+      (element) => element.name === "Close" && element.actions.length === 1,
+    );
+    expect(target).toBeDefined();
+    const result = await dying.submitElement({
+      id: target!.id,
+      attestation: "closes the dialog",
+    });
+
+    // The commit is reported as one. The element is ABSENT rather than
+    // fabricated: the wire allows that (submitElement's element is not
+    // required), and echoing the pre-commit element back would be the return
+    // value dressed as the read-back this whole seam exists to demand.
+    expect(result.element).toBeUndefined();
+    expect(committed).toBe(true);
+    await dying.close();
     await backend.close();
   });
 });

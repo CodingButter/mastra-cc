@@ -436,7 +436,17 @@ export class CdpBackend implements Backend {
     const element = await this.reread(params.id);
     commitDescription(element);
     await performDerivedAction(this.channel, ref, element.actions[0]!.name, [element.actions[0]!.name]);
-    return { element: await this.reread(params.id) };
+    // The desktop route's reasoning applies here for the same reason, arrived
+    // at through different machinery: a commit that submits a form navigates
+    // the page, and the node the commit acted on stops existing. Omitting the
+    // element says "it committed, and there is nothing left to read"; throwing
+    // would say "the desktop could not be read", which a caller would read as
+    // "it did not commit" and act on by committing again.
+    try {
+      return { element: await this.reread(params.id) };
+    } catch {
+      return {};
+    }
   }
 
   async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {
