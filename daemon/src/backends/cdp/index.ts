@@ -18,8 +18,9 @@ import {
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
+import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
 import { type CdpChannel, replayCdpChannel } from "./channel.js";
-import { actionsForRole, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
+import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
 // The browser backend: reads the page's own semantic tree over the browser's
 // debugging protocol, through the CdpChannel seam - every exchange it performs
@@ -122,9 +123,14 @@ export class CdpBackend implements Backend {
       role: "application",
       name: productName(version),
       states: ["enabled", "visible"],
+      // The browser itself is not a node in any page's tree, so there is no
+      // node to derive from and nothing publishes a verb for it. That is a
+      // measured absence, and it says so - the empty list this replaced was
+      // the third invented answer this milestone exists to remove, because it
+      // read the same as "asked, and nothing grounded a verb".
       actions: [],
       // ADR-0040: the application answer names its instrument too.
-      diagnostic: stampVisibilityRoute(),
+      diagnostic: stampVisibilityRoute(NO_NODE_TO_DERIVE_FROM),
     };
   }
 
@@ -142,19 +148,25 @@ export class CdpBackend implements Backend {
     if (node.backendDOMNodeId !== undefined) {
       this.mintedByNode.set(`${targetId}/${node.backendDOMNodeId}`, { id, role });
     }
+    // ADR-0043: the verbs come from what this node published, never from its
+    // role. A disabled input and an enabled one share the role and differ in
+    // what they publish, so the role could never have told them apart.
+    const derived = deriveActions(node.properties ?? []);
     return {
       id,
       role,
       name: String(node.name?.value ?? ""),
       states: toNeutralStates(node.properties ?? []),
-      actions: actionsForRole(role),
+      actions: derived.actions,
       // ADR-0040: every answer names its instrument; the unmapped-role
-      // diagnostic (ADR-0018 clause 3) merges in when present.
-      diagnostic: stampVisibilityRoute(
-        diagnostic !== undefined
+      // diagnostic (ADR-0018 clause 3) and the derivation's own grounding
+      // merge in when present.
+      diagnostic: stampVisibilityRoute({
+        ...derived.diagnostic,
+        ...(diagnostic !== undefined
           ? { ...diagnostic, nativeId: `${targetId}/${node.backendDOMNodeId ?? node.nodeId}` }
-          : undefined,
-      ),
+          : {}),
+      }),
     };
   }
 

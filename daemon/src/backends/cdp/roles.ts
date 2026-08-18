@@ -77,22 +77,3 @@ export function toNeutralStates(properties: ReadonlyArray<AxProperty>): State[] 
   return [...states];
 }
 
-// What a later call could be asked to do, by neutral role, as data - the same
-// vocabulary the atspi backend advertises, kept local so the two backends'
-// policies never couple. Nothing beyond observe is implemented yet.
-const ACTIONS_BY_ROLE: Readonly<Partial<Record<Role, ReadonlyArray<"press" | "focus" | "select" | "expand">>>> = {
-  button: ["press", "focus"],
-  checkbox: ["press", "focus"],
-  link: ["press", "focus"],
-  menuitem: ["press", "focus"],
-  menu: ["expand", "focus"],
-  listitem: ["select", "focus"],
-  textbox: ["focus"],
-};
-
-// Schema version 1.4.0 carries an action as a record; see the note on the
-// desktop route's copy of this function. Same invented words, new shape,
-// deleted by the phase that derives actions from the node itself.
-export function actionsForRole(role: Role): Array<{ name: string; availability: "available" }> {
-  return (ACTIONS_BY_ROLE[role] ?? []).map((name) => ({ name, availability: "available" }));
-}
