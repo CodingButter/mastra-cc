@@ -19,7 +19,8 @@ import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
-import { actionsForRole, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
+import { readPublishedActions } from "./actions.js";
+import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
 // The real Linux accessibility backend. Reads the desktop's accessibility
 // tree over plain D-Bus through the Channel seam - every exchange it performs
@@ -133,6 +134,10 @@ export class AtspiBackend implements Backend {
     const name = await this.nameOf(ref);
     const [lower, upper] = await this.statesOf(ref);
     const { role, diagnostic } = toNeutralRole(nativeRole);
+    // ADR-0043: the element publishes its own verbs. Asked here, through the
+    // same call() seam as every other exchange, so capture records the action
+    // reads and replay answers them from the tape.
+    const published = await readPublishedActions(this.channel, ref);
     const id = deriveId(role, ref.busName, ref.objectPath);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
@@ -142,12 +147,15 @@ export class AtspiBackend implements Backend {
       role,
       name,
       states: toNeutralStates(lower, upper),
-      actions: actionsForRole(role),
+      actions: published.actions,
       // ADR-0040: every answer names its instrument; the unmapped-role
-      // diagnostic (ADR-0018 clause 3) merges in when present.
-      diagnostic: stampVisibilityRoute(
-        diagnostic !== undefined ? { ...diagnostic, nativeId: `${ref.busName}${ref.objectPath}` } : undefined,
-      ),
+      // diagnostic (ADR-0018 clause 3) and the action reader's own
+      // measurements merge in when present.
+      diagnostic: stampVisibilityRoute({
+        ...diagnostic,
+        ...published.diagnostic,
+        ...(diagnostic !== undefined ? { nativeId: `${ref.busName}${ref.objectPath}` } : {}),
+      }),
     };
   }
 

@@ -217,6 +217,13 @@
     "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
   },
   {
+    "name": "the-reader-asks-every-element-for-verbs-it-never-published",
+    "file": "daemon/src/backends/atspi/actions.ts",
+    "find": "  if (!interfaces.includes(ACTION_IFACE)) return { actions: [] };\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/actions.test.ts"
+  },
+  {
     "name": "the-verdict-forgets-its-instrument",
     "file": "daemon/src/backends/atspi/roles.ts",
     "find": "  return { ...diagnostic, \"mastra-cc/visibility-route\": VISIBILITY_ROUTE };\n",
