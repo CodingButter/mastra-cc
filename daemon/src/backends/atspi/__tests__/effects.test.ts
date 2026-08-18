@@ -4,8 +4,9 @@ import {
   OperationNotExposedError,
   TextOffsetOutOfRangeError,
   UnpublishedActionError,
+  WriteNotObservedError,
 } from "../../../backend.js";
-import { insertText, performAction, scrollIntoView, setCaretOffset, setValue } from "../effects.js";
+import { insertText, performAction, scrollIntoView, setCaretOffset, setTextContents, setValue } from "../effects.js";
 
 // Performing, as distinct from reading. These tests pin the four ways a verb
 // can be wrong in a way that still returns success on the real platform:
@@ -32,9 +33,18 @@ interface Exchange {
   body?: unknown[];
 }
 
-/** Records what was actually asked, which is the point of most of these tests. */
-function scriptedChannel(replies: Record<string, unknown[]>) {
+/**
+ * Records what was actually asked, which is the point of most of these tests.
+ *
+ * `changing` scripts a key that answers DIFFERENTLY on successive calls - which
+ * is the only way to express the world these tests exist to describe, where a
+ * field reads one way before a write and another way after it.
+ */
+function scriptedChannel(replies: Record<string, unknown[]>, changing: Record<string, unknown[][]> = {}) {
   const asked: Exchange[] = [];
+  const queues: Record<string, unknown[][]> = Object.fromEntries(
+    Object.entries(changing).map(([key, values]) => [key, [...values]]),
+  );
   return {
     asked,
     async call(exchange: Exchange) {
@@ -45,6 +55,8 @@ function scriptedChannel(replies: Record<string, unknown[]>) {
           : exchange.member === "Get"
             ? `Get:${String(exchange.body?.[1])}`
             : exchange.member;
+      const queued = queues[key];
+      if (queued !== undefined && queued.length > 0) return queued.shift() as unknown[];
       const scripted = replies[key];
       if (scripted === undefined) throw new Error(`test channel: nothing scripted for ${key}`);
       return scripted;
@@ -156,6 +168,7 @@ describe("writing text and placing the caret", () => {
     const channel = scriptedChannel({
       GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
       "Get:CharacterCount": [9],
+      GetText: ["some word"],
     });
 
     await expect(insertText(channel, REF, "typed", 99999)).rejects.toBeInstanceOf(TextOffsetOutOfRangeError);
@@ -163,15 +176,79 @@ describe("writing text and placing the caret", () => {
   });
 
   it("inserts at an offset the text actually holds", async () => {
-    const channel = scriptedChannel({
-      GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
-      "Get:CharacterCount": [9],
-      InsertText: [true],
-    });
+    const channel = scriptedChannel(
+      {
+        GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
+        "Get:CharacterCount": [9],
+        InsertText: [true],
+      },
+      { GetText: [["some word"], ["some wordtyped"]] },
+    );
 
     await insertText(channel, REF, "typed", 9);
 
     expect(channel.asked.find((exchange) => exchange.member === "InsertText")?.body?.[0]).toBe(9);
+  });
+
+  it("reads the text with the end offset the element published, never the bindings' -1", async () => {
+    // `GetText(0, -1)` is a binding convenience: over the wire it answers an
+    // empty string, so a reader using it sees every field as empty and a
+    // self-verify loop re-types into an already-full field. The end offset must
+    // be a number the element published.
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
+      "Get:CharacterCount": [9],
+      GetText: ["some word"],
+      SetTextContents: [true],
+    });
+
+    await setTextContents(channel, REF, "some word");
+
+    const read = channel.asked.find((exchange) => exchange.member === "GetText");
+    expect(read?.body, "asked the wire for a range the element never published").toEqual([0, 9]);
+  });
+
+  it("reports a write the read-back disagrees with, instead of the success the platform returned", async () => {
+    // The measured failure, exactly: an insert beyond the field's length was
+    // CLAMPED to somewhere else, performed, and reported success. The bounds
+    // check refuses that particular call, but nothing stops the platform
+    // landing a write elsewhere - so the read-back is what decides.
+    const channel = scriptedChannel(
+      {
+        GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
+        "Get:CharacterCount": [9],
+        SetTextContents: [true],
+      },
+      // Ninety-nine characters were written; the field reads back the nine it
+      // was already holding. The call returned true either way.
+      { GetText: [["some word"], ["some word"]] },
+    );
+
+    const failure = await setTextContents(channel, REF, "x".repeat(99)).catch((error: unknown) => error);
+
+    expect(failure, "a write that did not land was reported as a success").toBeInstanceOf(WriteNotObservedError);
+    expect((failure as Error).message).toContain("some word");
+  });
+
+  it("detects an insert that landed at a different offset than the one it was aimed at", async () => {
+    // A clamped insert produces the RIGHT characters in the WRONG place, so
+    // comparing only for presence would pass. The intent is stated as the whole
+    // content the field should hold afterwards.
+    const channel = scriptedChannel(
+      {
+        GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
+        "Get:CharacterCount": [9],
+        InsertText: [true],
+      },
+      { GetText: [["abcdefghi"], ["abcdefghityped"]] },
+    );
+
+    const failure = await insertText(channel, REF, "typed", 4).catch((error: unknown) => error);
+
+    expect(failure, "an insert clamped to the end was accepted as an insert at offset 4").toBeInstanceOf(
+      WriteNotObservedError,
+    );
+    expect((failure as Error).message).toContain("abcdtypedefghi");
   });
 
   it("places the caret at the end when no offset is given", async () => {

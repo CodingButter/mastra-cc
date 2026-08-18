@@ -16,6 +16,7 @@ import {
   OperationNotExposedError,
   TextOffsetOutOfRangeError,
   UnpublishedActionError,
+  WriteNotObservedError,
 } from "../../backend.js";
 import { UnrecordedExchangeError } from "./channel.js";
 
@@ -157,6 +158,44 @@ export async function performAction(seam: CallSeam, ref: NativeRef, action: stri
   );
 }
 
+async function characterCount(seam: CallSeam, ref: NativeRef): Promise<number> {
+  return Number(await propertyOf(seam, ref, TEXT_IFACE, "CharacterCount"));
+}
+
+// READING A FIELD'S TEXT, THE WAY THE WIRE ACTUALLY ANSWERS IT.
+//
+// `GetText(0, -1)` is a convenience the language bindings offer, not something
+// the bus implements: over the wire that call answers an empty string. A reader
+// that used it would see every field as empty, and a self-verify loop built on
+// that reading would re-type into an already-full field and call it a fix
+// (docs/proofs/can-node-act-on-the-desktop.md). The end offset is therefore
+// asked for first, as a number the element itself published.
+export async function textOf(seam: CallSeam, ref: NativeRef): Promise<string> {
+  const length = await characterCount(seam, ref);
+  const [text] = await seam.call({
+    destination: ref.busName,
+    path: ref.objectPath,
+    iface: TEXT_IFACE,
+    member: "GetText",
+    signature: "ii",
+    body: [0, length],
+  });
+  return String(text ?? "");
+}
+
+// The step that turns a return value into evidence. The platform's failure mode
+// is not an error: it is a write that lands somewhere else and answers true. So
+// after every write, the field is read back the way the wire answers, and what
+// it holds is compared against what the write intended. A disagreement is
+// raised - never absorbed, never retried into place.
+async function observeWrite(seam: CallSeam, ref: NativeRef, intended: string, what: string): Promise<void> {
+  const observed = await textOf(seam, ref);
+  if (observed === intended) return;
+  throw new WriteNotObservedError(
+    `${what} reported success, but reading the element back found ${JSON.stringify(observed)} where ${JSON.stringify(intended)} was intended - the platform performed something other than what was asked`,
+  );
+}
+
 // REPLACING A FIELD'S CONTENT.
 export async function setTextContents(seam: CallSeam, ref: NativeRef, value: string): Promise<void> {
   await requireInterface(seam, ref, EDITABLE_TEXT_IFACE, "editing its text");
@@ -168,10 +207,7 @@ export async function setTextContents(seam: CallSeam, ref: NativeRef, value: str
     signature: "s",
     body: [value],
   });
-}
-
-async function characterCount(seam: CallSeam, ref: NativeRef): Promise<number> {
-  return Number(await propertyOf(seam, ref, TEXT_IFACE, "CharacterCount"));
+  await observeWrite(seam, ref, value, "replacing this element's text");
 }
 
 // INSERTING TEXT AT AN OFFSET.
@@ -183,10 +219,10 @@ async function characterCount(seam: CallSeam, ref: NativeRef): Promise<number> {
 // and the platform will not tell us it happened.
 export async function insertText(seam: CallSeam, ref: NativeRef, text: string, offset: number): Promise<void> {
   await requireInterface(seam, ref, EDITABLE_TEXT_IFACE, "editing its text");
-  const length = await characterCount(seam, ref);
-  if (offset < 0 || offset > length) {
+  const before = await textOf(seam, ref);
+  if (offset < 0 || offset > before.length) {
     throw new TextOffsetOutOfRangeError(
-      `offset ${offset} is outside this element's text, which holds ${length} characters - refused rather than moved to the end`,
+      `offset ${offset} is outside this element's text, which holds ${before.length} characters - refused rather than moved to the end`,
     );
   }
   await seam.call({
@@ -197,6 +233,11 @@ export async function insertText(seam: CallSeam, ref: NativeRef, text: string, o
     signature: "sis",
     body: [offset, text, text.length],
   });
+  // The intent is stated in full - the text as it should read afterwards - so
+  // the comparison catches an insert that landed at a different offset, not
+  // merely one that vanished. A clamped insert produces the right characters in
+  // the wrong place, and only a whole-content comparison can see that.
+  await observeWrite(seam, ref, before.slice(0, offset) + text + before.slice(offset), "inserting into this element");
 }
 
 // PLACING THE CARET. Same bounds reasoning as the insert above: the platform

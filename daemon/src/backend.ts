@@ -109,6 +109,14 @@ export class MagnitudeOutOfRangeError extends Error {}
 // performed, and reported success (docs/proofs/can-node-act-on-the-desktop.md).
 export class TextOffsetOutOfRangeError extends Error {}
 
+// The verb returned success and the read-back disagrees with what was asked
+// for. This is the hazard that makes the whole observation contract necessary
+// rather than decorative: an insert at offset 99999 into a nine-character field
+// was clamped to somewhere else, performed, and reported success. A backend
+// that reported that call as an edit would be describing a world that does not
+// exist, so the disagreement is raised rather than smoothed over.
+export class WriteNotObservedError extends Error {}
+
 // The element does not publish the action that was named. The published list is
 // the only vocabulary a call may use, and a name outside it is refused rather
 // than guessed at - performing "the closest one" is the ACTIONS_BY_ROLE mistake
