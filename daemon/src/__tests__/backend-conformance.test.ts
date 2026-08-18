@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
+import type { Backend } from "../backend.js";
 import {
   BACKEND_METHODS,
   RecordingNotPerformableError,
   UnknownSubscriptionError,
+  UnpublishedActionError,
   WatchUnsupportedError,
 } from "../backend.js";
+import { AtspiBackend } from "../backends/atspi/index.js";
+import { CdpBackend } from "../backends/cdp/index.js";
+import { replayCdpChannel } from "../backends/cdp/channel.js";
+import { replayChannel } from "../backends/replay/index.js";
 import { VISIBILITY_ROUTE as ACCESSIBILITY_BUS_ROUTE } from "../backends/atspi/roles.js";
 import { VISIBILITY_ROUTE as BROWSER_PROTOCOL_ROUTE } from "../backends/cdp/roles.js";
 import { LIVE_BACKENDS, registry } from "../backends/registry.js";
@@ -235,6 +241,54 @@ describe("a recording refuses to be acted upon", () => {
           RecordingNotPerformableError,
         );
       }
+      await backend.close();
+    });
+  }
+});
+
+// THE SECOND EFFECT-HALF INVARIANT, and the one this milestone exists for.
+//
+// The two routes reach their action vocabularies through completely different
+// instruments - AT-SPI reads a real Action interface off the element, CDP has
+// no such interface and derives names from published properties - so the lists
+// differ by design and parity is NOT the claim (ADR-0040). What both routes owe
+// equally is that a word the element never published is REFUSED, rather than
+// resolved to the nearest thing that would work. Performing the nearest match
+// is the ACTIONS_BY_ROLE mistake wearing a search function (ADR-0045 clause 2),
+// and a parity test would pass it happily.
+//
+// Driven through each route's PERFORMING class over its recorded world. The
+// replay flavours are deliberately not the instrument here: they refuse as a
+// tape before any action is looked at, so this assertion would pass on them
+// without ever reaching the check it exists to pin - measured, by reinstating
+// nearest-match on both routes and watching it stay green.
+describe("neither route performs an action the element never published", () => {
+  const performingOverARecording: Record<string, () => Backend> = {
+    "the accessibility bus": () => new AtspiBackend(replayChannel("gtk-dialog"), "all"),
+    "the browser protocol": () => new CdpBackend(replayCdpChannel("chrome-page"), "all"),
+  };
+
+  for (const [route, open] of Object.entries(performingOverARecording)) {
+    it(`${route} refuses it by name, and names what the element does publish`, async () => {
+      const backend = open();
+      const { elements } = await backend.queryElements({});
+      const performer = elements.find((element) => element.actions.length > 0);
+      expect(performer, `${route}: the recorded world publishes no action at all - a re-capture failed`).toBeDefined();
+
+      // A word no platform publishes and no derivation grounds. It is not a
+      // near-miss of anything: a route that matched it would have had to invent
+      // the match outright.
+      const unpublished = "flurb";
+      const published = (performer as NonNullable<typeof performer>).actions.map((action) => action.name);
+      expect(published, "the recorded world published the word this test assumes impossible").not.toContain(
+        unpublished,
+      );
+
+      await expect(
+        backend.activateElement({ id: (performer as NonNullable<typeof performer>).id, action: unpublished }),
+        `${route} performed an action the element never published`,
+      ).rejects.toBeInstanceOf(UnpublishedActionError);
+
       await backend.close();
     });
   }

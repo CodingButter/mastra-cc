@@ -17,6 +17,7 @@ import type {
   SetElementTextResult,
   SetElementValueParams,
   SetElementValueResult,
+  Range,
   SubmitElementParams,
   SubmitElementResult,
 } from "@mastra-cc/protocol-types";
@@ -26,15 +27,31 @@ import {
   type BackendSubscription,
   type ChannelWatch,
   EffectUnsupportedError,
+  MagnitudeOutOfRangeError,
   mintSubscriptionId,
+  OperationNotExposedError,
   RecordingNotPerformableError,
+  TextOffsetOutOfRangeError,
   UnknownSubscriptionError,
+  UnperformableElementError,
   UnwatchableElementError,
+  WriteNotObservedError,
 } from "../../backend.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
+import {
+  contentLength,
+  contentOf,
+  type NodeRef,
+  performDerivedAction,
+  revealIn,
+  setCaretOf,
+  setMagnitudeOf,
+  setValueOf,
+} from "./effects.js";
+import { NOTHING_TO_OPERATE_ON, readPublishedOperations } from "./magnitudes.js";
 import { type CdpChannel, replayCdpChannel } from "./channel.js";
 import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
@@ -145,6 +162,11 @@ export class CdpBackend implements Backend {
       // the third invented answer this milestone exists to remove, because it
       // read the same as "asked, and nothing grounded a verb".
       actions: [],
+      // The browser is not a node either, so it backs none of the four
+      // operations. Reported in full and not-exposed rather than omitted, for
+      // the same reason the action list above is a measured absence: an
+      // operation missing from the list would read as "never asked".
+      operations: NOTHING_TO_OPERATE_ON,
       // ADR-0040: the application answer names its instrument too.
       diagnostic: stampVisibilityRoute(NO_NODE_TO_DERIVE_FROM),
     };
@@ -174,6 +196,10 @@ export class CdpBackend implements Backend {
       name: String(node.name?.value ?? ""),
       states: toNeutralStates(node.properties ?? []),
       actions: derived.actions,
+      // ADR-0045 clause 4: the bounds come from what this node published, in
+      // its own units. Read from properties here where the desktop route reads
+      // interfaces - different instrument, same neutral answer.
+      operations: readPublishedOperations(node.properties ?? []),
       // ADR-0040: every answer names its instrument; the unmapped-role
       // diagnostic (ADR-0018 clause 3) and the derivation's own grounding
       // merge in when present.
@@ -292,52 +318,162 @@ export class CdpBackend implements Backend {
     };
   }
 
-  // THE EFFECT HALF, on this route: not built, and saying so.
+  // THE EFFECT HALF, on this route.
   //
-  // This is a route-fidelity difference, not an oversight, and it is stated by
-  // name rather than by silently returning an unchanged element. The browser
-  // route reaches its tree through the accessibility domain, which reads and
-  // does not act; performing here needs a DIFFERENT domain (input, or a
-  // scripted evaluation), and every one of those is a new exchange. That
-  // matters concretely: this backend's re-read is pinned to the exact exchange
-  // set the query walk issues, because the offline lane replays a tape captured
-  // from that walk - an effect exchange would refuse as unrecorded there. The
-  // browser route's verbs arrive with the phase that captures the tape they
-  // need. Until then a caller hears which route could not perform and why,
-  // which is the same promise WatchUnsupportedError keeps on the observe side
-  // (ADR-0040: unequal fidelity stays visible, never faked into parity).
+  // The accessibility domain reads and does not act, so every verb below
+  // resolves the element through the tree it was answered from and calls a
+  // function on that object (effects.ts). Element-addressed throughout: no
+  // coordinate, no synthesised key, no selector guessed at.
+  //
+  // Then it RE-READS. The return value is a claim; the re-read is the evidence,
+  // exactly as on the desktop route. What differs is where the evidence lives:
+  // an AX textbox node publishes no value, so the tree cannot show what a field
+  // holds. The write is confirmed against the element's own value in effects.ts,
+  // and the element returned here is what the tree publishes afterwards. The
+  // difference is stated, never smoothed into false parity (ADR-0040).
   protected refuseToPerform(verb: string): never {
     throw new EffectUnsupportedError(
-      `the browser route cannot ${verb} yet: it reads the page's accessibility tree and does not act on it`,
+      `the browser route cannot ${verb}: it reads the page's accessibility tree and does not act on it`,
     );
   }
 
-  async editElement(_params: EditElementParams): Promise<EditElementResult> {
-    this.refuseToPerform("edit an element");
+  // Asked at the TOP of every verb, before the id is resolved or anything is
+  // read. The live route can perform, so this is a no-op here; the replay
+  // flavour overrides it to refuse. The ordering is load-bearing: a tape must
+  // refuse as a tape, not as an element it happens not to hold. Refusing on the
+  // id first would make the answer depend on which element was asked for, which
+  // is the existence-oracle shape (ADR-0008 rule 6).
+  protected assertPerformable(_verb: string): void {}
+
+  // Resolve the element this backend actually answered. An id it never answered
+  // is refused identically whether it never existed or was never answered - the
+  // refusal must not become an existence oracle (ADR-0008 rule 6, ADR-0036).
+  private nodeRefFor(id: string): NodeRef {
+    const ref = this.answered.get(id);
+    if (ref === undefined || ref.kind !== "node") {
+      throw new UnperformableElementError(
+        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    return { targetId: ref.targetId, backendDOMNodeId: ref.backendDOMNodeId, nodeId: ref.nodeId };
   }
 
-  async activateElement(_params: ActivateElementParams): Promise<ActivateElementResult> {
-    this.refuseToPerform("perform an action");
+  // The re-read after every effect. Finds the element as the tree publishes it
+  // NOW, rather than returning the element as it was known before the write.
+  private async reread(id: string): Promise<SemanticElement> {
+    const attested = await this.attestElement({ id });
+    if (attested.element !== undefined) return attested.element;
+    throw new WriteNotObservedError(
+      `the effect was performed but the element could not be read back afterwards: ${attested.refusal}`,
+    );
+  }
+
+  async editElement(params: EditElementParams): Promise<EditElementResult> {
+    this.assertPerformable("edit an element");
+    const ref = this.nodeRefFor(params.id);
+    await setValueOf(this.channel, ref, params.value);
+    return { element: await this.reread(params.id) };
+  }
+
+  async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
+    this.assertPerformable("perform an action");
+    const ref = this.nodeRefFor(params.id);
+    // The action must be one the READER derived for this node, read fresh from
+    // the tree rather than from anything remembered - matched verbatim, never
+    // to the nearest name.
+    await performDerivedAction(this.channel, ref, params.action, await this.publishedActionsOf(params.id));
+    return { element: await this.reread(params.id) };
+  }
+
+  // The names this node publishes right now. Read through attestation so the
+  // list is the reader's own answer for the CURRENT tree - an action list
+  // remembered from the walk could name a verb the page has since withdrawn.
+  private async publishedActionsOf(id: string): Promise<string[]> {
+    const attested = await this.attestElement({ id });
+    return (attested.element?.actions ?? []).map((action) => action.name);
   }
 
   async submitElement(_params: SubmitElementParams): Promise<SubmitElementResult> {
+    // Deliberately does NOT resolve the id first: a verb that refuses one way
+    // for an element it knows and another way for one it does not is an
+    // existence oracle wearing an error class.
     this.refuseToPerform("submit");
   }
 
-  async setElementValue(_params: SetElementValueParams): Promise<SetElementValueResult> {
-    this.refuseToPerform("set a value");
+  async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {
+    this.assertPerformable("set a value");
+    const ref = this.nodeRefFor(params.id);
+    // The bounds come from the element, every time, immediately before the
+    // write. Refused BEFORE the call: a page clamps a range input silently and
+    // then reports success, so a check afterwards would be a report about a
+    // value the element never held (ADR-0045 clause 4).
+    const published = await this.publishedRangeOf(params.id);
+    if (published !== undefined && (params.value < published.minimum || params.value > published.maximum)) {
+      throw new MagnitudeOutOfRangeError(
+        `${params.value} is outside the range this element published (${published.minimum} to ${published.maximum}) - refused rather than clamped into a lie`,
+      );
+    }
+    if (published === undefined) {
+      // No range published means no bounds to check against, and inventing one
+      // here is exactly what clause 4 forbids. The operation is not offered.
+      throw new OperationNotExposedError(
+        `this element publishes no range for its own magnitude, so there is nothing to set a value against - never offered, rather than turned off`,
+      );
+    }
+    await setMagnitudeOf(this.channel, ref, params.value);
+    return { element: await this.reread(params.id) };
   }
 
-  async setElementText(_params: SetElementTextParams): Promise<SetElementTextResult> {
-    this.refuseToPerform("set text");
+  private async publishedRangeOf(id: string): Promise<Range | undefined> {
+    const attested = await this.attestElement({ id });
+    for (const operation of attested.element?.operations ?? []) {
+      if (operation.operation === "setValue") return operation.range;
+    }
+    return undefined;
   }
 
-  async setElementCaret(_params: SetElementCaretParams): Promise<SetElementCaretResult> {
-    this.refuseToPerform("place the caret");
+  async setElementText(params: SetElementTextParams): Promise<SetElementTextResult> {
+    this.assertPerformable("set text");
+    const ref = this.nodeRefFor(params.id);
+    if (params.offset === undefined) {
+      await setValueOf(this.channel, ref, params.text);
+      return { element: await this.reread(params.id) };
+    }
+    // An insert at an offset past the end is refused rather than moved to the
+    // end. Measured on the other route and true here for the same reason: a
+    // write that lands somewhere other than where it was aimed is a wrong write
+    // that returned success.
+    const length = await contentLength(this.channel, ref);
+    if (params.offset < 0 || params.offset > length) {
+      throw new TextOffsetOutOfRangeError(
+        `offset ${params.offset} is outside this element's text, which holds ${length} characters - refused rather than moved to the end`,
+      );
+    }
+    const before = await contentOf(this.channel, ref);
+    await setValueOf(this.channel, ref, before.slice(0, params.offset) + params.text + before.slice(params.offset));
+    return { element: await this.reread(params.id) };
   }
 
-  async revealElement(_params: RevealElementParams): Promise<RevealElementResult> {
-    this.refuseToPerform("reveal an element");
+  async setElementCaret(params: SetElementCaretParams): Promise<SetElementCaretResult> {
+    this.assertPerformable("place the caret");
+    const ref = this.nodeRefFor(params.id);
+    if (params.offset !== undefined) {
+      const length = await contentLength(this.channel, ref);
+      if (params.offset < 0 || params.offset > length) {
+        throw new TextOffsetOutOfRangeError(
+          `offset ${params.offset} is outside this element's text, which holds ${length} characters - refused rather than moved to the end`,
+        );
+      }
+    }
+    await setCaretOf(this.channel, ref, params.offset);
+    return { element: await this.reread(params.id) };
+  }
+
+  async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
+    this.assertPerformable("reveal an element");
+    const ref = this.nodeRefFor(params.id);
+    await revealIn(this.channel, ref);
+    return { element: await this.reread(params.id) };
   }
 
   async unsubscribeElement(subscriptionId: string): Promise<void> {
@@ -380,5 +516,13 @@ export class CdpReplayBackend extends CdpBackend {
     throw new RecordingNotPerformableError(
       `the replay route cannot ${verb}: it answers from a recording, and a recording cannot be acted upon`,
     );
+  }
+
+  // The reader half is inherited wholesale; the performing half must not be.
+  // The live route's verbs are real now, so without this the tape would run
+  // them - resolving ids, reading nodes, and refusing (if at all) for the wrong
+  // reason. It refuses first, by name.
+  protected override assertPerformable(verb: string): void {
+    this.refuseToPerform(verb);
   }
 }
