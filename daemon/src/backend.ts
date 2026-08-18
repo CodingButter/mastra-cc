@@ -123,6 +123,53 @@ export class WriteNotObservedError extends Error {}
 // with a search function bolted on (ADR-0045 clause 2).
 export class UnpublishedActionError extends Error {}
 
+// The DAEMON cannot describe what this commit would do, so it refuses to make
+// it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
+// can review"). This is not a judgement of the caller's attestation - the
+// caller's sentence is their restatement, and the daemon has no way to check
+// whether it is true. It is the daemon's own inability, and it is the only
+// honest reason to stop: the machine's description is what a human would
+// review, and there is nothing to review if the machine cannot write one.
+//
+// It sits on the SEAM rather than in the server because only the backend can
+// answer it. Describing a commit means reading the element as it stands and
+// saying which of its own verbs would fire; a server that guessed from the id
+// would be inventing exactly the description this error exists to demand.
+export class AttestationFailedError extends Error {}
+
+// The daemon's own description of a commit, derived from the element as it
+// stands. Shared by both routes deliberately: the question "can this machine
+// say what it is about to do" has one answer, and two routes answering it
+// differently would make the refusal a property of the instrument rather than
+// of the commit.
+//
+// An element is describable when it names itself and publishes exactly one
+// verb. Both halves are load-bearing and neither is a formality. A nameless
+// element yields "click something" - a sentence a reviewer cannot act on. An
+// element publishing several verbs yields a description that names one of them
+// while a different one might fire, and approving a guess is worse than
+// refusing outright. The refusal names the check that ran and what would change
+// the answer, per the schema's contract for every refusal on this wire.
+//
+// NOT carried on the wire. The submit result's shape is frozen (element |
+// refusal) and this phase does not redesign it; the description's job here is
+// to exist or to stop the commit. The surface that shows it to a human is the
+// face's, and it reads the same function.
+export function commitDescription(element: { name: string; actions: { name: string }[] }): string {
+  const verbs = element.actions.map((action) => action.name);
+  if (element.name.trim() === "") {
+    throw new AttestationFailedError(
+      `refused by the attestation check: this daemon cannot describe what committing on this element would do - the element publishes no name, so any description would name nothing (it publishes ${JSON.stringify(verbs)}); an element that names itself can be described`,
+    );
+  }
+  if (verbs.length !== 1) {
+    throw new AttestationFailedError(
+      `refused by the attestation check: this daemon cannot describe what committing on ${JSON.stringify(element.name)} would do - it publishes ${verbs.length === 0 ? "no verb to perform" : `${verbs.length} verbs (${JSON.stringify(verbs)}) and which one commits would be a guess`}; an element publishing exactly one verb can be described`,
+    );
+  }
+  return `perform ${JSON.stringify(verbs[0])} on ${JSON.stringify(element.name)}`;
+}
+
 // A registered watch on a channel's own reader. Closing it stops the sink
 // being fed; it never closes the channel. Seam vocabulary, not transport
 // vocabulary: both routes register watches, and neither borrows the other's
@@ -198,6 +245,25 @@ export interface Backend {
   subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription>;
   unsubscribeElement(subscriptionId: string): Promise<void>;
 
+  // Which application an id this backend answered lives in, or undefined for an
+  // id it never answered. The same fact BackendSubscription.application states,
+  // asked about an element rather than about a watch - and only the backend can
+  // state it, because it is a fact about the tree (the seam's own words at
+  // BackendSubscription above).
+  //
+  // It exists because a verb cannot be attributed to itself without it. The
+  // server mints a cause id for every effect verb, but attribute() answers
+  // `self` only when the cause NAMES the application the change happened in;
+  // with no name it answers `unattributed`, which is the honest answer to "we
+  // do not know" and the wrong one for a change the daemon just caused. This is
+  // the question openApplication answers from the catalog and an element verb
+  // has no catalog to ask.
+  //
+  // Deliberately not a promise of knowledge: an id this backend never answered
+  // gets undefined, the verb names nothing, and every concurrent change stays
+  // unattributed. The daemon abstains rather than guessing (ADR-0039).
+  applicationOfElement(id: string): string | undefined;
+
   // The three effect verbs (schema 1.2.0's contracts, unchanged and not
   // redesigned here). Each throws UnperformableElementError for an id this
   // backend never answered, and EffectUnsupportedError where the route does not
@@ -207,6 +273,12 @@ export interface Backend {
   // Anything else is UnpublishedActionError - never the nearest match, never a
   // normalised synonym: click, doDefault and activate stay distinct.
   activateElement(params: ActivateElementParams): Promise<ActivateElementResult>;
+  // Submit performs a commit the machine can DESCRIBE. The backend derives that
+  // description from the element as it stands - its own name and its own single
+  // published verb - and throws AttestationFailedError when it cannot, which is
+  // the ATTESTATION_FAILED refusal (ADR-0008 rule 2). The caller's attestation
+  // is carried, never validated against it: two restatements of the same commit
+  // are both honest, and the daemon has no way to rank them.
   submitElement(params: SubmitElementParams): Promise<SubmitElementResult>;
 
   // The four operations (schema 1.4.0, ADR-0045). An element that does not
@@ -226,6 +298,7 @@ export const BACKEND_METHODS = [
   "attestElement",
   "subscribeElement",
   "unsubscribeElement",
+  "applicationOfElement",
   "editElement",
   "activateElement",
   "submitElement",

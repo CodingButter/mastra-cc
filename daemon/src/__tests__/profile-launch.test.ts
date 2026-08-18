@@ -58,6 +58,7 @@ function spyBackend(elements: SemanticElement[]) {
     subscribeElement: async () => {
       throw new Error("this test never watches");
     },
+    applicationOfElement: () => undefined,
     unsubscribeElement: async () => undefined,
     close: async () => undefined,
   };
@@ -116,6 +117,7 @@ describe("a launched profile is readable", () => {
         treeTouched = true;
         throw new Error("the authority gate touched the backend");
       },
+      applicationOfElement: () => undefined,
       unsubscribeElement: async () => {
         treeTouched = true;
       },

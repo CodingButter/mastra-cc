@@ -10,8 +10,16 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 // (ADR-0019: capability is not authority). Since M2.1 the dispatch table
 // carries one activate-class entry - openApplication - whose enforcement
 // timing B11 pins; since M2.3 (schema 1.2.0, ADR-0037) the edit, activate and
-// submit element methods are DEFINED and refused by the scope gate, naming
-// themselves; everything else beyond the schema still dies at the gate.
+// submit element methods are DEFINED; everything else beyond the schema still
+// dies at the gate.
+//
+// What changed under those three verbs, and what did not: the seam behind them
+// now performs, and every session in this file is started without effect
+// authority, so the scope gate still answers each call. That is why these tests
+// are kept rather than rewritten - the refusal is now a DECISION rather than
+// the only thing the daemon could do, and a decision has to keep answering the
+// same way for a session that holds nothing. The authority-held direction, and
+// the timing of the check, live in launch-authority.test.ts.
 
 describe("the effect-class gate", () => {
   // visibility mirrors the union main.ts composes at boot: the tape's yad must
@@ -56,7 +64,7 @@ describe("the effect-class gate", () => {
   });
 });
 
-describe("the scope gate: edit, activate and submit are defined and refused by name", () => {
+describe("the scope gate: a session holding no effect authority is refused by name", () => {
   const backend = registry.replay({ visibility: new Set(["yad"]) });
 
   it("refuses editElement with the full byte-stable constant", async () => {
@@ -106,6 +114,7 @@ describe("the scope gate: edit, activate and submit are defined and refused by n
       subscribeElement: async () => {
         throw new Error("the scope gate touched the backend");
       },
+      applicationOfElement: () => undefined,
       unsubscribeElement: async () => {
         throw new Error("the scope gate touched the backend");
       },

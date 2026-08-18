@@ -45,6 +45,7 @@ function watchableBackend() {
         },
       };
     },
+    applicationOfElement: () => undefined,
     unsubscribeElement: async (subscriptionId) => {
       if (!sinks.has(subscriptionId)) throw new UnknownSubscriptionError(subscriptionId);
       closed.push(subscriptionId);

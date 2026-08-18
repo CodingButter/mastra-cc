@@ -26,6 +26,7 @@ import {
   type BackendChange,
   type BackendSubscription,
   type ChannelWatch,
+  commitDescription,
   EffectUnsupportedError,
   MagnitudeOutOfRangeError,
   mintSubscriptionId,
@@ -113,6 +114,12 @@ export class CdpBackend implements Backend {
   // are filled while walking, where the answer is already known.
   private readonly roleOf = new Map<string, Role>();
   private readonly mintedByNode = new Map<string, { id: string; role: Role }>();
+  // id -> the application every answered element lives in. On this route that
+  // is one name for the whole tree - the browser's own product name, the same
+  // one a watch reports (ADR-0038: the browser reports its product name
+  // whichever profile it opened). Filled where the version reply is already in
+  // hand, so answering costs no extra exchange.
+  private readonly applicationOf = new Map<string, string>();
   // subscription id -> the channel watch feeding it. Per backend, closed when
   // the backend closes.
   private readonly watches = new Map<string, ChannelWatch>();
@@ -122,8 +129,28 @@ export class CdpBackend implements Backend {
     this.visibility = visibility;
   }
 
+  // The product name most recently answered by the version exchange. Every
+  // path that mints an id passes through here first (the walk asks version
+  // before the visibility gate), so the name is in hand by the time an element
+  // is recorded - and remembering it costs no exchange the walk did not
+  // already make.
+  private lastProductName: string | undefined;
+
   private async version(): Promise<VersionReply> {
-    return (await this.channel.exchange({ kind: "version" })) as VersionReply;
+    const reply = (await this.channel.exchange({ kind: "version" })) as VersionReply;
+    this.lastProductName = productName(reply);
+    return reply;
+  }
+
+  // The application every element on this route lives in: one browser, one
+  // name. Undefined for an id never answered, and undefined before any version
+  // reply - never a guessed name (ADR-0039).
+  applicationOfElement(id: string): string | undefined {
+    return this.applicationOf.get(id);
+  }
+
+  private recordApplication(id: string): void {
+    if (this.lastProductName !== undefined) this.applicationOf.set(id, this.lastProductName);
   }
 
   private async pageTargets(): Promise<string[]> {
@@ -151,6 +178,7 @@ export class CdpBackend implements Backend {
   private applicationElement(version: VersionReply): SemanticElement {
     const id = deriveId("application", "browser", String(version.webSocketDebuggerUrl ?? ""));
     this.answered.set(id, { kind: "browser" });
+    this.recordApplication(id);
     return {
       id,
       role: "application",
@@ -183,6 +211,7 @@ export class CdpBackend implements Backend {
       nodeId: node.nodeId,
     });
     this.roleOf.set(id, role);
+    this.recordApplication(id);
     if (node.backendDOMNodeId !== undefined) {
       this.mintedByNode.set(`${targetId}/${node.backendDOMNodeId}`, { id, role });
     }
@@ -393,11 +422,21 @@ export class CdpBackend implements Backend {
     return (attested.element?.actions ?? []).map((action) => action.name);
   }
 
-  async submitElement(_params: SubmitElementParams): Promise<SubmitElementResult> {
-    // Deliberately does NOT resolve the id first: a verb that refuses one way
-    // for an element it knows and another way for one it does not is an
-    // existence oracle wearing an error class.
-    this.refuseToPerform("submit");
+  // Submit on this route, same contract as the desktop's: the daemon writes its
+  // own description of the commit first, from the node as the CURRENT tree
+  // answers it, and refuses when it cannot (ADR-0008 rule 2). The route
+  // difference the stamp already makes visible is in what gets described, never
+  // in whether describing is required - a commit reviewable on one route and
+  // unreviewable on the other would make the check a property of the instrument.
+  async submitElement(params: SubmitElementParams): Promise<SubmitElementResult> {
+    // Asked as a tape before anything is resolved: a recording refuses as a
+    // recording, not as an element it happens not to hold.
+    this.assertPerformable("commit");
+    const ref = this.nodeRefFor(params.id);
+    const element = await this.reread(params.id);
+    commitDescription(element);
+    await performDerivedAction(this.channel, ref, element.actions[0]!.name, [element.actions[0]!.name]);
+    return { element: await this.reread(params.id) };
   }
 
   async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {

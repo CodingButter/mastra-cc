@@ -6,8 +6,12 @@ import { registry } from "../backends/registry.js";
 import { CATALOG, type LaunchCatalog } from "../launch/recipes.js";
 import { OwnershipTable } from "../launch/table.js";
 import {
+  ACTIVATE_SCOPE_REFUSAL,
   ALREADY_RUNNING_REFUSAL,
+  BACKEND_UNREADABLE_REFUSAL,
   COULD_NOT_START_REFUSAL,
+  EDIT_SCOPE_REFUSAL,
+  SUBMIT_SCOPE_REFUSAL,
   UNAVAILABLE_REFUSAL,
   handleRequest,
   type LaunchContext,
@@ -105,6 +109,7 @@ describe("launch authority", () => {
         treeTouched = true;
         throw new Error("the authority gate touched the backend");
       },
+      applicationOfElement: () => undefined,
       unsubscribeElement: async () => {
         treeTouched = true;
       },
@@ -201,6 +206,124 @@ describe("launch authority", () => {
       expect(table.entries()[0]?.pid).toBe(pid);
     } finally {
       process.kill(pid, "SIGKILL");
+    }
+  });
+});
+
+// The timing half of B11 for the three element verbs. The pin
+// (tools/pins/b11.mjs) reads the dispatch table's DECLARATION; these assert the
+// declaration is true of the running code - that a session without the class is
+// refused BEFORE the backend is touched. That distinction is the whole point:
+// an edit filtered at result time has already typed into the field, and a
+// submit filtered at result time has already sent the email.
+//
+// The authority driven here is the one the server composes at boot from
+// --allow. It is authority, NOT the per-application capability configuration -
+// that surface arrives in segment 3 and hangs inside holdsEffectAuthority,
+// which already takes the application it will decide about.
+describe("effect authority: the three element verbs are refused before the backend is reached", () => {
+  // Every method throws. If any verb reaches this backend to produce its
+  // refusal, the test fails loudly instead of passing on a refusal that came
+  // from the wrong place.
+  const untouchable: Backend = {
+    name: "untouchable",
+    queryElements: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    attestElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    subscribeElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    applicationOfElement: () => undefined,
+    unsubscribeElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    editElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    activateElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    submitElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    setElementValue: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    setElementText: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    setElementCaret: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    revealElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    close: async () => undefined,
+  };
+
+  const call = async (method: string, params: Record<string, unknown>, context: LaunchContext) => {
+    const response = await handleRequest({ type: "request", id: 1, method, params }, untouchable, context);
+    return response.result as { element?: SemanticElement; refusal?: string };
+  };
+
+  const cases = [
+    { method: "editElement", params: { id: "el-000000000000", value: "typed" }, refusal: EDIT_SCOPE_REFUSAL, allow: "edit" },
+    { method: "activateElement", params: { id: "el-000000000000", action: "click" }, refusal: ACTIVATE_SCOPE_REFUSAL, allow: "activate" },
+    { method: "submitElement", params: { id: "el-000000000000", attestation: "sends the message" }, refusal: SUBMIT_SCOPE_REFUSAL, allow: "submit" },
+  ];
+
+  for (const { method, params, refusal } of cases) {
+    it(`${method} is refused before the call when this session holds no authority for its class`, async () => {
+      const result = await call(method, params, launch({ allows: new Set() }));
+      expect(result.refusal).toBe(refusal);
+      expect(result.element).toBeUndefined();
+    });
+  }
+
+  it("the three refusals are answerable with no desktop at all - none of them names an element", async () => {
+    // A refusal derived from the element would need the element read, which is
+    // a backend call this session's authority never earned (ADR-0008 clause 5:
+    // a refusal must be derived from a check that actually ran - and the check
+    // that ran here is the authority one).
+    for (const { params, refusal } of cases) {
+      expect(refusal).not.toContain(params.id as string);
+      expect(refusal).toContain("scope gate");
+    }
+  });
+
+  it("holding one class does not grant another - the classes are separate authorities", async () => {
+    // A session given edit must still be refused activate and submit. The
+    // failure this pins is a gate that checks "holds any effect class at all",
+    // which would make --allow edit a grant to send email.
+    const editOnly = launch({ allows: new Set(["edit"]) });
+    for (const { method, params, refusal, allow } of cases) {
+      if (allow === "edit") continue;
+      const result = await call(method, params, editOnly);
+      expect(result.refusal).toBe(refusal);
+    }
+  });
+
+  it("holding the class gets past the gate and reaches the backend", async () => {
+    // The other side of the same property, and the reason the tests above are
+    // not vacuous: with the class held, the verb DOES reach the backend - the
+    // untouchable one, whose throw becomes the daemon's one honest constant.
+    // A gate that refused everything unconditionally would pass every
+    // assertion above and fail this one.
+    //
+    // The refusal arrives at the RESPONSE level rather than inside a result:
+    // a backend that threw produced no result to carry one, and the scope gate
+    // never reached is the whole point.
+    for (const { method, params, allow } of cases) {
+      const response = await handleRequest(
+        { type: "request", id: 1, method, params },
+        untouchable,
+        launch({ allows: new Set([allow]) }),
+      );
+      expect(response.refusal).toBe(BACKEND_UNREADABLE_REFUSAL);
+      expect(response.result).toBeUndefined();
     }
   });
 });

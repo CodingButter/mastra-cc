@@ -101,6 +101,7 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
       subscribeElement: async () => {
         throw new Error("this test never watches");
       },
+      applicationOfElement: () => undefined,
       unsubscribeElement: async () => undefined,
       close: async () => undefined,
     };

@@ -24,7 +24,7 @@ import {
   type BackendChange,
   type BackendSubscription,
   type ChannelWatch,
-  EffectUnsupportedError,
+  commitDescription,
   mintSubscriptionId,
   UnknownSubscriptionError,
   UnperformableElementError,
@@ -292,6 +292,12 @@ export class AtspiBackend implements Backend {
     };
   }
 
+  // Filled while walking, where the answering application is already known. An
+  // id this backend never answered is absent, and absence is the answer.
+  applicationOfElement(id: string): string | undefined {
+    return this.applicationOf.get(id);
+  }
+
   // THE EFFECT HALF.
   //
   // Every verb below runs the same three steps in the same order, and the order
@@ -323,19 +329,35 @@ export class AtspiBackend implements Backend {
     return this.performing(params.id, (ref) => performAction(this.channel, ref, params.action));
   }
 
-  // Submit is the one verb this phase does not perform. The seam carries it so
-  // no route is left abstract, and it refuses BY NAME rather than quietly
-  // returning an unchanged element - a commit that silently did nothing and
-  // then reported the world it failed to change is the worst possible answer.
-  // The attestation half arrives with the phase that builds it.
-  // The id is deliberately NOT looked up first. A verb that refuses one way for
-  // an element it knows and another way for one it does not is an existence
-  // oracle wearing an error class (ADR-0008 rule 6): the route-level refusal
-  // comes first, so every caller hears the same sentence.
-  async submitElement(_params: SubmitElementParams): Promise<SubmitElementResult> {
-    throw new EffectUnsupportedError(
-      "this route does not commit yet - the attestation this verb requires is not built, and committing without it is what the contract forbids",
-    );
+  // Submit commits by performing the element's own single published verb, and
+  // only after the daemon has written its OWN description of what that commit
+  // does. The description is derived here, from the element as it stands right
+  // now, because that is the only place it can be honest: the walk's remembered
+  // list could name a verb the application has since withdrawn, and a
+  // description assembled from an id would be a sentence about nothing.
+  //
+  // Two elements cannot be described, and both refuse rather than commit:
+  // one that publishes no verb at all (there is nothing to say would happen),
+  // and one that publishes several (which of them fires is a guess, and a guess
+  // is what a reviewer would be asked to approve). The caller's attestation is
+  // carried through untouched - it is their restatement, not a claim the daemon
+  // can check - and the daemon's own description is what makes the commit
+  // reviewable (ADR-0008 rule 2, ADR-0021).
+  async submitElement(params: SubmitElementParams): Promise<SubmitElementResult> {
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      // Byte-identical to every other unperformable id (ADR-0008 rule 6).
+      throw new UnperformableElementError(
+        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    const element = await this.readElement(ref);
+    // Throws AttestationFailedError when the daemon cannot write the sentence.
+    // Asked BEFORE the commit, because a description produced afterwards would
+    // describe something that has already happened.
+    commitDescription(element);
+    await performAction(this.channel, ref, element.actions[0]!.name);
+    return { element: await this.readElement(ref) };
   }
 
   async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {

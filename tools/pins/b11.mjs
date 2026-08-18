@@ -43,6 +43,24 @@ if (nonObserve.length === 0) {
   fail("pin-b11: no non-observe entry in the dispatch table - the pin would pass vacuously (it exists because one does)");
 }
 
+// The three element verbs are named, not merely counted. Every check below is
+// "every non-observe entry is marked before-call", which a table that no longer
+// carries these verbs satisfies perfectly - going green by deletion. Each of
+// them performs a real change on a real desktop since M2.6 segment 2, so their
+// presence in the table is part of what this pin asserts, and their CLASS is
+// too: an edit re-declared as observe would be enforced at result time, which
+// for a verb that has already typed into a field is enforcement of nothing.
+const REQUIRED = { editElement: "edit", activateElement: "activate", submitElement: "submit" };
+for (const [method, effectClass] of Object.entries(REQUIRED)) {
+  const entry = entries.find((e) => e.method === method);
+  if (entry === undefined) {
+    fail(`pin-b11: the dispatch table has no "${method}" entry - it performs a real change and must be declared and enforced, not absent`);
+  }
+  if (entry.effectClass !== effectClass) {
+    fail(`pin-b11: "${method}" is declared ${entry.effectClass}-class, expected ${effectClass}-class - the class is what decides when enforcement runs`);
+  }
+}
+
 const violations = [];
 for (const entry of nonObserve) {
   if (entry.enforcement !== "before-call") {

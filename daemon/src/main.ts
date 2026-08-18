@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
+import { CAPABILITY_NAMES, SCHEMA_DIGEST, type CapabilityName } from "@mastra-cc/protocol-types";
 import { registry } from "./backends/registry.js";
 import { normalise } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
@@ -107,6 +107,23 @@ const { launchPermits, visibility } = (() => {
     throw error;
   }
 })();
+// --allow <class>: session-scoped authority to PERFORM a class of effect on an
+// element, the effect-side analog of --permit (ADR-0034 - it dies with this
+// process). Composed once here, like every other name set. The class must be
+// one the schema defines: an unknown one is an operator's typo, and a typo that
+// silently grants nothing looks exactly like a daemon that is broken.
+// Segment 3's per-application capability configuration attaches inside
+// holdsEffectAuthority; this flag stays the session-wide answer.
+const allows = new Set(argAll("--allow")) as Set<CapabilityName>;
+for (const cls of allows) {
+  if (!CAPABILITY_NAMES.includes(cls) || cls === "observe" || cls === "launch") {
+    console.error(
+      `daemon: --allow must name one of the element-effect classes: edit, activate, submit (got ${JSON.stringify(cls)})`,
+    );
+    process.exit(2);
+  }
+}
+
 const backend = registry[backendName]({ capture, fixture, visibility });
 
 const query = arg("--query");
@@ -145,7 +162,7 @@ const table = new OwnershipTable();
 const server = await startServer({
   socketPath,
   backend,
-  launch: { permits: launchPermits, catalog, table },
+  launch: { permits: launchPermits, allows, catalog, table },
   visibility,
 });
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);

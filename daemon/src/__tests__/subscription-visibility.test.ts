@@ -48,6 +48,7 @@ function twoApplications() {
       sinks.set(subscriptionId, { application, sink });
       return { subscriptionId, application, close: async () => void sinks.delete(subscriptionId) };
     },
+    applicationOfElement: () => undefined,
     unsubscribeElement: async (subscriptionId) => {
       if (!sinks.delete(subscriptionId)) throw new UnknownSubscriptionError(subscriptionId);
     },

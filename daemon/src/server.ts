@@ -18,10 +18,18 @@ import {
   type Backend,
   type BackendChange,
   type BackendSubscription,
+  AttestationFailedError,
   DeafWatchError,
+  EffectUnsupportedError,
+  MagnitudeOutOfRangeError,
+  OperationNotExposedError,
+  TextOffsetOutOfRangeError,
   UnknownSubscriptionError,
+  UnperformableElementError,
+  UnpublishedActionError,
   UnwatchableElementError,
   WatchUnsupportedError,
+  WriteNotObservedError,
 } from "./backend.js";
 import { normalise } from "./backends/atspi/names.js";
 import { isVisible, type Visibility } from "./grants.js";
@@ -47,9 +55,35 @@ export interface LaunchContext {
   /** bounded poll for the launched application to appear in the tree */
   pollBudgetMs?: number;
   pollIntervalMs?: number;
+  /**
+   * The effect classes this session may exercise on an element, composed once
+   * at boot from --allow, exactly as permits are composed from --permit
+   * (ADR-0034: session-scoped, dies with the process). Absent means the empty
+   * set, so a daemon started without it performs nothing - deny by default, the
+   * same posture the grants file takes.
+   *
+   * THE NAMED SEAM FOR SEGMENT 3. Capability configuration is per-application
+   * and durable; this is per-session and class-wide. Segment 3 hangs the
+   * per-application answer inside holdsEffectAuthority below, which is why that
+   * function takes the application it is deciding about even though this
+   * session-wide set does not yet consult it. Widening --permit to mean this
+   * was considered and rejected: a launch permit is authority to START an
+   * application, and ADR-0038 forbids an observe-side join widening authority.
+   */
+  allows?: ReadonlySet<string>;
 }
 
 const NO_PERMITS: LaunchContext = { permits: new Set(), catalog: CATALOG, table: new OwnershipTable() };
+
+// The authority question, asked before the backend is ever touched. `application`
+// is the seam segment 3 fills: it is accepted and deliberately unconsulted here,
+// because the answer this session can give is class-wide. A caller reading this
+// should not conclude the parameter is decoration - it is the shape the
+// per-application answer plugs into, and the alternative (adding it later) would
+// change every call site at exactly the moment the enforcement matters most.
+export function holdsEffectAuthority(launch: LaunchContext, effectClass: string, _application?: string): boolean {
+  return (launch.allows ?? new Set()).has(effectClass);
+}
 
 // ONE constant for both the unknown name and the unpermitted name. The
 // byte-equality IS the security property (ADR-0008 rule 6): a refusal must
@@ -82,24 +116,28 @@ export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
 // refusal that names itself - "not a method of the schema" cannot distinguish
-// "not built yet" from "hidden". The handlers below are pure refusals: they
-// never touch a backend. The seam BEHIND them now does carry these methods -
-// the backends learned to perform in this segment - which is exactly why the
-// refusal here has to be the deliberate act it is rather than a consequence of
-// there being nothing to call. Each constant names the check that ran, the
-// method's class, and what would change the answer. What is still missing is
-// the authority surface, not the capability. Authority is checked before capability (ADR-0019),
-// so submitElement's refusal is the scope gate's - never a claim about the
-// attestation's validity, even though the contract requires one (ADR-0021:
-// waiving it is inexpressible on the wire).
+// "not built yet" from "hidden". Each constant names the check that ran, the
+// method's class, and what would change the answer.
+//
+// These are no longer pure refusals. The seam behind them performs, and the
+// authority surface exists (--allow, session-scoped, ADR-0034), so the gate now
+// decides rather than always refusing. What did not change is WHEN it decides:
+// before the call, never after the result, because filtering a response does
+// not unsend the email. A session that was not given the class hears the
+// constant below, byte-for-byte, and the backend is never touched to produce it.
+//
+// Authority is checked before capability (ADR-0019) and, for submit,
+// before the attestation is ever examined (ADR-0021: waiving the attestation is
+// inexpressible on the wire, and refusing for want of authority says nothing
+// about whether the attestation was any good).
 export const EDIT_SCOPE_REFUSAL =
-  'refused by the scope gate: "editElement" is edit-class and this session holds no edit authority for any application - the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
+  'refused by the scope gate: "editElement" is edit-class and this session holds no edit authority for any application - this session was started without that class, and only a session started with it can perform this method';
 
 export const ACTIVATE_SCOPE_REFUSAL =
-  'refused by the scope gate: "activateElement" is activate-class and this session holds no activate authority for any element - the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
+  'refused by the scope gate: "activateElement" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method';
 
 export const SUBMIT_SCOPE_REFUSAL =
-  'refused by the scope gate: "submitElement" is submit-class and this session holds no submit authority for any application - authority is checked before the attestation is ever examined, the grants surface for this class arrives with a later milestone, and until it does this method always refuses';
+  'refused by the scope gate: "submitElement" is submit-class and this session holds no submit authority for any application - authority is checked before the attestation is ever examined, this session was started without that class, and only a session started with it can perform this method';
 
 // The four operations (schema version 1.4.0, ADR-0045 and ADR-0047). They are
 // on the wire for the same reason the three verbs above have been since 1.2.0:
@@ -365,6 +403,81 @@ async function unsubscribeElement(
   }
 }
 
+// The three element verbs, each refused BEFORE the backend is reached when this
+// session does not hold the class. Written as named functions rather than inline
+// in the table because the table's entries must each stay on one line - and
+// because the ordering inside them is the property the timing test pins: the
+// authority question is asked first, and every path that answers it "no" returns
+// without an await against the backend.
+//
+// The backend's own error vocabulary is translated to refusals here, at the one
+// place that knows both sides. Each translation keeps the backend's sentence
+// intact: the seam already names the check that ran and what would change the
+// answer, and rewording it here would put the daemon's voice over the
+// application's measurement.
+//
+// Naming the target is what makes the change self-attributed, and it happens
+// here for the same reason openApplication does it after its permit check: the
+// name is asked for only once the call is allowed to proceed. The backend
+// answers from what it already recorded while walking, so this costs no
+// exchange - and an id the backend never answered names nothing, which leaves
+// every concurrent change unattributed rather than guessed (ADR-0039).
+async function performEffect(
+  effectClass: string,
+  refusal: string,
+  launch: LaunchContext,
+  backend: Backend,
+  id: string,
+  perform: () => Promise<{ element: SemanticElement }>,
+): Promise<{ element?: SemanticElement; refusal?: string }> {
+  if (!holdsEffectAuthority(launch, effectClass)) return { refusal };
+  const application = backend.applicationOfElement(id);
+  if (application !== undefined) causeNames(application);
+  try {
+    return await perform();
+  } catch (error) {
+    // Every one of these is a refusal the caller can act on, and each carries
+    // the sentence the seam wrote. AttestationFailedError is the daemon's own
+    // inability to describe a commit (ADR-0008 rule 2) and is deliberately in
+    // the same list: it refuses the call, it does not fail it.
+    if (
+      error instanceof AttestationFailedError ||
+      error instanceof UnperformableElementError ||
+      error instanceof UnpublishedActionError ||
+      error instanceof OperationNotExposedError ||
+      error instanceof MagnitudeOutOfRangeError ||
+      error instanceof TextOffsetOutOfRangeError ||
+      error instanceof WriteNotObservedError ||
+      error instanceof EffectUnsupportedError
+    ) {
+      return { refusal: error.message };
+    }
+    throw error;
+  }
+}
+
+function editElement(params: { id?: unknown; value?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const value = typeof params.value === "string" ? params.value : "";
+  return performEffect("edit", EDIT_SCOPE_REFUSAL, launch, backend, id, () => backend.editElement({ id, value }) as Promise<{ element: SemanticElement }>);
+}
+
+function activateElement(params: { id?: unknown; action?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const action = typeof params.action === "string" ? params.action : "";
+  return performEffect("activate", ACTIVATE_SCOPE_REFUSAL, launch, backend, id, () => backend.activateElement({ id, action }) as Promise<{ element: SemanticElement }>);
+}
+
+// The attestation is carried and never validated. The daemon cannot check
+// whether the caller's restatement is TRUE - two honest restatements of one
+// commit differ - so the check that means something is the daemon's own, made
+// on the seam against the element as it stands (AttestationFailedError above).
+function submitElement(params: { id?: unknown; attestation?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const attestation = typeof params.attestation === "string" ? params.attestation : "";
+  return performEffect("submit", SUBMIT_SCOPE_REFUSAL, launch, backend, id, () => backend.submitElement({ id, attestation }) as Promise<{ element: SemanticElement }>);
+}
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -381,9 +494,9 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b, _l, k) => subscribeElement((p ?? {}) as never, b, k) },
   unsubscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, _b, _l, k) => unsubscribeElement((p ?? {}) as never, k) },
   openApplication: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => openApplication((p ?? {}) as { name?: string }, b, l) },
-  editElement: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: EDIT_SCOPE_REFUSAL }) },
-  activateElement: { effectClass: "activate", enforcement: "before-call", handler: async () => ({ refusal: ACTIVATE_SCOPE_REFUSAL }) },
-  submitElement: { effectClass: "submit", enforcement: "before-call", handler: async () => ({ refusal: SUBMIT_SCOPE_REFUSAL }) },
+  editElement: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => editElement((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },
+  activateElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => activateElement((p ?? {}) as { id?: unknown; action?: unknown }, b, l) },
+  submitElement: { effectClass: "submit", enforcement: "before-call", handler: (p, b, l) => submitElement((p ?? {}) as { id?: unknown; attestation?: unknown }, b, l) },
   setElementValue: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_VALUE_SCOPE_REFUSAL }) },
   setElementText: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_TEXT_SCOPE_REFUSAL }) },
   setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_CARET_SCOPE_REFUSAL }) },

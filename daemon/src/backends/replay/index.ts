@@ -93,6 +93,12 @@ export class ReplayBackend implements Backend {
     return this.inner.subscribeElement(id, sink);
   }
 
+  // Shares the live reader here, as with every observe-side question: the
+  // recorded world names its applications exactly as the live one does.
+  applicationOfElement(id: string): string | undefined {
+    return this.inner.applicationOfElement(id);
+  }
+
   unsubscribeElement(subscriptionId: string): Promise<void> {
     return this.inner.unsubscribeElement(subscriptionId);
   }
