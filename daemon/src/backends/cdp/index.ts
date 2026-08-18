@@ -1,17 +1,33 @@
 import type {
+  ActivateElementParams,
+  ActivateElementResult,
   AttestElementParams,
   AttestElementResult,
+  EditElementParams,
+  EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  RevealElementParams,
+  RevealElementResult,
   Role,
   SemanticElement,
+  SetElementCaretParams,
+  SetElementCaretResult,
+  SetElementTextParams,
+  SetElementTextResult,
+  SetElementValueParams,
+  SetElementValueResult,
+  SubmitElementParams,
+  SubmitElementResult,
 } from "@mastra-cc/protocol-types";
 import {
   type Backend,
   type BackendChange,
   type BackendSubscription,
   type ChannelWatch,
+  EffectUnsupportedError,
   mintSubscriptionId,
+  RecordingNotPerformableError,
   UnknownSubscriptionError,
   UnwatchableElementError,
 } from "../../backend.js";
@@ -276,6 +292,54 @@ export class CdpBackend implements Backend {
     };
   }
 
+  // THE EFFECT HALF, on this route: not built, and saying so.
+  //
+  // This is a route-fidelity difference, not an oversight, and it is stated by
+  // name rather than by silently returning an unchanged element. The browser
+  // route reaches its tree through the accessibility domain, which reads and
+  // does not act; performing here needs a DIFFERENT domain (input, or a
+  // scripted evaluation), and every one of those is a new exchange. That
+  // matters concretely: this backend's re-read is pinned to the exact exchange
+  // set the query walk issues, because the offline lane replays a tape captured
+  // from that walk - an effect exchange would refuse as unrecorded there. The
+  // browser route's verbs arrive with the phase that captures the tape they
+  // need. Until then a caller hears which route could not perform and why,
+  // which is the same promise WatchUnsupportedError keeps on the observe side
+  // (ADR-0040: unequal fidelity stays visible, never faked into parity).
+  protected refuseToPerform(verb: string): never {
+    throw new EffectUnsupportedError(
+      `the browser route cannot ${verb} yet: it reads the page's accessibility tree and does not act on it`,
+    );
+  }
+
+  async editElement(_params: EditElementParams): Promise<EditElementResult> {
+    this.refuseToPerform("edit an element");
+  }
+
+  async activateElement(_params: ActivateElementParams): Promise<ActivateElementResult> {
+    this.refuseToPerform("perform an action");
+  }
+
+  async submitElement(_params: SubmitElementParams): Promise<SubmitElementResult> {
+    this.refuseToPerform("submit");
+  }
+
+  async setElementValue(_params: SetElementValueParams): Promise<SetElementValueResult> {
+    this.refuseToPerform("set a value");
+  }
+
+  async setElementText(_params: SetElementTextParams): Promise<SetElementTextResult> {
+    this.refuseToPerform("set text");
+  }
+
+  async setElementCaret(_params: SetElementCaretParams): Promise<SetElementCaretResult> {
+    this.refuseToPerform("place the caret");
+  }
+
+  async revealElement(_params: RevealElementParams): Promise<RevealElementResult> {
+    this.refuseToPerform("reveal an element");
+  }
+
   async unsubscribeElement(subscriptionId: string): Promise<void> {
     const watch = this.watches.get(subscriptionId);
     if (watch === undefined) {
@@ -303,5 +367,18 @@ export class CdpReplayBackend extends CdpBackend {
 
   constructor(fixture: string, visibility?: Visibility) {
     super(replayCdpChannel(fixture), visibility);
+  }
+
+  // Both things are true of this route - the browser route does not perform,
+  // and this flavour is a tape - and the narrower fact is the one a caller can
+  // do something with, so it is the one stated. Narrower first is the same
+  // ordering the observe half uses when it reports a deaf watch ahead of an
+  // unsupported one; RecordingNotPerformableError extends the route's own
+  // EffectUnsupportedError, so nothing that catches the wider case stops
+  // catching it.
+  protected override refuseToPerform(verb: string): never {
+    throw new RecordingNotPerformableError(
+      `the replay route cannot ${verb}: it answers from a recording, and a recording cannot be acted upon`,
+    );
   }
 }

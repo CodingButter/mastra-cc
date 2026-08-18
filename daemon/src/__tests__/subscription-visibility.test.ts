@@ -12,6 +12,7 @@ import {
   UnwatchableElementError,
 } from "../backend.js";
 import { startServer, SUBSCRIBE_UNKNOWN_REFUSAL } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // Deny-by-default on the change stream (ADR-0036, ADR-0008 rule 6). An
 // application the operator has not granted is ABSENT, and absent means the
@@ -34,6 +35,7 @@ const NONEXISTENT = "el-cccccccccccc";
 function twoApplications() {
   const sinks = new Map<string, { application: string; sink: (change: BackendChange) => void }>();
   const backend: Backend = {
+    ...observeOnlyEffects,
     name: "two-apps",
     queryElements: async () => ({ elements: [] }),
     attestElement: async () => ({}),

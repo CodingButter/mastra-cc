@@ -83,9 +83,12 @@ export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this
 // submit classes' element methods so a client can ask about them and hear a
 // refusal that names itself - "not a method of the schema" cannot distinguish
 // "not built yet" from "hidden". The handlers below are pure refusals: they
-// never touch a backend (the Backend seam does not even carry these methods),
-// and each constant names the check that ran, the method's class, and what
-// would change the answer. Authority is checked before capability (ADR-0019),
+// never touch a backend. The seam BEHIND them now does carry these methods -
+// the backends learned to perform in this segment - which is exactly why the
+// refusal here has to be the deliberate act it is rather than a consequence of
+// there being nothing to call. Each constant names the check that ran, the
+// method's class, and what would change the answer. What is still missing is
+// the authority surface, not the capability. Authority is checked before capability (ADR-0019),
 // so submitElement's refusal is the scope gate's - never a claim about the
 // attestation's validity, even though the contract requires one (ADR-0021:
 // waiving it is inexpressible on the wire).

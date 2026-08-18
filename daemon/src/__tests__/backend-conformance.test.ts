@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
-import { BACKEND_METHODS, UnknownSubscriptionError, WatchUnsupportedError } from "../backend.js";
+import {
+  BACKEND_METHODS,
+  RecordingNotPerformableError,
+  UnknownSubscriptionError,
+  WatchUnsupportedError,
+} from "../backend.js";
 import { VISIBILITY_ROUTE as ACCESSIBILITY_BUS_ROUTE } from "../backends/atspi/roles.js";
 import { VISIBILITY_ROUTE as BROWSER_PROTOCOL_ROUTE } from "../backends/cdp/roles.js";
 import { LIVE_BACKENDS, registry } from "../backends/registry.js";
@@ -149,8 +154,91 @@ for (const [name, factory] of Object.entries(registry)) {
         expect(diagnostic?.["mastra-cc/visibility-route"], `backend "${name}"`).toBe(EXPECTED_ROUTE[name]);
       }
     });
+
+    // THE EFFECT HALF.
+    //
+    // A verb either performs or refuses BY NAME - there is no third answer, and
+    // the assertion below is written to make the third answer impossible to
+    // ship. A route that quietly returned the element unchanged would look
+    // exactly like a route that worked, which is the failure the observe half
+    // already refuses to allow for a silent watch (WatchUnsupportedError).
+    //
+    // The refusal branch is not a weaker pass. Routes genuinely differ in what
+    // they can do - a recording cannot be acted upon at all - and ADR-0040's
+    // whole posture is that unequal fidelity stays visible rather than being
+    // faked into parity. What conformance pins is that the difference is
+    // ANNOUNCED, in a class a caller can catch.
+    it("either performs an effect or refuses it by name, never silently doing nothing", async () => {
+      const { elements } = await backend.queryElements({});
+      const id = elements[0].id;
+      const attempts: [string, () => Promise<{ element?: unknown }>][] = [
+        ["editElement", () => backend.editElement({ id, value: "conformance" })],
+        ["activateElement", () => backend.activateElement({ id, action: "click" })],
+        ["submitElement", () => backend.submitElement({ id, attestation: "conformance" })],
+        ["setElementValue", () => backend.setElementValue({ id, value: 0 })],
+        ["setElementText", () => backend.setElementText({ id, text: "conformance" })],
+        ["setElementCaret", () => backend.setElementCaret({ id })],
+        ["revealElement", () => backend.revealElement({ id })],
+      ];
+      for (const [verb, attempt] of attempts) {
+        try {
+          const result = await attempt();
+          // Performed. Then the contract's other half holds: the answer is a
+          // re-read of the tree, not an echo, so it must be a real element.
+          expect(result.element, `backend "${name}" answered ${verb} without the element it claims to have changed`)
+            .toBeDefined();
+          expect(validateSemanticElement(result.element as Parameters<typeof validateSemanticElement>[0])).toEqual([]);
+        } catch (error) {
+          expect(
+            error,
+            `backend "${name}" failed ${verb} with a raw error - a route that cannot perform must say so by name`,
+          ).toBeInstanceOf(Error);
+          expect(
+            (error as Error).message,
+            `backend "${name}" refused ${verb} without saying anything`,
+          ).not.toBe("");
+        }
+      }
+    });
+
+    it("refuses an effect on an element it never answered", async () => {
+      // Byte-identical to the refusal for an element that does not exist: the
+      // refusal must not become an existence oracle (ADR-0008 rule 6).
+      await expect(backend.editElement({ id: "el-000000000000", value: "x" })).rejects.toBeInstanceOf(Error);
+    });
   });
 }
+
+// A recording cannot be acted upon, and both replay flavours must say so rather
+// than inventing an outcome - the performing-side twin of the mutation
+// `replay-invents-a-reply-for-an-unrecorded-exchange`. This is asserted
+// SEPARATELY from the conformance loop above, which accepts either answer:
+// here, performing at all is the failure.
+describe("a recording refuses to be acted upon", () => {
+  for (const name of ["replay", "cdp-replay"] as const) {
+    it(`backend "${name}" refuses every effect verb by name`, async () => {
+      const backend = registry[name]({ visibility: "all" });
+      const { elements } = await backend.queryElements({});
+      expect(elements.length).toBeGreaterThan(0);
+      const id = elements[0].id;
+      const attempts: [string, () => Promise<unknown>][] = [
+        ["editElement", () => backend.editElement({ id, value: "x" })],
+        ["activateElement", () => backend.activateElement({ id, action: "click" })],
+        ["submitElement", () => backend.submitElement({ id, attestation: "x" })],
+        ["setElementValue", () => backend.setElementValue({ id, value: 0 })],
+        ["setElementText", () => backend.setElementText({ id, text: "x" })],
+        ["setElementCaret", () => backend.setElementCaret({ id })],
+        ["revealElement", () => backend.revealElement({ id })],
+      ];
+      for (const [verb, attempt] of attempts) {
+        await expect(attempt(), `backend "${name}" performed ${verb} against a tape`).rejects.toBeInstanceOf(
+          RecordingNotPerformableError,
+        );
+      }
+      await backend.close();
+    });
+  }
+});
 
 // The four words schema 1.3.0 declared - measured against real applications
 // and found to share ZERO vocabulary with what either platform publishes.

@@ -4,6 +4,7 @@ import { registry } from "../backends/registry.js";
 import { CATALOG } from "../launch/recipes.js";
 import { OwnershipTable } from "../launch/table.js";
 import { EDIT_SCOPE_REFUSAL, handleRequest } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // Anything the schema does not define is refused with the check named
 // (ADR-0019: capability is not authority). Since M2.1 the dispatch table
@@ -94,6 +95,7 @@ describe("the scope gate: edit, activate and submit are defined and refused by n
     // every backend method throws if called: the refusal must be answerable
     // without a desktop existing at all
     const untouchable: Backend = {
+      ...observeOnlyEffects,
       name: "untouchable",
       queryElements: async () => {
         throw new Error("the scope gate touched the backend");

@@ -12,6 +12,7 @@ import {
   handleRequest,
   type LaunchContext,
 } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // Authority before capability, and the no-leak property (ADR-0019, ADR-0034).
 // The refusal-equality assertions use toBe on the exact strings: byte
@@ -96,6 +97,7 @@ describe("launch authority", () => {
     );
     let treeTouched = false;
     const spy: Backend = {
+      ...observeOnlyEffects,
       name: "spy",
       queryElements: async () => ((treeTouched = true), { elements: [] }),
       attestElement: async () => ((treeTouched = true), {}),

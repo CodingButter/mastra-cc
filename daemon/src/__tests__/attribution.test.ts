@@ -3,6 +3,7 @@ import type { Attribution, ChangeEvent, SemanticElement } from "@mastra-cc/proto
 import { type Backend, type BackendChange, mintSubscriptionId, UnknownSubscriptionError } from "../backend.js";
 import { OwnershipTable } from "../launch/table.js";
 import { attribute, handleRequest, type LaunchContext, SubscriptionBook } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // The attribution rule, exercised on all three of its answers (ADR-0039).
 //
@@ -87,6 +88,7 @@ describe("a change inside the application our launch is opening is attributed to
     let sink: ((change: BackendChange) => void) | undefined;
     let polls = 0;
     const backend: Backend = {
+      ...observeOnlyEffects,
       // The poll that waits for the launched application is where the change
       // is injected: it happens while the verb is open, which is exactly the
       // window a real one would land in.

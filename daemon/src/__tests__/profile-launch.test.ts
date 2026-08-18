@@ -11,6 +11,7 @@ import {
   handleRequest,
   type LaunchContext,
 } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // A launched profile is readable, and only one browser identity runs at a time
 // (M2.3b, ADR-0038). Offline: spy backends and a real ownership table, no
@@ -47,6 +48,7 @@ function application(name: string): SemanticElement {
 function spyBackend(elements: SemanticElement[]) {
   const asked: string[] = [];
   const backend: Backend = {
+    ...observeOnlyEffects,
     name: "spy",
     queryElements: async (query: { name?: string }) => {
       if (typeof query.name === "string") asked.push(query.name);
@@ -106,6 +108,7 @@ describe("a launched profile is readable", () => {
     );
     let treeTouched = false;
     const backend: Backend = {
+      ...observeOnlyEffects,
       name: "spy",
       queryElements: async () => ((treeTouched = true), { elements: [] }),
       attestElement: async () => ((treeTouched = true), {}),

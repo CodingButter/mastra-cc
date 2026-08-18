@@ -1,19 +1,43 @@
 import type {
+  ActivateElementParams,
+  ActivateElementResult,
   AttestElementParams,
   AttestElementResult,
+  EditElementParams,
+  EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  RevealElementParams,
+  RevealElementResult,
   SemanticElement,
+  SetElementCaretParams,
+  SetElementCaretResult,
+  SetElementTextParams,
+  SetElementTextResult,
+  SetElementValueParams,
+  SetElementValueResult,
+  SubmitElementParams,
+  SubmitElementResult,
 } from "@mastra-cc/protocol-types";
 import {
   type Backend,
   type BackendChange,
   type BackendSubscription,
   type ChannelWatch,
+  EffectUnsupportedError,
   mintSubscriptionId,
   UnknownSubscriptionError,
+  UnperformableElementError,
   UnwatchableElementError,
 } from "../../backend.js";
+import {
+  insertText,
+  performAction,
+  scrollIntoView,
+  setCaretOffset,
+  setTextContents,
+  setValue,
+} from "./effects.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
@@ -259,6 +283,72 @@ export class AtspiBackend implements Backend {
         await watch.close();
       },
     };
+  }
+
+  // THE EFFECT HALF.
+  //
+  // Every verb below runs the same three steps in the same order, and the order
+  // is the point: resolve the element this backend actually answered, perform
+  // through an interface the element itself publishes, then RE-READ. The third
+  // step is not politeness. Measured on this machine, the platform clamps an
+  // out-of-bounds write, performs it somewhere else, and returns true; a window
+  // move returns true and moves nothing. The return value is a claim. The
+  // re-read is the evidence.
+  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<void>): Promise<{ element: SemanticElement } & T> {
+    const ref = this.answered.get(id);
+    if (ref === undefined) {
+      // Byte-identical to the refusal for an element that does not exist: an id
+      // inside an application this session cannot see must not be told apart
+      // from one that was never real (ADR-0008 rule 6, ADR-0036).
+      throw new UnperformableElementError(
+        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    await effect(ref);
+    return { element: await this.readElement(ref) } as { element: SemanticElement } & T;
+  }
+
+  async editElement(params: EditElementParams): Promise<EditElementResult> {
+    return this.performing(params.id, (ref) => setTextContents(this.channel, ref, params.value));
+  }
+
+  async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
+    return this.performing(params.id, (ref) => performAction(this.channel, ref, params.action));
+  }
+
+  // Submit is the one verb this phase does not perform. The seam carries it so
+  // no route is left abstract, and it refuses BY NAME rather than quietly
+  // returning an unchanged element - a commit that silently did nothing and
+  // then reported the world it failed to change is the worst possible answer.
+  // The attestation half arrives with the phase that builds it.
+  // The id is deliberately NOT looked up first. A verb that refuses one way for
+  // an element it knows and another way for one it does not is an existence
+  // oracle wearing an error class (ADR-0008 rule 6): the route-level refusal
+  // comes first, so every caller hears the same sentence.
+  async submitElement(_params: SubmitElementParams): Promise<SubmitElementResult> {
+    throw new EffectUnsupportedError(
+      "this route does not commit yet - the attestation this verb requires is not built, and committing without it is what the contract forbids",
+    );
+  }
+
+  async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {
+    return this.performing(params.id, (ref) => setValue(this.channel, ref, params.value));
+  }
+
+  async setElementText(params: SetElementTextParams): Promise<SetElementTextResult> {
+    return this.performing(params.id, (ref) =>
+      params.offset === undefined
+        ? setTextContents(this.channel, ref, params.text)
+        : insertText(this.channel, ref, params.text, params.offset),
+    );
+  }
+
+  async setElementCaret(params: SetElementCaretParams): Promise<SetElementCaretResult> {
+    return this.performing(params.id, (ref) => setCaretOffset(this.channel, ref, params.offset));
+  }
+
+  async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
+    return this.performing(params.id, (ref) => scrollIntoView(this.channel, ref));
   }
 
   async unsubscribeElement(subscriptionId: string): Promise<void> {

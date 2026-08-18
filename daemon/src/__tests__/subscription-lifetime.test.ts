@@ -12,6 +12,7 @@ import {
   mintSubscriptionId,
 } from "../backend.js";
 import { startServer } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // A watch belongs to the connection that asked for it, and it dies with that
 // connection - at the BACKEND, not merely in a map (ADR-0039). A forgotten
@@ -27,6 +28,7 @@ function watchableBackend() {
   const closed: string[] = [];
   const sinks = new Map<string, (change: BackendChange) => void>();
   const backend: Backend = {
+    ...observeOnlyEffects,
     name: "watchable",
     queryElements: async () => ({ elements: [] }),
     attestElement: async () => ({}),

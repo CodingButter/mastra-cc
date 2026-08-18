@@ -9,6 +9,7 @@ import { liveCdpChannel } from "../backends/cdp/channel.js";
 import { CdpBackend } from "../backends/cdp/index.js";
 import { OwnershipTable } from "../launch/table.js";
 import { BACKEND_UNREADABLE_REFUSAL, handleRequest, type LaunchContext } from "../server.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // Both tests in this file pin the unreadable-backend semantics: a backend
 // that throws is (1) an honest named refusal on the wire - never a raw
@@ -88,6 +89,7 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
     };
     let calls = 0;
     const flaky: Backend = {
+      ...observeOnlyEffects,
       name: "flaky",
       // throws for the pre-spawn check AND the first poll ticks, then answers
       queryElements: async () => {
