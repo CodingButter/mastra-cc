@@ -243,5 +243,19 @@
     "find": "  if (disabled(properties)) {\n    return {\n      actions: [],\n      diagnostic: { \"mastra-cc/actions-derived-from\": \"disabled\" },\n    };\n  }\n\n",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/actions.test.ts"
+  },
+  {
+    "name": "the-configuration-is-read-and-never-enforced",
+    "file": "daemon/src/server.ts",
+    "find": "  const withheld = configurationWithholding(launch, effectClass, application);\n  if (withheld !== undefined) return { refusal: withheldRefusal(method, effectClass, withheld) };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/capability-configuration.test.ts"
+  },
+  {
+    "name": "a-withheld-capability-is-reported-as-available",
+    "file": "daemon/src/server.ts",
+    "find": "  if (stamped.elements !== undefined) stamped.elements = stamped.elements.map(stamp);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/capability-configuration.test.ts"
   }
 ]

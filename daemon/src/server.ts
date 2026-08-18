@@ -7,6 +7,7 @@ import {
   PRIORITIES,
   PROTOCOL_VERSION,
   type Attribution,
+  type CapabilityName,
   type ChangeEvent,
   type OpenApplicationResult,
   type Priority,
@@ -32,6 +33,11 @@ import {
   WriteNotObservedError,
 } from "./backend.js";
 import { normalise } from "./backends/atspi/names.js";
+import {
+  withheldBy,
+  WITHHOLDS_NOTHING,
+  type CapabilityConfiguration,
+} from "./capabilities.js";
 import { isVisible, type Visibility } from "./grants.js";
 import { CATALOG, type LaunchCatalog } from "./launch/recipes.js";
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
@@ -62,27 +68,112 @@ export interface LaunchContext {
    * set, so a daemon started without it performs nothing - deny by default, the
    * same posture the grants file takes.
    *
-   * THE NAMED SEAM FOR SEGMENT 3. Capability configuration is per-application
-   * and durable; this is per-session and class-wide. Segment 3 hangs the
-   * per-application answer inside holdsEffectAuthority below, which is why that
-   * function takes the application it is deciding about even though this
-   * session-wide set does not yet consult it. Widening --permit to mean this
-   * was considered and rejected: a launch permit is authority to START an
-   * application, and ADR-0038 forbids an observe-side join widening authority.
+   * THE SESSION HALF OF THE ANSWER. Capability configuration is
+   * per-application and durable and lives in `capabilities` below; this is
+   * per-session and class-wide. Widening --permit to mean this was considered
+   * and rejected: a launch permit is authority to START an application, and
+   * ADR-0038 forbids an observe-side join widening authority.
    */
   allows?: ReadonlySet<string>;
+  /**
+   * The USER's half of the answer (ADR-0043 clause 4, ADR-0042): the durable,
+   * per-application capability configuration, composed once at boot from the
+   * capabilities file exactly as permits and grants are. Absent means the
+   * configuration withholds nothing - the session gates above are the ones
+   * that deny by default, and a second silent denial here would leave an
+   * operator who granted a class with nothing and no setting to name as the
+   * reason (capabilities.ts).
+   */
+  capabilities?: CapabilityConfiguration;
 }
 
 const NO_PERMITS: LaunchContext = { permits: new Set(), catalog: CATALOG, table: new OwnershipTable() };
 
-// The authority question, asked before the backend is ever touched. `application`
-// is the seam segment 3 fills: it is accepted and deliberately unconsulted here,
-// because the answer this session can give is class-wide. A caller reading this
-// should not conclude the parameter is decoration - it is the shape the
-// per-application answer plugs into, and the alternative (adding it later) would
-// change every call site at exactly the moment the enforcement matters most.
-export function holdsEffectAuthority(launch: LaunchContext, effectClass: string, _application?: string): boolean {
+// The authority question, asked before the backend is ever touched: does THIS
+// SESSION hold the class at all. Class-wide by construction - a session is
+// started with --allow edit, not with --allow edit for one application - so it
+// takes no application. The per-application answer is the user's, is durable,
+// and is asked separately below, because the two questions have different
+// owners and different remedies: this one is answered by restarting the daemon
+// differently, that one by changing a setting (ADR-0019, ADR-0043 clause 4).
+export function holdsEffectAuthority(launch: LaunchContext, effectClass: string): boolean {
   return (launch.allows ?? new Set()).has(effectClass);
+}
+
+// A capability the user's configuration turns off is refused BEFORE the call,
+// like every other effect-class refusal (pin B11), and the sentence names the
+// setting that withholds it. Naming it is the whole difference ADR-0042 makes:
+// a refusal a person cannot act on is a wall, and an agent told a capability is
+// impossible when it is merely switched off forms exactly the false belief this
+// milestone exists to prevent. The state this corresponds to on the wire is
+// `disabled-by-configuration`, whose disabledBy carries this same setting -
+// never `not-exposed`, which would claim no setting could change the answer.
+export function configurationWithholding(
+  launch: LaunchContext,
+  capability: CapabilityName,
+  application?: string,
+): string | undefined {
+  return withheldBy(launch.capabilities ?? WITHHOLDS_NOTHING, capability, application);
+}
+
+export function withheldRefusal(method: string, capability: CapabilityName, setting: string): string {
+  return `refused by the capability configuration: "${method}" is ${capability}-class and this machine's owner turned it off - the setting ${setting} withholds it, and changing that setting is what would allow it`;
+}
+
+// Which capability each operation is performed under. The same table the
+// dispatch entries encode, read from the other direction: what a caller is
+// told about an operation must be the same fact the gate would enforce on it,
+// or the listing and the enforcement disagree (ADR-0043 clause 4).
+const OPERATION_CLASS: Record<string, CapabilityName> = {
+  setValue: "edit",
+  setText: "edit",
+  setCaret: "edit",
+  reveal: "activate",
+};
+
+// THE REPORTING HALF, and the reason the three availability states exist
+// (ADR-0045, ADR-0042). An element publishes a verb; the user's configuration
+// turns the class off; the honest report is `disabled-by-configuration` NAMING
+// the setting - not `not-exposed`, which would claim the application never
+// offered it and no setting could change the answer. Collapsing the two is the
+// false belief this milestone exists to prevent, one scale smaller: an agent
+// would report a capability limit that is really a settings toggle.
+//
+// This runs at result time, which is legitimate here and nowhere else: these
+// are observe-class reads, so nothing has been performed and there is nothing
+// to un-perform. What it never does is invent availability upward - an
+// operation the element never offered stays `not-exposed`, because a setting
+// cannot grant what the application does not back.
+function withConfiguration(element: SemanticElement, launch: LaunchContext, application?: string): SemanticElement {
+  const actionSetting = configurationWithholding(launch, "activate", application);
+  const operationSetting = (operation: string) => {
+    const capability = OPERATION_CLASS[operation];
+    return capability === undefined ? undefined : configurationWithholding(launch, capability, application);
+  };
+  const actions = element.actions.map((action) =>
+    action.availability === "available" && actionSetting !== undefined
+      ? { ...action, availability: "disabled-by-configuration" as const, disabledBy: actionSetting }
+      : action,
+  );
+  const operations = element.operations?.map((operation) => {
+    const setting = operationSetting(operation.operation);
+    return operation.availability === "available" && setting !== undefined
+      ? { ...operation, availability: "disabled-by-configuration" as const, disabledBy: setting }
+      : operation;
+  });
+  return operations === undefined ? { ...element, actions } : { ...element, actions, operations };
+}
+
+function observedWithConfiguration<T extends { elements?: SemanticElement[]; element?: SemanticElement }>(
+  result: T,
+  backend: Backend,
+  launch: LaunchContext,
+): T {
+  const stamp = (element: SemanticElement) => withConfiguration(element, launch, backend.applicationOfElement(element.id));
+  const stamped: T = { ...result };
+  if (stamped.elements !== undefined) stamped.elements = stamped.elements.map(stamp);
+  if (stamped.element !== undefined) stamped.element = stamp(stamped.element);
+  return stamped;
 }
 
 // ONE constant for both the unknown name and the unpermitted name. The
@@ -434,7 +525,8 @@ async function unsubscribeElement(
 // exchange - and an id the backend never answered names nothing, which leaves
 // every concurrent change unattributed rather than guessed (ADR-0039).
 async function performEffect(
-  effectClass: string,
+  effectClass: CapabilityName,
+  method: string,
   refusal: string,
   launch: LaunchContext,
   backend: Backend,
@@ -442,7 +534,13 @@ async function performEffect(
   perform: () => Promise<{ element: SemanticElement }>,
 ): Promise<{ element?: SemanticElement; refusal?: string }> {
   if (!holdsEffectAuthority(launch, effectClass)) return { refusal };
+  // Authority first, configuration second (ADR-0019's order, one rung down):
+  // the session-wide answer needs no application, so asking it first means an
+  // id this daemon never answered is refused without the configuration ever
+  // being consulted about a name nobody can supply. Both run BEFORE the call.
   const application = backend.applicationOfElement(id);
+  const withheld = configurationWithholding(launch, effectClass, application);
+  if (withheld !== undefined) return { refusal: withheldRefusal(method, effectClass, withheld) };
   if (application !== undefined) causeNames(application);
   try {
     return await perform();
@@ -470,13 +568,13 @@ async function performEffect(
 function editElement(params: { id?: unknown; value?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const value = typeof params.value === "string" ? params.value : "";
-  return performEffect("edit", EDIT_SCOPE_REFUSAL, launch, backend, id, () => backend.editElement({ id, value }) as Promise<{ element: SemanticElement }>);
+  return performEffect("edit", "editElement", EDIT_SCOPE_REFUSAL, launch, backend, id, () => backend.editElement({ id, value }) as Promise<{ element: SemanticElement }>);
 }
 
 function activateElement(params: { id?: unknown; action?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const action = typeof params.action === "string" ? params.action : "";
-  return performEffect("activate", ACTIVATE_SCOPE_REFUSAL, launch, backend, id, () => backend.activateElement({ id, action }) as Promise<{ element: SemanticElement }>);
+  return performEffect("activate", "activateElement", ACTIVATE_SCOPE_REFUSAL, launch, backend, id, () => backend.activateElement({ id, action }) as Promise<{ element: SemanticElement }>);
 }
 
 // The attestation is carried and never validated. The daemon cannot check
@@ -486,7 +584,7 @@ function activateElement(params: { id?: unknown; action?: unknown }, backend: Ba
 function submitElement(params: { id?: unknown; attestation?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const attestation = typeof params.attestation === "string" ? params.attestation : "";
-  return performEffect("submit", SUBMIT_SCOPE_REFUSAL, launch, backend, id, () => backend.submitElement({ id, attestation }) as Promise<{ element: SemanticElement }>);
+  return performEffect("submit", "submitElement", SUBMIT_SCOPE_REFUSAL, launch, backend, id, () => backend.submitElement({ id, attestation }) as Promise<{ element: SemanticElement }>);
 }
 
 // The dispatch table names every method the daemon serves, its effect class,
@@ -500,8 +598,8 @@ function submitElement(params: { id?: unknown; attestation?: unknown }, backend:
 // multi-line entry would silently escape its scrutiny.
 type Handler = (params: unknown, backend: Backend, launch: LaunchContext, book?: SubscriptionBook) => Promise<unknown>;
 const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
-  queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b) => b.queryElements((p ?? {}) as never) },
-  attestElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b) => b.attestElement((p ?? {}) as never) },
+  queryElements: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.queryElements((p ?? {}) as never), b, l) },
+  attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.attestElement((p ?? {}) as never), b, l) },
   subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b, _l, k) => subscribeElement((p ?? {}) as never, b, k) },
   unsubscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, _b, _l, k) => unsubscribeElement((p ?? {}) as never, k) },
   openApplication: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => openApplication((p ?? {}) as { name?: string }, b, l) },
@@ -558,6 +656,13 @@ async function openApplication(
   if (!launch.permits.has(normalise(name))) {
     return { refusal: UNAVAILABLE_REFUSAL };
   }
+  // The user's configuration, asked after the session's authority and before
+  // anything is spawned or probed. A name that got this far is one this session
+  // was permitted to launch, so naming the setting here tells the caller
+  // nothing it did not already know - and it is the difference between "you
+  // cannot" and "it is switched off, here is the switch" (ADR-0042).
+  const withheld = configurationWithholding(launch, "launch", name);
+  if (withheld !== undefined) return { refusal: withheldRefusal("openApplication", "launch", withheld) };
   const budget = launch.pollBudgetMs ?? POLL_BUDGET_MS;
   const interval = launch.pollIntervalMs ?? POLL_INTERVAL_MS;
   const treeName = treeNameOf(name, launch.catalog);
