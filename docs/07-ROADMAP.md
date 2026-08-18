@@ -151,8 +151,8 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 - **User-facing capability configuration** — per application and globally, with defaults that are ours and policy that is the user's.
 
 **Exit gate:**
-- [ ] An element's published actions come from the platform. Evidence: a mutation that reinstates a role→action table reddens a test, and the live lane shows an element whose action list no invented table would have produced.
-- [ ] The three action states are distinguishable, and collapsing two of them reddens a test.
+- [x] An element's published actions come from the platform. Evidence: `actionsForRole` is gone from both backends, and a source-level assertion pins it out (`daemon/src/backends/cdp/__tests__/actions.test.ts`); the mutations `the-reader-asks-every-element-for-verbs-it-never-published` and `the-browser-route-advertises-a-verb-on-a-disabled-control` (`tools/mutations.json`) redden tests when the reading is broken; both replay worlds publish a name outside the four invented words, asserted at `daemon/src/__tests__/backend-conformance.test.ts` (desktop `click`, browser `collapse`); and the live leg read `click` off real window-chrome buttons that the deleted table would have called `press`.
+- [x] The three action states are distinguishable, and collapsing two of them reddens a test. Evidence: `packages/transport/src/__tests__/open-actions.test.ts` — the three states each carry a different obligation, and a configuration-withheld action naming no setting, a not-exposed action naming one, and an available action naming one are each refused.
 - [ ] Each of `edit`, `activate` and `submit` performs a real change on real hardware, observed and attributed — and each is refused, before the call, when configuration disables it (B11).
 - [ ] `submit` refuses with `ATTESTATION_FAILED` when the daemon cannot describe what it is about to commit.
 - [ ] The application listing agrees with the dispatch table: a capability reported *refused* is refused in fact, and a capability reported *available* is not refused. A test fails if the listing and the enforcement disagree.
