@@ -3,7 +3,15 @@ import { describe, expect, it } from "vitest";
 import { registry } from "../backends/registry.js";
 import { CATALOG } from "../launch/recipes.js";
 import { OwnershipTable } from "../launch/table.js";
-import { EDIT_SCOPE_REFUSAL, handleRequest } from "../server.js";
+import { BACKEND_METHODS } from "../backend.js";
+import {
+  EDIT_SCOPE_REFUSAL,
+  REVEAL_SCOPE_REFUSAL,
+  SET_CARET_SCOPE_REFUSAL,
+  SET_TEXT_SCOPE_REFUSAL,
+  SET_VALUE_SCOPE_REFUSAL,
+  handleRequest,
+} from "../server.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
 
 // Anything the schema does not define is refused with the check named
@@ -61,6 +69,64 @@ describe("the effect-class gate", () => {
     );
     expect(response.refusal).toBeUndefined();
     expect(response.result).toBeDefined();
+  });
+});
+
+// THE FOUR OPERATIONS, AND THE WORDS THEY REFUSE WITH.
+//
+// These four wire methods refuse unconditionally in this segment, and for a
+// while they refused with a sentence that had quietly become false: it claimed
+// the backend seam carried no operation, and it claimed the session held no
+// authority. The seam had grown all four operations, and no authority check
+// runs on this path at all. Nothing failed, because nothing checked the words -
+// only that some refusal arrived. A refusal names the check that actually ran
+// (ADR-0008 clause 5), so the sentence is the assertion here, and it is
+// asserted against the world rather than against itself.
+describe("the four operations refuse without claiming a reason that is not true", () => {
+  const backend = registry.replay({ visibility: new Set(["yad"]) });
+
+  const operations = [
+    ["setElementValue", SET_VALUE_SCOPE_REFUSAL],
+    ["setElementText", SET_TEXT_SCOPE_REFUSAL],
+    ["setElementCaret", SET_CARET_SCOPE_REFUSAL],
+    ["revealElement", REVEAL_SCOPE_REFUSAL],
+  ] as const;
+
+  it("never claims the seam carries no operation, because the seam carries all four", () => {
+    for (const [method, refusal] of operations) {
+      // The claim and the world in the same assertion: the seam declares the
+      // method, so a refusal saying otherwise is a false statement on the wire.
+      expect(BACKEND_METHODS).toContain(method);
+      expect(refusal).not.toContain("seam carries no operation");
+      expect(refusal).toContain(method);
+    }
+  });
+
+  it("never claims the session holds no authority, because no authority check runs here", async () => {
+    // Held and unheld, byte for byte. The refusal is the same sentence either
+    // way - which is precisely why it must not blame the session's authority.
+    for (const [index, [method, refusal]] of operations.entries()) {
+      const held = await handleRequest(
+        { type: "request", id: 20 + index, method, params: { id: "el-000000000000" } },
+        backend,
+        {
+          permits: new Set<string>(),
+          allows: new Set(["edit", "activate", "submit"] as const),
+          catalog: CATALOG,
+          table: new OwnershipTable(),
+        },
+      );
+      const unheld = await handleRequest(
+        { type: "request", id: 30 + index, method, params: { id: "el-000000000000" } },
+        backend,
+      );
+
+      const heldRefusal = (held.result as { refusal?: string }).refusal;
+      expect(heldRefusal).toBe((unheld.result as { refusal?: string }).refusal);
+      expect(heldRefusal).toBe(refusal);
+      expect(refusal).not.toContain("holds no edit authority");
+      expect(refusal).not.toContain("holds no activate authority");
+    }
   });
 });
 

@@ -27,7 +27,6 @@ import {
   type BackendSubscription,
   type ChannelWatch,
   commitDescription,
-  EffectUnsupportedError,
   MagnitudeOutOfRangeError,
   mintSubscriptionId,
   OperationNotExposedError,
@@ -360,11 +359,6 @@ export class CdpBackend implements Backend {
   // holds. The write is confirmed against the element's own value in effects.ts,
   // and the element returned here is what the tree publishes afterwards. The
   // difference is stated, never smoothed into false parity (ADR-0040).
-  protected refuseToPerform(verb: string): never {
-    throw new EffectUnsupportedError(
-      `the browser route cannot ${verb}: it reads the page's accessibility tree and does not act on it`,
-    );
-  }
 
   // Asked at the TOP of every verb, before the id is resolved or anything is
   // read. The live route can perform, so this is a no-op here; the replay
@@ -554,14 +548,12 @@ export class CdpReplayBackend extends CdpBackend {
     super(replayCdpChannel(fixture), visibility);
   }
 
-  // Both things are true of this route - the browser route does not perform,
-  // and this flavour is a tape - and the narrower fact is the one a caller can
-  // do something with, so it is the one stated. Narrower first is the same
-  // ordering the observe half uses when it reports a deaf watch ahead of an
-  // unsupported one; RecordingNotPerformableError extends the route's own
-  // EffectUnsupportedError, so nothing that catches the wider case stops
-  // catching it.
-  protected override refuseToPerform(verb: string): never {
+  // The live browser route performs for real now, so a tape's refusal is the
+  // only refusal left on this route, and it says the narrower thing: not "this
+  // route cannot act" - it can - but "this flavour answers from a recording".
+  // RecordingNotPerformableError still extends EffectUnsupportedError, so
+  // anything catching the wider case keeps catching it.
+  private refuseToPerform(verb: string): never {
     throw new RecordingNotPerformableError(
       `the replay route cannot ${verb}: it answers from a recording, and a recording cannot be acted upon`,
     );

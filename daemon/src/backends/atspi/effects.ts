@@ -109,7 +109,17 @@ async function requireInterface(seam: CallSeam, ref: NativeRef, iface: string, o
 // is no nearest match here on purpose: click, doDefault and activate are three
 // different verbs, and choosing between them on the caller's behalf is the
 // role-to-action table this milestone deleted, wearing a search function.
-export async function performAction(seam: CallSeam, ref: NativeRef, action: string): Promise<void> {
+//
+// The DoAction reply is returned, and the asymmetry is deliberate. A `true` is
+// worth nothing: this platform answers true for writes it clamped elsewhere and
+// for window moves that moved nothing, which is why every caller here verifies
+// by re-reading instead. A `false` is worth something quite different - it is
+// the platform declining, in its own words, before anything happened. Reading
+// the world back cannot recover that fact, because a decline leaves the world
+// exactly as it was, which is indistinguishable from an effect not yet visible.
+// So the reply is carried out of here as evidence of REFUSAL only, and never as
+// evidence of success.
+export async function performAction(seam: CallSeam, ref: NativeRef, action: string): Promise<boolean> {
   await requireInterface(seam, ref, ACTION_IFACE, "actions");
 
   const [rawCount] = await seam.call({
@@ -142,7 +152,7 @@ export async function performAction(seam: CallSeam, ref: NativeRef, action: stri
     const name = String(named ?? "");
     seen.push(name);
     if (name !== action) continue;
-    await seam.call({
+    const [performed] = await seam.call({
       destination: ref.busName,
       path: ref.objectPath,
       iface: ACTION_IFACE,
@@ -150,7 +160,10 @@ export async function performAction(seam: CallSeam, ref: NativeRef, action: stri
       signature: "i",
       body: [index],
     });
-    return;
+    // Anything that is not an explicit false is treated as "the platform did
+    // not decline" - never as "the platform succeeded". A tape or a platform
+    // that answers nothing at all has declined nothing.
+    return performed !== false;
   }
 
   throw new UnpublishedActionError(

@@ -149,17 +149,28 @@ export const SUBMIT_SCOPE_REFUSAL =
 // Each names the operation's own class: moving a magnitude, placing text and
 // placing a caret change what an element holds, and revealing one causes the
 // surface to do something visible and trivially reversible.
+//
+// These four refuse for a DIFFERENT reason than the three verbs above, and the
+// sentences have to say so. The seam behind them performs - the Backend
+// interface declares all four and both routes implement them - but no wire
+// method routes to that seam in this segment. So no authority check runs here:
+// the answer is the same for a session started with the class and one started
+// without it. An earlier version of these constants claimed the seam carried no
+// operation and that the session held no authority. Both became false the day
+// the seam grew the operations, and nothing failed, because nothing pinned the
+// words. A refusal names the check that actually ran (ADR-0008 clause 5), so
+// what is pinned now is the sentence, not just the fact that one was sent.
 export const SET_VALUE_SCOPE_REFUSAL =
-  'refused by the scope gate: "setElementValue" is edit-class and this session holds no edit authority for any application - the backend seam carries no operation yet, and until it does this method always refuses';
+  'refused before the call: "setElementValue" is edit-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
 
 export const SET_TEXT_SCOPE_REFUSAL =
-  'refused by the scope gate: "setElementText" is edit-class and this session holds no edit authority for any application - the backend seam carries no operation yet, and until it does this method always refuses';
+  'refused before the call: "setElementText" is edit-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
 
 export const SET_CARET_SCOPE_REFUSAL =
-  'refused by the scope gate: "setElementCaret" is edit-class and this session holds no edit authority for any application - the backend seam carries no operation yet, and until it does this method always refuses';
+  'refused before the call: "setElementCaret" is edit-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
 
 export const REVEAL_SCOPE_REFUSAL =
-  'refused by the scope gate: "revealElement" is activate-class and this session holds no activate authority for any element - the backend seam carries no operation yet, and until it does this method always refuses';
+  'refused before the call: "revealElement" is activate-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
 
 // The application listing (schema version 1.4.0, ADR-0042). Observe-class: it
 // reads the fence around an application and never anything behind it. It is

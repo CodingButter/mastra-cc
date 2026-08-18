@@ -2,12 +2,34 @@ import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
 import {
+  AttestationFailedError,
   BACKEND_METHODS,
+  EffectUnsupportedError,
+  MagnitudeOutOfRangeError,
+  OperationNotExposedError,
   RecordingNotPerformableError,
+  TextOffsetOutOfRangeError,
   UnknownSubscriptionError,
+  UnperformableElementError,
   UnpublishedActionError,
   WatchUnsupportedError,
+  WriteNotObservedError,
 } from "../backend.js";
+
+// The seam's whole refusal vocabulary. A route that cannot do something says so
+// in one of these; anything else reaching a caller is an unhandled failure, and
+// the conformance suite is where that distinction is kept honest.
+const REFUSAL_CLASSES = [
+  AttestationFailedError,
+  EffectUnsupportedError,
+  MagnitudeOutOfRangeError,
+  OperationNotExposedError,
+  RecordingNotPerformableError,
+  TextOffsetOutOfRangeError,
+  UnperformableElementError,
+  UnpublishedActionError,
+  WriteNotObservedError,
+] as const;
 import { AtspiBackend } from "../backends/atspi/index.js";
 import { CdpBackend } from "../backends/cdp/index.js";
 import { replayCdpChannel } from "../backends/cdp/channel.js";
@@ -174,9 +196,20 @@ for (const [name, factory] of Object.entries(registry)) {
     // whole posture is that unequal fidelity stays visible rather than being
     // faked into parity. What conformance pins is that the difference is
     // ANNOUNCED, in a class a caller can catch.
+    //
+    // WHAT THIS AIMS AT, on the live lane. Every verb below is real there, and
+    // elements[0] is whatever the operator's desktop happened to answer first.
+    // A single-verb element in that position would be COMMITTED - the suite
+    // would click a stranger's button to prove a point about error classes.
+    // So the live lane aims at an id no application answers: the refusal for an
+    // unanswered id is byte-identical to the refusal for one that never existed
+    // (ADR-0008 rule 6), which is exactly the "refuses by name" branch this
+    // test asserts, reached without touching anyone's window. The replay lanes
+    // keep aiming at a real recorded element, because a tape cannot be harmed
+    // and the performing branch has to be exercised somewhere.
     it("either performs an effect or refuses it by name, never silently doing nothing", async () => {
       const { elements } = await backend.queryElements({});
-      const id = elements[0].id;
+      const id = LIVE_BACKENDS.has(name) ? "el-000000000000" : elements[0].id;
       const attempts: [string, () => Promise<{ element?: unknown }>][] = [
         ["editElement", () => backend.editElement({ id, value: "conformance" })],
         ["activateElement", () => backend.activateElement({ id, action: "click" })],
@@ -195,10 +228,14 @@ for (const [name, factory] of Object.entries(registry)) {
             .toBeDefined();
           expect(validateSemanticElement(result.element as Parameters<typeof validateSemanticElement>[0])).toEqual([]);
         } catch (error) {
+          // "By name" means one of the seam's OWN classes. Accepting any Error
+          // with a non-empty message would have been satisfied by a TypeError
+          // from a bug inside the verb, which is the opposite of announcing a
+          // difference - it is a crash wearing a refusal's clothes.
           expect(
-            error,
-            `backend "${name}" failed ${verb} with a raw error - a route that cannot perform must say so by name`,
-          ).toBeInstanceOf(Error);
+            REFUSAL_CLASSES.some((refusal) => error instanceof refusal),
+            `backend "${name}" failed ${verb} with ${(error as Error)?.constructor?.name ?? typeof error}, which is not one of the seam's refusal classes - a route that cannot perform must say so by name`,
+          ).toBe(true);
           expect(
             (error as Error).message,
             `backend "${name}" refused ${verb} without saying anything`,

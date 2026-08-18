@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AttestationFailedError, commitDescription } from "../backend.js";
+import { AttestationFailedError, commitDescription, WriteNotObservedError } from "../backend.js";
 import type { Channel } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
 import { replayChannel } from "../backends/replay/index.js";
@@ -210,5 +210,48 @@ describe("the daemon refuses to commit what it cannot describe", () => {
     expect(committed).toBe(true);
     await dying.close();
     await backend.close();
+  });
+
+  // The tolerance above has a cost, and this is the test that keeps it paid
+  // for. An omitted element means "committed, and there was nothing left to
+  // read". Reading the world back cannot distinguish that from "declined, and
+  // the world is exactly as it was", because a decline leaves no trace to read.
+  // The platform's own `false` is the only place that fact exists, so it is the
+  // one return value this seam consumes - as evidence of REFUSAL, never of
+  // success. Two reviewers found this independently.
+  it("a commit the application declines is refused, never reported as a commit with nothing left to read", async () => {
+    const tape = replayChannel("gtk-dialog");
+    let declined = false;
+    // Declines the commit, then dies exactly as a closing application would.
+    // Every observable signal except the boolean says "committed".
+    const decliningChannel: Channel = {
+      async call(exchange) {
+        if (declined) throw new Error("Message recipient disconnected from message bus without replying");
+        if (exchange.member === "DoAction") {
+          declined = true;
+          return [false];
+        }
+        return tape.call(exchange);
+      },
+      watch: (subscribedTo, sink, anchor) => tape.watch(subscribedTo, sink, anchor),
+      close: () => tape.close(),
+    };
+
+    const declining = new AtspiBackend(decliningChannel, new Set(["yad"]));
+    const seen = await declining.queryElements({});
+    const target = seen.elements.find(
+      (element) => element.name === "Close" && element.actions.length === 1,
+    );
+    expect(target).toBeDefined();
+
+    const refused = await declining
+      .submitElement({ id: target!.id, attestation: "closes the dialog" })
+      .catch((error: unknown) => error);
+
+    expect(refused).toBeInstanceOf(WriteNotObservedError);
+    expect((refused as Error).message).toContain("declined");
+    expect((refused as Error).message).toContain("Close");
+    expect(declined).toBe(true);
+    await declining.close();
   });
 });

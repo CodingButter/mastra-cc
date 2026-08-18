@@ -29,6 +29,7 @@ import {
   UnknownSubscriptionError,
   UnperformableElementError,
   UnwatchableElementError,
+  WriteNotObservedError,
 } from "../../backend.js";
 import {
   insertText,
@@ -307,7 +308,9 @@ export class AtspiBackend implements Backend {
   // out-of-bounds write, performs it somewhere else, and returns true; a window
   // move returns true and moves nothing. The return value is a claim. The
   // re-read is the evidence.
-  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<void>): Promise<{ element: SemanticElement } & T> {
+  // The effect's own return value is deliberately unused here: whatever it
+  // claims, the element read afterwards is what this backend answers with.
+  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<unknown>): Promise<{ element: SemanticElement } & T> {
     const ref = this.answered.get(id);
     if (ref === undefined) {
       // Byte-identical to the refusal for an element that does not exist: an id
@@ -356,7 +359,18 @@ export class AtspiBackend implements Backend {
     // Asked BEFORE the commit, because a description produced afterwards would
     // describe something that has already happened.
     commitDescription(element);
-    await performAction(this.channel, ref, element.actions[0]!.name);
+    const performed = await performAction(this.channel, ref, element.actions[0]!.name);
+    if (!performed) {
+      // The platform declined, in its own words, before anything happened. This
+      // is the one place a return value is evidence, and only in this
+      // direction: the tolerated omission below cannot tell a commit that
+      // landed and closed the window from a commit that was refused and left
+      // the world untouched. Without this, a decline followed by any unrelated
+      // read failure would be answered as a commit.
+      throw new WriteNotObservedError(
+        `the application declined to perform "${element.actions[0]!.name}" on ${JSON.stringify(element.name)} - nothing was committed`,
+      );
+    }
 
     // A commit is the one verb whose success can REMOVE the thing it acted on,
     // and the afterwards-read is then asking a window that has already closed.
