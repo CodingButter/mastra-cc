@@ -236,5 +236,12 @@
     "find": "  if (!probeHeard) {\n    detach();\n    pending = null;\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard it within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "the-browser-route-advertises-a-verb-on-a-disabled-control",
+    "file": "daemon/src/backends/cdp/actions.ts",
+    "find": "  if (disabled(properties)) {\n    return {\n      actions: [],\n      diagnostic: { \"mastra-cc/actions-derived-from\": \"disabled\" },\n    };\n  }\n\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/actions.test.ts"
   }
 ]

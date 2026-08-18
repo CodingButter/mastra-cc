@@ -20,6 +20,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Refuse to run against a browser this script did not start. Measured the hard
+# way: a daemon-launched Chrome holding the user's real profile was still
+# listening on the debugging port, the wait loop below was satisfied by ITS
+# answer, and the capture recorded that browser's tabs - inbox titles, account
+# address and all - into the fixture tape. The wait loop cannot tell whose
+# browser answered, so the only safe check is that nothing is there beforehand.
+for PORT in "$DEBUG_PORT" "$PAGE_PORT"; do
+  if curl -sf -m 2 "http://127.0.0.1:$PORT/" >/dev/null 2>&1 || curl -sf -m 2 "http://127.0.0.1:$PORT/json/version" >/dev/null 2>&1; then
+    echo "capture: something is already listening on 127.0.0.1:$PORT - refusing to capture a browser this script did not start"
+    exit 1
+  fi
+done
+
 node "$ROOT/infra/serve-chrome-page.mjs" &
 PAGE_PID=$!
 
@@ -41,7 +54,14 @@ done
 # --grant chrome: this browser was started by the script, not launched by the
 # daemon - without a session observe grant, deny-by-default (ADR-0036) would
 # answer an empty tree and the tape would capture nothing (the vacuous-pass trap).
-node "$ROOT/daemon/dist/main.mjs" --backend cdp --capture chrome-page --grant chrome --query "OK"
+#
+# The exit status is deliberately not allowed to abort the script under `set
+# -e`: a capture can write a tape AND exit non-zero (a query that matched
+# nothing does exactly that), and skipping the scan below would leave an
+# unscanned tape on disk. That happened once, with a real inbox in it. The
+# scan runs on whatever was written, then the recorded status is honoured.
+CAPTURE_STATUS=0
+node "$ROOT/daemon/dist/main.mjs" --backend cdp --capture chrome-page --grant chrome --query "OK" || CAPTURE_STATUS=$?
 
 TAPE="$ROOT/daemon/fixtures/chrome-page/tape.json"
 [ -s "$TAPE" ] || { echo "capture: no tape written at $TAPE"; exit 1; }
@@ -51,3 +71,6 @@ if grep -iE "codingbutter|$(hostname)|/home/" "$TAPE"; then
   exit 1
 fi
 echo "capture: tape scanned clean"
+
+# Only now, with the tape scanned, does a failed capture fail the script.
+[ "$CAPTURE_STATUS" -eq 0 ] || { echo "capture: the capture command exited $CAPTURE_STATUS - the tape above is scanned but the query did not succeed"; exit "$CAPTURE_STATUS"; }

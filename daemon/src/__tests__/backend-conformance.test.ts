@@ -152,6 +152,41 @@ for (const [name, factory] of Object.entries(registry)) {
   });
 }
 
+// The four words schema 1.3.0 declared - measured against real applications
+// and found to share ZERO vocabulary with what either platform publishes.
+// They are not a subset of reality; they are what this project made up.
+const THE_INVENTED_FOUR = ["press", "focus", "select", "expand"];
+
+// The offline lane's own standard, from this segment: a tape that carries no
+// action data is a FAILED CAPTURE, not a captured absence. Both worlds were
+// re-captured from real software for exactly this assertion - the desktop
+// world from a real GTK dialog over the accessibility bus, the browser world
+// from a real headless Chrome. If either tape is ever replaced by one recorded
+// against a world that publishes nothing, this reddens instead of passing
+// quietly on an empty list.
+//
+// Only the REPLAY backends are asserted here. A live backend reads whatever
+// happens to be on the desktop or in the browser at the moment, and no such
+// claim can be grounded in advance; the fixtures are committed worlds and can
+// be.
+describe("each replayed world publishes a verb the deleted tables never held", () => {
+  for (const name of ["replay", "cdp-replay"] as const) {
+    it(`backend "${name}" replays at least one action named outside the invented four`, async () => {
+      const backend = registry[name]({ visibility: "all" });
+      const { elements } = await backend.queryElements({});
+      expect(elements.length).toBeGreaterThan(0);
+
+      const published = elements.flatMap((element) => element.actions.map((action) => action.name));
+      const beyond = published.filter((action) => !THE_INVENTED_FOUR.includes(action));
+      expect(
+        beyond,
+        `backend "${name}" replayed only ${JSON.stringify([...new Set(published)])} - a tape carrying no action data is a failed capture, not a captured absence`,
+      ).not.toEqual([]);
+      await backend.close();
+    });
+  }
+});
+
 // The route is provenance, not decoration: if both backends declared the same
 // label, the stamp would say nothing about WHICH instrument answered.
 describe("the visibility route distinguishes the instruments (ADR-0040)", () => {
