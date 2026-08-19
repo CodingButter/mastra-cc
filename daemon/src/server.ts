@@ -12,6 +12,7 @@ import {
   type CapabilityName,
   type ListApplicationsResult,
   type ChangeEvent,
+  type Diagnostic,
   type OpenApplicationResult,
   type Priority,
   type SemanticElement,
@@ -758,6 +759,87 @@ async function findApplication(backend: Backend, name: string): Promise<Semantic
   }
 }
 
+// FOCUS PRESERVATION (ADR-0044). A launch is a request to start an
+// application; it is not a request to be interrupted, so the daemon puts back
+// what it found. Three shapes, because they are three different answers and
+// collapsing them would hide the one that matters: an element held focus, or
+// nothing did, or this route cannot answer the question at all.
+type FocusHeld =
+  | { kind: "held"; element: SemanticElement }
+  | { kind: "none" }
+  | { kind: "unreadable" };
+
+// Read immediately before the spawn. A throw of any kind is "unreadable" and
+// is REPORTED rather than swallowed - a route that cannot read focus cannot
+// promise it protected it, and clause 4 is explicit that a silent best-effort
+// is worse than none.
+async function focusBeforeLaunch(backend: Backend): Promise<FocusHeld> {
+  try {
+    const element = await backend.focusedElement();
+    return element === undefined ? { kind: "none" } : { kind: "held", element };
+  } catch {
+    return { kind: "unreadable" };
+  }
+}
+
+const FOCUS_UNREADABLE_NOTE =
+  "the focus was not protected across this launch: this session's backend cannot read or restore what holds focus, " +
+  "so whether this launch took the keyboard is unmeasured - only a route that can read focus back would answer differently";
+
+function focusNotRestored(before: SemanticElement, now: SemanticElement | undefined): string {
+  const holder = now === undefined ? "nothing holds it now" : `${JSON.stringify(now.name)} holds it now`;
+  return (
+    `the focus was not restored after this launch: ${JSON.stringify(before.name)} held it before the launch and ${holder} - ` +
+    "this is not a clean launch, and the keyboard is somewhere the caller did not ask for"
+  );
+}
+
+// Put focus back where it was, and answer with what is WRONG rather than with
+// what worked: undefined means the focus this launch found is the focus it
+// left behind, and a sentence means it is not. The verification is a read of
+// the world, never a return code - restoreFocus answers with the element that
+// holds focus AFTER the attempt, and this compares that answer against what it
+// asked for. A route whose grab returned true and moved nothing is caught here
+// (ADR-0047), which is the measurement ADR-0044 said this milestone owes.
+//
+// Focus that never moved is left alone deliberately: putting back what was
+// never taken would itself be a focus change nobody asked for, which is the
+// thing this whole path exists to prevent (clause 5).
+async function restoreFocusAfterLaunch(backend: Backend, held: FocusHeld): Promise<string | undefined> {
+  if (held.kind === "none") return undefined;
+  if (held.kind === "unreadable") return FOCUS_UNREADABLE_NOTE;
+  let after: SemanticElement | undefined;
+  try {
+    after = await backend.focusedElement();
+  } catch {
+    return FOCUS_UNREADABLE_NOTE;
+  }
+  if (after !== undefined && after.id === held.element.id) return undefined;
+  let regained: SemanticElement | undefined;
+  try {
+    regained = await backend.restoreFocus(held.element.id);
+  } catch {
+    return focusNotRestored(held.element, after);
+  }
+  if (regained !== undefined && regained.id === held.element.id) return undefined;
+  return focusNotRestored(held.element, regained);
+}
+
+// Where the report goes. The launch result has two shapes and the note reaches
+// a reader in both: stamped into the element's diagnostic when the launch
+// otherwise succeeded, and carried in the refusal when it did not. Diagnostic
+// because it is debug-only by the wire's own contract and never load-bearing
+// for agent logic - the schema is not changed to carry it, and this segment
+// does not add a field to a frozen version.
+function withFocusNote(element: SemanticElement, note: string | undefined): SemanticElement {
+  if (note === undefined) return element;
+  const diagnostic: Diagnostic & { "mastra-cc/focus-preservation": string } = {
+    ...element.diagnostic,
+    "mastra-cc/focus-preservation": note,
+  };
+  return { ...element, diagnostic };
+}
+
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
 // the permit set is consulted before the catalog, the tree, or anything else,
 // and an unpermitted name never reaches a capability probe, because the probe
@@ -800,6 +882,11 @@ async function openApplication(
   // refusal, even when a foreign same-name copy is also running (the by-name
   // tree match cannot distinguish the two copies per element at this
   // segment's name-only granularity; M2.4's pid join will).
+  // Nothing has been spawned yet, and nothing below this line runs without a
+  // launch actually happening: the focus read costs a tree walk, so it is
+  // taken after every refusal that could still fire and immediately before the
+  // only thing that can move the focus (ADR-0044 clause 2).
+  let held: FocusHeld = { kind: "none" };
   if (launch.table.ownsName(name) === undefined) {
     const running = await findApplication(backend, treeName);
     if (running !== undefined) {
@@ -807,6 +894,7 @@ async function openApplication(
       // surface arrives with a later milestone).
       return { refusal: ALREADY_RUNNING_REFUSAL };
     }
+    held = await focusBeforeLaunch(backend);
     try {
       await launchApplication(name, launch.catalog, launch.table);
     } catch (error) {
@@ -820,11 +908,21 @@ async function openApplication(
   const deadline = Date.now() + budget;
   for (;;) {
     const application = await findApplication(backend, treeName);
-    if (application !== undefined) return { application };
+    if (application !== undefined) {
+      // The poll is the settle window: focus is put back once the launched
+      // application is readable, which is the earliest moment it could have
+      // taken the keyboard. A restore before that races the window that has
+      // not appeared yet.
+      const note = await restoreFocusAfterLaunch(backend, held);
+      return { application: withFocusNote(application, note) };
+    }
     if (Date.now() >= deadline) {
-      return {
-        refusal: `the application was opened but did not become readable within ${budget}ms - refusing to pretend it is ready`,
-      };
+      // The launch is already not clean; a focus it could not protect is said
+      // in the same breath rather than dropped because there is no element to
+      // hang it on.
+      const note = await restoreFocusAfterLaunch(backend, held);
+      const timedOut = `the application was opened but did not become readable within ${budget}ms - refusing to pretend it is ready`;
+      return { refusal: note === undefined ? timedOut : `${timedOut}; ${note}` };
     }
     await new Promise((r) => setTimeout(r, interval));
   }

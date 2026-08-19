@@ -1,5 +1,5 @@
 import type { Backend } from "../../backend.js";
-import { EffectUnsupportedError, InventoryUnsupportedError } from "../../backend.js";
+import { EffectUnsupportedError, FocusUnsupportedError, InventoryUnsupportedError } from "../../backend.js";
 
 // The effect half of a test double that exists to exercise the OBSERVE half.
 //
@@ -18,9 +18,16 @@ import { EffectUnsupportedError, InventoryUnsupportedError } from "../../backend
 // a hand-built double has no machine behind it, and answering an empty list
 // would say "nothing is installed" rather than "this double cannot look" -
 // the collapse ADR-0042 exists to prevent, in a test helper.
+//
+// Focus is here for the same reason and refuses on BOTH halves, including the
+// read. A double with no desktop that answered "nothing holds focus" would be
+// stating a fact about a machine it cannot see, and a launch test would then
+// record a clean focus preservation that measured nothing (ADR-0044 clause 4).
 export const observeOnlyEffects: Pick<
   Backend,
   | "installedApplications"
+  | "focusedElement"
+  | "restoreFocus"
   | "editElement"
   | "activateElement"
   | "submitElement"
@@ -31,6 +38,12 @@ export const observeOnlyEffects: Pick<
 > = {
   installedApplications: async () => {
     throw new InventoryUnsupportedError("this test double has no machine behind it and cannot enumerate what is installed");
+  },
+  focusedElement: async () => {
+    throw new FocusUnsupportedError("this test double has no desktop behind it and cannot say what holds the focus");
+  },
+  restoreFocus: async () => {
+    throw new FocusUnsupportedError("this test double has no desktop behind it and cannot restore the focus");
   },
   editElement: async () => {
     throw new EffectUnsupportedError("this test double observes only");

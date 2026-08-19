@@ -8,6 +8,7 @@ import type {
   QueryElementsParams,
   QueryElementsResult,
   RevealElementResult,
+  SemanticElement,
   SetElementCaretResult,
   SetElementTextResult,
   SetElementValueResult,
@@ -17,6 +18,7 @@ import {
   type Backend,
   type BackendChange,
   type BackendSubscription,
+  FocusUnsupportedError,
   InventoryUnsupportedError,
   RecordingNotPerformableError,
   replayWatch,
@@ -115,6 +117,26 @@ export class ReplayBackend implements Backend {
 
   unsubscribeElement(subscriptionId: string): Promise<void> {
     return this.inner.unsubscribeElement(subscriptionId);
+  }
+
+  // The focus SPLITS across the two halves of this backend, and the split is
+  // the honest one rather than a convenient one. Reading what held focus is an
+  // observe-side question a tape genuinely answers: the recording captured the
+  // focused state along with every other state, so this is the recorded tree's
+  // own fact and it is delegated like every other read.
+  focusedElement(): Promise<SemanticElement | undefined> {
+    return this.inner.focusedElement();
+  }
+
+  // Restoring it is not. A recording cannot be acted upon, and answering with
+  // the tape's focused element after a restore that never happened would be
+  // the worst answer available here: it would look exactly like a successful
+  // restoration, because the tape's focus never moved in the first place. That
+  // is a test that passes while measuring nothing (ADR-0044 clause 3).
+  async restoreFocus(): Promise<SemanticElement | undefined> {
+    throw new FocusUnsupportedError(
+      "the replay route cannot restore the focus: it answers from a recording, and a recording holds the focus it was captured with",
+    );
   }
 
   // A recording cannot be acted upon, and this is the ONE place the replay lane

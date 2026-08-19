@@ -13,6 +13,7 @@ import type {
   RevealElementParams,
   RevealElementResult,
   Role,
+  SemanticElement,
   SetElementCaretParams,
   SetElementCaretResult,
   SetElementTextParams,
@@ -131,6 +132,14 @@ export class InventoryUnsupportedError extends Error {}
 // than guessed at - performing "the closest one" is the ACTIONS_BY_ROLE mistake
 // with a search function bolted on (ADR-0045 clause 2).
 export class UnpublishedActionError extends Error {}
+
+// This route cannot read or restore focus. A fact about the instrument, not
+// about the desktop: a recording holds the focus a tree had when it was
+// captured and cannot move it, and a route that answered "focus is unchanged"
+// would be claiming a measurement it never took. ADR-0044 clause 4 is explicit
+// that a best-effort silence is worse than none, so the seam refuses and the
+// server reports the refusal rather than a clean launch.
+export class FocusUnsupportedError extends Error {}
 
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
@@ -288,6 +297,27 @@ export interface Backend {
   // says what may be done with it, from the same tables that enforce it.
   installedApplications(): Promise<InventoryEntry[]>;
 
+  // WHAT CURRENTLY HOLDS FOCUS, and how to put it back (ADR-0044).
+  //
+  // Two methods rather than one, because they answer different questions and
+  // fail for different reasons. focusedElement() is a READ: it reports the
+  // element the platform says has focus right now, or undefined when nothing
+  // does - an empty desktop is a real answer and not a failure. restoreFocus()
+  // is an EFFECT, and like every effect on this seam it VERIFIES BY READING
+  // THE WORLD BACK: it returns the element that holds focus AFTER it tried,
+  // read from the tree, so a route whose restore call returned true and moved
+  // nothing is caught by the caller comparing that answer against what it
+  // asked for. Neither method returns a boolean success, because a boolean is
+  // exactly the return-code evidence this seam refuses (ADR-0047).
+  //
+  // These are observe-and-repair rather than a new capability class: the daemon
+  // uses them to leave focus where it found it, which is the absence of an
+  // effect rather than one the caller asked for. A route that cannot do either
+  // throws FocusUnsupportedError, and the launch reports that it could not
+  // protect the focus instead of reporting a clean launch.
+  focusedElement(): Promise<SemanticElement | undefined>;
+  restoreFocus(id: string): Promise<SemanticElement | undefined>;
+
   // The three effect verbs (schema 1.2.0's contracts, unchanged and not
   // redesigned here). Each throws UnperformableElementError for an id this
   // backend never answered, and EffectUnsupportedError where the route does not
@@ -324,6 +354,8 @@ export const BACKEND_METHODS = [
   "unsubscribeElement",
   "applicationOfElement",
   "installedApplications",
+  "focusedElement",
+  "restoreFocus",
   "editElement",
   "activateElement",
   "submitElement",

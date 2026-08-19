@@ -256,6 +256,12 @@ describe("effect authority: the three element verbs are refused before the backe
     unsubscribeElement: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
+    focusedElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    restoreFocus: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
     editElement: async () => {
       throw new Error("the effect authority gate touched the backend");
     },

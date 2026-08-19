@@ -33,6 +33,7 @@ import {
 } from "../../backend.js";
 import { desktopEntryDirectories, type InventoryEntry, scanInstalledApplications } from "../../inventory.js";
 import {
+  grabFocus,
   insertText,
   performAction,
   scrollIntoView,
@@ -308,6 +309,48 @@ export class AtspiBackend implements Backend {
   // anything inside one.
   async installedApplications(): Promise<InventoryEntry[]> {
     return scanInstalledApplications(desktopEntryDirectories());
+  }
+
+  // WHAT HOLDS THE FOCUS (ADR-0044).
+  //
+  // Answered from the same walk every other read uses, filtered on the same
+  // state vocabulary the wire publishes - "focused" is a state this backend
+  // already maps off bit 12, so nothing new is invented to answer the question.
+  // Going through queryElements rather than asking the bus for a focus object
+  // keeps one property that matters: the answer obeys the visibility gate. A
+  // focused element inside an application this session cannot see is not
+  // reported, because reporting it would be a read of an ungranted application
+  // arriving through a different door (ADR-0036).
+  //
+  // Undefined is a real answer, not a failure: a desktop where nothing holds
+  // focus is an ordinary desktop, and saying so is different from saying the
+  // question could not be asked - which is what FocusUnsupportedError is for.
+  async focusedElement(): Promise<SemanticElement | undefined> {
+    const { elements } = await this.queryElements({});
+    return elements.find((element) => element.states.includes("focused"));
+  }
+
+  // PUTTING THE FOCUS BACK.
+  //
+  // An effect, and therefore verified the way every effect on this seam is
+  // verified: perform, then READ THE WORLD BACK and return what the world
+  // said. The return is the focused element as the tree publishes it AFTER the
+  // attempt - not the element that was asked for, and not a boolean. A route
+  // that grabbed nothing answers with whatever actually holds focus, and the
+  // caller compares. That comparison is the entire measurement ADR-0044 says
+  // this milestone owes, and it is why nothing here reports success.
+  async restoreFocus(id: string): Promise<SemanticElement | undefined> {
+    const ref = this.answered.get(id);
+    if (ref === undefined) {
+      // Same refusal shape, same reason as the effect half: an id inside an
+      // application this session cannot see must not be distinguishable from
+      // one that was never real (ADR-0008 rule 6, ADR-0036).
+      throw new UnperformableElementError(
+        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    await grabFocus(this.channel, ref);
+    return this.focusedElement();
   }
 
   // THE EFFECT HALF.

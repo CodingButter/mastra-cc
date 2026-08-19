@@ -300,6 +300,28 @@ export async function setValue(seam: CallSeam, ref: NativeRef, value: number): P
   });
 }
 
+// GIVING AN ELEMENT THE FOCUS BACK (ADR-0044).
+//
+// Component.GrabFocus is the accessibility bus's own route, which means it goes
+// through the APPLICATION rather than through the compositor - the deliberate
+// choice of the two ADR-0044 named, because the other one is a compositor
+// protocol this project does not depend on (07-ROADMAP §8).
+//
+// The reply is discarded on purpose, and this is the same asymmetry the rest of
+// this file lives by: on this session type SetPosition returns true and moves
+// nothing, so a GrabFocus that returns true has claimed something rather than
+// shown it. Whether focus actually moved is decided by the caller reading the
+// focused element back out of the tree, never here.
+export async function grabFocus(seam: CallSeam, ref: NativeRef): Promise<void> {
+  await requireInterface(seam, ref, COMPONENT_IFACE, "being given the focus");
+  await seam.call({
+    destination: ref.busName,
+    path: ref.objectPath,
+    iface: COMPONENT_IFACE,
+    member: "GrabFocus",
+  });
+}
+
 // BRINGING AN ELEMENT INTO VIEW. The enum stays here; the wire asked only to
 // make the element visible and is told only whether it now is.
 export async function scrollIntoView(seam: CallSeam, ref: NativeRef): Promise<void> {
