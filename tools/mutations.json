@@ -292,5 +292,12 @@
     "find": "  if (regained !== undefined && regained.id === held.element.id) return undefined;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/focus-preservation.test.ts"
+  },
+  {
+    "name": "focus-is-read-from-the-per-application-bit-alone",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "underActivation && ",
+    "cwd": "daemon",
+    "testFile": "src/backends/__tests__/focus-instrument.test.ts"
   }
 ]

@@ -48,7 +48,7 @@ import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
 import { readPublishedActions } from "./actions.js";
 import { readPublishedOperations } from "./magnitudes.js";
-import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
+import { claimsKeyboardActivation, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 
 // The real Linux accessibility backend. Reads the desktop's accessibility
 // tree over plain D-Bus through the Channel seam - every exchange it performs
@@ -313,21 +313,82 @@ export class AtspiBackend implements Backend {
 
   // WHAT HOLDS THE FOCUS (ADR-0044).
   //
-  // Answered from the same walk every other read uses, filtered on the same
-  // state vocabulary the wire publishes - "focused" is a state this backend
-  // already maps off bit 12, so nothing new is invented to answer the question.
-  // Going through queryElements rather than asking the bus for a focus object
-  // keeps one property that matters: the answer obeys the visibility gate. A
-  // focused element inside an application this session cannot see is not
-  // reported, because reporting it would be a read of an ungranted application
-  // arriving through a different door (ADR-0036).
+  // THE FOCUSED ELEMENT INSIDE THE ACTIVE WINDOW - two readings intersected,
+  // because on this platform neither one answers the question alone. This was
+  // measured rather than reasoned, after an earlier implementation that read
+  // "focused" alone reported a clean launch while the keyboard demonstrably
+  // moved:
+  //
+  //   "focused" alone is per-application-local. Four nodes across three
+  //   applications published it simultaneously, and a dialog kept publishing it
+  //   after a launch took its keyboard away. Watching it, nothing ever moves.
+  //
+  //   the activation bit alone is not exclusive either. A background browser
+  //   window claimed it while holding no focused descendant at all.
+  //
+  //   the intersection was exclusive in every census taken: exactly one focused
+  //   element under an activated ancestor, and it MOVED when the keyboard did
+  //   (a dialog's text field before a launch, the launched application's own
+  //   node after).
+  //
+  // The ancestor test is deliberately role-agnostic. A GTK dialog carries the
+  // activation on a frame, but qt6ct carries it on a "filler" - keying this to
+  // a set of window-ish roles would be a role table deciding what an element is
+  // (ADR-0045 clause 2), and it read as "nothing holds focus" when tried.
+  //
+  // This walks rather than reusing queryElements because the answer depends on
+  // an ancestor's state, which a flat list of elements no longer knows. It
+  // keeps the property that mattered about going through the query: the same
+  // visibility gate, applied in the same place and the same way, so a focused
+  // element inside an application this session cannot see is not reported -
+  // reporting it would be a read of an ungranted application arriving through a
+  // different door (ADR-0036).
   //
   // Undefined is a real answer, not a failure: a desktop where nothing holds
   // focus is an ordinary desktop, and saying so is different from saying the
   // question could not be asked - which is what FocusUnsupportedError is for.
   async focusedElement(): Promise<SemanticElement | undefined> {
-    const { elements } = await this.queryElements({});
-    return elements.find((element) => element.states.includes("focused"));
+    const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
+    for (const app of apps) {
+      // The visibility gate, exactly as queryElements applies it: the name is
+      // the one permitted read of an ungranted application, taken before the
+      // subtree is entered (ADR-0036).
+      let applicationName: string;
+      try {
+        applicationName = await this.nameOf(app);
+        if (!isVisible(this.visibility, applicationName)) continue;
+      } catch (error) {
+        if (error instanceof UnrecordedExchangeError) throw error;
+        continue;
+      }
+      const stack: Array<{ ref: NativeRef; depth: number; activated: boolean }> = [
+        { ref: app, depth: 0, activated: false },
+      ];
+      let inThisApp = 0;
+      while (stack.length > 0) {
+        if (inThisApp >= MAX_NODES_PER_APP) break;
+        const { ref, depth, activated } = stack.shift() as { ref: NativeRef; depth: number; activated: boolean };
+        inThisApp += 1;
+        try {
+          const [lower, upper] = await this.statesOf(ref);
+          const underActivation = activated || claimsKeyboardActivation(lower, upper);
+          if (underActivation && toNeutralStates(lower, upper).includes("focused")) {
+            // Read in full only now, so the element is answered (and its id
+            // recorded in the answered map) exactly as any other read would
+            // answer it - restoreFocus resolves that same id afterwards.
+            return await this.readElement(ref, applicationName);
+          }
+          if (depth < MAX_DEPTH) {
+            const kids = await this.children(ref);
+            stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1, activated: underActivation })));
+          }
+        } catch (error) {
+          if (error instanceof UnrecordedExchangeError) throw error;
+          continue;
+        }
+      }
+    }
+    return undefined;
   }
 
   // PUTTING THE FOCUS BACK.
