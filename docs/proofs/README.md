@@ -1,7 +1,8 @@
 # Proofs
 
 Sixteen measurements taken during M0.5, one taken during M1, four taken during
-M2.5, and the record of how the milestone checked itself. Each measurement
+M2.5, one taken during M2.6, and the record of how the milestone checked
+itself. Each measurement
 answers a question in [09-QUESTIONS.md](../09-QUESTIONS.md) that could not be
 answered by argument.
 
@@ -50,6 +51,7 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 | [real Gmail through the daemon](real-gmail-through-the-daemon.md) | Q03 — a surface we did not author, observe-only, zero content committed. Produced by the untracked leg `.proof/gmail.sh` |
 | [an unpermitted application is invisible](an-unpermitted-application-is-invisible.md) | Deny-by-default on real hardware, both routes — absent, not filtered. Produced by the untracked leg `.proof/invisible.sh` |
 | [the Qt6 accessibility knob, measured](the-qt6-accessibility-knob-measured.md) | Q05's Qt row — three states asserted; the always-on variable is the knob, the Qt5-era knob is a no-op. Produced by the untracked leg `.proof/qt6.sh` |
+| [every action the desktop offers, measured](every-action-the-desktop-offers.md) | M2.6 exit gate — the verbs act and an independent witness confirms it; existence and permission are readable while content is not; and the focus guarantee's named Wayland limitation, measured rather than assumed. Produced by the untracked legs `.proof/demo.sh`, `.proof/listing.sh` and `.proof/focus.sh` |
 
 ## Release-gate checks
 
