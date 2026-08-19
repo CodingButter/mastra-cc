@@ -378,15 +378,35 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
     if (error instanceof InventoryUnsupportedError) return { refusal: LIST_APPLICATIONS_REFUSAL };
     throw error;
   }
+  // THE LISTING IS A UNION, not the desktop-entry scan alone.
+  //
+  // What a machine offers is not the same set as what ships a .desktop file.
+  // This daemon has recipes for applications that ship none - a dialog tool, a
+  // browser started with particular arguments - and it will launch any of them
+  // on request. A listing built from the scan alone answered "no" about an
+  // application the very next call would start, which is the false belief
+  // ADR-0042 exists to prevent, arriving through the other door. Found by the
+  // live proof leg; the offline fixture had quietly granted every launchable
+  // application an entry of its own.
+  //
+  // Installed entries come first and keep their diagnostic: a recipe adds a
+  // name the scan could not see, and never overwrites what the machine itself
+  // said about an application it does have.
+  const byName = new Map(installed.map((entry) => [normalise(entry.name), entry]));
+  for (const key of Object.keys(launch.catalog)) {
+    if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });
+  }
   return {
-    applications: installed.map((entry) => ({
-      name: entry.name,
-      capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(launch, capability, entry.name)),
-      // A statement about this daemon's own recipes, never about permission:
-      // an application can be installed and honestly not launchable.
-      launchable: findRecipe(entry.name, launch.catalog) !== undefined,
-      ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
-    })),
+    applications: [...byName.values()]
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((entry) => ({
+        name: entry.name,
+        capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(launch, capability, entry.name)),
+        // A statement about this daemon's own recipes, never about permission:
+        // an application can be installed and honestly not launchable.
+        launchable: findRecipe(entry.name, launch.catalog) !== undefined,
+        ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
+      })),
   };
 }
 

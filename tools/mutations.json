@@ -299,5 +299,12 @@
     "find": "underActivation && ",
     "cwd": "daemon",
     "testFile": "src/backends/__tests__/focus-instrument.test.ts"
+  },
+  {
+    "name": "the-listing-forgets-what-this-daemon-can-launch",
+    "file": "daemon/src/server.ts",
+    "find": "if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
   }
 ]

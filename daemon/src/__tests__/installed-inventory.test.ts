@@ -242,15 +242,83 @@ describe("the application listing", () => {
     expect(applications.find((application) => application.name === "yad")?.launchable).toBe(true);
   });
 
+  // AN APPLICATION THIS DAEMON CAN LAUNCH IS NEVER MISSING FROM THE LISTING.
+  //
+  // Found by the live proof leg, not by this suite: on the machine this was
+  // written for, `listApplications` answered 127 entries and `yad` was not one
+  // of them - while `openApplication {"name":"yad"}` launched it on request.
+  // The listing enumerated the desktop-entry scan alone, and yad ships no
+  // .desktop file. So did chrome and gmail, whose recipes exist for exactly
+  // the launches this daemon performs most.
+  //
+  // This suite did not catch it because the fixture had been given a
+  // yad.desktop of its own - the offline world was one where every launchable
+  // application also had an entry, and the real machine is not that world. A
+  // fixture that grants the assumption under test is not a test.
+  //
+  // The directory used below deliberately EXCLUDES the fixture's yad entry, so
+  // the only way `yad` can appear is the way it must: because this daemon has
+  // a recipe for it. That is the same false belief ADR-0042 exists to prevent,
+  // arriving through the other door - a caller asking what this machine offers
+  // must not be told "no" about something the very next call would launch.
+  it("an application this daemon can launch is listed even when it ships no desktop entry", async () => {
+    const withoutYadEntry = [join(FIXTURE, "home", "applications")];
+    // The premise first: the scan alone genuinely does not know this name, so
+    // the assertion below cannot pass by the fixture leaking it back in.
+    expect(scanInstalledApplications(withoutYadEntry).map((entry) => entry.name)).not.toContain("yad");
+
+    const applications = await listing(context(), inventoryBackend(withoutYadEntry));
+    const yad = applications.find((application) => application.name === "yad");
+    expect(yad).toBeDefined();
+    // Present for the right reason, and honest about it: this daemon can start
+    // it, and the setting that withholds the start is named.
+    expect((yad as InstalledApplication).launchable).toBe(true);
+    expect(capabilityOf(yad as InstalledApplication, "launch")?.availability).toBe("disabled-by-configuration");
+    expect(capabilityOf(yad as InstalledApplication, "launch")?.disabledBy).toContain("--permit");
+  });
+
+  it("every application this daemon has a recipe for appears in the listing", async () => {
+    // Not just the one that was noticed. Any recipe reachable by a caller is a
+    // fact about this machine, and a listing that omits any of them is the
+    // same defect wearing a different name.
+    const applications = await listing(context(), inventoryBackend([join(FIXTURE, "home", "applications")]));
+    const listed = new Set(applications.map((application) => application.name));
+    for (const recipe of Object.keys(CATALOG)) {
+      expect(listed.has(recipe)).toBe(true);
+    }
+  });
+
+  it("an application that is both installed and launchable is listed exactly once", async () => {
+    // The union must not double-count: the fixture's own yad.desktop and the
+    // yad recipe describe the same application, and two rows for one
+    // application would be a different kind of lie about the machine.
+    const applications = await listing(context());
+    expect(applications.filter((application) => application.name === "yad")).toHaveLength(1);
+    // And the installed entry's own diagnostic survives the merge rather than
+    // being replaced by a bare recipe row.
+    const yad = applications.find((application) => application.name === "yad") as InstalledApplication;
+    expect(yad.diagnostic).toMatchObject({ "mastra-cc/desktop-entry-id": "yad" });
+  });
+
   it("the listing leaks nothing from inside an application", async () => {
     const applications = await listing(context({ visibility: "all", allows: new Set(["edit"]) }));
     const serialised = JSON.stringify(applications);
     for (const forbidden of ["/usr/", "Exec", "window", "element", "text", ".desktop"]) {
       expect(serialised).not.toContain(forbidden);
     }
-    // Names, capabilities, launchability and a debug diagnostic. Nothing else.
+    // Names, capabilities, launchability and a debug diagnostic. NOTHING
+    // ELSE - that is the leak assertion, and it is stated as "no key outside
+    // this set" rather than "exactly this set" because the diagnostic is
+    // genuinely optional: an application known only from a launch recipe has
+    // no desktop entry to have said anything about it (schema:
+    // InstalledApplication.diagnostic). Demanding the key be present would
+    // force this daemon to invent a diagnostic for those rows, which is the
+    // opposite of the rule the assertion is protecting.
+    const allowed = ["capabilities", "diagnostic", "launchable", "name"];
     for (const application of applications) {
-      expect(Object.keys(application).sort()).toEqual(["capabilities", "diagnostic", "launchable", "name"]);
+      for (const key of Object.keys(application)) expect(allowed).toContain(key);
+      // The load-bearing three are never optional.
+      expect(Object.keys(application)).toEqual(expect.arrayContaining(["capabilities", "launchable", "name"]));
     }
   });
 
