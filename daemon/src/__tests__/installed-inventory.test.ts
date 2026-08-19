@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CAPABILITY_NAMES, type InstalledApplication } from "@mastra-cc/protocol-types";
+import { CAPABILITY_NAMES, type InstalledApplication, type SemanticElement } from "@mastra-cc/protocol-types";
 import { InventoryUnsupportedError, type Backend } from "../backend.js";
 import { desktopEntryDirectories, scanInstalledApplications } from "../inventory.js";
 import { loadCapabilitiesFile, WITHHOLDS_NOTHING } from "../capabilities.js";
@@ -369,6 +369,88 @@ describe("the listing and the enforcement do not disagree", () => {
         // The wire answer IS the gate's answer - same state, same setting.
         expect(capability.availability).toBe(enforced.availability);
         expect(capability.disabledBy).toBe(enforced.disabledBy);
+      }
+    }
+  });
+
+  it("what the listing says about an effect capability is what the wire method actually does", async () => {
+    // The assertion above compares capabilityStateFor with itself: the listing
+    // is BUILT from that function, so it proves the two are one table but
+    // proves nothing about the dispatch that callers actually reach. This one
+    // drives the real wire methods and compares their behaviour against the
+    // row the listing published, which is the claim ADR-0042 makes to a
+    // caller - "available" means the call proceeds, and every other state
+    // means it is refused before the backend is touched (pin B11).
+    const element: SemanticElement = {
+      id: "el-000000000000",
+      role: "text",
+      name: "message",
+      states: ["enabled", "visible"],
+      actions: [{ name: "click", availability: "available" }],
+      operations: [],
+    };
+    // Reached only when the gate lets the call through, and its arrival is
+    // therefore the evidence that the listing's "available" was true. Every
+    // refusal below must happen without this being called at all.
+    let reached: string | undefined;
+    const backend = {
+      ...inventoryBackend(),
+      queryElements: async () => ({ elements: [element] }),
+      attestElement: async () => ({ element }),
+      applicationOfElement: () => "yad",
+      editElement: async () => {
+        reached = "edit";
+        return { element };
+      },
+      activateElement: async () => {
+        reached = "activate";
+        return { element };
+      },
+      submitElement: async () => {
+        reached = "submit";
+        return { element };
+      },
+    } as unknown as Backend;
+
+    const call = {
+      edit: { method: "editElement", params: { id: element.id, value: "typed" } },
+      activate: { method: "activateElement", params: { id: element.id, action: "click" } },
+      submit: { method: "submitElement", params: { id: element.id, attestation: "commit" } },
+    } as const;
+
+    const [listed] = (await listing(launch, backend)).filter((application) => application.name === "yad");
+    expect(listed).toBeDefined();
+
+    for (const [capability, request] of Object.entries(call)) {
+      const row = capabilityOf(listed, capability);
+      expect(row).toBeDefined();
+      reached = undefined;
+      const answer = await handleRequest({ type: "request", id: 3, ...request }, backend, launch);
+      const result = (answer.result ?? {}) as { element?: SemanticElement; refusal?: string };
+      const refusal = answer.refusal ?? result.refusal;
+      if (row?.availability === "available") {
+        // The listing promised it; the method must have proceeded.
+        expect(refusal).toBeUndefined();
+        expect(reached).toBe(capability);
+      } else {
+        // The listing withheld it; the method must refuse, and the backend
+        // must never have been asked (before-call, not at-result).
+        expect(refusal).toBeDefined();
+        expect(reached).toBeUndefined();
+        // And the refusal is actionable. The two surfaces name the same
+        // remedy in two vocabularies, and this asserts what is actually true
+        // of each rather than a byte match they do not share: a capability the
+        // CONFIGURATION withheld is refused with that file setting named, and
+        // a capability the SESSION never held is refused by a sentence that
+        // names the class - the flag spelling lives in the listing's
+        // disabledBy, because the session refusals predate the listing and are
+        // pinned byte-identical elsewhere. A caller has the setting either
+        // way; only one of them has it inside the refusal string.
+        if (row?.disabledBy?.startsWith("the session flag") === false) {
+          expect(refusal).toContain(row.disabledBy);
+        } else {
+          expect(refusal).toContain(capability);
+        }
       }
     }
   });

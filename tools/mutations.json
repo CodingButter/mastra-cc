@@ -306,5 +306,12 @@
     "find": "if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "the-gate-is-more-permissive-than-the-listing-promised",
+    "file": "daemon/src/server.ts",
+    "find": "if (!holdsEffectAuthority(launch, effectClass)) return { refusal };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
   }
 ]
