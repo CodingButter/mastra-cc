@@ -37,9 +37,18 @@ describe("an ungranted application is invisible", () => {
     expect(buttons).toHaveLength(1);
   });
 
-  it("an ungranted running application's absence is byte-identical to nonexistence", async () => {
+  it("an ungranted running application's TREE is byte-identical to nonexistence", async () => {
     // The FULL wire-shaped responses are compared, not just the elements
     // array, so a future diagnostic field cannot leak which name was real.
+    //
+    // REWRITTEN FOR ADR-0042, and narrowed rather than weakened. This equality
+    // used to mean "an application you may not touch does not exist as far as
+    // you are concerned", which is the belief M2.6 exists to correct: the
+    // listing now says the application is installed and names the setting that
+    // withholds each capability (installed-inventory.test.ts). What the READER
+    // still refuses is everything INSIDE it - windows, elements, text, the
+    // fact that a copy is running right now. Existence and permission are
+    // readable; content is not, and this test is the content half.
     const backend = new ReplayBackend("gtk-dialog", new Set());
     const ungranted = await backend.queryElements({ role: "application", name: "yad" });
     const nonexistent = await backend.queryElements({ role: "application", name: "never-existed" });

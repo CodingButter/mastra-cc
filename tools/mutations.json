@@ -243,5 +243,75 @@
     "find": "  if (disabled(properties)) {\n    return {\n      actions: [],\n      diagnostic: { \"mastra-cc/actions-derived-from\": \"disabled\" },\n    };\n  }\n\n",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/actions.test.ts"
+  },
+  {
+    "name": "the-configuration-is-read-and-never-enforced",
+    "file": "daemon/src/server.ts",
+    "find": "  const withheld = configurationWithholding(launch, effectClass, application);\n  if (withheld !== undefined) return { refusal: withheldRefusal(method, effectClass, withheld) };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/capability-configuration.test.ts"
+  },
+  {
+    "name": "a-withheld-capability-is-reported-as-available",
+    "file": "daemon/src/server.ts",
+    "find": "  if (stamped.elements !== undefined) stamped.elements = stamped.elements.map(stamp);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/capability-configuration.test.ts"
+  },
+  {
+    "name": "a-hidden-entry-is-dropped-from-the-inventory",
+    "file": "daemon/src/inventory.ts",
+    "find": "    found.set(id, { name: id, diagnostic });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "precedence-is-decided-by-directory-order-only",
+    "file": "daemon/src/inventory.ts",
+    "find": "      if (!found.has(id)) found.set(id, entry);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "the-listing-answers-from-its-own-table-not-the-gate",
+    "file": "daemon/src/server.ts",
+    "find": "  const withheld = configurationWithholding(launch, capability, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "a-launch-takes-the-focus-and-never-gives-it-back",
+    "file": "daemon/src/server.ts",
+    "find": "    held = await focusBeforeLaunch(backend);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/focus-preservation.test.ts"
+  },
+  {
+    "name": "the-restore-is-believed-instead-of-read-back",
+    "file": "daemon/src/server.ts",
+    "find": "  if (regained !== undefined && regained.id === held.element.id) return undefined;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/focus-preservation.test.ts"
+  },
+  {
+    "name": "focus-is-read-from-the-per-application-bit-alone",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "underActivation && ",
+    "cwd": "daemon",
+    "testFile": "src/backends/__tests__/focus-instrument.test.ts"
+  },
+  {
+    "name": "the-listing-forgets-what-this-daemon-can-launch",
+    "file": "daemon/src/server.ts",
+    "find": "if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "the-gate-is-more-permissive-than-the-listing-promised",
+    "file": "daemon/src/server.ts",
+    "find": "if (!holdsEffectAuthority(launch, effectClass)) return { refusal };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/installed-inventory.test.ts"
   }
 ]

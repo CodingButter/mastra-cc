@@ -27,6 +27,8 @@ These have nothing to do with each other, and collapsing them produces two disti
 
 There is a third, subtler version. **Probing an application's capability is itself an observation.** Asking the accessibility layer whether an unpermitted application has a readable tree learns something about the person's machine — that the application is installed and running — which is precisely what [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md) rule 6 forbids leaking. Deny-by-default means invisible, and a capability probe is a way of seeing.
 
+> **Amended 2026-08-18 by [ADR-0042](0042-existence-is-readable-content-is-not.md).** The ordering rule above is unchanged and is now load-bearing in code: authority is asked *first*, configuration second, and an unpermitted name never reaches a capability probe (`daemon/src/server.ts`, `openApplication`) — because the probe itself would leak that the application exists. What changed is only the last sentence's premise. Deny-by-default no longer means invisible: existence and *permitted capabilities* are readable from the listing, which is answered from this daemon's own records rather than by probing the application. Nothing inside an unpermitted application is read, so the leak this paragraph guards against is still closed by the same ordering.
+
 This matters more after [ADR-0017](0017-platform-backends-live-inside-the-daemon.md), because capability is the *only* part of this that varies by platform. Authority is ours, it is stored by us, and it is identical everywhere. Getting the line in the right place means the entire consent model — the store, the toggles, the scope enforcement, the audit log, the consent surfaces — is written once and ported never.
 
 ## Decision

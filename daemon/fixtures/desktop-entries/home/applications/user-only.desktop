@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=User Only
+Exec=/home/example/.local/bin/user-only

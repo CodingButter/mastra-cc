@@ -1,6 +1,11 @@
 import { join } from "node:path";
 import { CAPABILITY_NAMES, SCHEMA_DIGEST, type CapabilityName } from "@mastra-cc/protocol-types";
 import { registry } from "./backends/registry.js";
+import {
+  loadCapabilitiesFile,
+  MalformedCapabilitiesFileError,
+  WITHHOLDS_NOTHING,
+} from "./capabilities.js";
 import { normalise } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
 import { loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
@@ -114,6 +119,25 @@ const { launchPermits, visibility } = (() => {
 // silently grants nothing looks exactly like a daemon that is broken.
 // Segment 3's per-application capability configuration attaches inside
 // holdsEffectAuthority; this flag stays the session-wide answer.
+// --capabilities <file>: the USER's durable, per-application capability
+// configuration (ADR-0043 clause 4, ADR-0042). Loaded once here, beside the
+// grants and profiles files and for the same reasons: a malformed permissions
+// file fails startup loudly rather than becoming a silent "everything is
+// allowed", and the absent file is a stated default rather than an accident.
+// The daemon enforces what this file says and has no switch that turns the
+// enforcing off.
+const capabilities = (() => {
+  try {
+    return arg("--capabilities") !== null ? loadCapabilitiesFile(arg("--capabilities") as string) : WITHHOLDS_NOTHING;
+  } catch (error) {
+    if (error instanceof MalformedCapabilitiesFileError) {
+      console.error(`daemon: ${error.message}`);
+      process.exit(2);
+    }
+    throw error;
+  }
+})();
+
 const allows = new Set(argAll("--allow")) as Set<CapabilityName>;
 for (const cls of allows) {
   if (!CAPABILITY_NAMES.includes(cls) || cls === "observe" || cls === "launch") {
@@ -162,7 +186,7 @@ const table = new OwnershipTable();
 const server = await startServer({
   socketPath,
   backend,
-  launch: { permits: launchPermits, allows, catalog, table },
+  launch: { permits: launchPermits, allows, capabilities, catalog, table },
   visibility,
 });
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);

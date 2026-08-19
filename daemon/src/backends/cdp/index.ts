@@ -27,6 +27,7 @@ import {
   type BackendSubscription,
   type ChannelWatch,
   commitDescription,
+  InventoryUnsupportedError,
   MagnitudeOutOfRangeError,
   mintSubscriptionId,
   OperationNotExposedError,
@@ -37,6 +38,7 @@ import {
   UnwatchableElementError,
   WriteNotObservedError,
 } from "../../backend.js";
+import type { InventoryEntry } from "../../inventory.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
@@ -146,6 +148,46 @@ export class CdpBackend implements Backend {
   // reply - never a guessed name (ADR-0039).
   applicationOfElement(id: string): string | undefined {
     return this.applicationOf.get(id);
+  }
+
+  // This route talks to ONE browser through its debugging protocol. That
+  // protocol can say a great deal about the browser and nothing at all about
+  // the machine's installed applications, so this refuses rather than
+  // answering an empty list - empty would claim nothing is installed, and the
+  // browser route has no standing to make that claim (ADR-0040: unequal
+  // fidelity stays visible instead of being faked into parity).
+  async installedApplications(): Promise<InventoryEntry[]> {
+    throw new InventoryUnsupportedError(
+      "this session's backend speaks to one browser and cannot enumerate what this machine has installed - it would have to answer an empty list, which would say the machine has nothing",
+    );
+  }
+
+  // WHAT HOLDS THE FOCUS, on the browser route (ADR-0044).
+  //
+  // Read from the tree this route already walks: `focused` is a published
+  // property here (cdp/roles.ts maps it), so the question is answered from the
+  // page's own reading rather than from a second instrument. Like the desktop
+  // route it obeys the visibility gate, because it goes through queryElements
+  // and inherits the one permitted read.
+  async focusedElement(): Promise<SemanticElement | undefined> {
+    const { elements } = await this.queryElements({});
+    return elements.find((element) => element.states.includes("focused"));
+  }
+
+  // Restoring focus goes through the verb the READER already derived for this
+  // node - `focus`, grounded in the node's own `focusable` property - rather
+  // than through a second mechanism invented here. That matters beyond tidiness:
+  // performDerivedAction refuses a verb the element never published, so a node
+  // that cannot take focus is refused by name instead of being silently missed,
+  // and its focus body verifies with `document.activeElement === this` (a genuine
+  // read-back, cdp/effects.ts). The answer is still the tree's own reading
+  // afterwards, so the caller compares against what it asked for exactly as it
+  // does on the desktop route.
+  async restoreFocus(id: string): Promise<SemanticElement | undefined> {
+    this.assertPerformable("restore the focus");
+    const ref = this.nodeRefFor(id);
+    await performDerivedAction(this.channel, ref, "focus", await this.publishedActionsOf(id));
+    return this.focusedElement();
   }
 
   private recordApplication(id: string): void {

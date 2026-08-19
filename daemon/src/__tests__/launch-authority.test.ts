@@ -19,9 +19,18 @@ import {
 import { observeOnlyEffects } from "./support/observe-only.js";
 
 // Authority before capability, and the no-leak property (ADR-0019, ADR-0034).
-// The refusal-equality assertions use toBe on the exact strings: byte
-// equality IS the security property - an unknown name and an unpermitted name
-// must be indistinguishable, or a refusal reveals what is installed.
+// The refusal-equality assertions use toBe on the exact strings: an unknown
+// name and an unpermitted name still answer byte-identically, so guessing
+// names at this method teaches a caller nothing.
+//
+// REWRITTEN FOR ADR-0042. The old reason for that equality was that a refusal
+// must never reveal whether an application is installed. It no longer is:
+// listApplications names every application this machine has, permitted or not
+// (installed-inventory.test.ts). What survives is narrower and still true -
+// this METHOD is not where existence is answered, so its refusal says nothing
+// about what is installed and a caller learns nothing by probing it. The
+// difference matters: existence is now readable in one honest place instead of
+// leaking a bit at a time through a gate that was never designed to answer it.
 // Real child processes where a spawn is involved; the replay backend supplies
 // a real captured tree (its application is named "yad").
 
@@ -157,11 +166,15 @@ describe("launch authority", () => {
     expect(missing.refusal).toBe(UNAVAILABLE_REFUSAL);
   });
 
-  it("d: the refusal names no path, no command, and nothing about what is installed", () => {
+  it("d: the refusal names no path and no command, and points at where existence IS answered", () => {
+    // Still true, and for the same reason as before: a path or a command line
+    // is content, and this refusal carries none of it.
     expect(UNAVAILABLE_REFUSAL).not.toContain("/");
-    expect(UNAVAILABLE_REFUSAL.toLowerCase()).not.toContain("install");
     expect(UNAVAILABLE_REFUSAL).not.toContain("sleep");
     expect(UNAVAILABLE_REFUSAL).not.toContain("yad");
+    // New under ADR-0042: a refusal that cannot be acted on is a wall, so the
+    // sentence names the method that answers what this machine has.
+    expect(UNAVAILABLE_REFUSAL).toContain("listApplications");
   });
 
   it("refuses a running copy the daemon does not own, naming the restart requirement", async () => {
@@ -230,6 +243,9 @@ describe("effect authority: the three element verbs are refused before the backe
     queryElements: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
+    installedApplications: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
     attestElement: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
@@ -238,6 +254,12 @@ describe("effect authority: the three element verbs are refused before the backe
     },
     applicationOfElement: () => undefined,
     unsubscribeElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    focusedElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    restoreFocus: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
     editElement: async () => {

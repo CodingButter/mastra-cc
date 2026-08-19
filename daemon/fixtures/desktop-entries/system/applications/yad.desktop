@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=YAD Dialog
+Exec=/usr/bin/yad

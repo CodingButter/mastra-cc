@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type { InventoryEntry } from "./inventory.js";
 import type {
   ActivateElementParams,
   ActivateElementResult,
@@ -12,6 +13,7 @@ import type {
   RevealElementParams,
   RevealElementResult,
   Role,
+  SemanticElement,
   SetElementCaretParams,
   SetElementCaretResult,
   SetElementTextParams,
@@ -117,11 +119,27 @@ export class TextOffsetOutOfRangeError extends Error {}
 // exist, so the disagreement is raised rather than smoothed over.
 export class WriteNotObservedError extends Error {}
 
+// This route cannot enumerate what the machine has installed. A fact about the
+// route, never about the machine: the browser protocol answers for one browser
+// and a recorded tape recorded a tree rather than a catalogue, so neither can
+// say what is installed and neither pretends to. An empty list would be a
+// claim that nothing is installed, which is the false belief ADR-0042 exists
+// to prevent, so the seam refuses instead of answering emptily.
+export class InventoryUnsupportedError extends Error {}
+
 // The element does not publish the action that was named. The published list is
 // the only vocabulary a call may use, and a name outside it is refused rather
 // than guessed at - performing "the closest one" is the ACTIONS_BY_ROLE mistake
 // with a search function bolted on (ADR-0045 clause 2).
 export class UnpublishedActionError extends Error {}
+
+// This route cannot read or restore focus. A fact about the instrument, not
+// about the desktop: a recording holds the focus a tree had when it was
+// captured and cannot move it, and a route that answered "focus is unchanged"
+// would be claiming a measurement it never took. ADR-0044 clause 4 is explicit
+// that a best-effort silence is worse than none, so the seam refuses and the
+// server reports the refusal rather than a clean launch.
+export class FocusUnsupportedError extends Error {}
 
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
@@ -264,6 +282,42 @@ export interface Backend {
   // unattributed. The daemon abstains rather than guessing (ADR-0039).
   applicationOfElement(id: string): string | undefined;
 
+  // What this machine has installed, read from OUTSIDE every application
+  // (ADR-0042). Names only: no window, no element, no text, no path and no
+  // command line - the fence around an application described from outside it.
+  //
+  // It is on the seam because discovery is a platform question (ADR-0017): a
+  // desktop entry directory is a Linux fact, and a route that has no way to
+  // enumerate throws InventoryUnsupportedError rather than answering an empty
+  // list. Empty means "this machine has nothing installed", and a route that
+  // said that when it simply could not look would teach a caller the exact
+  // falsehood this milestone exists to correct.
+  //
+  // Permission is NOT decided here. The backend says what exists; the server
+  // says what may be done with it, from the same tables that enforce it.
+  installedApplications(): Promise<InventoryEntry[]>;
+
+  // WHAT CURRENTLY HOLDS FOCUS, and how to put it back (ADR-0044).
+  //
+  // Two methods rather than one, because they answer different questions and
+  // fail for different reasons. focusedElement() is a READ: it reports the
+  // element the platform says has focus right now, or undefined when nothing
+  // does - an empty desktop is a real answer and not a failure. restoreFocus()
+  // is an EFFECT, and like every effect on this seam it VERIFIES BY READING
+  // THE WORLD BACK: it returns the element that holds focus AFTER it tried,
+  // read from the tree, so a route whose restore call returned true and moved
+  // nothing is caught by the caller comparing that answer against what it
+  // asked for. Neither method returns a boolean success, because a boolean is
+  // exactly the return-code evidence this seam refuses (ADR-0047).
+  //
+  // These are observe-and-repair rather than a new capability class: the daemon
+  // uses them to leave focus where it found it, which is the absence of an
+  // effect rather than one the caller asked for. A route that cannot do either
+  // throws FocusUnsupportedError, and the launch reports that it could not
+  // protect the focus instead of reporting a clean launch.
+  focusedElement(): Promise<SemanticElement | undefined>;
+  restoreFocus(id: string): Promise<SemanticElement | undefined>;
+
   // The three effect verbs (schema 1.2.0's contracts, unchanged and not
   // redesigned here). Each throws UnperformableElementError for an id this
   // backend never answered, and EffectUnsupportedError where the route does not
@@ -299,6 +353,9 @@ export const BACKEND_METHODS = [
   "subscribeElement",
   "unsubscribeElement",
   "applicationOfElement",
+  "installedApplications",
+  "focusedElement",
+  "restoreFocus",
   "editElement",
   "activateElement",
   "submitElement",

@@ -76,8 +76,37 @@ const STATE_BITS: ReadonlyArray<{ bit: number; state: State }> = [
 const SHOWING_BIT = 25;
 const VISIBLE_BIT = 30;
 
+// ADR-0044, and the reason it is a separate reading from "focused".
+//
+// MEASURED on this machine, hands off, twice: the bus's "focused" bit is
+// per-application-local. Every application keeps its own idea of which of its
+// widgets is focused and does NOT clear it when the application loses the
+// keyboard - four nodes in three applications reported "focused" at once while
+// only one of them could receive a keystroke. A daemon that reads "focused"
+// alone therefore watches an element that never moves, and concludes a launch
+// took nothing when the keyboard demonstrably left the room.
+//
+// The ACTIVE bit is the one that tracks: a yad dialog went active true ->
+// false across a launch that took its keyboard, while its focused bit never
+// moved. It is read HERE and never published: it is not one of the wire's
+// seven states and does not become one, because what a caller is owed is which
+// element holds the keyboard, not which of two platform bits said so (B10).
+const ACTIVE_BIT = 1;
+
+function hasBit(lower: number, upper: number, bit: number): boolean {
+  return bit < 32 ? (lower & (1 << bit)) !== 0 : (upper & (1 << (bit - 32))) !== 0;
+}
+
+// Whether this node claims the keyboard-bearing activation. Not exclusive on
+// its own - a background browser window claimed it while holding no focused
+// descendant - which is why the focus read intersects the two rather than
+// trusting either alone.
+export function claimsKeyboardActivation(lower: number, upper: number): boolean {
+  return hasBit(lower, upper, ACTIVE_BIT);
+}
+
 export function toNeutralStates(lower: number, upper: number): State[] {
-  const has = (bit: number) => (bit < 32 ? (lower & (1 << bit)) !== 0 : (upper & (1 << (bit - 32))) !== 0);
+  const has = (bit: number) => hasBit(lower, upper, bit);
   const states = new Set<State>();
   for (const { bit, state } of STATE_BITS) {
     if (has(bit)) states.add(state);
