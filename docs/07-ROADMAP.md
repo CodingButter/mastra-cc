@@ -132,7 +132,7 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 ---
 
-## M2.6 — The daemon acts
+## M2.6 — The daemon acts ✅ closed 2026-08-19
 
 **Goal:** every desktop interaction a person performs, available and enforced at the daemon — decided, frozen into the schema, implemented on both routes, and proven on real hardware.
 
