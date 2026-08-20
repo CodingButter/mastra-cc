@@ -162,8 +162,10 @@ subject and date are separable fields.
 > node count finally has a receipt: **at least 502 nodes, budget-capped** — the walk's
 > per-page budget truncated the count, so it is a floor, and the old few-thousand figure
 > stays uncited. The structure question is answered on the real thing: the inbox is a
-> grid of one hundred rows of gridcells, visible today only in the diagnostic because
-> those native roles are not yet in the neutral map. The plan-interpreter re-run against
+> grid of one hundred rows of gridcells — carried as the neutral words `grid`, `row` and
+> `gridcell` since schema version 1.5.0
+> ([ADR-0048](02-DECISIONS/0048-the-words-gmails-inbox-publishes-carried-as-words.md);
+> they were diagnostic-only when this was first measured). The plan-interpreter re-run against
 > real Gmail — the bookmark's letter — is recorded as M3's first live task.
 
 **Q04 — Is Wayland accessibility at parity with X11, and what is missing?**
