@@ -204,15 +204,16 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 - Hub with the transport package as its only daemon client.
 - Minted, enumerated, read-only-by-default tool surface.
 - Token minting with a short TTL and honest refusals for a missing account.
-- Audit log with redaction.
+- The audit log: an append-only access record, written by the daemon at the point of effect ([ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md)).
+- The stripped view long-term agent memory receives — the one redaction this milestone owes. Redaction proper is an episode concern at read time, and episodes are not in M3.
 - The four lane events.
 
 **Exit gate:**
-- [ ] Boundary pins B2, B3, B5 pass, and each **fails** under its mutation.
+- [ ] Boundary pins B2 and B5 pass, and each **fails** under its mutation. B3's **runtime** half — a client-side provider key is refused — passes and fails under its mutation; B3's **source** half is deferred to M4, which is the first milestone with a client package to scan.
 - [ ] Digest agreement check passes; **fails** when the transport's embedded digest is altered.
 - [ ] A text-only integration test drives a real daemon to read a real element.
 - [ ] Proof artifact: `which-credential-the-voice-lane-accepts.md`.
-- [ ] The audit log for that run names every element touched and nothing else.
+- [ ] The audit log for that run names every element it **answered**, and nothing else.
 
 ---
 
