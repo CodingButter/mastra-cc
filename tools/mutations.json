@@ -383,5 +383,12 @@
     "find": "  if (inView !== true) {\n    throw new WriteNotObservedError(\n      \"bringing this element into view reported success, but reading it back found it still outside the viewport - the page performed something other than what was asked\",\n    );\n  }",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "the-inbox-forgets-it-is-a-grid",
+    "file": "daemon/src/backends/cdp/roles.ts",
+    "find": "  gridcell: \"gridcell\",\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/roles.test.ts"
   }
 ]

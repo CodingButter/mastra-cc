@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -13,6 +13,9 @@
     "link",
     "list",
     "listitem",
+    "grid",
+    "row",
+    "gridcell",
     "menu",
     "menuitem",
     "text",
@@ -401,7 +404,7 @@
       }
     },
     "editElement": {
-      "description": "Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Defined on the wire before it is possible; until an edit-authority surface exists, every call is refused by name.",
+      "description": "Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
       "params": {
         "id": {
           "type": "string",
@@ -429,7 +432,7 @@
       }
     },
     "activateElement": {
-      "description": "Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Defined on the wire before it is possible; until an activate-authority surface exists, every call is refused by name.",
+      "description": "Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
       "params": {
         "id": {
           "type": "string",
@@ -457,7 +460,7 @@
       }
     },
     "submitElement": {
-      "description": "Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Defined on the wire before it is possible; until a submit-authority surface exists, every call is refused by name.",
+      "description": "Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
       "params": {
         "id": {
           "type": "string",
@@ -485,7 +488,7 @@
       }
     },
     "setElementValue": {
-      "description": "Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "description": "Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
       "params": {
         "id": {
           "type": "string",
@@ -513,7 +516,7 @@
       }
     },
     "setElementText": {
-      "description": "Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "description": "Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
       "params": {
         "id": {
           "type": "string",
@@ -546,7 +549,7 @@
       }
     },
     "setElementCaret": {
-      "description": "Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "description": "Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
       "params": {
         "id": {
           "type": "string",
@@ -574,7 +577,7 @@
       }
     },
     "revealElement": {
-      "description": "Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name.",
+      "description": "Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
       "params": {
         "id": {
           "type": "string",

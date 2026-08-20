@@ -17,6 +17,14 @@ const NATIVE_TO_NEUTRAL: Readonly<Record<string, Role>> = {
   StaticText: "text",
   InlineTextBox: "text",
   LabelText: "label",
+  // The words real Gmail's inbox publishes, measured through this backend on
+  // the signed-in profile (docs/proofs/real-gmail-through-the-daemon.md):
+  // a grid of one hundred rows of gridcells, and a stray native checkbox.
+  // ADR-0048: these are words the desktop offered, not words we invented.
+  grid: "grid",
+  row: "row",
+  gridcell: "gridcell",
+  checkbox: "checkbox",
   none: "generic",
   generic: "generic",
 };
