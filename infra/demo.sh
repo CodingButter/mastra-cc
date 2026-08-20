@@ -57,17 +57,30 @@ done
 # :98, one past apply.sh --headless-check's :97, so the two lanes can run at
 # the same time on one machine without fighting over a display number.
 DEMO_DISPLAY="${MASTRA_CC_DEMO_DISPLAY:-:98}"
-# Xvfb's stderr is kept: a display-lock collision must name itself here, not
-# surface twenty query attempts later as "no element named OK could be read".
-Xvfb "$DEMO_DISPLAY" -screen 0 1024x768x24 -nolisten tcp &
+# Xvfb's output goes to a file, not the merged stream: the CI lock requires
+# PROOF: GREEN as the LAST line, and Xvfb's shutdown chatter (killed by the
+# EXIT trap, after the lock prints) would land after it and flake the check
+# red. The file is shown on every failure path, so a display-lock collision
+# still names itself instead of surfacing twenty query attempts later.
+XVFB_LOG="$(mktemp)"
+Xvfb "$DEMO_DISPLAY" -screen 0 1024x768x24 -nolisten tcp >"$XVFB_LOG" 2>&1 &
 XVFB_PID=$!
-trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT INT TERM
-sleep 1
-# A dead Xvfb here means the lane would attach to whatever owns the display
-# instead - the opposite of the private desktop this script promises. Fail
-# now, loudly, with the process's own stderr already printed above.
-kill -0 "$XVFB_PID" 2>/dev/null || {
-  echo "demo: Xvfb did not survive startup on $DEMO_DISPLAY - is the display already taken?" >&2
+trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT
+trap 'kill "$XVFB_PID" 2>/dev/null || true; exit 130' INT TERM
+# Readiness is the display's socket answering, not the PID looking alive -
+# kill -0 succeeds on a zombie, and the fast-exit lock collision is exactly
+# the case a PID check misses. Bounded: a display that never appears fails.
+XVFB_READY=0
+for _ in $(seq 1 20); do
+  if [ -S "/tmp/.X11-unix/X${DEMO_DISPLAY#:}" ]; then
+    XVFB_READY=1
+    break
+  fi
+  sleep 0.5
+done
+[ "$XVFB_READY" -eq 1 ] || {
+  echo "demo: Xvfb never opened display $DEMO_DISPLAY - is it already taken?" >&2
+  cat "$XVFB_LOG" >&2
   exit 1
 }
 
@@ -91,7 +104,8 @@ timeout --kill-after=30s 15m \
     set -uo pipefail
     ROOT="$1"
     LAUNCHER="$2"
-    trap '"'"'kill "${YAD_PID:-}" "${LAUNCHER_PID:-}" 2>/dev/null || true'"'"' EXIT INT TERM
+    trap '"'"'kill "${YAD_PID:-}" "${LAUNCHER_PID:-}" 2>/dev/null || true'"'"' EXIT
+    trap '"'"'kill "${YAD_PID:-}" "${LAUNCHER_PID:-}" 2>/dev/null || true; exit 130'"'"' INT TERM
 
     "$LAUNCHER" --launch-immediately --a11y=1 >/dev/null 2>&1 &
     LAUNCHER_PID=$!
@@ -147,6 +161,8 @@ timeout --kill-after=30s 15m \
 
 if [ "$STATUS" -ne 0 ]; then
   echo "demo: the live accessibility lane did not answer (exit $STATUS)" >&2
+  echo "demo: Xvfb's own output follows" >&2
+  cat "$XVFB_LOG" >&2
   exit "$STATUS"
 fi
 

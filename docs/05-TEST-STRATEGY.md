@@ -139,7 +139,12 @@ Three properties make this a witness rather than a ritual:
   a real window, then runs the at-spi conformance suite on that same bus.
 - **Silence is red.** The suite is required to report at least one *passing*
   test — an all-skipped run exits 0 and would otherwise be indistinguishable
-  from success — and CI requires the script's `PROOF: GREEN` line by name.
+  from success — and CI requires the script's full `PROOF: GREEN` sentence as
+  the transcript's *closing* line, verbatim, so a stray match earlier in the
+  log cannot stand in for the verdict. The passing tests are all live-gated
+  by title (`live lane: MASTRA_CC_LIVE=1`); a non-live test added under the
+  atspi filter would quietly satisfy the skip check, so new cases in that
+  block stay live-gated.
 
 The abort rule of §5 is unchanged. This job does not un-mark a single live
 test; the marks are what let the same suite run in both lanes. It gives the

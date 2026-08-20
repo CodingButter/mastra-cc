@@ -98,17 +98,20 @@ jobs:
         run: |
           set -o pipefail
           bash infra/demo.sh 2>&1 | tee demo.log
-          tail -n 1 demo.log | grep -q "^PROOF: GREEN" || {
+          tail -n 1 demo.log | grep -q "^PROOF: GREEN - a real element was read and the at-spi backend conformed on a real accessibility bus$" || {
             echo "live: infra/demo.sh did not end with PROOF: GREEN - the live lane was not witnessed" >&2
             exit 1
           }
       # The run id expires with the log retention window; the transcript is
       # the only durable copy of what the witness saw. Keep it either way.
+      # if-no-files-found ignore: a failure before the witness step naturally
+      # produces no demo.log, and that absence is not itself a finding.
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: live-lane-transcript
+          name: live-lane-transcript-${{ github.run_id }}
           path: demo.log
+          if-no-files-found: ignore
 
   # B12 is a CI job over every manifest, not a source pin
   # (docs/01-ARCHITECTURE.md:139-150).
