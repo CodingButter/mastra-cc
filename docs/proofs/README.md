@@ -55,15 +55,18 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 
 ## Release-gate checks
 
-Checks that need a live desktop cannot run in CI — a live-requiring step in CI
-does not fail, it kills the runner (../05-TEST-STRATEGY.md:103). They run on a
-desktop machine instead, on a stated cadence, and their results land in the
-active milestone's progress record.
+Checks that need a live desktop cannot simply be dropped into CI — a
+live-requiring step run against a machine with no accessibility bus does not
+fail, it kills the runner (../05-TEST-STRATEGY.md §5). They run on a desktop
+machine, on a stated cadence, and their results land in the active milestone's
+progress record. The one exception is a CI job that *builds itself a bus*
+first and runs a committed script on it; that is what the `live` job does
+(../05-TEST-STRATEGY.md §5.1), and it does not change the cadence below.
 
 | Check | Command | Cadence |
 |---|---|---|
 | Tape drift | `node daemon/dist/main.mjs --verify-tape gtk-dialog` | Before each milestone closes, on a machine with a live accessibility bus. Drift is the desktop changing, not a bug — if the corpus should follow, re-capture, record the diff, and re-run the replay tests against the new tape. Undiscovered drift is the failure. |
-| Live conformance | `MASTRA_CC_LIVE=1 pnpm --filter @mastra-cc/daemon test` | Before each milestone closes (tracked as issue #1 until a runner with a bus exists). |
+| Live conformance | `MASTRA_CC_LIVE=1 pnpm --filter @mastra-cc/daemon test` | Before each milestone closes. The at-spi half of it also runs in CI now, on a bus CI builds for itself — `bash infra/demo.sh`, wired as the `live` job (../05-TEST-STRATEGY.md §5.1). |
 | Headless lane | `bash infra/apply.sh --headless-check` | Before each milestone closes — proves a machine can capture with no monitor attached. |
 
 ## Two rules these artifacts follow

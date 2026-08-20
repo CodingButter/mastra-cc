@@ -112,11 +112,43 @@ The daemon's tests have two lanes, and this is not a convenience:
 | Lane | Requires | Runs |
 |---|---|---|
 | `--no-live` | nothing | CI, every push |
-| live | a display and an accessibility bus | manually, on hardware |
+| live | a display and an accessibility bus | CI's `live` job, which builds that bus (§5.1); and manually, on hardware |
 
 **The reason is severe:** AT-SPI2 can **abort the interpreter** when the accessibility bus is absent. Not raise an exception — abort. A live-only test that runs on a headless CI machine does not fail, it kills the runner, and the failure looks like infrastructure flakiness. Every live-requiring test must be marked, and the default lane must be the safe one.
 
 The same split applies upward. Anything needing a real desktop is a proof artifact (§6), not a test.
+
+### 5.1 The live lane in CI
+
+Marking live tests keeps CI alive, but it costs something: in the `--no-live`
+lane every at-spi test *skips*, and a suite that skips is indistinguishable
+from a suite that passes. Nothing in CI could tell that the backend had stopped
+reading real elements.
+
+So CI carries a second job, `live`, that **builds the desktop the lane needs**
+rather than borrowing one: a virtual display (Xvfb), a private session bus
+(`dbus-run-session`), `at-spi2-core`'s bus launcher inside it, and a real GTK3
+window. It then runs the committed witness, `infra/demo.sh`, against that bus.
+
+Three properties make this a witness rather than a ritual:
+
+- **The script is the witness.** `infra/demo.sh` is checked in and runnable by
+  hand on any desktop. CI executes the same file a developer does; there is no
+  CI-only pathway that could pass where the real one fails.
+- **It reads before it claims.** The lane first resolves a real element out of
+  a real window, then runs the at-spi conformance suite on that same bus.
+- **Silence is red.** The suite is required to report at least one *passing*
+  test — an all-skipped run exits 0 and would otherwise be indistinguishable
+  from success — and CI requires the script's full `PROOF: GREEN` sentence as
+  the transcript's *closing* line, verbatim, so a stray match earlier in the
+  log cannot stand in for the verdict. The passing tests are all live-gated
+  by title (`live lane: MASTRA_CC_LIVE=1`); a non-live test added under the
+  atspi filter would quietly satisfy the skip check, so new cases in that
+  block stay live-gated.
+
+The abort rule of §5 is unchanged. This job does not un-mark a single live
+test; the marks are what let the same suite run in both lanes. It gives the
+marked tests somewhere in CI to actually run.
 
 ---
 
@@ -148,6 +180,10 @@ Full rationale in [ADR-0012](02-DECISIONS/0012-claims-needing-a-desktop-are-prov
 8. mutation checks, on the selected set (§3)
 9. integration dry-run against the destination monorepo (04-INTEGRATION-PLAN §7)
 ```
+
+Two further jobs run beside that sequence, not inside it: `licences` (B12, one
+pass over every manifest) and `live` (§5.1, which builds an accessibility bus
+and runs `infra/demo.sh` on it).
 
 **Three details that are not obvious and each cost the prototype something:**
 

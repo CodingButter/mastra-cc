@@ -60,7 +60,11 @@ if [ "${1:-}" = "--headless-check" ]; then
     YAD_PID=$!
     sleep 3
     STATUS=0
-    node "'"$REPO"'/daemon/dist/main.mjs" --backend atspi --query "OK" || STATUS=$?
+    # --grant yad: this window was started by the script, not launched by the
+    # daemon - without a session observe grant, deny-by-default (ADR-0036)
+    # answers an EMPTY tree and the query fails. The grant key is the
+    # application name on the bus ("yad"), not the window title.
+    node "'"$REPO"'/daemon/dist/main.mjs" --backend atspi --grant yad --query "OK" || STATUS=$?
     kill "$YAD_PID" "$LAUNCHER_PID" 2>/dev/null || true
     exit "$STATUS"
   '
