@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -75,7 +75,7 @@ describe("the mutation runner puts the file back", () => {
     // has finished. Signalling the group kills the child too, which is how the
     // runner learns about the interruption at the only moment it can act on it.
     const { root, sourcePath, source } = scratchTree({
-      vitest: "#!/bin/sh\nsleep 30\n",
+      vitest: "#!/bin/sh\ntouch vitest-started\nsleep 30\n",
       source: "keep this line\nGUARDED_LINE\nand this one\n",
     });
 
@@ -92,6 +92,16 @@ describe("the mutation runner puts the file back", () => {
       return onDisk !== source ? onDisk : null;
     });
     expect(mutated).not.toContain("GUARDED_LINE");
+
+    // And wait for the fake vitest to actually be RUNNING before signalling.
+    // A signal that lands in the gap between the mutation write and the spawn
+    // reaches only the runner, whose queued handler cannot fire until the
+    // synchronous loop ends - the fake vitest, spawned after the signal was
+    // already delivered, then sleeps out its full 30 seconds untouched and the
+    // test times out (seen once on CI). The fake vitest touches this marker as
+    // its first act, so a signal sent after it exists reaches the whole group.
+    const startedPath = join(root, "subject", "vitest-started");
+    await waitFor(() => (existsSync(startedPath) ? true : null));
 
     const exit = new Promise((resolve) => child.on("exit", (code, signal) => resolve({ code, signal })));
     process.kill(-child.pid, "SIGINT");
