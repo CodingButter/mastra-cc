@@ -230,6 +230,36 @@ describe("the daemon enforces the configuration", () => {
     expect(response.result).toBeUndefined();
   });
 
+  it("the four routed operations are withheld by the same setting as the verb of their class", async () => {
+    // The operations do not get settings of their own: setElementValue and
+    // setElementText change what an element HOLDS, which is what edit means,
+    // and revealElement makes a surface do something visible, which is what
+    // activate means. A configuration surface that withheld editElement while
+    // serving setElementText would be a setting the user cannot reason about.
+    const capabilities = loadCapabilitiesFile(
+      file("operations-off.json", { applications: { yad: { edit: false, activate: false } } }),
+    );
+    const cases = [
+      { method: "setElementValue", params: { id: element.id, value: 3 }, allow: "edit", setting: 'applications["yad"].edit' },
+      { method: "setElementText", params: { id: element.id, text: "typed" }, allow: "edit", setting: 'applications["yad"].edit' },
+      { method: "setElementCaret", params: { id: element.id, offset: 0 }, allow: "edit", setting: 'applications["yad"].edit' },
+      { method: "revealElement", params: { id: element.id }, allow: "activate", setting: 'applications["yad"].activate' },
+    ] as const;
+
+    for (const { method, params, allow, setting } of cases) {
+      const response = await handleRequest(
+        { type: "request", id: 1, method, params },
+        untouchable,
+        context({ allows: new Set([allow]), capabilities }),
+      );
+      const result = response.result as { element?: SemanticElement; refusal?: string };
+      expect(result.element).toBeUndefined();
+      expect(result.refusal).toContain("capability configuration");
+      expect(result.refusal).toContain(setting);
+      expect(result.refusal).toContain("changing that setting");
+    }
+  });
+
   it("authority is asked before configuration - a session without the class hears the scope gate, unchanged", async () => {
     // Order matters for what the caller learns: a session that was never given
     // edit is told about the class it lacks, not about a setting on an

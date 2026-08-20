@@ -43,14 +43,28 @@ if (nonObserve.length === 0) {
   fail("pin-b11: no non-observe entry in the dispatch table - the pin would pass vacuously (it exists because one does)");
 }
 
-// The three element verbs are named, not merely counted. Every check below is
+// The element methods are named, not merely counted. Every check below is
 // "every non-observe entry is marked before-call", which a table that no longer
-// carries these verbs satisfies perfectly - going green by deletion. Each of
-// them performs a real change on a real desktop since M2.6 segment 2, so their
-// presence in the table is part of what this pin asserts, and their CLASS is
-// too: an edit re-declared as observe would be enforced at result time, which
-// for a verb that has already typed into a field is enforcement of nothing.
-const REQUIRED = { editElement: "edit", activateElement: "activate", submitElement: "submit" };
+// carries them satisfies perfectly - going green by deletion. Each performs a
+// real change on a real desktop, so its presence in the table is part of what
+// this pin asserts, and its CLASS is too: an edit re-declared as observe would
+// be enforced at result time, which for a method that has already typed into a
+// field is enforcement of nothing.
+//
+// The three verbs perform since M2.6 segment 2. The four operations perform
+// from the moment the wire routed them rather than answering with a constant:
+// before that they were listed here as before-call and the marking was true but
+// idle, because nothing was ever enforced against a call that could not happen.
+// They are named now for the same reason the verbs are.
+const REQUIRED = {
+  editElement: "edit",
+  activateElement: "activate",
+  submitElement: "submit",
+  setElementValue: "edit",
+  setElementText: "edit",
+  setElementCaret: "edit",
+  revealElement: "activate",
+};
 for (const [method, effectClass] of Object.entries(REQUIRED)) {
   const entry = entries.find((e) => e.method === method);
   if (entry === undefined) {

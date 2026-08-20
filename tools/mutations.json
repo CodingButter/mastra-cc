@@ -161,6 +161,34 @@
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
+    "name": "the-wire-stops-serving-set-element-value",
+    "file": "daemon/src/server.ts",
+    "find": "  setElementValue: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementValue((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "the-wire-stops-serving-set-element-text",
+    "file": "daemon/src/server.ts",
+    "find": "  setElementText: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementText((p ?? {}) as { id?: unknown; text?: unknown; offset?: unknown }, b, l) },\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "the-wire-stops-serving-set-element-caret",
+    "file": "daemon/src/server.ts",
+    "find": "  setElementCaret: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementCaret((p ?? {}) as { id?: unknown; offset?: unknown }, b, l) },\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
+    "name": "the-wire-stops-serving-reveal-element",
+    "file": "daemon/src/server.ts",
+    "find": "  revealElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
+  },
+  {
     "name": "malformed-profiles-file-composes-nothing",
     "file": "daemon/src/launch/profiles.ts",
     "find": "  try {\n    parsed = JSON.parse(text);\n  } catch {\n    throw new MalformedProfilesFileError(\n      `the profiles file at ${path} is not valid JSON - a file naming browser identities that cannot be parsed must not silently become \"no profiles\"`,\n    );\n  }\n",
