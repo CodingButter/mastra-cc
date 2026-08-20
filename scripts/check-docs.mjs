@@ -7,13 +7,14 @@
  * ships no Python and a gate should not be the one thing that drags a second
  * runtime into CI (ADR-0030).
  *
- * Three checks, four failure modes — `index` reports both a missing entry and a
- * gap or duplicate in the ADR numbering, and each was proven to fail on purpose
- * before the Python original was deleted:
+ * Four checks — `index` reports both a missing entry and a gap or duplicate in
+ * the ADR numbering, and each was proven to fail on purpose (the first three
+ * before the Python original was deleted, `proofs` when issue #16 closed):
  *   links     every relative markdown link resolves to a file on disk
  *   index     every ADR file is listed in the ADR index, and vice versa,
  *             and the numbering is contiguous
  *   coverage  every numbered doc named in the README exists
+ *   proofs    every artifact in docs/proofs/ is listed in the proofs index
  *
  * Known limits, both of which fail loudly rather than passing vacuously: a link
  * target containing a closing parenthesis is truncated at it, and an unclosed
@@ -113,6 +114,32 @@ function checkAdrIndex() {
   return problems;
 }
 
+// Issue #16's defect: this gate proved every link RESOLVES and never that the
+// proofs index COVERS its own directory, so a committed measurement could sit
+// unlisted and the index would still read as complete (M2.5's review caught
+// three). Same shape as the ADR index check: everything on disk is listed.
+// The inverse direction - the index naming a missing file - is already a dead
+// link, which checkLinks reports.
+function checkProofsIndex() {
+  const proofs = join(ROOT, 'docs', 'proofs');
+  const index = join(proofs, 'README.md');
+  if (!existsSync(index)) return [`missing proofs index: ${relative(ROOT, index)}`];
+
+  const onDisk = readdirSync(proofs).filter(
+    (n) => n.endsWith('.md') && n !== 'README.md',
+  );
+  if (onDisk.length === 0) {
+    return ['proofs directory holds no artifacts - the coverage check has nothing to check, which is itself wrong'];
+  }
+  const listed = new Set(
+    linkTargets(readFileSync(index, 'utf8')).map((t) => t.split('#')[0]),
+  );
+  return onDisk
+    .filter((n) => !listed.has(n))
+    .sort()
+    .map((n) => `proof artifact not listed in the proofs index: ${n}`);
+}
+
 function checkCoverage() {
   const required = [
     'docs/00-PRODUCT.md',
@@ -139,7 +166,7 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-const problems = [...broken, ...checkCoverage(), ...checkLinks(files), ...checkAdrIndex()];
+const problems = [...broken, ...checkCoverage(), ...checkLinks(files), ...checkAdrIndex(), ...checkProofsIndex()];
 if (problems.length > 0) {
   console.log(`check-docs: ${problems.length} problem(s) across ${files.length} files\n`);
   for (const p of problems) console.log(`  ${p}`);
