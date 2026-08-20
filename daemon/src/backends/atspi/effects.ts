@@ -19,6 +19,7 @@ import {
   WriteNotObservedError,
 } from "../../backend.js";
 import { UnrecordedExchangeError } from "./channel.js";
+import { showing } from "./roles.js";
 
 interface CallSeam {
   call(exchange: {
@@ -272,6 +273,16 @@ export async function setCaretOffset(seam: CallSeam, ref: NativeRef, offset?: nu
     signature: "i",
     body: [target],
   });
+  // The bounds check above refuses what this side can see is wrong; this reads
+  // what the element did with what was left. The comparison is against the
+  // RESOLVED target, so an absent offset is checked against the end it was
+  // resolved to rather than skipped for lack of a number.
+  const landed = Number(await propertyOf(seam, ref, TEXT_IFACE, "CaretOffset"));
+  if (landed !== target) {
+    throw new WriteNotObservedError(
+      `placing this element's caret reported success, but reading the element back found the caret at ${landed} where ${target} was intended - the platform performed something other than what was asked`,
+    );
+  }
 }
 
 // MOVING A MAGNITUDE.
@@ -298,6 +309,16 @@ export async function setValue(seam: CallSeam, ref: NativeRef, value: number): P
     signature: "ssv",
     body: [VALUE_IFACE, "CurrentValue", ["d", value]],
   });
+  // Read back in the element's own units and compare exactly. A control that
+  // keeps what fits rather than what was asked for is this operation's measured
+  // failure, and it is silent: the write itself answers normally. No tolerance
+  // is allowed in here, because a tolerance is precisely a clamp that agrees.
+  const held = Number(await propertyOf(seam, ref, VALUE_IFACE, "CurrentValue"));
+  if (held !== value) {
+    throw new WriteNotObservedError(
+      `setting this element's magnitude reported success, but reading the element back found ${held} where ${value} was intended - the platform performed something other than what was asked`,
+    );
+  }
 }
 
 // GIVING AN ELEMENT THE FOCUS BACK (ADR-0044).
@@ -334,4 +355,22 @@ export async function scrollIntoView(seam: CallSeam, ref: NativeRef): Promise<vo
     signature: "u",
     body: [SCROLL_ANYWHERE],
   });
+  // A reveal has no magnitude to compare, so it is compared against the state
+  // the tree already publishes. "Visible but not showing" is this daemon's own
+  // definition of offscreen (roles.ts), which makes "still not showing after a
+  // scroll" a reveal that did not happen, said in a word already on the wire.
+  // Nothing new is published to check this; the bits are read where they are.
+  const [states] = await seam.call({
+    destination: ref.busName,
+    path: ref.objectPath,
+    iface: ACCESSIBLE_IFACE,
+    member: "GetState",
+  });
+  const lower = Array.isArray(states) ? Number(states[0] ?? 0) : 0;
+  const upper = Array.isArray(states) ? Number(states[1] ?? 0) : 0;
+  if (!showing(lower, upper)) {
+    throw new WriteNotObservedError(
+      "bringing this element into view reported success, but reading the element back found it still off screen - the platform performed something other than what was asked",
+    );
+  }
 }

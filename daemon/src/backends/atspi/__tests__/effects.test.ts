@@ -124,18 +124,38 @@ describe("performing an action", () => {
 });
 
 describe("setting a magnitude", () => {
-  it("writes a value inside the range the element published", async () => {
+  it("writes a value inside the range the element published, and confirms the element took it", async () => {
     const channel = scriptedChannel({
       GetInterfaces: [["org.a11y.atspi.Accessible", VALUE]],
       "Get:MinimumValue": [0],
       "Get:MaximumValue": [1],
       Set: [],
+      "Get:CurrentValue": [0.5],
     });
 
     await setValue(channel, REF, 0.5);
 
     const written = channel.asked.find((exchange) => exchange.member === "Set");
     expect(written?.body?.[1]).toBe("CurrentValue");
+  });
+
+  it("refuses a magnitude the element did not take, rather than reporting the write's own success", async () => {
+    // A range control that accepts the write and keeps what fits is this
+    // operation's measured failure mode, and it is silent: the Set answers
+    // normally. Only reading CurrentValue back afterwards can see it.
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", VALUE]],
+      "Get:MinimumValue": [0],
+      "Get:MaximumValue": [1],
+      Set: [],
+      // What the control kept, which is not what was asked for.
+      "Get:CurrentValue": [0.25],
+    });
+
+    const failure = await setValue(channel, REF, 0.5).catch((error: unknown) => error);
+
+    expect(failure, "a magnitude the element never took was accepted").toBeInstanceOf(WriteNotObservedError);
+    expect((failure as Error).message).toContain("0.25");
   });
 
   it("refuses a magnitude outside the published range BEFORE the call", async () => {
@@ -251,16 +271,35 @@ describe("writing text and placing the caret", () => {
     expect((failure as Error).message).toContain("abcdtypedefghi");
   });
 
-  it("places the caret at the end when no offset is given", async () => {
+  it("places the caret at the end when no offset is given, and confirms it landed there", async () => {
     const channel = scriptedChannel({
       GetInterfaces: [["org.a11y.atspi.Accessible", TEXT]],
       "Get:CharacterCount": [9],
       SetCaretOffset: [true],
+      "Get:CaretOffset": [9],
     });
 
     await setCaretOffset(channel, REF, undefined);
 
     expect(channel.asked.find((exchange) => exchange.member === "SetCaretOffset")?.body?.[0]).toBe(9);
+  });
+
+  it("refuses a caret the element placed somewhere else, rather than reporting the write's own success", async () => {
+    // Same platform behaviour as the clamped insert above, one interface over:
+    // the write is accepted and the caret goes where the toolkit prefers.
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", TEXT]],
+      "Get:CharacterCount": [9],
+      SetCaretOffset: [true],
+      "Get:CaretOffset": [9],
+    });
+
+    const failure = await setCaretOffset(channel, REF, 4).catch((error: unknown) => error);
+
+    expect(failure, "a caret that landed at the end was accepted as a caret at offset 4").toBeInstanceOf(
+      WriteNotObservedError,
+    );
+    expect((failure as Error).message).toContain("9");
   });
 
   it("reports a field with no editable-text interface as not-exposed rather than refusing by policy", async () => {
@@ -279,11 +318,19 @@ describe("writing text and placing the caret", () => {
   });
 });
 
+// The state bitfields these tests script are the platform's own, read the same
+// way the tree reader reads them. Bit 30 is VISIBLE, bit 25 is SHOWING, and
+// "visible but not showing" is already this daemon's definition of `offscreen`
+// (roles.ts). A reveal is therefore checked in a vocabulary that exists.
+const VISIBLE_AND_SHOWING = (1 << 30) | (1 << 25);
+const VISIBLE_NOT_SHOWING = 1 << 30;
+
 describe("revealing an element", () => {
   it("asks the platform to bring it into view without naming a coordinate", async () => {
     const channel = scriptedChannel({
       GetInterfaces: [["org.a11y.atspi.Accessible", COMPONENT]],
       ScrollTo: [true],
+      GetState: [[VISIBLE_AND_SHOWING, 0]],
     });
 
     await scrollIntoView(channel, REF);
@@ -291,5 +338,21 @@ describe("revealing an element", () => {
     const scrolled = channel.asked.find((exchange) => exchange.member === "ScrollTo");
     expect(scrolled, "reveal must use the enum form, never ScrollToPoint's pixels").toBeDefined();
     expect(channel.asked.some((exchange) => exchange.member === "ScrollToPoint")).toBe(false);
+  });
+
+  it("refuses a reveal that left the element off screen, rather than reporting the scroll's own success", async () => {
+    // ScrollTo answering normally says the request was accepted, not that the
+    // element arrived - the same asymmetry as a window move that returns true
+    // and moves nothing. The element's own showing bit is what settles it.
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", COMPONENT]],
+      ScrollTo: [true],
+      GetState: [[VISIBLE_NOT_SHOWING, 0]],
+    });
+
+    const failure = await scrollIntoView(channel, REF).catch((error: unknown) => error);
+
+    expect(failure, "an element still off screen was reported as revealed").toBeInstanceOf(WriteNotObservedError);
+    expect((failure as Error).message).toMatch(/off screen|offscreen/i);
   });
 });

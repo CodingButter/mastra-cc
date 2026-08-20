@@ -105,6 +105,14 @@ export function claimsKeyboardActivation(lower: number, upper: number): boolean 
   return hasBit(lower, upper, ACTIVE_BIT);
 }
 
+// Whether the element is on screen right now, in the platform's own bits. The
+// same reading `offscreen` is derived from below, exported so a reveal can be
+// checked against the tree's answer rather than against a second idea of
+// visibility invented for the purpose.
+export function showing(lower: number, upper: number): boolean {
+  return hasBit(lower, upper, SHOWING_BIT);
+}
+
 export function toNeutralStates(lower: number, upper: number): State[] {
   const has = (bit: number) => hasBit(lower, upper, bit);
   const states = new Set<State>();

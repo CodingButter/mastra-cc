@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { UnperformableElementError } from "../../../backend.js";
+import { UnperformableElementError, WriteNotObservedError } from "../../../backend.js";
+import type { Channel } from "../channel.js";
 import { replayChannel } from "../../replay/index.js";
 import { AtspiBackend } from "../index.js";
 
@@ -49,6 +50,41 @@ describe("an effect verb answers with what it read afterwards", () => {
     expect(result.element?.id).toBe(target!.id);
     expect(result.element?.name).toBe(target!.name);
     expect(result.element?.actions.map((action) => action.name)).toEqual(["click"]);
+    await backend.close();
+  });
+
+  // A re-read is evidence that the world is as it now stands - it is not
+  // evidence that this call changed it. When the application DECLINES the
+  // action, nothing happened, and the world therefore reads exactly as it did
+  // before: the re-read comes back full and healthy and says nothing at all
+  // about the verb. The platform's own `false` is the only place that fact
+  // exists, which is why performAction carries it out as evidence of REFUSAL.
+  // This is the same reasoning submitElement already applies (attestation.test
+  // .ts) - an activate is not exempt from it.
+  it("refuses an action the application declined, rather than answering with a re-read that shows nothing happened", async () => {
+    const recorded = replayChannel("gtk-dialog");
+    // Declines the action and stays alive: every observable signal except the
+    // boolean is indistinguishable from a clean success.
+    const decliningChannel: Channel = {
+      async call(exchange) {
+        if (exchange.member === "DoAction") return [false];
+        return recorded.call(exchange);
+      },
+      watch: (subscribedTo, sink, anchor) => recorded.watch(subscribedTo, sink, anchor),
+      close: () => recorded.close(),
+    };
+
+    const backend = new AtspiBackend(decliningChannel, "all");
+    const { elements } = await backend.queryElements({});
+    const target = elements.find((element) => element.actions.some((action) => action.name === "click"));
+    expect(target, "the recorded world publishes no action - a re-capture failed").toBeDefined();
+
+    await expect(backend.activateElement({ id: target!.id, action: "click" })).rejects.toThrow(
+      WriteNotObservedError,
+    );
+    // The refusal names the verb the application declined, so the caller is
+    // told which of its own words was turned down.
+    await expect(backend.activateElement({ id: target!.id, action: "click" })).rejects.toThrow(/"click"/);
     await backend.close();
   });
 

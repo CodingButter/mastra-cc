@@ -247,7 +247,22 @@ export async function performDerivedAction(
 // coordinate, which is exactly the shape ADR-0045 asks for: the wire asked only
 // that the element be made visible and is told only whether it now is. A
 // scroll offset in pixels is a promise about one viewport, and it is not made.
+// The scroll answers nothing whether or not the element arrived - a fixed
+// ancestor, a zero-size box or a container that cannot scroll all leave it
+// where it was, silently - so the element's own rect is read back afterwards
+// and asked one question: is any of it inside the viewport now. The rect is
+// read INSIDE the page and only the answer crosses back, which is the same
+// move contentLength already makes: a boolean about visibility is what the
+// wire asked for, and no coordinate is published to answer it.
+const WITHIN_VIEWPORT =
+  "function(){ const r = this.getBoundingClientRect(); return r.bottom > 0 && r.right > 0 && r.top < (innerHeight || 0) && r.left < (innerWidth || 0); }";
+
 export async function revealIn(seam: CallSeam, ref: NodeRef): Promise<void> {
   const objectId = await objectFor(seam, ref);
   await callOn(seam, ref, objectId, "function(){ this.scrollIntoView({block:'nearest', inline:'nearest'}); }", []);
+  if ((await callOn(seam, ref, objectId, WITHIN_VIEWPORT, [])) !== true) {
+    throw new WriteNotObservedError(
+      "bringing this element into view reported success, but reading the element back found it still outside the viewport - the page performed something other than what was asked",
+    );
+  }
 }

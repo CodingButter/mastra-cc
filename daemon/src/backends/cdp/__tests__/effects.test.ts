@@ -192,6 +192,7 @@ describe("the browser route reads and reveals", () => {
     const channel = scriptedChannel({
       ...RESOLVES,
       "callFunctionOn:function(){ this.scrollIntoView({block:'nearest": returns(undefined),
+      "callFunctionOn:function(){ const r = this.getBoundingClientRec": returns(true),
     });
 
     await expect(revealIn(channel, REF)).resolves.toBeUndefined();
@@ -200,5 +201,20 @@ describe("the browser route reads and reveals", () => {
     const performed = channel.asked.join(" ");
     expect(performed).toContain("scrollIn");
     expect(performed, "reveal must not carry a coordinate").not.toMatch(/scrollTo|scrollTop|window\.scroll/);
+  });
+
+  it("refuses a reveal that left the element outside the viewport, rather than reporting the scroll's own success", async () => {
+    // `scrollIntoView` returns nothing whether or not the element arrived: a
+    // fixed ancestor, a zero-size box or a container that cannot scroll all
+    // leave it where it was, silently. The element's own rect is what settles
+    // it, and only a boolean crosses back - no coordinate is published.
+    const channel = scriptedChannel({
+      ...RESOLVES,
+      "callFunctionOn:function(){ this.scrollIntoView({block:'nearest": returns(undefined),
+      "callFunctionOn:function(){ const r = this.getBoundingClientRec": returns(false),
+    });
+
+    await expect(revealIn(channel, REF)).rejects.toThrow(WriteNotObservedError);
+    await expect(revealIn(channel, REF)).rejects.toThrow(/still outside the viewport/);
   });
 });

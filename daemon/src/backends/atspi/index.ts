@@ -443,8 +443,21 @@ export class AtspiBackend implements Backend {
     return this.performing(params.id, (ref) => setTextContents(this.channel, ref, params.value));
   }
 
+  // The one place an effect's return value is consulted on this route, for the
+  // one reason it is worth consulting. A re-read says what the world is now; it
+  // does not say that this call changed it. When the application DECLINES the
+  // action, nothing happened, so the element reads back exactly as it did
+  // before - full, healthy, and silent about the verb. The platform's own
+  // `false` is the only place that fact exists (performAction's comment says so
+  // in full), and dropping it would answer a caller with an element that looks
+  // like a success. This is the same asymmetry submitElement applies below.
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
-    return this.performing(params.id, (ref) => performAction(this.channel, ref, params.action));
+    return this.performing(params.id, async (ref) => {
+      if (await performAction(this.channel, ref, params.action)) return;
+      throw new WriteNotObservedError(
+        `the application declined to perform ${JSON.stringify(params.action)} - nothing was done`,
+      );
+    });
   }
 
   // Submit commits by performing the element's own single published verb, and

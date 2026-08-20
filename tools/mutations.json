@@ -313,5 +313,75 @@
     "find": "if (!holdsEffectAuthority(launch, effectClass)) return { refusal };",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "an-action-the-application-declined-is-answered-as-performed",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      if (await performAction(this.channel, ref, params.action)) return;\n      throw new WriteNotObservedError(\n        `the application declined to perform ${JSON.stringify(params.action)} - nothing was done`,\n      );\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/verified-by-reading-back.test.ts"
+  },
+  {
+    "name": "a-magnitude-write-is-never-read-back",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  const held = Number(await propertyOf(seam, ref, VALUE_IFACE, \"CurrentValue\"));\n  if (held !== value) {\n    throw new WriteNotObservedError(\n      `setting this element's magnitude reported success, but reading the element back found ${held} where ${value} was intended - the platform performed something other than what was asked`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-caret-write-is-never-read-back",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  const landed = Number(await propertyOf(seam, ref, TEXT_IFACE, \"CaretOffset\"));\n  if (landed !== target) {\n    throw new WriteNotObservedError(\n      `placing this element's caret reported success, but reading the element back found the caret at ${landed} where ${target} was intended - the platform performed something other than what was asked`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-reveal-is-never-checked-against-the-showing-bit",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  if (!showing(lower, upper)) {\n    throw new WriteNotObservedError(\n      \"bringing this element into view reported success, but reading the element back found it still off screen - the platform performed something other than what was asked\",\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-text-write-is-never-compared-with-what-was-intended",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  if (observed === intended) return;\n  throw new WriteNotObservedError(\n    `${what} reported success, but reading the element back found ${JSON.stringify(observed)} where ${JSON.stringify(intended)} was intended - the platform performed something other than what was asked`,\n  );\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-browser-reveal-is-never-checked-against-the-viewport",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "  if ((await callOn(seam, ref, objectId, WITHIN_VIEWPORT, [])) !== true) {\n    throw new WriteNotObservedError(\n      \"bringing this element into view reported success, but reading the element back found it still outside the viewport - the page performed something other than what was asked\",\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-browser-write-is-never-compared-with-what-was-intended",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "  if (String(observed ?? \"\") !== value) {\n    throw new WriteNotObservedError(\n      `writing this element reported success, but reading it back found ${JSON.stringify(String(observed ?? \"\"))} where ${JSON.stringify(value)} was intended - the page performed something other than what was asked`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-browser-caret-is-never-compared",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "  if (intended !== undefined && Number(observed) !== intended) {\n    throw new WriteNotObservedError(\n      `placing the caret reported success, but reading it back found it at ${String(observed)} where ${intended} was intended`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-browser-magnitude-is-never-compared",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "  if (Number(observed) !== value) {\n    throw new WriteNotObservedError(\n      `setting this element's value reported success, but reading it back found ${String(observed)} where ${value} was intended - the page clamped or ignored the write`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-derived-action-that-did-nothing-is-answered-as-performed",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "  if (observed !== true) {\n    throw new WriteNotObservedError(\n      `performing ${JSON.stringify(action)} reported success, but reading the element back did not show it took effect`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
   }
 ]
