@@ -49,6 +49,7 @@ import { nameMatches } from "./names.js";
 import { readPublishedActions } from "./actions.js";
 import { readPublishedOperations } from "./magnitudes.js";
 import { claimsKeyboardActivation, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
+import type { Classified } from "../../audit.js";
 
 // The real Linux accessibility backend. Reads the desktop's accessibility
 // tree over plain D-Bus through the Channel seam - every exchange it performs
@@ -250,10 +251,10 @@ export class AtspiBackend implements Backend {
     return { elements };
   }
 
-  async attestElement(params: AttestElementParams): Promise<AttestElementResult> {
+  async attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>> {
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
-      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest` };
+      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest`, refusalClass: "UnknownElement" };
     }
     try {
       // Re-read live; the id re-derives from the same bus name + path, so a
@@ -262,7 +263,7 @@ export class AtspiBackend implements Backend {
       return { element };
     } catch (error) {
       if (error instanceof UnrecordedExchangeError) throw error;
-      return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again` };
+      return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again`, refusalClass: "ElementGone" };
     }
   }
 

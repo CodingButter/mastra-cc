@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type { Classified } from "./audit.js";
 import type { InventoryEntry } from "./inventory.js";
 import type {
   ActivateElementParams,
@@ -259,7 +260,11 @@ export function mintSubscriptionId(): string {
 export interface Backend {
   readonly name: string;
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult>;
-  attestElement(params: AttestElementParams): Promise<AttestElementResult>;
+  // The refusal a backend writes here carries the CLASS it belongs to
+  // (daemon/src/audit.ts), stated where the sentence is written rather than
+  // recovered by reading the sentence back: the record names categories, and a
+  // category parsed out of prose is a guess dressed as a fact.
+  attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>>;
   subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription>;
   unsubscribeElement(subscriptionId: string): Promise<void>;
 
