@@ -2,13 +2,29 @@ import { createConnection, type Socket } from "node:net";
 import { join } from "node:path";
 import {
   SCHEMA_DIGEST,
+  type ActivateElementParams,
+  type ActivateElementResult,
   type AttestElementParams,
   type AttestElementResult,
   type ChangeEvent,
+  type EditElementParams,
+  type EditElementResult,
+  type ListApplicationsParams,
+  type ListApplicationsResult,
   type OpenApplicationParams,
   type OpenApplicationResult,
   type QueryElementsParams,
   type QueryElementsResult,
+  type RevealElementParams,
+  type RevealElementResult,
+  type SetElementCaretParams,
+  type SetElementCaretResult,
+  type SetElementTextParams,
+  type SetElementTextResult,
+  type SetElementValueParams,
+  type SetElementValueResult,
+  type SubmitElementParams,
+  type SubmitElementResult,
   type SubscribeElementParams,
   type SubscribeElementResult,
   type UnsubscribeElementParams,
@@ -20,6 +36,20 @@ import {
 // state the digest they were built against before anything else, and a
 // mismatch is refused AT CONNECT with a message naming both digests - never
 // left to fail on a malformed field later.
+//
+// Every method the daemon serves has a binding here, and every binding is the
+// same line: name the method, hand the params over, name the result type. That
+// sameness is the point. This package owns framing, correlation, address
+// resolution, discovery and generated bindings, and nothing else (ADR-0003) -
+// so there is no retry here, no convenience wrapper that fills in a parameter
+// the caller did not give, and no method that means something slightly
+// different from the one the daemon answers. A binding that did any of those
+// would be a second implementation of the protocol, and the digest handshake
+// above cannot detect a disagreement it is not told about.
+//
+// For most of this daemon's life the five observe-and-launch methods were bound
+// and the eight that act were not. The daemon's headline claim is that it acts;
+// until now, no independent client could ask it to.
 
 export function defaultSocketPath(): string {
   const runtimeDir = process.env.XDG_RUNTIME_DIR ?? "/tmp";
@@ -53,6 +83,14 @@ export interface TransportClient {
   subscribeElement(params: SubscribeElementParams): Promise<SubscribeElementResult>;
   unsubscribeElement(params: UnsubscribeElementParams): Promise<UnsubscribeElementResult>;
   openApplication(params: OpenApplicationParams): Promise<OpenApplicationResult>;
+  editElement(params: EditElementParams): Promise<EditElementResult>;
+  activateElement(params: ActivateElementParams): Promise<ActivateElementResult>;
+  submitElement(params: SubmitElementParams): Promise<SubmitElementResult>;
+  setElementValue(params: SetElementValueParams): Promise<SetElementValueResult>;
+  setElementText(params: SetElementTextParams): Promise<SetElementTextResult>;
+  setElementCaret(params: SetElementCaretParams): Promise<SetElementCaretResult>;
+  revealElement(params: RevealElementParams): Promise<RevealElementResult>;
+  listApplications(params?: ListApplicationsParams): Promise<ListApplicationsResult>;
   /**
    * Register a listener for pushed change events. Returns a function that
    * removes it. Events are delivered as they arrive and are never buffered:
@@ -170,6 +208,14 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
     subscribeElement: (params) => call("subscribeElement", params) as Promise<SubscribeElementResult>,
     unsubscribeElement: (params) => call("unsubscribeElement", params) as Promise<UnsubscribeElementResult>,
     openApplication: (params) => call("openApplication", params) as Promise<OpenApplicationResult>,
+    editElement: (params) => call("editElement", params) as Promise<EditElementResult>,
+    activateElement: (params) => call("activateElement", params) as Promise<ActivateElementResult>,
+    submitElement: (params) => call("submitElement", params) as Promise<SubmitElementResult>,
+    setElementValue: (params) => call("setElementValue", params) as Promise<SetElementValueResult>,
+    setElementText: (params) => call("setElementText", params) as Promise<SetElementTextResult>,
+    setElementCaret: (params) => call("setElementCaret", params) as Promise<SetElementCaretResult>,
+    revealElement: (params) => call("revealElement", params) as Promise<RevealElementResult>,
+    listApplications: (params) => call("listApplications", params ?? {}) as Promise<ListApplicationsResult>,
     onChangeEvent: (listener) => {
       listeners.add(listener);
       return () => void listeners.delete(listener);

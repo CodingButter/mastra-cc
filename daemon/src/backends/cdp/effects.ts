@@ -247,7 +247,25 @@ export async function performDerivedAction(
 // coordinate, which is exactly the shape ADR-0045 asks for: the wire asked only
 // that the element be made visible and is told only whether it now is. A
 // scroll offset in pixels is a promise about one viewport, and it is not made.
+// The claim is read back the same way every other write on this route is: in a
+// separate call, off the element itself. The page's own answer to "are you in
+// the viewport" is the intersection of the element's box with the viewport, and
+// that boolean IS the reveal's whole claim - a scroll that was refused (a
+// display:none ancestor, a container that does not scroll) returns from
+// scrollIntoView without complaint and leaves the element exactly where it was.
 export async function revealIn(seam: CallSeam, ref: NodeRef): Promise<void> {
   const objectId = await objectFor(seam, ref);
   await callOn(seam, ref, objectId, "function(){ this.scrollIntoView({block:'nearest', inline:'nearest'}); }", []);
+  const inView = await callOn(
+    seam,
+    ref,
+    objectId,
+    "function(){ const b = this.getBoundingClientRect(); const h = window.innerHeight || 0; const w = window.innerWidth || 0; return b.bottom > 0 && b.right > 0 && b.top < h && b.left < w; }",
+    [],
+  );
+  if (inView !== true) {
+    throw new WriteNotObservedError(
+      "bringing this element into view reported success, but reading it back found it still outside the viewport - the page performed something other than what was asked",
+    );
+  }
 }

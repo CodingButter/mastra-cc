@@ -192,6 +192,9 @@ describe("the browser route reads and reveals", () => {
     const channel = scriptedChannel({
       ...RESOLVES,
       "callFunctionOn:function(){ this.scrollIntoView({block:'nearest": returns(undefined),
+      // The read-back: the page's own answer to whether the element's box now
+      // meets the viewport. A separate call, as every other write's check is.
+      "callFunctionOn:function(){ const b = this.getBoundingClientRec": returns(true),
     });
 
     await expect(revealIn(channel, REF)).resolves.toBeUndefined();
@@ -199,6 +202,19 @@ describe("the browser route reads and reveals", () => {
     // position: a scroll offset is a promise about one viewport (ADR-0045).
     const performed = channel.asked.join(" ");
     expect(performed).toContain("scrollIn");
-    expect(performed, "reveal must not carry a coordinate").not.toMatch(/scrollTo|scrollTop|window\.scroll/);
+    expect(performed, "reveal must not carry a coordinate").not.toMatch(/scrollTop|window\.scroll/);
+  });
+
+  it("refuses a reveal the page did not actually make, rather than reporting it as done", async () => {
+    // scrollIntoView never throws and never reports: a display:none ancestor
+    // or a container that does not scroll leaves the element exactly where it
+    // was, and the call answers the same way it does on success.
+    const channel = scriptedChannel({
+      ...RESOLVES,
+      "callFunctionOn:function(){ this.scrollIntoView({block:'nearest": returns(undefined),
+      "callFunctionOn:function(){ const b = this.getBoundingClientRec": returns(false),
+    });
+
+    await expect(revealIn(channel, REF)).rejects.toBeInstanceOf(WriteNotObservedError);
   });
 });

@@ -423,9 +423,15 @@ export class AtspiBackend implements Backend {
   // out-of-bounds write, performs it somewhere else, and returns true; a window
   // move returns true and moves nothing. The return value is a claim. The
   // re-read is the evidence.
-  // The effect's own return value is deliberately unused here: whatever it
-  // claims, the element read afterwards is what this backend answers with.
-  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<unknown>): Promise<{ element: SemanticElement } & T> {
+  //
+  // What changed in M2.7: the re-read is no longer ALSO the verification. Every
+  // effect passed to this helper verifies itself before it returns - it
+  // compares what it observed against what it intended and throws
+  // WriteNotObservedError on disagreement (effects.ts). Reading back and
+  // comparing are two different acts, and this helper only ever did the first:
+  // it produced a fresh, honest-looking element after an operation that may
+  // have done nothing. The element below is the ANSWER, not the evidence.
+  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<void>): Promise<{ element: SemanticElement } & T> {
     const ref = this.answered.get(id);
     if (ref === undefined) {
       // Byte-identical to the refusal for an element that does not exist: an id
@@ -443,8 +449,23 @@ export class AtspiBackend implements Backend {
     return this.performing(params.id, (ref) => setTextContents(this.channel, ref, params.value));
   }
 
+  // The action's own reply is evidence in exactly one direction (effects.ts):
+  // a `true` is worth nothing, a `false` is the platform declining in its own
+  // words before anything happened. Submit has always checked it; activate
+  // dropped it on the floor and answered with a freshly re-read element, which
+  // told the caller "performed" for an action the application refused. There is
+  // no state to compare here - an action is a bare verb and the element does
+  // not publish what it was supposed to change - so the decline is the only
+  // reading there is, and discarding it left this verb with none.
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
-    return this.performing(params.id, (ref) => performAction(this.channel, ref, params.action));
+    return this.performing(params.id, async (ref) => {
+      const performed = await performAction(this.channel, ref, params.action);
+      if (!performed) {
+        throw new WriteNotObservedError(
+          `the application declined to perform ${JSON.stringify(params.action)} - nothing was done`,
+        );
+      }
+    });
   }
 
   // Submit commits by performing the element's own single published verb, and

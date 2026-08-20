@@ -74,22 +74,32 @@ describe("the effect-class gate", () => {
 
 // THE FOUR OPERATIONS, AND THE WORDS THEY REFUSE WITH.
 //
-// These four wire methods refuse unconditionally in this segment, and for a
-// while they refused with a sentence that had quietly become false: it claimed
-// the backend seam carried no operation, and it claimed the session held no
-// authority. The seam had grown all four operations, and no authority check
-// runs on this path at all. Nothing failed, because nothing checked the words -
-// only that some refusal arrived. A refusal names the check that actually ran
-// (ADR-0008 clause 5), so the sentence is the assertion here, and it is
-// asserted against the world rather than against itself.
-describe("the four operations refuse without claiming a reason that is not true", () => {
+// These four wire methods used to refuse unconditionally, and for a while they
+// refused with a sentence that had quietly become false: it claimed the backend
+// seam carried no operation, and it claimed the session held no authority. The
+// seam had grown all four operations, and no authority check ran on that path
+// at all. Nothing failed, because nothing checked the words - only that some
+// refusal arrived. A refusal names the check that actually ran (ADR-0008 clause
+// 5), so the sentence is the assertion here, and it is asserted against the
+// world rather than against itself.
+//
+// The wire now routes all four to the seam that performs them, and the second
+// test below INVERTS because of it. It used to assert that held and unheld
+// hear the same sentence, because no authority check ran. Authority is now
+// exactly what these methods depend on, so the assertion is that held and
+// unheld DIFFER and that the unheld sentence names the class. The shape is
+// kept: the sentence is still the assertion, and it is still checked against
+// the world.
+describe("the four operations answer for the check that actually ran", () => {
   const backend = registry.replay({ visibility: new Set(["yad"]) });
 
+  // Well-formed parameters throughout: this block is about authority, and a
+  // malformed value would be refused for a different reason entirely.
   const operations = [
-    ["setElementValue", SET_VALUE_SCOPE_REFUSAL],
-    ["setElementText", SET_TEXT_SCOPE_REFUSAL],
-    ["setElementCaret", SET_CARET_SCOPE_REFUSAL],
-    ["revealElement", REVEAL_SCOPE_REFUSAL],
+    ["setElementValue", SET_VALUE_SCOPE_REFUSAL, { id: "el-000000000000", value: 3 }, "edit"],
+    ["setElementText", SET_TEXT_SCOPE_REFUSAL, { id: "el-000000000000", text: "typed" }, "edit"],
+    ["setElementCaret", SET_CARET_SCOPE_REFUSAL, { id: "el-000000000000", offset: 0 }, "edit"],
+    ["revealElement", REVEAL_SCOPE_REFUSAL, { id: "el-000000000000" }, "activate"],
   ] as const;
 
   it("never claims the seam carries no operation, because the seam carries all four", () => {
@@ -102,12 +112,10 @@ describe("the four operations refuse without claiming a reason that is not true"
     }
   });
 
-  it("never claims the session holds no authority, because no authority check runs here", async () => {
-    // Held and unheld, byte for byte. The refusal is the same sentence either
-    // way - which is precisely why it must not blame the session's authority.
-    for (const [index, [method, refusal]] of operations.entries()) {
+  it("no longer claims the answer is independent of authority, because it is not", async () => {
+    for (const [index, [method, refusal, params, effectClass]] of operations.entries()) {
       const held = await handleRequest(
-        { type: "request", id: 20 + index, method, params: { id: "el-000000000000" } },
+        { type: "request", id: 20 + index, method, params },
         backend,
         {
           permits: new Set<string>(),
@@ -116,17 +124,42 @@ describe("the four operations refuse without claiming a reason that is not true"
           table: new OwnershipTable(),
         },
       );
-      const unheld = await handleRequest(
-        { type: "request", id: 30 + index, method, params: { id: "el-000000000000" } },
-        backend,
-      );
+      const unheld = await handleRequest({ type: "request", id: 30 + index, method, params }, backend);
 
       const heldRefusal = (held.result as { refusal?: string }).refusal;
-      expect(heldRefusal).toBe((unheld.result as { refusal?: string }).refusal);
-      expect(heldRefusal).toBe(refusal);
-      expect(refusal).not.toContain("holds no edit authority");
-      expect(refusal).not.toContain("holds no activate authority");
+      const unheldRefusal = (unheld.result as { refusal?: string }).refusal;
+
+      // Unheld: the scope gate answered, by name, before the backend was
+      // touched - byte-identical to the constant, which IS the contract.
+      expect(unheldRefusal).toBe(refusal);
+      expect(unheldRefusal).toContain(`holds no ${effectClass} authority`);
+
+      // Held: the gate let the call through and the SEAM answered. This route
+      // replays a recording, so what comes back is the recording's own refusal
+      // - a different sentence, from a different check, which is the whole
+      // point. A gate that still refused everything would make these two equal.
+      expect(heldRefusal).not.toBe(unheldRefusal);
+      expect(heldRefusal).toContain("it answers from a recording");
     }
+  });
+
+  it("refuses a number that is not a number, after the gate rather than instead of it", async () => {
+    // A malformed magnitude cannot be coerced: zero is a value the element may
+    // accept and NaN passes every range check written against it. The refusal
+    // names the field. It is reachable only by a session that holds the class -
+    // a session without it hears about the class, not about its parameters.
+    const malformed = await handleRequest(
+      { type: "request", id: 40, method: "setElementValue", params: { id: "el-000000000000", value: "loud" } },
+      backend,
+      { permits: new Set<string>(), allows: new Set(["edit"] as const), catalog: CATALOG, table: new OwnershipTable() },
+    );
+    expect((malformed.result as { refusal?: string }).refusal).toContain('"value" that is not a number');
+
+    const withoutAuthority = await handleRequest(
+      { type: "request", id: 41, method: "setElementValue", params: { id: "el-000000000000", value: "loud" } },
+      backend,
+    );
+    expect((withoutAuthority.result as { refusal?: string }).refusal).toBe(SET_VALUE_SCOPE_REFUSAL);
   });
 });
 
