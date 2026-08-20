@@ -79,6 +79,9 @@ importers:
         specifier: workspace:*
         version: link:../protocol-types
     devDependencies:
+      '@mastra-cc/daemon':
+        specifier: workspace:*
+        version: link:../../daemon
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3
