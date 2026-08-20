@@ -196,6 +196,18 @@ not a feature. What it buys is that a client can ask and hear a refusal naming
 the check that ran, rather than "not a method of the schema", which cannot
 distinguish *not built yet* from *hidden*.
 
+*Amended, M2.7 segment 1:* the operations are now routed to the seam and are no
+longer one of those two surfaces. The cost above was paid in full and is worth
+recording: all three backends implemented the operations before any wire method
+reached them, so for the length of a segment the schema said one thing, the
+seam did another, and nothing in the suite compared them — the promise outlived
+the reason it was made, and the refusal sentences went on describing a daemon
+that had stopped existing. What closed the gap was naming each method in
+[B11](../05-TEST-STRATEGY.md) and driving all seven through the listing's
+agreement test, so a method that answers with a constant is now a failing test
+rather than a paragraph nobody re-read. The listing remains defined and
+unimplemented until segment 3.
+
 **Every element grows.** An element now carries an entry for each operation
 including the ones it does not support, and each action carries up to five
 fields where it once carried a bare string. Elements are read in bulk during a

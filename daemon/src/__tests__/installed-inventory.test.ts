@@ -410,22 +410,46 @@ describe("the listing and the enforcement do not disagree", () => {
         reached = "submit";
         return { element };
       },
+      setElementValue: async () => {
+        reached = "edit";
+        return { element };
+      },
+      setElementText: async () => {
+        reached = "edit";
+        return { element };
+      },
+      setElementCaret: async () => {
+        reached = "edit";
+        return { element };
+      },
+      revealElement: async () => {
+        reached = "activate";
+        return { element };
+      },
     } as unknown as Backend;
 
-    const call = {
-      edit: { method: "editElement", params: { id: element.id, value: "typed" } },
-      activate: { method: "activateElement", params: { id: element.id, action: "click" } },
-      submit: { method: "submitElement", params: { id: element.id, attestation: "commit" } },
-    } as const;
+    // A list rather than a map keyed by capability: a capability answers for
+    // several wire methods now, and the listing publishes one row for all of
+    // them. The four operations joined this table when they stopped answering
+    // with a constant - a method that refuses everyone agrees with any listing.
+    const calls = [
+      { capability: "edit", method: "editElement", params: { id: element.id, value: "typed" } },
+      { capability: "activate", method: "activateElement", params: { id: element.id, action: "click" } },
+      { capability: "submit", method: "submitElement", params: { id: element.id, attestation: "commit" } },
+      { capability: "edit", method: "setElementValue", params: { id: element.id, value: 1 } },
+      { capability: "edit", method: "setElementText", params: { id: element.id, text: "typed" } },
+      { capability: "edit", method: "setElementCaret", params: { id: element.id, offset: 0 } },
+      { capability: "activate", method: "revealElement", params: { id: element.id } },
+    ] as const;
 
     const [listed] = (await listing(launch, backend)).filter((application) => application.name === "yad");
     expect(listed).toBeDefined();
 
-    for (const [capability, request] of Object.entries(call)) {
+    for (const { capability, method, params } of calls) {
       const row = capabilityOf(listed, capability);
       expect(row).toBeDefined();
       reached = undefined;
-      const answer = await handleRequest({ type: "request", id: 3, ...request }, backend, launch);
+      const answer = await handleRequest({ type: "request", id: 3, method, params }, backend, launch);
       const result = (answer.result ?? {}) as { element?: SemanticElement; refusal?: string };
       const refusal = answer.refusal ?? result.refusal;
       if (row?.availability === "available") {

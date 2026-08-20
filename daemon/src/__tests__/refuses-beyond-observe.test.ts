@@ -6,6 +6,8 @@ import { OwnershipTable } from "../launch/table.js";
 import { BACKEND_METHODS } from "../backend.js";
 import {
   EDIT_SCOPE_REFUSAL,
+  MAGNITUDE_NOT_A_NUMBER_REFUSAL,
+  OFFSET_NOT_A_NUMBER_REFUSAL,
   REVEAL_SCOPE_REFUSAL,
   SET_CARET_SCOPE_REFUSAL,
   SET_TEXT_SCOPE_REFUSAL,
@@ -28,6 +30,26 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 // the only thing the daemon could do, and a decision has to keep answering the
 // same way for a session that holds nothing. The authority-held direction, and
 // the timing of the check, live in launch-authority.test.ts.
+
+// Every method throws if called: a refusal that is decided before the call
+// must be answerable with no desktop existing at all. observeOnlyEffects
+// already refuses all seven effect methods by name, and the reads are what a
+// gate would have to reach through to answer.
+function untouchableBackend(reason: string): Backend {
+  const touched = async (): Promise<never> => {
+    throw new Error(reason);
+  };
+  return {
+    ...observeOnlyEffects,
+    name: "untouchable",
+    queryElements: touched,
+    attestElement: touched,
+    subscribeElement: touched,
+    applicationOfElement: () => undefined,
+    unsubscribeElement: touched,
+    close: touched,
+  };
+}
 
 describe("the effect-class gate", () => {
   // visibility mirrors the union main.ts composes at boot: the tape's yad must
@@ -74,58 +96,124 @@ describe("the effect-class gate", () => {
 
 // THE FOUR OPERATIONS, AND THE WORDS THEY REFUSE WITH.
 //
-// These four wire methods refuse unconditionally in this segment, and for a
-// while they refused with a sentence that had quietly become false: it claimed
-// the backend seam carried no operation, and it claimed the session held no
-// authority. The seam had grown all four operations, and no authority check
-// runs on this path at all. Nothing failed, because nothing checked the words -
-// only that some refusal arrived. A refusal names the check that actually ran
-// (ADR-0008 clause 5), so the sentence is the assertion here, and it is
-// asserted against the world rather than against itself.
-describe("the four operations refuse without claiming a reason that is not true", () => {
+// These four wire methods answered every caller with a constant while all
+// three backends implemented them, and the constant said so: it claimed this
+// daemon did not serve the method in this segment, and that the answer did not
+// depend on the session's authority. Both sentences were true of the dispatch
+// table and false of everything behind it. They are now routed to the seam, so
+// the check that runs is the scope gate, and the words are the scope gate's.
+//
+// What is asserted here is the sentence, against the world rather than against
+// itself: the seam declares each method (BACKEND_METHODS), so a refusal that
+// blames the seam is a false statement on the wire, and a refusal that says
+// the daemon does not serve the method is the exact sentence that would come
+// back if anyone re-declared these handlers as constants. That inverse is the
+// assertion this file lost when the bug was fixed, and keeping it is what
+// makes the fix hard to undo quietly. A refusal names the check that actually
+// ran (ADR-0008 clause 5).
+describe("the four operations refuse with the check that actually ran", () => {
   const backend = registry.replay({ visibility: new Set(["yad"]) });
 
   const operations = [
-    ["setElementValue", SET_VALUE_SCOPE_REFUSAL],
-    ["setElementText", SET_TEXT_SCOPE_REFUSAL],
-    ["setElementCaret", SET_CARET_SCOPE_REFUSAL],
-    ["revealElement", REVEAL_SCOPE_REFUSAL],
+    ["setElementValue", SET_VALUE_SCOPE_REFUSAL, "edit", { id: "el-000000000000", value: 1 }],
+    ["setElementText", SET_TEXT_SCOPE_REFUSAL, "edit", { id: "el-000000000000", text: "typed" }],
+    ["setElementCaret", SET_CARET_SCOPE_REFUSAL, "edit", { id: "el-000000000000", offset: 0 }],
+    ["revealElement", REVEAL_SCOPE_REFUSAL, "activate", { id: "el-000000000000" }],
   ] as const;
 
-  it("never claims the seam carries no operation, because the seam carries all four", () => {
-    for (const [method, refusal] of operations) {
+  it("names the scope gate, the method and its class, and never blames the seam", () => {
+    for (const [method, refusal, effectClass] of operations) {
       // The claim and the world in the same assertion: the seam declares the
       // method, so a refusal saying otherwise is a false statement on the wire.
       expect(BACKEND_METHODS).toContain(method);
-      expect(refusal).not.toContain("seam carries no operation");
+      expect(refusal).toContain("scope gate");
       expect(refusal).toContain(method);
+      expect(refusal).toContain(`${effectClass}-class`);
+      expect(refusal).not.toContain("seam carries no operation");
+      // the sentence the constant handlers answered with. It goes back the
+      // moment the routing does, which is the point of asserting its absence.
+      expect(refusal).not.toContain("does not serve it in this segment");
     }
   });
 
-  it("never claims the session holds no authority, because no authority check runs here", async () => {
-    // Held and unheld, byte for byte. The refusal is the same sentence either
-    // way - which is precisely why it must not blame the session's authority.
-    for (const [index, [method, refusal]] of operations.entries()) {
-      const held = await handleRequest(
-        { type: "request", id: 20 + index, method, params: { id: "el-000000000000" } },
+  it("refuses a session holding nothing with the byte-stable constant, and never touches the backend", async () => {
+    for (const [index, [method, refusal, , params]] of operations.entries()) {
+      const response = await handleRequest(
+        { type: "request", id: 20 + index, method, params },
+        untouchableBackend("the scope gate touched the backend"),
+      );
+      expect(response.refusal).toBeUndefined();
+      expect((response.result as { refusal?: string }).refusal).toBe(refusal);
+    }
+  });
+
+  it("lets a session holding the class through to the seam, which answers for itself", async () => {
+    // The anti-vacuity half: without it, a handler that answered with the
+    // scope constant unconditionally - the bug - would pass the test above.
+    // The replay route refuses to be acted upon, in its own words, and that
+    // sentence can only have come from the backend.
+    for (const [index, [method, refusal, effectClass, params]] of operations.entries()) {
+      const response = await handleRequest(
+        { type: "request", id: 40 + index, method, params },
         backend,
         {
           permits: new Set<string>(),
-          allows: new Set(["edit", "activate", "submit"] as const),
+          allows: new Set([effectClass] as const),
           catalog: CATALOG,
           table: new OwnershipTable(),
         },
       );
-      const unheld = await handleRequest(
-        { type: "request", id: 30 + index, method, params: { id: "el-000000000000" } },
-        backend,
-      );
+      const answered = (response.result as { refusal?: string }).refusal;
+      expect(answered).not.toBe(refusal);
+      expect(answered).toContain("a recording cannot be acted upon");
+    }
+  });
+});
 
-      const heldRefusal = (held.result as { refusal?: string }).refusal;
-      expect(heldRefusal).toBe((unheld.result as { refusal?: string }).refusal);
-      expect(heldRefusal).toBe(refusal);
-      expect(refusal).not.toContain("holds no edit authority");
-      expect(refusal).not.toContain("holds no activate authority");
+// THE TWO NUMBERS THE OPERATIONS CARRY.
+//
+// Both are read after the gates and neither is coerced. The reason is that
+// coercion here is invisible: NaN is neither above a published maximum nor
+// below a published minimum, so a magnitude that is not a number survives every
+// bounds check the backends make and lands on a live control; an unusable
+// offset read as absent turns an insert into a replacement of the whole field,
+// and a caret placement into a jump to the end. Each is refused by its own
+// constant, and the backend is never reached to produce it.
+describe("the operations refuse a number that is not one, rather than coercing it", () => {
+  const backend = registry.replay({ visibility: new Set(["yad"]) });
+  const held = { permits: new Set<string>(), allows: new Set(["edit"] as const), catalog: CATALOG, table: new OwnershipTable() };
+
+  const unusable = [
+    [50, "setElementValue", { id: "el-000000000000", value: "1" }, MAGNITUDE_NOT_A_NUMBER_REFUSAL],
+    [51, "setElementValue", { id: "el-000000000000", value: Number.NaN }, MAGNITUDE_NOT_A_NUMBER_REFUSAL],
+    [52, "setElementValue", { id: "el-000000000000" }, MAGNITUDE_NOT_A_NUMBER_REFUSAL],
+    [53, "setElementText", { id: "el-000000000000", text: "typed", offset: "0" }, OFFSET_NOT_A_NUMBER_REFUSAL],
+    [54, "setElementCaret", { id: "el-000000000000", offset: Number.NaN }, OFFSET_NOT_A_NUMBER_REFUSAL],
+  ] as const;
+
+  it("refuses by name, with the class held, without touching the backend", async () => {
+    for (const [id, method, params, refusal] of unusable) {
+      const response = await handleRequest(
+        { type: "request", id, method, params },
+        untouchableBackend("an unusable number reached the backend"),
+        held,
+      );
+      expect(response.refusal).toBeUndefined();
+      expect((response.result as { refusal?: string }).refusal).toBe(refusal);
+    }
+  });
+
+  it("carries an absent offset through as absent - the seam resolves it against the element's own text", async () => {
+    // Absence is not zero and not the end: the schema makes the offset optional
+    // and gives absence a meaning, so refusing it here would refuse a call the
+    // schema defines. The replay route's own sentence is the evidence that this
+    // reached the seam rather than being turned back by the check above.
+    for (const [index, method] of ["setElementText", "setElementCaret"].entries()) {
+      const params = method === "setElementText" ? { id: "el-000000000000", text: "typed" } : { id: "el-000000000000" };
+      const response = await handleRequest({ type: "request", id: 60 + index, method, params }, backend, held);
+      const answered = (response.result as { refusal?: string }).refusal;
+      expect(answered).not.toBe(OFFSET_NOT_A_NUMBER_REFUSAL);
+      expect(answered).toContain("a recording cannot be acted upon");
     }
   });
 });
@@ -166,28 +254,7 @@ describe("the scope gate: a session holding no effect authority is refused by na
   });
 
   it("never touches the backend to refuse", async () => {
-    // every backend method throws if called: the refusal must be answerable
-    // without a desktop existing at all
-    const untouchable: Backend = {
-      ...observeOnlyEffects,
-      name: "untouchable",
-      queryElements: async () => {
-        throw new Error("the scope gate touched the backend");
-      },
-      attestElement: async () => {
-        throw new Error("the scope gate touched the backend");
-      },
-      subscribeElement: async () => {
-        throw new Error("the scope gate touched the backend");
-      },
-      applicationOfElement: () => undefined,
-      unsubscribeElement: async () => {
-        throw new Error("the scope gate touched the backend");
-      },
-      close: async () => {
-        throw new Error("the scope gate touched the backend");
-      },
-    };
+    const untouchable = untouchableBackend("the scope gate touched the backend");
     for (const [id, method, params] of [
       [8, "editElement", { id: "el-000000000000", value: "x" }],
       [9, "activateElement", { id: "el-000000000000", action: "click" }],

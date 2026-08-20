@@ -256,38 +256,46 @@ export const ACTIVATE_SCOPE_REFUSAL =
 export const SUBMIT_SCOPE_REFUSAL =
   'refused by the scope gate: "submitElement" is submit-class and this session holds no submit authority for any application - authority is checked before the attestation is ever examined, this session was started without that class, and only a session started with it can perform this method';
 
-// The four operations (schema version 1.4.0, ADR-0045 and ADR-0047). They are
-// on the wire for the same reason the three verbs above have been since 1.2.0:
-// the contract is what is being frozen, and a method absent from the schema
-// cannot be refused honestly - "not a method of the schema" cannot distinguish
-// "not built yet" from "hidden". They are entered here rather than left out of
-// the table because a defined method with no entry would be answered by the
-// gate's not-a-method-of-the-schema refusal, which of these would be false.
-// Each names the operation's own class: moving a magnitude, placing text and
+// The four operations (schema version 1.4.0, ADR-0045 and ADR-0047). Each
+// names the operation's own class: moving a magnitude, placing text and
 // placing a caret change what an element holds, and revealing one causes the
 // surface to do something visible and trivially reversible.
 //
-// These four refuse for a DIFFERENT reason than the three verbs above, and the
-// sentences have to say so. The seam behind them performs - the Backend
-// interface declares all four and both routes implement them - but no wire
-// method routes to that seam in this segment. So no authority check runs here:
-// the answer is the same for a session started with the class and one started
-// without it. An earlier version of these constants claimed the seam carried no
-// operation and that the session held no authority. Both became false the day
-// the seam grew the operations, and nothing failed, because nothing pinned the
-// words. A refusal names the check that actually ran (ADR-0008 clause 5), so
-// what is pinned now is the sentence, not just the fact that one was sent.
+// These four now refuse for the SAME reason the three verbs above do, and the
+// sentences say so. Until this change they said something else: that this
+// daemon did not serve the method in this segment, and that the answer did not
+// depend on the session's authority. Both were written while the wire method
+// answered with a constant, and both stopped being true the moment it was
+// routed to the seam the backends had already built. A refusal names the check
+// that actually ran (ADR-0008 clause 5), and the check that runs here is the
+// scope gate - so the sentence is the scope gate's, byte-for-byte in the shape
+// the three verbs use.
 export const SET_VALUE_SCOPE_REFUSAL =
-  'refused before the call: "setElementValue" is edit-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
+  'refused by the scope gate: "setElementValue" is edit-class and this session holds no edit authority for any application - this session was started without that class, and only a session started with it can perform this method';
 
 export const SET_TEXT_SCOPE_REFUSAL =
-  'refused before the call: "setElementText" is edit-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
+  'refused by the scope gate: "setElementText" is edit-class and this session holds no edit authority for any application - this session was started without that class, and only a session started with it can perform this method';
 
 export const SET_CARET_SCOPE_REFUSAL =
-  'refused before the call: "setElementCaret" is edit-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
+  'refused by the scope gate: "setElementCaret" is edit-class and this session holds no edit authority for any application - this session was started without that class, and only a session started with it can perform this method';
 
 export const REVEAL_SCOPE_REFUSAL =
-  'refused before the call: "revealElement" is activate-class and this daemon does not serve it in this segment - the answer does not depend on this session\'s authority, and only a daemon that routes this method to the operation the seam already performs can answer differently';
+  'refused by the scope gate: "revealElement" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method';
+
+// The daemon's own reading of the two numeric parameters the operations carry.
+// Neither is coerced. A magnitude that is not a number survives every bounds
+// check the backends make against the range the element published - NaN is
+// neither above a maximum nor below a minimum - and would be written to a live
+// control; an offset that is not a number, read as absent, silently turns an
+// insert into a replacement of the whole field and a caret placement into a
+// jump to the end. Both are refused instead, and both are read INSIDE the
+// gates: a session that holds no authority hears the scope refusal above and
+// learns nothing about how the daemon read its parameters.
+export const MAGNITUDE_NOT_A_NUMBER_REFUSAL =
+  'refused before the call: "value" is not a number - a magnitude is checked against the range the element itself published, a value that is not a number passes every such check while meaning nothing, and only a number in the element\'s own units can be moved to';
+
+export const OFFSET_NOT_A_NUMBER_REFUSAL =
+  'refused before the call: "offset" is present and is not a number - an absent offset means the whole of the element\'s text, so reading an unusable one as absent would replace what was meant to be inserted into, and only a number or no offset at all says where the write lands';
 
 // The application listing (schema version 1.4.0, ADR-0042). Observe-class: it
 // reads the fence around an application and never anything behind it. It is
@@ -668,6 +676,10 @@ async function performEffect(
   launch: LaunchContext,
   backend: Backend,
   id: string,
+  // The call itself. A perform that cannot proceed throws one of the seam's
+  // refusal classes and is answered below in the caller's words - which is how
+  // the operations refuse a parameter they will not coerce, inside the gates,
+  // so an unauthorised session never learns how its parameters read.
   perform: () => Promise<{ element: SemanticElement }>,
 ): Promise<{ element?: SemanticElement; refusal?: string }> {
   if (!holdsEffectAuthority(launch, effectClass)) return { refusal };
@@ -724,6 +736,54 @@ function submitElement(params: { id?: unknown; attestation?: unknown }, backend:
   return performEffect("submit", "submitElement", SUBMIT_SCOPE_REFUSAL, launch, backend, id, () => backend.submitElement({ id, attestation }) as Promise<{ element: SemanticElement }>);
 }
 
+// The four operations, routed to the seam that already performs them. Each
+// takes the same road as the three verbs above - authority, then the user's
+// configuration, then the backend - and each answers with the element the
+// backend re-read afterwards, never an echo of what was asked for.
+//
+// The numeric parameters are read after the gates and refused rather than
+// coerced (the two constants above). Where the schema makes an offset
+// optional, absence is carried through as absence: the seams resolve it
+// against the element's own text, which is the only place its length is known.
+function setElementValue(params: { id?: unknown; value?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const value = params.value;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return performEffect("edit", "setElementValue", SET_VALUE_SCOPE_REFUSAL, launch, backend, id, async () => {
+      throw new MagnitudeOutOfRangeError(MAGNITUDE_NOT_A_NUMBER_REFUSAL);
+    });
+  }
+  return performEffect("edit", "setElementValue", SET_VALUE_SCOPE_REFUSAL, launch, backend, id, () => backend.setElementValue({ id, value }) as Promise<{ element: SemanticElement }>);
+}
+
+function setElementText(params: { id?: unknown; text?: unknown; offset?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const text = typeof params.text === "string" ? params.text : "";
+  const offset = params.offset;
+  if (offset !== undefined && (typeof offset !== "number" || !Number.isFinite(offset))) {
+    return performEffect("edit", "setElementText", SET_TEXT_SCOPE_REFUSAL, launch, backend, id, async () => {
+      throw new TextOffsetOutOfRangeError(OFFSET_NOT_A_NUMBER_REFUSAL);
+    });
+  }
+  return performEffect("edit", "setElementText", SET_TEXT_SCOPE_REFUSAL, launch, backend, id, () => backend.setElementText({ id, text, offset }) as Promise<{ element: SemanticElement }>);
+}
+
+function setElementCaret(params: { id?: unknown; offset?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const offset = params.offset;
+  if (offset !== undefined && (typeof offset !== "number" || !Number.isFinite(offset))) {
+    return performEffect("edit", "setElementCaret", SET_CARET_SCOPE_REFUSAL, launch, backend, id, async () => {
+      throw new TextOffsetOutOfRangeError(OFFSET_NOT_A_NUMBER_REFUSAL);
+    });
+  }
+  return performEffect("edit", "setElementCaret", SET_CARET_SCOPE_REFUSAL, launch, backend, id, () => backend.setElementCaret({ id, offset }) as Promise<{ element: SemanticElement }>);
+}
+
+function revealElement(params: { id?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  return performEffect("activate", "revealElement", REVEAL_SCOPE_REFUSAL, launch, backend, id, () => backend.revealElement({ id }) as Promise<{ element: SemanticElement }>);
+}
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -743,10 +803,10 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   editElement: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => editElement((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },
   activateElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => activateElement((p ?? {}) as { id?: unknown; action?: unknown }, b, l) },
   submitElement: { effectClass: "submit", enforcement: "before-call", handler: (p, b, l) => submitElement((p ?? {}) as { id?: unknown; attestation?: unknown }, b, l) },
-  setElementValue: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_VALUE_SCOPE_REFUSAL }) },
-  setElementText: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_TEXT_SCOPE_REFUSAL }) },
-  setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: async () => ({ refusal: SET_CARET_SCOPE_REFUSAL }) },
-  revealElement: { effectClass: "activate", enforcement: "before-call", handler: async () => ({ refusal: REVEAL_SCOPE_REFUSAL }) },
+  setElementValue: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => setElementValue((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },
+  setElementText: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => setElementText((p ?? {}) as { id?: unknown; text?: unknown; offset?: unknown }, b, l) },
+  setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => setElementCaret((p ?? {}) as { id?: unknown; offset?: unknown }, b, l) },
+  revealElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },
   listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
 };
 

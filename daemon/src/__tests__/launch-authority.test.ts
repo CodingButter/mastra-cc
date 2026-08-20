@@ -11,6 +11,10 @@ import {
   BACKEND_UNREADABLE_REFUSAL,
   COULD_NOT_START_REFUSAL,
   EDIT_SCOPE_REFUSAL,
+  REVEAL_SCOPE_REFUSAL,
+  SET_CARET_SCOPE_REFUSAL,
+  SET_TEXT_SCOPE_REFUSAL,
+  SET_VALUE_SCOPE_REFUSAL,
   SUBMIT_SCOPE_REFUSAL,
   UNAVAILABLE_REFUSAL,
   handleRequest,
@@ -234,8 +238,8 @@ describe("launch authority", () => {
 // --allow. It is authority, NOT the per-application capability configuration -
 // that surface arrives in segment 3 and hangs inside holdsEffectAuthority,
 // which already takes the application it will decide about.
-describe("effect authority: the three element verbs are refused before the backend is reached", () => {
-  // Every method throws. If any verb reaches this backend to produce its
+describe("effect authority: the seven element methods are refused before the backend is reached", () => {
+  // Every method throws. If any method reaches this backend to produce its
   // refusal, the test fails loudly instead of passing on a refusal that came
   // from the wrong place.
   const untouchable: Backend = {
@@ -295,6 +299,13 @@ describe("effect authority: the three element verbs are refused before the backe
     { method: "editElement", params: { id: "el-000000000000", value: "typed" }, refusal: EDIT_SCOPE_REFUSAL, allow: "edit" },
     { method: "activateElement", params: { id: "el-000000000000", action: "click" }, refusal: ACTIVATE_SCOPE_REFUSAL, allow: "activate" },
     { method: "submitElement", params: { id: "el-000000000000", attestation: "sends the message" }, refusal: SUBMIT_SCOPE_REFUSAL, allow: "submit" },
+    // The four operations, here for the first time: until this change they
+    // answered every session with a constant, so there was no gate to pin and
+    // nothing this table could have said about them that was true.
+    { method: "setElementValue", params: { id: "el-000000000000", value: 1 }, refusal: SET_VALUE_SCOPE_REFUSAL, allow: "edit" },
+    { method: "setElementText", params: { id: "el-000000000000", text: "typed" }, refusal: SET_TEXT_SCOPE_REFUSAL, allow: "edit" },
+    { method: "setElementCaret", params: { id: "el-000000000000", offset: 0 }, refusal: SET_CARET_SCOPE_REFUSAL, allow: "edit" },
+    { method: "revealElement", params: { id: "el-000000000000" }, refusal: REVEAL_SCOPE_REFUSAL, allow: "activate" },
   ];
 
   for (const { method, params, refusal } of cases) {
@@ -305,7 +316,7 @@ describe("effect authority: the three element verbs are refused before the backe
     });
   }
 
-  it("the three refusals are answerable with no desktop at all - none of them names an element", async () => {
+  it("every refusal is answerable with no desktop at all - none of them names an element", async () => {
     // A refusal derived from the element would need the element read, which is
     // a backend call this session's authority never earned (ADR-0008 clause 5:
     // a refusal must be derived from a check that actually ran - and the check
