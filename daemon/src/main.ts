@@ -117,8 +117,8 @@ const { launchPermits, visibility } = (() => {
 // process). Composed once here, like every other name set. The class must be
 // one the schema defines: an unknown one is an operator's typo, and a typo that
 // silently grants nothing looks exactly like a daemon that is broken.
-// Segment 3's per-application capability configuration attaches inside
-// holdsEffectAuthority; this flag stays the session-wide answer.
+// The per-application capability configuration (ADR-0043 clause 4, ADR-0042)
+// attaches inside holdsEffectAuthority; this flag stays the session-wide answer.
 // --capabilities <file>: the USER's durable, per-application capability
 // configuration (ADR-0043 clause 4, ADR-0042). Loaded once here, beside the
 // grants and profiles files and for the same reasons: a malformed permissions

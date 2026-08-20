@@ -336,7 +336,7 @@ describe("neither route performs an action the element never published", () => {
 // They are not a subset of reality; they are what this project made up.
 const THE_INVENTED_FOUR = ["press", "focus", "select", "expand"];
 
-// The offline lane's own standard, from this segment: a tape that carries no
+// The offline lane's own standard, set when these tapes were captured: a tape that carries no
 // action data is a FAILED CAPTURE, not a captured absence. Both worlds were
 // re-captured from real software for exactly this assertion - the desktop
 // world from a real GTK dialog over the accessibility bus, the browser world

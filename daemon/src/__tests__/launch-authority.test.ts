@@ -209,7 +209,7 @@ describe("launch authority", () => {
   });
 
   it("f: mixed state - ours and a foreign same-name copy both alive - spawns nothing and refuses nothing", async () => {
-    // the replay tree's yad IS the foreign copy at this segment's name-only
+    // the replay tree's yad IS the foreign copy at the current name-only
     // granularity; the recorded sleep is ours. Ours winning means no refusal
     // and no second spawn.
     const table = new OwnershipTable();
