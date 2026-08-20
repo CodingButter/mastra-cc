@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -39,13 +39,26 @@ async function deathBy(signal: NodeJS.Signals): Promise<{ code: number | null; s
   const child = spawn(process.execPath, [DIST, "--backend", "replay", "--fixture", "gtk-dialog", "--socket", socket], {
     stdio: ["ignore", "pipe", "pipe"],
   });
-  await new Promise<void>((resolve, reject) => {
-    child.stdout.on("data", (chunk: Buffer) => {
-      if (chunk.toString().includes("listening")) resolve();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("the daemon never said it was listening")), 10_000);
+      child.stdout.on("data", (chunk: Buffer) => {
+        if (chunk.toString().includes("listening")) {
+          clearTimeout(timer);
+          resolve();
+        }
+      });
+      child.once("exit", () => {
+        clearTimeout(timer);
+        reject(new Error("the daemon died before it listened"));
+      });
     });
-    child.once("exit", () => reject(new Error("the daemon died before it listened")));
-    setTimeout(() => reject(new Error("the daemon never said it was listening")), 10_000);
-  });
+  } catch (error) {
+    // a failing case must not orphan the daemon it spawned - in THIS file of
+    // all files, a leaked process would be the joke writing itself
+    child.kill("SIGKILL");
+    throw error;
+  }
   child.kill(signal);
   return new Promise((resolve) => {
     child.once("exit", (code, sig) => resolve({ code, signal: sig }));
@@ -55,6 +68,12 @@ async function deathBy(signal: NodeJS.Signals): Promise<{ code: number | null; s
 describe("the daemon dies through its own handler", () => {
   it("the built daemon exists - a test against a missing artefact proves nothing", () => {
     expect(existsSync(DIST)).toBe(true);
+  });
+
+  it("the built daemon is not older than its source - a stale dist scores the wrong artefact (issue #26's trap)", () => {
+    const dist = statSync(DIST).mtimeMs;
+    const src = statSync(join(__dirname, "..", "main.ts")).mtimeMs;
+    expect(dist).toBeGreaterThanOrEqual(src);
   });
 
   it("the SOURCE carries all three signals - the behavioural cases above read the built dist, and a mutation edits source, so without this pin a source-level regression would be scored against a stale artefact and survive", () => {

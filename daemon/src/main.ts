@@ -183,32 +183,40 @@ const socketPath =
 
 const table = new OwnershipTable();
 
-const server = await startServer({
+// The daemon owns what it launched, including cleaning it up: on shutdown it
+// SIGTERMs every process its table still owns - and never anything else
+// (terminateOwned re-checks liveness per entry; asserted in
+// launch/__tests__/spawn-records.test.ts).
+//
+// The handlers are installed BEFORE the server binds its socket: the socket is
+// what clients actually poll for readiness, so a handler installed after it
+// would leave a window where a client can drive a launch and a signal still
+// dies node's default death, orphaning the table. SIGHUP is in the list
+// because it is how this daemon actually dies in the wild: a proof-leg shell
+// or terminal closes, the background daemon gets HUP - which is issue #14's
+// qt6ct orphans, reproduced live on 2026-08-20 (segment 4). A repeated signal
+// re-runs shutdown; that is safe because terminateOwned re-checks liveness
+// per entry and never re-signals a pid it no longer owns. SIGKILL and a crash
+// still skip cleanup by definition; that residue is a named limitation, not a
+// promise.
+let server: Awaited<ReturnType<typeof startServer>> | undefined;
+let shuttingDown = false;
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+  process.on(signal, () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    terminateOwned(table);
+    server?.close();
+    void backend.close().then(() => process.exit(0));
+  });
+}
+
+server = await startServer({
   socketPath,
   backend,
   launch: { permits: launchPermits, allows, capabilities, catalog, table },
   visibility,
 });
-// The daemon owns what it launched, including cleaning it up: on shutdown it
-// SIGTERMs every process its table still owns - and never anything else
-// (terminateOwned re-checks liveness per entry; asserted in
-// launch/__tests__/spawn-records.test.ts).
 server.on("close", () => terminateOwned(table));
-// SIGHUP is in the list because it is how this daemon actually dies in the
-// wild: a proof-leg shell or terminal closes, the background daemon gets HUP,
-// and node's default action exits WITHOUT running any of this - which is
-// issue #14's qt6ct orphans, reproduced live on 2026-08-20 (segment 4).
-// SIGKILL and a crash still skip cleanup by definition; that residue is a
-// named limitation, not a promise.
-for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
-  process.on(signal, () => {
-    terminateOwned(table);
-    server.close();
-    void backend.close().then(() => process.exit(0));
-  });
-}
 
-// Announced LAST: "listening" is the daemon's word that it is ready, and a
-// daemon whose shutdown handlers are not yet installed is not ready - a signal
-// landing in that gap would die node's default death and orphan the table.
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);

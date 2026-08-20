@@ -196,6 +196,14 @@ named rather than averaged away.
 > prototype recorded as its "two Discords" confusion — a real divergence, already handled
 > in the prototype by a frame-provider filter, and carried forward as an M2 concern rather
 > than an unknown.
+>
+> *A parity divergence measured since (M2.7 segment 4, 2026-08-20):* focus restoration.
+> The daemon's full launch path, measured on both session types with an independent
+> witness — X11 restores the keyboard after a launch that took it; the GNOME Wayland
+> session's route reports success and moves nothing, and the daemon discloses exactly
+> that. Recorded in
+> [ADR-0044](02-DECISIONS/0044-the-assistant-does-not-take-the-desk.md)'s amendment,
+> which narrows that ADR's clause-4 limitation to Wayland.
 
 **Q05 — Do GTK4, Qt and Electron applications each need their own enabling step?**
 *What changes:* the size and shape of the per-application grant transaction, and whether
