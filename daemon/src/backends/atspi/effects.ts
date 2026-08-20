@@ -19,6 +19,7 @@ import {
   WriteNotObservedError,
 } from "../../backend.js";
 import { UnrecordedExchangeError } from "./channel.js";
+import { toNeutralStates } from "./roles.js";
 
 interface CallSeam {
   call(exchange: {
@@ -201,12 +202,21 @@ export async function textOf(seam: CallSeam, ref: NativeRef): Promise<string> {
 // after every write, the field is read back the way the wire answers, and what
 // it holds is compared against what the write intended. A disagreement is
 // raised - never absorbed, never retried into place.
-async function observeWrite(seam: CallSeam, ref: NativeRef, intended: string, what: string): Promise<void> {
-  const observed = await textOf(seam, ref);
-  if (observed === intended) return;
-  throw new WriteNotObservedError(
-    `${what} reported success, but reading the element back found ${JSON.stringify(observed)} where ${JSON.stringify(intended)} was intended - the platform performed something other than what was asked`,
+//
+// The sentence is written once, here, and every operation in this file uses it.
+// An operation that re-read without comparing would produce a fresh, honest-
+// looking reading of an element the write may never have touched, which is the
+// same false belief as reporting the platform's own `true` (ADR-0047).
+function observed(what: string, observedValue: unknown, intended: unknown): WriteNotObservedError {
+  return new WriteNotObservedError(
+    `${what} reported success, but reading the element back found ${JSON.stringify(observedValue)} where ${JSON.stringify(intended)} was intended - the platform performed something other than what was asked`,
   );
+}
+
+async function observeWrite(seam: CallSeam, ref: NativeRef, intended: string, what: string): Promise<void> {
+  const found = await textOf(seam, ref);
+  if (found === intended) return;
+  throw observed(what, found, intended);
 }
 
 // REPLACING A FIELD'S CONTENT.
@@ -272,6 +282,11 @@ export async function setCaretOffset(seam: CallSeam, ref: NativeRef, offset?: nu
     signature: "i",
     body: [target],
   });
+  // The caret is a number the element publishes about itself, so the same
+  // read-back the text writes use is available here and is taken. A caret that
+  // was refused a move lands somewhere else and the platform says nothing.
+  const landed = Number(await propertyOf(seam, ref, TEXT_IFACE, "CaretOffset"));
+  if (landed !== target) throw observed("placing this element's caret", landed, target);
 }
 
 // MOVING A MAGNITUDE.
@@ -298,6 +313,11 @@ export async function setValue(seam: CallSeam, ref: NativeRef, value: number): P
     signature: "ssv",
     body: [VALUE_IFACE, "CurrentValue", ["d", value]],
   });
+  // The measured failure this catches: the platform clamps a magnitude to a
+  // step it never published, performs it, and reports nothing. The range check
+  // above cannot see that - it knows only what was asked, not what landed.
+  const landed = Number(await propertyOf(seam, ref, VALUE_IFACE, "CurrentValue"));
+  if (landed !== value) throw observed("moving this element's magnitude", landed, value);
 }
 
 // GIVING AN ELEMENT THE FOCUS BACK (ADR-0044).
@@ -324,6 +344,12 @@ export async function grabFocus(seam: CallSeam, ref: NativeRef): Promise<void> {
 
 // BRINGING AN ELEMENT INTO VIEW. The enum stays here; the wire asked only to
 // make the element visible and is told only whether it now is.
+//
+// "Whether it now is" is the comparison, and the element publishes it: a node
+// that is visible in the tree but not showing on screen is offscreen
+// (roles.ts). That state IS the reveal's entire claim, so it is the one thing
+// read back. Nothing here reads a coordinate: where on the screen it landed is
+// a promise about one machine, and it is still not made.
 export async function scrollIntoView(seam: CallSeam, ref: NativeRef): Promise<void> {
   await requireInterface(seam, ref, COMPONENT_IFACE, "being brought into view");
   await seam.call({
@@ -334,4 +360,15 @@ export async function scrollIntoView(seam: CallSeam, ref: NativeRef): Promise<vo
     signature: "u",
     body: [SCROLL_ANYWHERE],
   });
+  const [states] = await seam.call({
+    destination: ref.busName,
+    path: ref.objectPath,
+    iface: ACCESSIBLE_IFACE,
+    member: "GetState",
+  });
+  const [lower, upper] = Array.isArray(states) ? [Number(states[0] ?? 0), Number(states[1] ?? 0)] : [0, 0];
+  const after = toNeutralStates(lower, upper);
+  if (after.includes("offscreen")) {
+    throw observed("bringing this element into view", "offscreen", "on screen");
+  }
 }

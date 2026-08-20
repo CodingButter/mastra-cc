@@ -341,5 +341,40 @@
     "find": "if (!holdsEffectAuthority(launch, effectClass)) return { refusal };",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
+  },
+  {
+    "name": "magnitude-write-is-not-compared-against-what-landed",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  if (landed !== value) throw observed(\"moving this element's magnitude\", landed, value);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/effects-are-observed.test.ts"
+  },
+  {
+    "name": "caret-write-is-not-compared-against-where-it-landed",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  if (landed !== target) throw observed(\"placing this element's caret\", landed, target);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/effects-are-observed.test.ts"
+  },
+  {
+    "name": "reveal-does-not-check-the-element-is-on-screen",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  if (after.includes(\"offscreen\")) {\n    throw observed(\"bringing this element into view\", \"offscreen\", \"on screen\");\n  }",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/effects-are-observed.test.ts"
+  },
+  {
+    "name": "activate-discards-the-platforms-own-decline",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      if (!performed) {\n        throw new WriteNotObservedError(\n          `the application declined to perform ${JSON.stringify(params.action)} - nothing was done`,\n        );\n      }",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/effects-are-observed.test.ts"
+  },
+  {
+    "name": "browser-reveal-does-not-check-the-element-reached-the-viewport",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "  if (inView !== true) {\n    throw new WriteNotObservedError(\n      \"bringing this element into view reported success, but reading it back found it still outside the viewport - the page performed something other than what was asked\",\n    );\n  }",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
   }
 ]

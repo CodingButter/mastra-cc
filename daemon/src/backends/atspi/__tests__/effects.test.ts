@@ -130,12 +130,31 @@ describe("setting a magnitude", () => {
       "Get:MinimumValue": [0],
       "Get:MaximumValue": [1],
       Set: [],
+      // The read-back the write is checked against: the element holds what was
+      // asked for, so this write is observed rather than merely reported.
+      "Get:CurrentValue": [0.5],
     });
 
     await setValue(channel, REF, 0.5);
 
     const written = channel.asked.find((exchange) => exchange.member === "Set");
     expect(written?.body?.[1]).toBe("CurrentValue");
+  });
+
+  it("refuses a magnitude the platform clamped to somewhere else, rather than reporting the write", async () => {
+    // The measured failure the range check above cannot see: the write is in
+    // range, the platform accepts it, and the element lands on a step it never
+    // published. Without the read-back this answers with a fresh, honest-
+    // looking element holding a value nobody asked for.
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", VALUE]],
+      "Get:MinimumValue": [0],
+      "Get:MaximumValue": [100],
+      Set: [],
+      "Get:CurrentValue": [75],
+    });
+
+    await expect(setValue(channel, REF, 73)).rejects.toBeInstanceOf(WriteNotObservedError);
   });
 
   it("refuses a magnitude outside the published range BEFORE the call", async () => {
@@ -256,11 +275,27 @@ describe("writing text and placing the caret", () => {
       GetInterfaces: [["org.a11y.atspi.Accessible", TEXT]],
       "Get:CharacterCount": [9],
       SetCaretOffset: [true],
+      // Where the caret actually landed, read back off the element.
+      "Get:CaretOffset": [9],
     });
 
     await setCaretOffset(channel, REF, undefined);
 
     expect(channel.asked.find((exchange) => exchange.member === "SetCaretOffset")?.body?.[0]).toBe(9);
+  });
+
+  it("refuses a caret the platform placed somewhere other than where it was aimed", async () => {
+    // SetCaretOffset answers true for a move it did not make. The offset is in
+    // bounds, so the check before the call passes; only reading the caret back
+    // can see that it sits somewhere else.
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", TEXT]],
+      "Get:CharacterCount": [9],
+      SetCaretOffset: [true],
+      "Get:CaretOffset": [0],
+    });
+
+    await expect(setCaretOffset(channel, REF, 4)).rejects.toBeInstanceOf(WriteNotObservedError);
   });
 
   it("reports a field with no editable-text interface as not-exposed rather than refusing by policy", async () => {
@@ -284,6 +319,9 @@ describe("revealing an element", () => {
     const channel = scriptedChannel({
       GetInterfaces: [["org.a11y.atspi.Accessible", COMPONENT]],
       ScrollTo: [true],
+      // Visible and showing: bits 30 and 25 both set, which is what "on
+      // screen" reads as. This is the reveal's whole claim, read back.
+      GetState: [[(1 << 30) | (1 << 25), 0]],
     });
 
     await scrollIntoView(channel, REF);
@@ -291,5 +329,18 @@ describe("revealing an element", () => {
     const scrolled = channel.asked.find((exchange) => exchange.member === "ScrollTo");
     expect(scrolled, "reveal must use the enum form, never ScrollToPoint's pixels").toBeDefined();
     expect(channel.asked.some((exchange) => exchange.member === "ScrollToPoint")).toBe(false);
+  });
+
+  it("refuses a reveal that left the element off screen instead of reporting it as done", async () => {
+    // ScrollTo answers true for a scroll a non-scrolling container never made.
+    // Visible in the tree but not showing on screen IS offscreen, and that is
+    // the one state this operation claims to have changed.
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", COMPONENT]],
+      ScrollTo: [true],
+      GetState: [[1 << 30, 0]],
+    });
+
+    await expect(scrollIntoView(channel, REF)).rejects.toBeInstanceOf(WriteNotObservedError);
   });
 });
