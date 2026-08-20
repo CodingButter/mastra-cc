@@ -41,17 +41,27 @@ async function deathBy(signal: NodeJS.Signals): Promise<{ code: number | null; s
   });
   try {
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error("the daemon never said it was listening")), 10_000);
-      child.stdout.on("data", (chunk: Buffer) => {
-        if (chunk.toString().includes("listening")) {
-          clearTimeout(timer);
-          resolve();
-        }
-      });
-      child.once("exit", () => {
+      // Every listener here belongs to the readiness question and to nothing
+      // after it. Left attached, the stdout handler keeps scanning every later
+      // byte and the exit handler rejects a promise that already settled - a
+      // rejection nobody is waiting for, arriving during the very shutdown this
+      // test exists to measure. Each route out goes through settle().
+      const settle = (finish: () => void) => {
         clearTimeout(timer);
-        reject(new Error("the daemon died before it listened"));
-      });
+        child.stdout.off("data", onData);
+        child.off("exit", onExit);
+        finish();
+      };
+      const onData = (chunk: Buffer) => {
+        if (chunk.toString().includes("listening")) settle(resolve);
+      };
+      const onExit = () => settle(() => reject(new Error("the daemon died before it listened")));
+      const timer = setTimeout(
+        () => settle(() => reject(new Error("the daemon never said it was listening"))),
+        10_000,
+      );
+      child.stdout.on("data", onData);
+      child.once("exit", onExit);
     });
   } catch (error) {
     // a failing case must not orphan the daemon it spawned - in THIS file of

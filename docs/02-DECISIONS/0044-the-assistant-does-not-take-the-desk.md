@@ -130,9 +130,27 @@ daemon's answer:
   not a limitation.
 - **Wayland (GNOME): the route reports success and moves nothing.** Measured
   in M2.6 segment 3 and re-measured in M2.7 segment 4
-  (`.proof/segment-4/focus-wayland.txt`): the launched application kept the
-  keyboard, and the daemon said so in the launch's own diagnostic — clause 4
-  firing every time, exactly as this ADR said the honest outcome would be.
+  (`.proof/segment-4/focus-wayland-v4.txt`): the keyboard left the dialog
+  during the launch and had not come back when the call answered, and the
+  daemon said so in the launch's own diagnostic — clause 4 firing every time,
+  exactly as this ADR said the honest outcome would be.
+
+  **What the Wayland desk can and cannot be asked.** The sentence above is
+  worded more narrowly than the X11 one on purpose. On GNOME Wayland the
+  launched application *never publishes* `KEYBOARD` on the accessibility bus
+  at all: across five consecutive runs on 2026-08-20 every mid-flight sample
+  read `qt6ct: none` or `qt6ct: not on the bus`, while the dialog dropped from
+  `KEYBOARD` to `focused-but-not-keyboard`. So the measurable fact on this
+  session type is that the keyboard **left an application that held it** — not
+  where it went. Nothing on that bus admits to holding it, and this daemon
+  deliberately does not read the compositor ([07-ROADMAP.md](../07-ROADMAP.md)
+  §8), so "which window has the keyboard now" is a question a Wayland session
+  currently gives us no honest way to ask. The segment-4 focus leg scores the
+  departure accordingly; an earlier revision of that leg demanded the
+  newcomer's claim instead and went red five times for want of evidence the
+  desk cannot emit. That was a defect in the instrument, and the correction
+  does not soften what clause 4 discloses — it only stops the leg asserting
+  more than the desk can answer.
 
 **The narrowing.** The limitation named in Consequences is therefore
 **Wayland-specific**. It is not "restoration is unproven"; it is "the
@@ -151,5 +169,6 @@ winning after qt6ct's window was fully up; no second-grab loss was observed.
 |---|---|
 | X11 route restores (raw call) | `.mastracode/plans/m2-7-the-daemon-is-finished.proof/../segment-1/focus-x11.txt`, M2.7 segment 1, bigbeast |
 | X11 launch path restores end to end | segment-4 `focus-demo.sh`, X11 transcript, 2026-08-20 |
-| Wayland route claims success, moves nothing | segment-4 `focus-demo.sh`, Wayland transcript, 2026-08-20; M2.6 segment 3 focus leg |
+| Wayland route claims success, moves nothing | segment-4 `focus-demo.sh` v4, `.proof/segment-4/focus-wayland-v4.txt`, minibeast, 2026-08-20 (3 consecutive GREEN runs); M2.6 segment 3 focus leg |
+| no application publishes `KEYBOARD` on a Wayland a11y bus | same transcript; five runs, every mid-flight sample `qt6ct: none` or `not on the bus` |
 | a launch that steals focus fails a test | `daemon/src/__tests__/focus-preservation.test.ts`; mutation entry `a-launch-takes-the-focus-and-never-gives-it-back` |
