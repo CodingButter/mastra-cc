@@ -100,7 +100,7 @@
   {
     "name": "launch-skips-the-permit-check",
     "file": "daemon/src/server.ts",
-    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL };\n  }\n",
+    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
   },
@@ -114,7 +114,7 @@
   {
     "name": "cdp-attest-answers-unknown-id",
     "file": "daemon/src/backends/cdp/index.ts",
-    "find": "    if (ref === undefined) {\n      return { refusal: `no element with id \"${params.id}\" was ever answered by this daemon - nothing to attest` };\n    }\n",
+    "find": "    if (ref === undefined) {\n      return { refusal: `no element with id \"${params.id}\" was ever answered by this daemon - nothing to attest`, refusalClass: \"UnknownElement\" };\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/backend-conformance.test.ts"
   },
@@ -198,7 +198,7 @@
   {
     "name": "second-identity-conflict-never-checked",
     "file": "daemon/src/server.ts",
-    "find": "  for (const key of Object.keys(launch.catalog)) {\n    if (normalise(key) === normalise(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL };\n  }\n",
+    "find": "  for (const key of Object.keys(launch.catalog)) {\n    if (normalise(key) === normalise(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/profile-launch.test.ts"
   },
@@ -282,7 +282,7 @@
   {
     "name": "the-configuration-is-read-and-never-enforced",
     "file": "daemon/src/server.ts",
-    "find": "  const withheld = configurationWithholding(launch, effectClass, application);\n  if (withheld !== undefined) return { refusal: withheldRefusal(method, effectClass, withheld) };\n",
+    "find": "    const withheld = configurationWithholding(launch, effectClass, application);\n    if (withheld !== undefined) {\n      return { refusal: withheldRefusal(method, effectClass, withheld), refusalClass: \"DisabledByConfiguration\" };\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/capability-configuration.test.ts"
   },
@@ -345,7 +345,7 @@
   {
     "name": "the-gate-is-more-permissive-than-the-listing-promised",
     "file": "daemon/src/server.ts",
-    "find": "if (!holdsEffectAuthority(launch, effectClass)) return { refusal };",
+    "find": "    if (!holdsEffectAuthority(launch, effectClass)) return { refusal, refusalClass: \"EffectClassGate\" };",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
   },
@@ -397,5 +397,47 @@
     "find": ", \"SIGHUP\"",
     "cwd": "daemon",
     "testFile": "src/__tests__/daemon-dies-clean.test.ts"
+  },
+  {
+    "name": "the-effect-that-leaves-no-receipt",
+    "file": "daemon/src/server.ts",
+    "find": "  recordAudit({ application, element: [elementOf(id, answer.element)], scope: effectClass, cause: causeOf(application), attestation, outcome: outcomeOf(answer) });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-failed-effect-that-leaves-no-receipt",
+    "file": "daemon/src/server.ts",
+    "find": "    recordAudit({ application, element: [{ id }], scope: effectClass, cause: causeOf(application), attestation, outcome: FAILED });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-receipt-that-names-the-content",
+    "file": "daemon/src/audit.ts",
+    "find": ".map(identityOf)",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-refusal-that-goes-unclassified",
+    "file": "daemon/src/server.ts",
+    "find": ", refusalClass: error.constructor.name as RefusalClass",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-launch-that-leaves-no-receipt",
+    "file": "daemon/src/server.ts",
+    "find": "  recordAudit({\n    application,\n    element: answer.application === undefined ? [] : [answer.application],\n    scope: \"launch\",\n    cause: causeOf(application),\n    outcome: outcomeOf(answer),\n  });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-read-that-leaves-no-receipt",
+    "file": "daemon/src/server.ts",
+    "find": "      recordAudit({ application: undefined, element: answeredElements(result), scope: \"observe\", cause: causeOf(undefined), outcome: observeOutcome(result) });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   }
 ]
