@@ -185,7 +185,8 @@ const table = new OwnershipTable();
 
 // The daemon owns what it launched, including cleaning it up: on shutdown it
 // SIGTERMs every process its table still owns - and never anything else
-// (terminateOwned re-checks liveness per entry; asserted in
+// (terminateOwned re-checks (pid, start-time) identity per entry via
+// table.owns, so a recycled pid is never signalled; asserted in
 // launch/__tests__/spawn-records.test.ts).
 //
 // The handlers are installed BEFORE the server binds its socket: the socket is
@@ -194,20 +195,35 @@ const table = new OwnershipTable();
 // dies node's default death, orphaning the table. SIGHUP is in the list
 // because it is how this daemon actually dies in the wild: a proof-leg shell
 // or terminal closes, the background daemon gets HUP - which is issue #14's
-// qt6ct orphans, reproduced live on 2026-08-20 (segment 4). A repeated signal
-// re-runs shutdown; that is safe because terminateOwned re-checks liveness
-// per entry and never re-signals a pid it no longer owns. SIGKILL and a crash
+// qt6ct orphans, reproduced live on 2026-08-20 (segment 4). The first signal
+// runs cleanup; a second signal is an operator who has waited long enough,
+// and it exits immediately - cleanup already ran, and a daemon that latched
+// once and then ignored every further signal would be killable only by
+// SIGKILL, the one path that orphans the table. terminateOwned itself is safe
+// to reach twice: it re-checks (pid, start-time) identity per entry via
+// table.owns and never signals a pid it no longer owns. SIGKILL and a crash
 // still skip cleanup by definition; that residue is a named limitation, not a
 // promise.
 let server: Awaited<ReturnType<typeof startServer>> | undefined;
 let shuttingDown = false;
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   process.on(signal, () => {
-    if (shuttingDown) return;
+    if (shuttingDown) {
+      // cleanup already ran; a backend.close() that hangs or rejects must
+      // not leave a daemon only SIGKILL can end
+      process.exit(1);
+    }
     shuttingDown = true;
     terminateOwned(table);
     server?.close();
-    void backend.close().then(() => process.exit(0));
+    backend.close().then(
+      () => process.exit(0),
+      () => process.exit(1)
+    );
+    // a backend whose close() never settles gets five seconds, then the
+    // daemon exits anyway - the table is already reaped, and hanging here
+    // recreates the unkillable daemon this handler exists to prevent
+    setTimeout(() => process.exit(1), 5000).unref();
   });
 }
 

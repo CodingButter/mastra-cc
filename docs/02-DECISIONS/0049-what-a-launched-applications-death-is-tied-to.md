@@ -41,7 +41,10 @@ death.
    and (pid, start-time) identity re-checked per entry. No process group is
    killed; no descendant search is performed. The candidate process-group
    design issue #14 sketched is not needed, because the wrapper-fork scenario
-   it existed to cover does not occur here.
+   it existed to cover was not observed on the measured platform — this
+   installation's `google-chrome` on this desk. That is the scope of the
+   finding, no wider; decision 4 is what happens if a platform outside it
+   behaves differently.
 
 3. **The residue is named, not promised away.** SIGKILL and an outright crash
    skip cleanup by definition — no handler runs, and nothing the daemon could
@@ -59,9 +62,14 @@ death.
 
 ## Evidence
 
-- Per-recipe SIGTERM measurement and the continuous-watch chrome measurement:
-  `.mastracode/plans/m2-7-the-daemon-is-finished.proof/segment-4/`
-  (`s4p3-measurement.txt`, `s4p3-chrome.txt`).
+- Per-recipe SIGTERM measurement (`s4p3-measurement.txt`; its chrome row was
+  later found vacuous — an empty before-tree — and is superseded) and the
+  corrected chrome measurement (`s4p3-chrome.txt`, which replaced the vacuous
+  original under the same name: parentage shown directly — the recorded pid's
+  parent is the daemon and the command at that pid is the real browser
+  binary — with a non-empty 12-pid before-tree and an empty after-tree, and
+  an empty before-tree now exits MEASUREMENT INVALID), both under
+  `.mastracode/plans/m2-7-the-daemon-is-finished.proof/segment-4/`.
 - The live orphan and its closure: `shutdown-without.txt` (base: qt6ct
   reparented to init, `PROOF: RED`) and `shutdown-with.txt`
   (`PROOF: GREEN`).

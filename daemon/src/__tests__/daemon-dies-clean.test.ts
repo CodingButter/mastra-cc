@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -70,10 +70,24 @@ describe("the daemon dies through its own handler", () => {
     expect(existsSync(DIST)).toBe(true);
   });
 
-  it("the built daemon is not older than its source - a stale dist scores the wrong artefact (issue #26's trap)", () => {
+  it("the built daemon is newer than every source file - a stale dist scores the wrong artefact (issue #26's trap)", () => {
+    // the behavioural cases exercise the whole bundle, not just main.ts, so
+    // the newest mtime under src is the bar - one edited backend or launch
+    // file with an old dist is the same stale-artefact lie
     const dist = statSync(DIST).mtimeMs;
-    const src = statSync(join(__dirname, "..", "main.ts")).mtimeMs;
-    expect(dist).toBeGreaterThanOrEqual(src);
+    const srcRoot = join(__dirname, "..");
+    let newest = 0;
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        if (name === "__tests__") continue;
+        const p = join(dir, name);
+        const s = statSync(p);
+        if (s.isDirectory()) walk(p);
+        else if (name.endsWith(".ts")) newest = Math.max(newest, s.mtimeMs);
+      }
+    };
+    walk(srcRoot);
+    expect(dist).toBeGreaterThan(newest);
   });
 
   it("the SOURCE carries all three signals - the behavioural cases above read the built dist, and a mutation edits source, so without this pin a source-level regression would be scored against a stale artefact and survive", () => {
