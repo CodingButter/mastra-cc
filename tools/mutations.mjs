@@ -24,9 +24,11 @@ import { fileURLToPath } from "node:url";
 //      untested (issue #25). A survived mutation and a broken runner are
 //      different findings and are reported as different things.
 //
-// Usage: node tools/mutations.mjs [--root <dir>]
+// Usage: node tools/mutations.mjs [--root <dir>] [--table <file>]
 // --root exists for the runner's own tests, which must be able to mutate a
 // scratch tree rather than this one (the same shape tools/freeze-gate.mjs uses).
+// --table exists so the ambiguity guard below can be proven to fail on purpose
+// against a scratch table; CI passes nothing and reads the committed one (PR #13).
 
 function arg(name) {
   const i = process.argv.indexOf(name);
@@ -34,7 +36,7 @@ function arg(name) {
 }
 
 const root = arg("--root") ?? fileURLToPath(new URL("..", import.meta.url));
-const table = JSON.parse(readFileSync(join(root, "tools", "mutations.json"), "utf8"));
+const table = JSON.parse(readFileSync(arg("--table") ?? join(root, "tools", "mutations.json"), "utf8"));
 
 if (table.length === 0) {
   console.error("mutations: the table is empty - the step would pass vacuously");
@@ -88,6 +90,26 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 
 function interrupted(signal) {
   console.error(`mutations: interrupted by ${signal} - the mutated file was put back, and no result is reported for a run that did not finish`);
+  process.exit(1);
+}
+
+// A find string locates ONE site: the mutation below removes the first match,
+// so a find that matches twice silently mutates whichever site comes first and
+// the red test can go red for the wrong reason (issue #8). Checked for the
+// whole table BEFORE any file is touched, so an ambiguous locator is a red step
+// rather than a mutation run against a site nobody chose.
+const ambiguous = [];
+for (const mutation of table) {
+  const occurrences = readFileSync(join(root, mutation.file), "utf8").split(mutation.find).length - 1;
+  if (occurrences > 1) {
+    ambiguous.push(
+      `mutation ${mutation.name}: find string matches ${occurrences} sites in ${mutation.file} - a mutation must name exactly one`,
+    );
+  }
+}
+if (ambiguous.length > 0) {
+  for (const problem of ambiguous) console.error(problem);
+  console.error(`mutations: ${ambiguous.length} ambiguous find string(s) - extend each with surrounding context`);
   process.exit(1);
 }
 

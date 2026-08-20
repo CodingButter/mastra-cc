@@ -37,7 +37,7 @@
   {
     "name": "effect-class-gate-name-dropped-from-refusal",
     "file": "daemon/src/server.ts",
-    "find": "refused by the effect-class gate: ",
+    "find": "refused by the effect-class gate: \"${request.method}\" is not a method of ",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
@@ -93,7 +93,7 @@
   {
     "name": "b11-enforcement-marking-removed",
     "file": "daemon/src/server.ts",
-    "find": ", enforcement: \"before-call\"",
+    "find": ", enforcement: \"before-call\", handler: (p, b, l) => openApplication",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
@@ -257,6 +257,13 @@
     "find": "  return { ...diagnostic, \"mastra-cc/visibility-route\": VISIBILITY_ROUTE };\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/roles.test.ts"
+  },
+  {
+    "name": "the-browser-verdict-forgets-its-instrument",
+    "file": "daemon/src/backends/cdp/roles.ts",
+    "find": "  return { ...diagnostic, \"mastra-cc/visibility-route\": VISIBILITY_ROUTE };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/backend-conformance.test.ts"
   },
   {
     "name": "a-deaf-subscription-is-returned-anyway",
