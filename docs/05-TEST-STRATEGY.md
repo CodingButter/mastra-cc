@@ -68,6 +68,16 @@ A passing test suite proves the tests pass. It does not prove they would fail if
 
 **And the runner is a program that writes broken source to disk, so two more things are enforced rather than hoped for.** *The file comes back however the run ends.* A `finally` covers the normal path and a thrown error; signal handlers cover Ctrl-C and a `kill`, because without them an interrupted run leaves a source file on disk with a security line deleted and the next `git add -A` commits it (issue #18). The mechanism is worth naming, since the obvious fix does not work: `spawnSync` blocks the event loop and the mutation loop is synchronous, so a signal cannot reach a handler until the whole table finishes — registering the handler matters because it removes node's default disposition, which is what lets the `finally` run at all, and the loop separately checks the child's exit signal, since a terminal Ctrl-C signals the process group and kills vitest first. *And the runner never reports about the codebase when the finding is about itself* (issue #25): a runner that cannot execute vitest sees zero failing tests and would otherwise announce that every guarantee in the repository is untested. A survived mutation and a broken runner are different findings and exit with different words.
 
+**And the suite the runner scores must be safe to break.** The offline suite pairs
+launch contexts only with `DEFANGED_CATALOG` (`daemon/src/__tests__/support/`) — the
+real catalog’s names with every argv swapped for a `sleep`. Authority-before-capability
+is a property about names, so nothing under test changes; what changes is the blast
+radius when a mutation deletes the authority guard, which used to be a real Chrome
+started detached on the operator’s signed-in Gmail profile (issue #20). A regression
+guard scans the suite for the real pairing and fails on any reintroduction. Reading the
+real catalog’s *data* — a recipe’s env knob, its key list — stays legal; data is not a
+spawn path.
+
 ### What gets a mutation test
 
 Not everything. Mutation tests are expensive to write and to maintain. Apply them to:
