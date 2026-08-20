@@ -125,9 +125,11 @@ function checkProofsIndex() {
   const index = join(proofs, 'README.md');
   if (!existsSync(index)) return [`missing proofs index: ${relative(ROOT, index)}`];
 
-  const onDisk = readdirSync(proofs).filter(
-    (n) => n.endsWith('.md') && n !== 'README.md',
-  );
+  // Recursive, so a measurement filed in a subdirectory cannot hide from the
+  // check the roadmap describes as covering "a file in docs/proofs/".
+  const onDisk = readdirSync(proofs, { recursive: true })
+    .map(String)
+    .filter((n) => n.endsWith('.md') && n !== 'README.md');
   if (onDisk.length === 0) {
     return ['proofs directory holds no artifacts - the coverage check has nothing to check, which is itself wrong'];
   }
