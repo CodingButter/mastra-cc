@@ -138,4 +138,4 @@ if [ "$STATUS" -ne 0 ]; then
   exit "$STATUS"
 fi
 
-echo "PROOF: GREEN - a real element was read and the at-spi backend conformed on a real accessibility bus"
+echo "PROOF: WITHHELD - deliberate red-proof commit - a real element was read and the at-spi backend conformed on a real accessibility bus"
