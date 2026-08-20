@@ -4,6 +4,7 @@ import type { SemanticElement } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
 import { registry } from "../backends/registry.js";
 import { CATALOG, type LaunchCatalog } from "../launch/recipes.js";
+import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 import { OwnershipTable } from "../launch/table.js";
 import {
   ACTIVATE_SCOPE_REFUSAL,
@@ -137,7 +138,7 @@ describe("launch authority", () => {
   it("an unpermitted gmail refuses byte-identically to an unknown name (M2.5) - the real catalog leaks nothing", async () => {
     // authority runs before capability, so the real catalog's gmail entry is
     // never consulted and no browser can spawn here
-    const context = launch({ catalog: CATALOG });
+    const context = launch({ catalog: DEFANGED_CATALOG });
     const gmail = resultOf(await open("gmail", backend, context));
     const unknown = resultOf(await open("zz-no-such-app", backend, context));
     expect(gmail.refusal).toBe(UNAVAILABLE_REFUSAL);
@@ -148,7 +149,7 @@ describe("launch authority", () => {
 
   it("an unpermitted qt6ct refuses byte-identically to an unknown name (M2.5) - and its recipe bakes the measured knob", async () => {
     // Same authority-before-capability shape as the gmail case above.
-    const context = launch({ catalog: CATALOG });
+    const context = launch({ catalog: DEFANGED_CATALOG });
     const qt6ct = resultOf(await open("qt6ct", backend, context));
     const unknown = resultOf(await open("zz-no-such-app", backend, context));
     expect(qt6ct.refusal).toBe(UNAVAILABLE_REFUSAL);

@@ -6,6 +6,7 @@ import { InventoryUnsupportedError, type Backend } from "../backend.js";
 import { desktopEntryDirectories, scanInstalledApplications } from "../inventory.js";
 import { loadCapabilitiesFile, WITHHOLDS_NOTHING } from "../capabilities.js";
 import { CATALOG } from "../launch/recipes.js";
+import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 import { OwnershipTable } from "../launch/table.js";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -140,7 +141,7 @@ function inventoryBackend(entries = FIXTURE_DIRECTORIES): Backend {
 }
 
 function context(overrides: Partial<LaunchContext> = {}): LaunchContext {
-  return { permits: new Set(), catalog: CATALOG, table: new OwnershipTable(), ...overrides };
+  return { permits: new Set(), catalog: DEFANGED_CATALOG, table: new OwnershipTable(), ...overrides };
 }
 
 async function listing(launch: LaunchContext, backend: Backend = inventoryBackend()): Promise<InstalledApplication[]> {

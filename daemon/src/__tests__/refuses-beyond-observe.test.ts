@@ -1,7 +1,7 @@
 import type { Backend } from "../backend.js";
 import { describe, expect, it } from "vitest";
 import { registry } from "../backends/registry.js";
-import { CATALOG } from "../launch/recipes.js";
+import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 import { OwnershipTable } from "../launch/table.js";
 import { BACKEND_METHODS } from "../backend.js";
 import {
@@ -65,7 +65,7 @@ describe("the effect-class gate", () => {
     const response = await handleRequest(
       { type: "request", id: 4, method: "openApplication", params: { name: "yad" } },
       backend,
-      { permits: new Set(["yad"]), catalog: CATALOG, table: new OwnershipTable(), pollBudgetMs: 50, pollIntervalMs: 10 },
+      { permits: new Set(["yad"]), catalog: DEFANGED_CATALOG, table: new OwnershipTable(), pollBudgetMs: 50, pollIntervalMs: 10 },
     );
     expect(response.refusal).toBeUndefined();
     expect(response.result).toBeDefined();
@@ -120,7 +120,7 @@ describe("the four operations answer for the check that actually ran", () => {
         {
           permits: new Set<string>(),
           allows: new Set(["edit", "activate", "submit"] as const),
-          catalog: CATALOG,
+          catalog: DEFANGED_CATALOG,
           table: new OwnershipTable(),
         },
       );
@@ -151,7 +151,7 @@ describe("the four operations answer for the check that actually ran", () => {
     const malformed = await handleRequest(
       { type: "request", id: 40, method: "setElementValue", params: { id: "el-000000000000", value: "loud" } },
       backend,
-      { permits: new Set<string>(), allows: new Set(["edit"] as const), catalog: CATALOG, table: new OwnershipTable() },
+      { permits: new Set<string>(), allows: new Set(["edit"] as const), catalog: DEFANGED_CATALOG, table: new OwnershipTable() },
     );
     expect((malformed.result as { refusal?: string }).refusal).toContain('"value" that is not a number');
 

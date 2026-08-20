@@ -6,7 +6,7 @@ import type { SemanticElement } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
 import { isVisible } from "../grants.js";
 import { composeBootNames } from "../launch/profiles.js";
-import { CATALOG } from "../launch/recipes.js";
+import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 import { OwnershipTable } from "../launch/table.js";
 import {
   CONFIGURABLE_CAPABILITIES,
@@ -308,7 +308,7 @@ describe("the daemon enforces the configuration", () => {
       permits: new Set(["yad"]),
       grants: new Set(),
       flags: new Set(),
-      catalog: CATALOG,
+      catalog: DEFANGED_CATALOG,
     });
     expect(launchPermits.has("yad")).toBe(true);
     expect(isVisible(visibility, "yad")).toBe(true);
