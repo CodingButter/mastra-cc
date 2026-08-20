@@ -57,19 +57,31 @@ done
 # :98, one past apply.sh --headless-check's :97, so the two lanes can run at
 # the same time on one machine without fighting over a display number.
 DEMO_DISPLAY="${MASTRA_CC_DEMO_DISPLAY:-:98}"
-Xvfb "$DEMO_DISPLAY" -screen 0 1024x768x24 -nolisten tcp 2>/dev/null &
+# Xvfb's stderr is kept: a display-lock collision must name itself here, not
+# surface twenty query attempts later as "no element named OK could be read".
+Xvfb "$DEMO_DISPLAY" -screen 0 1024x768x24 -nolisten tcp &
 XVFB_PID=$!
-trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT
+trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT INT TERM
 sleep 1
+# A dead Xvfb here means the lane would attach to whatever owns the display
+# instead - the opposite of the private desktop this script promises. Fail
+# now, loudly, with the process's own stderr already printed above.
+kill -0 "$XVFB_PID" 2>/dev/null || {
+  echo "demo: Xvfb did not survive startup on $DEMO_DISPLAY - is the display already taken?" >&2
+  exit 1
+}
 
 # Everything below runs inside a PRIVATE session bus: the a11y bus is launched
 # into it, yad registers there, and the daemon reads from it. The developer's
 # real desktop buses are never touched. WAYLAND_DISPLAY is stripped so GTK
 # cannot prefer a real compositor over the virtual X display. The inner shell
-# traps its own exit so the window and the bus launcher die with it - an
-# orphaned launcher holds the session open and a CI job that hangs is worse
-# than one that fails. timeout is the outer belt: a wedged lane is killed, not
-# waited on, and a killed lane prints no lock line.
+# traps EXIT, INT and TERM so the window and the bus launcher die with it on
+# the ordinary paths - an orphaned launcher holds the session open and a CI
+# job that hangs is worse than one that fails. timeout is the outer belt: a
+# wedged lane is killed, not waited on, and a killed lane prints no lock
+# line. The belt is honest about its limit: timeout's KILL escalation skips
+# every trap, so a lane wedged hard enough to need SIGKILL can orphan its
+# window; on the ephemeral runner this job targets, the VM is the reaper.
 #
 # STATUS is captured with || so set -e cannot swallow the exit code before the
 # lock line is decided.
@@ -79,7 +91,7 @@ timeout --kill-after=30s 15m \
     set -uo pipefail
     ROOT="$1"
     LAUNCHER="$2"
-    trap '"'"'kill "${YAD_PID:-}" "${LAUNCHER_PID:-}" 2>/dev/null || true'"'"' EXIT
+    trap '"'"'kill "${YAD_PID:-}" "${LAUNCHER_PID:-}" 2>/dev/null || true'"'"' EXIT INT TERM
 
     "$LAUNCHER" --launch-immediately --a11y=1 >/dev/null 2>&1 &
     LAUNCHER_PID=$!

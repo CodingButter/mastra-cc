@@ -61,6 +61,10 @@ jobs:
   # turns this job red instead of quietly skipping.
   live:
     runs-on: ubuntu-latest
+    # demo.sh bounds its inner session with its own timeout; this bounds
+    # everything outside it - apt, install, build - which would otherwise
+    # inherit the six-hour default. A hung witness is worse than a red one.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -87,14 +91,24 @@ jobs:
       # non-zero on every failure path, but a script whose proof line silently
       # stopped printing would still exit 0; requiring the line by name is what
       # makes "goes red when PROOF: GREEN is absent" true of this job.
-      - name: "live lane: infra/demo.sh must print its proof line"
+      # It must be the LAST line, not a line: a stray match earlier in the
+      # transcript - a child process, a future diagnostic - must not be able
+      # to stand in for the script's own closing verdict.
+      - name: "live lane: infra/demo.sh must end with its proof line"
         run: |
           set -o pipefail
           bash infra/demo.sh 2>&1 | tee demo.log
-          grep -q "^PROOF: GREEN" demo.log || {
-            echo "live: infra/demo.sh did not print PROOF: GREEN - the live lane was not witnessed" >&2
+          tail -n 1 demo.log | grep -q "^PROOF: GREEN" || {
+            echo "live: infra/demo.sh did not end with PROOF: GREEN - the live lane was not witnessed" >&2
             exit 1
           }
+      # The run id expires with the log retention window; the transcript is
+      # the only durable copy of what the witness saw. Keep it either way.
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-lane-transcript
+          path: demo.log
 
   # B12 is a CI job over every manifest, not a source pin
   # (docs/01-ARCHITECTURE.md:139-150).
