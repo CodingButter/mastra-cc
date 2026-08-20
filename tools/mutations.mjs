@@ -50,11 +50,14 @@ let inFlight = null;
 function restoreInFlight() {
   if (inFlight === null) return;
   const { file, original } = inFlight;
-  // Cleared BEFORE the write, not after: if a second signal arrives while this
-  // write is in progress, the re-entrant call must not race a half-written file
-  // with another write of the same bytes.
-  inFlight = null;
+  // The write happens FIRST and the record is cleared only after it succeeds:
+  // if the write throws (a read-only mount, a full disk), keeping the record
+  // lets a later restore attempt try again, and the caller can say loudly that
+  // the file is still mutated instead of claiming it was put back. Re-entrancy
+  // is not a hazard here - node dispatches signal handlers on the event loop,
+  // never in the middle of a synchronous write.
   writeFileSync(file, original);
+  inFlight = null;
 }
 
 // Interruption is handled in TWO places, because one is not enough and the
@@ -78,7 +81,16 @@ function restoreInFlight() {
 //      immediately, and the run stops there rather than mutating the next file.
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
-    restoreInFlight();
+    try {
+      restoreInFlight();
+    } catch (err) {
+      // The most serious failure this runner has: interrupted AND unable to put
+      // the file back. Never claim success here.
+      console.error(
+        `mutations: interrupted by ${signal} and THE RESTORE FAILED (${err.message}) - ${inFlight.file} is still mutated on disk`,
+      );
+      process.exit(1);
+    }
     console.error(`mutations: interrupted by ${signal} - the mutated file was put back`);
     // Re-raise rather than exit(1): an interruption is not a mutation result, and
     // a caller that signalled this process is owed the death it asked for. The
@@ -101,15 +113,17 @@ function interrupted(signal) {
 const ambiguous = [];
 for (const mutation of table) {
   const occurrences = readFileSync(join(root, mutation.file), "utf8").split(mutation.find).length - 1;
-  if (occurrences > 1) {
+  if (occurrences !== 1) {
     ambiguous.push(
-      `mutation ${mutation.name}: find string matches ${occurrences} sites in ${mutation.file} - a mutation must name exactly one`,
+      occurrences === 0
+        ? `mutation ${mutation.name}: find string not present in ${mutation.file} - the table is stale`
+        : `mutation ${mutation.name}: find string matches ${occurrences} sites in ${mutation.file} - a mutation must name exactly one`,
     );
   }
 }
 if (ambiguous.length > 0) {
   for (const problem of ambiguous) console.error(problem);
-  console.error(`mutations: ${ambiguous.length} ambiguous find string(s) - extend each with surrounding context`);
+  console.error(`mutations: ${ambiguous.length} find string(s) do not name exactly one site - a stale entry needs re-anchoring, an ambiguous one needs surrounding context`);
   process.exit(1);
 }
 
@@ -119,8 +133,11 @@ for (const mutation of table) {
   const file = join(root, mutation.file);
   const original = readFileSync(file, "utf8");
   if (!original.includes(mutation.find)) {
-    console.error(`mutation ${mutation.name}: find string not present in ${mutation.file} - the table is stale`);
-    survived += 1;
+    // The pre-check above already refuses a stale table, so reaching this line
+    // means the file changed mid-run. Either way it is a finding about the
+    // table or the runner, never a survived mutation (issue #25).
+    console.error(`mutation ${mutation.name}: THE RUNNER FAILED - find string not present in ${mutation.file} - the table is stale`);
+    brokenRunner += 1;
     continue;
   }
 

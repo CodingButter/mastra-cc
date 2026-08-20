@@ -10,11 +10,16 @@ import { describe, expect, it } from "vitest";
 // NAMES use DEFANGED_CATALOG (support/defanged-catalog.ts); tests that read
 // the catalog's DATA (a recipe's env knob, its key list) may import CATALOG
 // freely - data is not a spawn path, "catalog:" in a context literal is.
-const HERE = dirname(fileURLToPath(import.meta.url));
+// The scan starts at daemon/src and RECURSES: nested suites (the backends
+// carry their own __tests__ directories) are offline tests too, and a guard
+// that reads one directory is a tripwire wearing the name of an invariant.
+const SRC = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PAIRING = /catalog:\s*CATALOG\b/;
 
 describe("the real catalog never reaches a spawnable path", () => {
-  const files = readdirSync(HERE).filter((name) => name.endsWith(".test.ts"));
+  const files = readdirSync(SRC, { recursive: true })
+    .map(String)
+    .filter((name) => name.endsWith(".test.ts"));
 
   it("scans a non-empty suite, or this guard passes vacuously", () => {
     expect(files.length).toBeGreaterThan(5);
@@ -28,7 +33,7 @@ describe("the real catalog never reaches a spawnable path", () => {
   });
 
   it("no offline test pairs the real CATALOG with a launch context", () => {
-    const offenders = files.filter((name) => PAIRING.test(readFileSync(join(HERE, name), "utf8")));
+    const offenders = files.filter((name) => PAIRING.test(readFileSync(join(SRC, name), "utf8")));
     expect(offenders).toEqual([]);
   });
 });

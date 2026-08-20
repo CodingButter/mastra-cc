@@ -41,6 +41,25 @@ describe("the mutation table", () => {
 });
 
 describe("the mutation runner", () => {
+  it("refuses a stale find string before touching any file, and never calls it a survivor", () => {
+    // A find that matches ZERO sites is a finding about the table, not about the
+    // code under test (issue #25): reporting it as a survived mutation would say
+    // "a test asserts nothing" when the truth is "the table points at nothing".
+    const result = runWithTable([
+      {
+        name: "scratch-stale",
+        file: "daemon/src/server.ts",
+        find: "this string appears nowhere in the daemon",
+        cwd: "tools",
+        testFile: "__tests__/mutations.test.mjs",
+      },
+    ]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("scratch-stale");
+    expect(result.stderr).toContain("the table is stale");
+    expect(result.stderr).not.toContain("survived");
+  });
+
   it("refuses an ambiguous find string, naming the mutation and the count", () => {
     // "effectClass: \"observe\"" appears on every observe entry of the dispatch
     // table: a locator like this is what the check exists to reject. The count is
