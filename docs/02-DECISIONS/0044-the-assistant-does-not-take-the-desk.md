@@ -104,3 +104,52 @@ policy of that shape belongs to the user. The default is preserve.
 | compositor-level access is deliberately deferred | [07-ROADMAP.md](../07-ROADMAP.md) §8 |
 | a rule with no failing test is a wish | [03-LESSONS.md](../03-LESSONS.md) Family 4 |
 | tuning a constant to hide an upstream inconsistency | [03-LESSONS.md](../03-LESSONS.md) Family 6 |
+
+## Amendment — the measurement was taken (M2.7 segment 4, 2026-08-20)
+
+The Consequences section above says the restoration mechanism *"is not proven
+yet"* and that which route works, on which session type, *"is a measurement we
+have not taken."* Both sentences are now history rather than status, and this
+amendment records what the measurement said. The original text stands above,
+unedited, in the manner of ADR-0008's struck-through rule 6: the reason the
+question was open is part of the record.
+
+**The measurement.** Taken twice, on real desks, with an independent witness
+process reading the accessibility bus over its own connection — never the
+daemon's answer:
+
+- **X11 (GNOME on Xorg): the accessibility-bus route restores.** The raw call
+  was measured in M2.7 segment 1 (`Component.GrabFocus` genuinely moved the
+  keyboard, `.proof/segment-1/focus-x11.txt`), and the daemon's whole launch
+  path was measured in segment 4: a dialog held the keyboard, the daemon
+  launched qt6ct, and the witness read the keyboard back on the dialog
+  afterwards, with no focus-preservation note in the launch's answer
+  (`.proof/segment-4/focus-x11.txt`). On X11, clause 2 is a **tested,
+  observed behaviour**, and the segment-4 demo fails if a launch on X11
+  leaves the keyboard elsewhere — a disclosed failure there is a regression,
+  not a limitation.
+- **Wayland (GNOME): the route reports success and moves nothing.** Measured
+  in M2.6 segment 3 and re-measured in M2.7 segment 4
+  (`.proof/segment-4/focus-wayland.txt`): the launched application kept the
+  keyboard, and the daemon said so in the launch's own diagnostic — clause 4
+  firing every time, exactly as this ADR said the honest outcome would be.
+
+**The narrowing.** The limitation named in Consequences is therefore
+**Wayland-specific**. It is not "restoration is unproven"; it is "the
+accessibility-bus route cannot win the keyboard back from a Wayland
+compositor". The compositor-protocol route remains deliberately deferred
+([07-ROADMAP.md](../07-ROADMAP.md) §8), and until it is taken, clause 4's
+disclosure is the whole of the daemon's guarantee on Wayland sessions.
+
+**The settle window, as built.** The restore runs after the launched
+application becomes readable — the readable-poll inside `openApplication` is
+the settle window, measured by the application's own appearance on the bus
+rather than a tuned constant. The segment-4 X11 transcript shows the restore
+winning after qt6ct's window was fully up; no second-grab loss was observed.
+
+| Claim | Source |
+|---|---|
+| X11 route restores (raw call) | `.mastracode/plans/m2-7-the-daemon-is-finished.proof/../segment-1/focus-x11.txt`, M2.7 segment 1, bigbeast |
+| X11 launch path restores end to end | segment-4 `focus-demo.sh`, X11 transcript, 2026-08-20 |
+| Wayland route claims success, moves nothing | segment-4 `focus-demo.sh`, Wayland transcript, 2026-08-20; M2.6 segment 3 focus leg |
+| a launch that steals focus fails a test | `daemon/src/__tests__/focus-preservation.test.ts`; mutation entry `a-launch-takes-the-focus-and-never-gives-it-back` |

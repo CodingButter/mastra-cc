@@ -1,10 +1,10 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.4.0
+// Mastra CC protocol v1.5.0
 
-export const PROTOCOL_VERSION = "1.4.0";
-export const SCHEMA_DIGEST = "1d125f7b5694c7f829145b5eb8554db84f990897499fdda69432d510c40e2ee1";
+export const PROTOCOL_VERSION = "1.5.0";
+export const SCHEMA_DIGEST = "8835157bb15745da696bd4e7a58e5851ca6574cd52712f2fd5bf0c2b6239a797";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
-export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","menu","menuitem","text","textbox","image","generic"] as const;
+export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
 export const STATES = ["enabled","visible","focused","selected","checked","expanded","offscreen"] as const;
 export type State = (typeof STATES)[number];
@@ -208,7 +208,7 @@ export interface OpenApplicationResult {
   refusal?: string;
 }
 
-/** Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Defined on the wire before it is possible; until an edit-authority surface exists, every call is refused by name. */
+/** Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
 export interface EditElementParams {
   /** The element whose content would be replaced. */
   id: string;
@@ -223,7 +223,7 @@ export interface EditElementResult {
   refusal?: string;
 }
 
-/** Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Defined on the wire before it is possible; until an activate-authority surface exists, every call is refused by name. */
+/** Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
 export interface ActivateElementParams {
   /** The element the action would be performed on. */
   id: string;
@@ -238,7 +238,7 @@ export interface ActivateElementResult {
   refusal?: string;
 }
 
-/** Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Defined on the wire before it is possible; until a submit-authority surface exists, every call is refused by name. */
+/** Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
 export interface SubmitElementParams {
   /** The element that would commit. */
   id: string;
@@ -253,7 +253,7 @@ export interface SubmitElementResult {
   refusal?: string;
 }
 
-/** Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+/** Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
 export interface SetElementValueParams {
   /** The element whose magnitude would move. */
   id: string;
@@ -268,7 +268,7 @@ export interface SetElementValueResult {
   refusal?: string;
 }
 
-/** Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+/** Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
 export interface SetElementTextParams {
   /** The element whose text would change. */
   id: string;
@@ -285,7 +285,7 @@ export interface SetElementTextResult {
   refusal?: string;
 }
 
-/** Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+/** Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
 export interface SetElementCaretParams {
   /** The element whose insertion point would move. */
   id: string;
@@ -300,7 +300,7 @@ export interface SetElementCaretResult {
   refusal?: string;
 }
 
-/** Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Defined on the wire before it is possible; until the backend seam carries it, every call is refused by name. */
+/** Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
 export interface RevealElementParams {
   /** The element to bring into view. */
   id: string;
@@ -325,7 +325,7 @@ export interface ListApplicationsResult {
 }
 
 const FIELD_SPECS = {"semanticElement":{"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"name":{"type":"string","required":true,"pattern":null},"states":{"type":"state[]","required":true,"pattern":null},"actions":{"type":"action[]","required":true,"pattern":null},"operations":{"type":"operation[]","required":false,"pattern":null},"diagnostic":{"type":"diagnostic","required":false,"pattern":null}},"action":{"name":{"type":"string","required":true,"pattern":null},"description":{"type":"string","required":false,"pattern":null},"localizedName":{"type":"string","required":false,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null}},"range":{"minimum":{"type":"number","required":true,"pattern":null},"maximum":{"type":"number","required":true,"pattern":null},"current":{"type":"number","required":true,"pattern":null},"step":{"type":"number","required":false,"pattern":null}},"operation":{"operation":{"type":"operationName","required":true,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null},"range":{"type":"range","required":false,"pattern":null}},"installedApplication":{"name":{"type":"string","required":true,"pattern":null},"capabilities":{"type":"capability[]","required":true,"pattern":null},"launchable":{"type":"boolean","required":true,"pattern":null},"diagnostic":{"type":"diagnostic","required":false,"pattern":null}},"capability":{"capability":{"type":"capabilityName","required":true,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null}},"subscription":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"priority":{"type":"priority","required":true,"pattern":null}},"changeEvent":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"kind":{"type":"changeKind","required":true,"pattern":null},"attribution":{"type":"attribution","required":true,"pattern":null},"causeId":{"type":"string","required":false,"pattern":null},"priority":{"type":"priority","required":true,"pattern":null},"at":{"type":"number","required":true,"pattern":null}},"diagnostic":{"nativeRole":{"type":"string","required":false,"pattern":null},"nativeId":{"type":"string","required":false,"pattern":null}}} as const;
-const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
+const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
 
 type FieldSpec = { type: string; required: boolean; pattern: string | null };
 
