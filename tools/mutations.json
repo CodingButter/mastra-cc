@@ -390,5 +390,12 @@
     "find": "  gridcell: \"gridcell\",\n",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/roles.test.ts"
+  },
+  {
+    "name": "a-shutdown-signal-the-daemon-ignores",
+    "file": "daemon/src/main.ts",
+    "find": ", \"SIGHUP\"",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/daemon-dies-clean.test.ts"
   }
 ]
