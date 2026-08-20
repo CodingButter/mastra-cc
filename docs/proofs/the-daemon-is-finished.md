@@ -128,10 +128,12 @@ Provenance: a tooling proof on the feature tree — the red is a deliberately
 unlisted file, not a merge-base worktree, because at base the check does not
 exist to go red.
 
-- **Red**: an unlisted `docs/proofs/*.md` turns `check-docs` red naming the
-  file — `proof artifact not listed in the proofs index:
-  an-unlisted-measurement.md`, exit 1
-  (`segment-5/proofs-index-red-green.txt`).
+- **Red**: an unlisted markdown artifact turns `check-docs` red naming the
+  file, at the top level — `proof artifact not listed in the proofs index:
+  an-unlisted-measurement.md`, exit 1 — and in a subdirectory —
+  `proof artifact not listed in the proofs index:
+  2026-08-20-keyboard/measurement.md`, exit 1. Both legs captured against
+  the recursive check as shipped (`segment-5/proofs-index-red-green.txt`).
 - **Green**: the real tree, where the index covers the directory — and this
   document is itself guarded by the check it reports on: committed unlisted,
   it would have reddened the gate that shipped it.
