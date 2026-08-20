@@ -11,10 +11,10 @@ import { normalise } from "../backends/atspi/names.js";
 // "is this content scratch or the user's work": a fresh launch can restore
 // yesterday's document (docs/proofs/how-the-daemon-knows-what-it-launched.md).
 //
-// Granularity note: at this segment's granularity, ownership joins to the
+// Granularity note: at the current granularity, ownership joins to the
 // accessibility tree BY NAME (ownsName). The wire semanticElement carries no
 // pid, and extending the internal backend surface for a per-element pid would
-// drag the replay backend and conformance suite into this segment. The
+// drag the replay backend and conformance suite along with it. The
 // per-element pid join (proven possible in the ownership spike via the
 // accessibility layer's reported pid) is deferred to M2.4's attribution work.
 //

@@ -1,8 +1,10 @@
 # Proofs
 
-Sixteen measurements taken during M0.5, one taken during M1, four taken during
-M2.5, one taken during M2.6, and the record of how the milestone checked
-itself. Each measurement
+Measurements taken from M0.5 onward, and the record of how each milestone
+checked itself. No count is stated here: a count that isn't checked is a claim
+without a receipt, and the coverage now has a real check instead —
+`scripts/check-docs.mjs` goes red when a file in this directory is not listed
+below. Each measurement
 answers a question in [09-QUESTIONS.md](../09-QUESTIONS.md) that could not be
 answered by argument.
 
@@ -52,6 +54,7 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 | [an unpermitted application is invisible](an-unpermitted-application-is-invisible.md) | Deny-by-default on real hardware, both routes — absent, not filtered. Produced by the untracked leg `.proof/invisible.sh` |
 | [the Qt6 accessibility knob, measured](the-qt6-accessibility-knob-measured.md) | Q05's Qt row — three states asserted; the always-on variable is the knob, the Qt5-era knob is a no-op. Produced by the untracked leg `.proof/qt6.sh` |
 | [every action the desktop offers, measured](every-action-the-desktop-offers.md) | M2.6 exit gate — the verbs act and an independent witness confirms it; existence and permission are readable while content is not; and the focus guarantee's named Wayland limitation, measured rather than assumed. Produced by the untracked legs `.proof/demo.sh`, `.proof/listing.sh` and `.proof/focus.sh` |
+| [the daemon is finished](the-daemon-is-finished.md) | M2.7 exit gate — a red/green pair per segment on real hardware: the wire completed, the tooling guarding itself, CI witnessing the live lane, the keyboard and Gmail's vocabulary measured, and nothing outliving the daemon. Produced by the untracked legs under `.proof/segment-1..5/` |
 
 ## Release-gate checks
 

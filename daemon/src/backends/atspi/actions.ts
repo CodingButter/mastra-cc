@@ -186,13 +186,14 @@ export async function readPublishedActions(
       // setting of ours turned it off, so it is not `disabled-by-configuration`
       // - naming a setting that does not exist is the false-remedy failure
       // ADR-0042 exists to kill. The missing state is "the application itself
-      // disabled it", and inventing it here is a schema change this segment is
-      // not allowed to make.
+      // disabled it", and inventing it here is a schema change this file is
+      // not allowed to make on its own - a wider vocabulary is a version bump
+      // with an ADR, not a backend's improvisation.
       //
       // What saves the caller meanwhile: the fact is not lost. The element
       // carries its own `states`, and an insensitive control answers without
-      // `enabled` right beside this list. Segment 3 owns the meaning of the
-      // three action states (03-existence-is-readable.md) and closes this.
+      // `enabled` right beside this list. The three-word action-state
+      // vocabulary is the schema's, and widening it is a schema question.
       availability: "available",
       ...(bulk.description !== "" ? { description: bulk.description } : {}),
       // The bulk reply's wording is display wording when it differs from the

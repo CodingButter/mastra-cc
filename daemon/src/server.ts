@@ -289,12 +289,11 @@ export const REVEAL_SCOPE_REFUSAL =
   'refused by the scope gate: "revealElement" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method';
 
 // The application listing (schema version 1.4.0, ADR-0042). Observe-class: it
-// reads the fence around an application and never anything behind it. It is
-// defined and refused here because the inventory is a platform question and
-// the seam does not yet carry it (ADR-0017); segment 3 implements it. The
-// refusal names the seam rather than the application, so it says nothing about
-// what this machine has - which is the property ADR-0042 changes, not one it
-// keeps.
+// reads the fence around an application and never anything behind it. The
+// method is routed; this refusal fires only when the session's backend cannot
+// enumerate what the machine has (InventoryUnsupportedError), and it names the
+// route rather than the application, so it says nothing about what this
+// machine has - which is the property ADR-0042 changes, not one it keeps.
 export const LIST_APPLICATIONS_REFUSAL =
   'refused by the inventory gate: "listApplications" is observe-class and this session\'s backend cannot enumerate what this machine has installed - the answer would have to be an empty list, which would say the machine has nothing rather than that this route cannot look';
 
@@ -924,8 +923,8 @@ async function restoreFocusAfterLaunch(backend: Backend, held: FocusHeld): Promi
 // a reader in both: stamped into the element's diagnostic when the launch
 // otherwise succeeded, and carried in the refusal when it did not. Diagnostic
 // because it is debug-only by the wire's own contract and never load-bearing
-// for agent logic - the schema is not changed to carry it, and this segment
-// does not add a field to a frozen version.
+// for agent logic - the schema is not changed to carry it; no field is added
+// to a frozen version for a debug-only note.
 function withFocusNote(element: SemanticElement, note: string | undefined): SemanticElement {
   if (note === undefined) return element;
   const diagnostic: Diagnostic & { "mastra-cc/focus-preservation": string } = {
@@ -975,8 +974,8 @@ async function openApplication(
   }
   // Idempotent re-open: a live entry of ours wins - no second spawn, no
   // refusal, even when a foreign same-name copy is also running (the by-name
-  // tree match cannot distinguish the two copies per element at this
-  // segment's name-only granularity; M2.4's pid join will).
+  // tree match cannot distinguish the two copies per element at the current
+  // name-only granularity; M2.4's pid join will).
   // Nothing has been spawned yet, and nothing below this line runs without a
   // launch actually happening: the focus read costs a tree walk, so it is
   // taken after every refusal that could still fire and immediately before the
