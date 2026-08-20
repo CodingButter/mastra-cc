@@ -103,15 +103,24 @@ proving the launched app genuinely took the keyboard before restoration:
 
 - **X11 (bigbeast, script v3)**: `PROOF: GREEN - the launch left the keyboard
   where it found it, and said nothing.` (`focus-x11.txt`, the v3 run)
-- **Wayland (minibeast, script v2)**: the route reports success and moves
-  nothing; the witness confirms the keyboard did not return and the daemon
-  discloses it — `PROOF: GREEN - the daemon did not report a clean launch.`
-  (`focus-wayland.txt`) — ADR-0044 clause 4's named limitation, narrowed to
-  Wayland. Stated plainly: the Wayland run predates the v3 script tightenings
-  (WM arbitration, verdict judged on the printed sample); the v3 re-run is an
-  open follow-up, blocked on the hardware, and it tightens the instrument
-  rather than changing the measured fact — Segment 1's raw `GrabFocus`
-  transcript already showed the same limitation on the same desk.
+- **Wayland (minibeast, script v4)**: the route reports success and moves
+  nothing; the keyboard leaves the dialog during the launch and has not come
+  back when the call answers, and the daemon discloses it —
+  `PROOF: GREEN - the daemon did not report a clean launch.`
+  (`focus-wayland-v4.txt`, three consecutive runs, exit 0) — ADR-0044 clause 4's
+  named limitation, narrowed to Wayland.
+
+  The instrument had to be corrected to take this reading, and that is part of
+  the record. The v3 leg asked whether the *launched* application claimed the
+  keyboard mid-flight; on GNOME Wayland no application ever publishes that
+  claim on the accessibility bus, so the leg went red five consecutive times
+  for want of evidence the desk cannot emit. v4 scores the departure the desk
+  *can* answer — the dialog dropping from `KEYBOARD` to
+  `focused-but-not-keyboard` while the call is in flight — and the scorer is
+  falsifiable: it reads zero on a keyboard that never moved and zero on a
+  dialog that vanished. The measured fact did not change; Segment 1's raw
+  `GrabFocus` transcript showed the same limitation on the same desk. What
+  changed is that the leg now proves it instead of failing to ask.
 
 **Nothing outlives the daemon** (ADR-0049, issue #14) — the leak was an
 unhandled SIGHUP, not the wrapper fork the issue guessed:
