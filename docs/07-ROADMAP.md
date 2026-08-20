@@ -162,6 +162,40 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 ---
 
+## M2.7 — The daemon is finished
+
+**Goal:** every method the frozen schema declares is served, every effect is verified by comparing what was observed against what was intended, an independent client can reach the whole API over the wire, and the tooling that scores all of it survives being interrupted and fails loudly when broken.
+
+> **Why this milestone exists.** M2.6 closed on the strength of a work list derived from the issue tracker, and the largest hole in the daemon had no issue filed against it: four of the thirteen wire methods answer with a constant refusal while all three backends implement them. [ADR-0047](02-DECISIONS/0047-the-wire-carries-words-we-did-not-invent.md) already ruled on this shape — *a method that answers only with a refusal is a promise, and a promise is not a feature* — and the promise outlived the milestone that made it. The rest of the milestone follows from the same question asked of every other claim the daemon makes: **is it verified, or merely reported?** An effect helper that re-reads an element and hands it back without comparing it to what was intended answers a caller honestly about a write that may never have happened. This milestone is the audit of the daemon's own assertions, and its exit gate was written before any of its code, because M2.6 merged its final segment on the author's own audit and that is the failure mode being corrected.
+
+**The ordering ruling behind it** ([ADR-0043](02-DECISIONS/0043-an-element-publishes-its-own-actions.md) clause 6, restated): the daemon is completed before the hub is built on it. No hub, agent, or client work belongs in this milestone.
+
+**Deliverables:**
+- **The four unrouted methods routed** — `setElementValue`, `setElementText`, `setElementCaret`, `revealElement` reach the backend operations that already implement them, replacing the constant refusals in the dispatch table.
+- **Effects verified by comparison, not by re-reading.** Every effect operation compares what the desktop shows afterwards against what was asked for, on both routes, with the two design exemptions (`grabFocus`, `submitElement`) stated rather than silently inherited.
+- **The transport binds every method the daemon serves** — the client package reaches all thirteen, not five.
+- **Tooling that guards itself.** The mutation runner restores the file it mutated when interrupted, fails loudly when it cannot run the tests, and every entry deletes exactly the line it names.
+- **CI witnesses the live lane**, or records why it cannot with a release-gate transcript that does.
+- **The deferred desktop truths, measured.** Whether the keyboard can be restored after a launch, and what Gmail's inbox rows are called — each answered on real hardware and either fixed or named as a limitation in an ADR.
+- **The schema's prose agrees with the daemon's behaviour** — the method descriptions that describe routed methods as permanently refused are corrected under a version bump.
+
+**Exit gate:**
+- [ ] No wire method answers with a constant. Checkable: `grep -n 'handler: async () =>' daemon/src/server.ts` returns nothing, the four scope-refusal constants are gone from the file, and `node tools/pins/run.mjs` reports thirteen dispatch entries with every non-observe entry enforced before the call.
+- [ ] Every effect operation compares observed against intended, and the comparison is guarded. Checkable: each operation named in the milestone's read-back work has a `tools/mutations.json` entry that deletes its comparison, and `node tools/mutations.mjs` reports none survived. The two design exemptions are named in code with the reason, not omitted.
+- [ ] An independent client reaches all thirteen methods. Checkable: `packages/transport/src/index.ts` exposes a binding per method, and a test drives each one over a real socket against a real daemon.
+- [ ] The mutation runner survives interruption and fails loudly. Checkable: a test sends the runner a signal mid-mutation and asserts the file on disk is byte-identical to the original; a test makes the test command unrunnable and asserts a non-zero exit with a message naming the runner, not a survival count.
+- [ ] Every mutation entry deletes exactly the line it names. Checkable: a test asserts each entry's `find` string occurs exactly once in its target file.
+- [ ] No offline test can start a browser on the operator's profile. Checkable: the offline suite carries no path pairing the real launch catalog with a name reaching `spawn`, asserted by a test rather than by inspection.
+- [ ] CI witnesses the live accessibility lane, or a release-gate transcript records the measurement CI cannot take. Checkable: a workflow job that runs the live lane and can go red, with a linked run id — or a committed transcript plus the ADR stating why the runner cannot exist.
+- [ ] Focus behaviour is measured on both an X11 and a Wayland session, with both transcripts linked, and an ADR states which guarantee the daemon makes. **Either outcome ticks this box** — a route that restores the keyboard, or a named limitation. What fails it is an unmeasured claim.
+- [ ] Gmail's inbox roles are either first-class neutral words or an ADR records why they remain diagnostic-only, with the measurement linked. **Either outcome ticks this box**; an unmeasured deferral does not.
+- [ ] The schema's method descriptions do not contradict the daemon's behaviour. Checkable: no description of a routed method says it is refused until the seam carries it, and `node tools/freeze-gate.mjs` passes against the bumped version with its ADR.
+- [ ] No document claims work arrives "in this segment" or "in segment 3" for work that has landed. Checkable: a grep of the daemon package and its tests for segment language returns only historical references in dated documents.
+- [ ] The proofs index cannot silently omit an artifact. Checkable: `node scripts/check-docs.mjs` goes red when a file in `docs/proofs/` is not linked from the index.
+- [ ] Proof artifact: `the-daemon-is-finished.md`, produced on real hardware, carrying a red/green pair for every segment that changed behaviour — including the segments whose work is tooling rather than wire behaviour.
+
+---
+
 ## M3 — The hub thinks
 
 **Goal:** an agent that can drive the daemon, with credentials it never hands out.
