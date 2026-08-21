@@ -12,14 +12,17 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@mastra-cc/daemon": "workspace:*",
+    "@types/node": "^24.10.1",
     "oxlint": "^1.77.0",
     "tsdown": "^0.22.14",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@types/node": "^24.10.1",
-    "@mastra-cc/daemon": "workspace:*"
+    "vitest": "catalog:"
   },
   "dependencies": {
-    "@mastra-cc/transport": "workspace:*"
+    "@google/genai": "^2.18.0",
+    "@mastra-cc/transport": "workspace:*",
+    "@mastra/core": "^1.60.0",
+    "@mastra/memory": "^1.27.0"
   }
 }
