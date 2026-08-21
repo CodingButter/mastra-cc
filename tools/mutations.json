@@ -56,6 +56,20 @@
     "testFile": "__tests__/freeze-gate.test.mjs"
   },
   {
+    "name": "the-citation-nobody-checks",
+    "file": "scripts/check-docs.mjs",
+    "find": "          if (!present.has(head)) problems.push(wrong);",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-citation-check-that-passes-on-an-empty-verdict",
+    "file": "scripts/check-docs.mjs",
+    "find": "    problems.push('citations: no document cites a key in a JSON file - the check examined nothing, which is itself wrong');",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
     "name": "the-digest-message-that-truncates-what-it-found",
     "file": "tools/digest-agreement.mjs",
     "find": "was cut from digest ${declared[1]} but the schema on disk is ${schemaDigest}",
