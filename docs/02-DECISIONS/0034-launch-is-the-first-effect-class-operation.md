@@ -20,10 +20,19 @@ table had nothing non-observe to read, and requires M2 to wire it **in the same
 commit as** the first effect-class operation. Result-time enforcement is
 legitimate only for observe: filtering the response does not unsend the email.
 
-One found mismatch: ADR-0008:17 claims the five operation classes are
-enumerated in `protocol/schema.json` under `enums.operationClass`. Schema
-1.0.0 contains no such enum — that sentence describes the pre-1.0.0 prototype
-schema. The classes live in the daemon's dispatch table today.
+One found mismatch: ADR-0008:17 claimed the five operation classes are
+enumerated in `protocol/schema.json` under an `enums.operationClass` container.
+No schema in this repository has ever carried one. The classes live in the
+daemon's dispatch table today.
+
+*Corrected 2026-08-21.* This paragraph used to explain the mismatch away as
+"schema 1.0.0 contains no such enum — that sentence describes the pre-1.0.0
+prototype schema." That defence was wrong: `git log -S'enums' -- protocol/schema.json`
+returns nothing, so the container never existed in any version, prototype or
+otherwise. ADR-0008 was amended on 2026-08-21; this record, which found the
+mismatch at M2.1 and then went unamended for four milestones, is the copy that
+outlived its own disclosure. The check at `scripts/check-docs.mjs` now finds
+this class of citation by tool.
 
 ## Decision
 

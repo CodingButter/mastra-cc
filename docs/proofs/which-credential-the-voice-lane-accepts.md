@@ -175,7 +175,7 @@ inferred:
 
 - `json-schema@0.4.0` declares `(AFL-2.1 OR BSD-3-Clause)`. It reaches the tree
   under `@mastra/core` and `@mastra/memory` (`pnpm-lock.yaml:1789`, `:1816`).
-  AFL-2.1 is **not** on the allowlist at `tools/licences.mjs:14`; the package
+  AFL-2.1 is **not** on the allowlist at `tools/licences.mjs`; the package
   passes only because `licenceAllowed()` accepts an `OR` if either side is
   allowed, and the BSD side is. That is the correct reading of a dual licence,
   but it means a non-allowlisted licence name is admitted by a branch nobody
