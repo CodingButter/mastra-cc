@@ -502,5 +502,12 @@
     "find": "        if (!response.ok) return { ok: false, refusal: upstreamRefusal(provider, model, response.status) };\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-memory-that-keeps-the-content",
+    "file": "apps/hub/src/memory/stripped.ts",
+    "find": ".map(identityOf)",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
   }
 ]
