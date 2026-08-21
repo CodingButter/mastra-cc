@@ -224,6 +224,39 @@ describe("the voice lane mints one token", () => {
     // And nothing of the gateway's page travels, by the same rule that keeps a
     // provider's prose out of a refusal.
     expect([outcome.refusal, ...captured.lines].join("\n")).not.toContain("Bad Gateway");
+    // Second review round: routing the unreadable body to the no-token branch
+    // made the lane log that it READ a body it could not read. The outcome is
+    // right and the sentence was false, which is the same defect the digest
+    // check was just fixed for.
+    expect(captured.lines.join("\n")).toContain("a body this lane could not read");
+    expect(captured.lines.join("\n")).not.toContain("in a body it could read");
+  });
+
+  it("a body the lane read and a body it could not are not reported as the same thing", async () => {
+    // The two causes reaching the no-token branch are different facts about
+    // where the failure is: one is an endpoint answering without a token, the
+    // other is something in front of it answering instead. They share an
+    // outcome deliberately; sharing a sentence was the defect.
+    const captured = sink();
+    const lane = createVoiceLane({
+      credentials: held,
+      model: MODEL,
+      log: captured.log,
+      // Valid JSON, parses fine, simply carries no token name.
+      fetchImplementation: async () =>
+        new Response(JSON.stringify({ note: "no token here" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      sleep: async () => {},
+    });
+
+    const outcome: DialOutcome = await lane.dial();
+
+    expect(outcome.ok).toBe(false);
+    const said = captured.lines.join("\n");
+    expect(said).toContain("no token name in a body it could read");
+    expect(said).not.toContain("could not read");
   });
 
   it("a credential the provider forbids is a rejected credential, and is still not retried", async () => {

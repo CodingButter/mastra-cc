@@ -225,10 +225,35 @@ export function createVoiceLane(options: VoiceLaneOptions): VoiceLane {
           // from the request that had the key in a header - the same reasoning
           // that drops the fetch error whole above. A body nobody can read is a
           // body with no token name in it, so it takes the same path.
+          //
+          // AND THAT PATH RETRIES, which is a deliberate choice worth naming
+          // because it differs from the sibling in models/configure.ts, where
+          // an unreadable answer refuses at once. Two reasons. This endpoint
+          // mints, so an unreadable 200 may mean a token exists upstream that
+          // nobody here ever saw - and the remedy for a token nobody holds is
+          // to ask for one that somebody does, not to give up on the dial. The
+          // cost of being wrong is bounded by design: each token is single-use
+          // with a two-minute window, so an unseen one expires unused, and the
+          // loop is capped at MAX_ATTEMPTS. configure.ts has no such loop and
+          // no such orphan - a chat completion nobody could read is simply an
+          // answer that did not arrive.
           const body = (await response.json().catch(() => UNREADABLE_BODY)) as { name?: unknown };
           if (typeof body.name !== "string" || body.name.length === 0) {
             lastStatus = 502;
-            log(`voice: mint attempt ${attempt} for "${model}" answered 200 with no token name in a body it could read`);
+            // TWO CAUSES REACH THIS BRANCH AND THEY ARE NOT THE SAME FACT. One
+            // says the provider answered something this lane could read and it
+            // held no token; the other says the answer never parsed at all,
+            // which points at a gateway rather than at the endpoint. Routing
+            // them to one outcome is right - both are "no token, try again" -
+            // but telling the operator the lane read a body it could not is the
+            // defect the digest check just got fixed for: a line that cannot
+            // show what it found.
+            // Written as a line that can be DELETED rather than a ternary, so
+            // the mutation table can express losing the distinction: drop the
+            // line below and both causes claim the lane read the body.
+            let saw = "no token name in a body it could read";
+            if (body === UNREADABLE_BODY) saw = "a body this lane could not read";
+            log(`voice: mint attempt ${attempt} for "${model}" answered 200 with ${saw}`);
             if (attempt < MAX_ATTEMPTS) await sleep(BACKOFF_MS[attempt - 1] ?? 0);
             continue;
           }
