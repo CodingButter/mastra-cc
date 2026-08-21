@@ -47,6 +47,9 @@ const REQUESTED_WINDOW_MS = 2 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [200, 400] as const;
 
+/** What an unreadable 200 becomes: an object with no token name, which is already a case this loop knows how to refuse. */
+const UNREADABLE_BODY = Object.freeze({});
+
 /** The token, on its way out of the process to the device that will dial with it. It is never logged, never recorded, and never held after this returns. */
 export interface DialTicket {
   readonly ok: true;
@@ -215,10 +218,17 @@ export function createVoiceLane(options: VoiceLaneOptions): VoiceLane {
         }
 
         if (response.ok) {
-          const body = (await response.json()) as { name?: unknown };
+          // A 200 IS NOT A PROMISE THAT THE BODY PARSES. A gateway can answer
+          // 200 with an HTML error page, and a truncated response is a 200 too.
+          // Letting that parse reject would take it out of dial(), whose type
+          // says it returns an outcome, and the rejection would carry a stack
+          // from the request that had the key in a header - the same reasoning
+          // that drops the fetch error whole above. A body nobody can read is a
+          // body with no token name in it, so it takes the same path.
+          const body = (await response.json().catch(() => UNREADABLE_BODY)) as { name?: unknown };
           if (typeof body.name !== "string" || body.name.length === 0) {
             lastStatus = 502;
-            log(`voice: mint attempt ${attempt} for "${model}" answered 200 without a token name`);
+            log(`voice: mint attempt ${attempt} for "${model}" answered 200 with no token name in a body it could read`);
             if (attempt < MAX_ATTEMPTS) await sleep(BACKOFF_MS[attempt - 1] ?? 0);
             continue;
           }

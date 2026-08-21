@@ -511,6 +511,13 @@
     "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
   },
   {
+    "name": "the-answer-that-throws-past-the-union",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": ".catch(() => UNREADABLE)",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
     "name": "the-model-that-resolves-without-a-credential",
     "file": "apps/hub/src/models/configure.ts",
     "find": "  if (credentials.credentialFor(account) === undefined) return { refusal: noCredential(account, role) };\n",
@@ -563,6 +570,13 @@
     "name": "the-refusal-that-blames-the-credential-for-everything",
     "file": "apps/hub/src/voice/mint.ts",
     "find": "      if (!credentialWasRejected(lastStatus)) return mintRefused(log, model, lastStatus);\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-two-hundred-that-is-not-json",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": ".catch(() => UNREADABLE_BODY)",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
   },

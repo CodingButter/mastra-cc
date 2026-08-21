@@ -188,6 +188,44 @@ describe("the voice lane mints one token", () => {
     expect(noAccount.code).toBe("NO_GOOGLE_ACCOUNT");
   });
 
+  it("a 200 whose body is not a token is an outcome, not a thrown error", async () => {
+    // Review's catch: the body was parsed OUTSIDE the try that guards the
+    // request, so a gateway answering 200 with an HTML error page rejected out
+    // of dial() - past a caller that had handled every refusal code there is,
+    // carrying a stack from the request that had the key in a header.
+    let attempts = 0;
+    const captured = sink();
+    const lane = createVoiceLane({
+      credentials: held,
+      model: MODEL,
+      log: captured.log,
+      fetchImplementation: async () => {
+        attempts += 1;
+        return new Response("<html><body>502 Bad Gateway</body></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        });
+      },
+      sleep: async () => {},
+    });
+
+    // The assertion is that this RESOLVES. A rejection here is the bug.
+    const outcome: DialOutcome = await lane.dial();
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    // An unreadable answer is not an accusation against the credential: the
+    // lane saw a 200 and could not read it, which is not evidence about a key.
+    expect(outcome.code).not.toBe("CREDENTIAL_REJECTED");
+    expect(outcome.code).toBe("UPSTREAM_UNAVAILABLE");
+    // Unreadable is transient by treatment - it retried rather than giving up
+    // on one bad proxy answer.
+    expect(attempts).toBe(3);
+    // And nothing of the gateway's page travels, by the same rule that keeps a
+    // provider's prose out of a refusal.
+    expect([outcome.refusal, ...captured.lines].join("\n")).not.toContain("Bad Gateway");
+  });
+
   it("a credential the provider forbids is a rejected credential, and is still not retried", async () => {
     // 403 belongs with 401 and not with the unattributable statuses: the
     // provider looked at this key and said no. Same remedy, same no-retry rule.
