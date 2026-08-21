@@ -7,6 +7,27 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
+    "name": "b2-vacuous-guard-removed",
+    "file": "tools/pins/b2.mjs",
+    "find": "if (files.length === 0) fail(\"pin-b2: no files matched - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b2-source-half-removed",
+    "file": "tools/pins/b2.mjs",
+    "find": "      violations.push(`pin-b2: audio API \"${api}\" in the hub at ${relative(root, file)} - audio never enters the hub process (ADR-0006)`);\n",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b2-manifest-half-removed",
+    "file": "tools/pins/b2.mjs",
+    "find": "    violations.push(`pin-b2: audio dependency \"${name}\" declared in apps/hub/package.json - a declared package is a package, imported or not (ADR-0006)`);\n",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
     "name": "b5-vacuous-guard-removed",
     "file": "tools/pins/b5.mjs",
     "find": "if (files.length === 0) fail(\"pin-b5: no files matched - the pin would pass vacuously\");",
@@ -523,5 +544,61 @@
     "find": "      options: { observationalMemory: { experimental_subconscious: subconscious } },\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
+  },
+  {
+    "name": "the-token-that-outlives-its-dial",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": "              uses: SINGLE_USE,\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-credential-rejection-that-gets-retried",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": "        if (!transient(response.status)) break;\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-refusal-that-blames-the-credential-for-everything",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": "      if (!credentialWasRejected(lastStatus)) return mintRefused(log, model, lastStatus);\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-dial-that-needs-no-account",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": "      if (credential === undefined) return noGoogleAccount(log, model);\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-late-joiner-hears-silence",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "      if (sessions.size > 0) deliver({ event: \"voice_opened\" });\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-heartbeat-that-counts-as-speech",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "        if (kind === \"pong\") return;\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-voice-closed-that-is-not-the-last",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "      if (sessions.size === 0) broadcast({ event: \"voice_closed\" });\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-connection-that-is-never-hung-up",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "        if (peer.awaitingPong) {\n          hangUp(peer);\n          continue;\n        }\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
   }
 ]

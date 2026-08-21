@@ -10,9 +10,17 @@ in Phase 2 with the schema they guard, and the licence check is
 `run.mjs` (CI step 4) executes the wired set and fails if it disagrees with the
 declared list below, so a silently dropped pin is a red build.
 
-Wired: b1, b10, b11, b5, b8
+Wired: b1, b10, b11, b2, b5, b8
 
 - **B1** — only `daemon/**` imports a D-Bus or accessibility binding.
+- **B2** — audio stays in the clients: the hub holds none (ADR-0006). Two halves,
+  because the prototype's transcriber removal was only half a removal — the
+  source went, the dependency stayed declared. The **source half** scans
+  `apps/hub/**` for audio APIs, audio buffer types and the provider's audio
+  URLs; the **manifest half** reads `apps/hub/package.json` and fails on a
+  declared audio dependency, imported or not. A missing manifest fails as a
+  vacuous pass, because a hub whose declarations were never read is not a hub
+  that declares nothing.
 - **B5** — no second socket implementation outside `packages/transport` (the one
   daemon client, ADR-0003). The daemon serves the socket, so it is not scanned.
 - **B8** — no `xdotool`, `wmctrl`, or `uinput` anywhere (ADR-0004:32).
@@ -28,14 +36,18 @@ Wired: b1, b10, b11, b5, b8
   for observe. The pin pins the declaration; the enforcement timing is pinned
   by the ordering test in `daemon/src/__tests__/launch-authority.test.ts`.
 
-Deliberately not wired — four, each because its subject does not exist:
+Deliberately not wired — three, each because its subject does not exist:
 
-- **B2** (audio stays in clients) — there is no audio package.
-- **B3** (client credentials never touch the daemon) — there is no client.
+- **B3** (client credentials never touch the daemon) — the *source* half has no
+  client to scan: a pin scanning `apps/**` minus the hub scans an empty set and
+  trips its own vacuity guard. The *runtime* half is wired and tested at
+  `apps/hub/src/__tests__/the-voice-lane-mints-one-token.test.ts` — a credential
+  presented by a caller is refused rather than honoured. The source half wires
+  in M4 alongside the first client.
 - **B4** (microphone consumers) — there is no client.
 - **B9** (transcriber isolation) — there is no client.
 
-Five wired plus four absent is the nine. Check the arithmetic
+Six wired plus three absent is the nine. Check the arithmetic
 against the files in this directory rather than trusting this paragraph:
 `run.mjs` does exactly that on every CI run.
 
