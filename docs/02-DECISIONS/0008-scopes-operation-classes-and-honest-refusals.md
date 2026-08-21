@@ -14,7 +14,9 @@
 
 "Let an agent use my desktop" is not one permission. The prototype spent its first three days discovering that it is at least five, plus a depth dimension, plus an ownership dimension, and that conflating any of them produces either a useless system or an unsafe one.
 
-**The five operation classes** settled early and never needed to change. They are enumerated in `protocol/schema.json` under `enums.operationClass`, and the descriptions below are that file's own:
+**The five operation classes** settled early as a way of thinking about reach. The descriptions below are the prototype's own.
+
+> **Where they actually live, corrected 2026-08-21.** This ADR said they are enumerated in `protocol/schema.json` under `enums.operationClass`. They are not, and were not at 1.0.0 — [ADR-0034](0034-launch-is-the-first-effect-class-operation.md) disclosed the mismatch at M2.1 and this text was never amended. Schema 1.5.0 has no `enums` object; what it carries is `capabilityNames` (`protocol/schema.json:29`) — `observe`, `launch`, `edit`, `activate`, `submit`, a deliberately *different* five, with `launch` added by ADR-0034 and `destructive` not present as a capability because nothing grants it. The four classes the daemon dispatches on are the `effectClass` values in its dispatch table (`daemon/src/server.ts`). `destructive` below remains a category of *harm* this project reasons about, not a name on the wire. Found by M3's whole-feature review, which noted the repo-wide language sweep had missed it: the stale sentence contains none of the phrases the sweep grepped for.
 
 | Class | What it covers |
 |---|---|
@@ -93,15 +95,24 @@ precondition, never consent. A refusal caused by missing user authority must nev
 reported as an operating-system limitation, and the authority check runs first so that
 the two can never be confused.
 
-**Consistency note.** [00-PRODUCT.md](../00-PRODUCT.md) §7 describes four scopes and omits
-`destructive`. The schema and this record enumerate five. The product document is the
-simplification for a reader; this record and `protocol/schema.json` are normative.
+**Consistency note, corrected 2026-08-21.** [00-PRODUCT.md](../00-PRODUCT.md) §7 describes
+four scopes and omits `destructive`, and this note used to explain that away: *"The schema
+and this record enumerate five… this record and `protocol/schema.json` are normative."*
+Both halves were wrong in the same way as the sentence at the top of this record. The
+schema enumerates `capabilityNames` — a different five, with `launch` in it — and
+`destructive` appears in `protocol/schema.json` **zero** times, deliberately:
+[ADR-0037](0037-the-other-three-classes-are-on-the-wire-before-they-are-possible.md) settled that the
+wire speaks methods and the daemon speaks classes, and that destructive stays absent
+because it defines no methods. So the product document is not a simplification of the
+schema here — it is closer to the wire than this record was. What remains true is that
+`destructive` is a class of *harm* this project reasons about and refuses by, via the
+effect-class gate's unknown-method refusal, rather than a name anything can be granted.
 
 ## Evidence
 
 | Claim | Source |
 |---|---|
-| five operation classes | `protocol/schema.json`, `enums.operationClass` |
+| five operation classes | the prototype's own vocabulary; **not** `enums.operationClass` — see the correction at the top. On the wire today: `capabilityNames` in `protocol/schema.json`; in the daemon: the `effectClass` values of its dispatch table |
 | attestation on submit; `ATTESTATION_FAILED` | protocol methods `attestElement` / `commitElement` |
 | "a commit the service cannot describe is a commit nobody can review" | prototype protocol error documentation |
 | depth ceiling retracted for resting on an instrument setting | issue #42 |

@@ -205,4 +205,28 @@ describe("the model is configured, not guessed", () => {
     expect(answer.refusal).not.toContain("fetch failed");
     expect(answer.refusal).not.toContain(FICTITIOUS);
   });
+
+  it("a 200 the hub cannot read is refused inside the union too, and the body does not travel", async () => {
+    // The same escape as the connection failure above, one line later: the body
+    // was parsed outside the guard, so a gateway answering 200 with an HTML
+    // page rejected past a caller that had handled every ProviderAnswer.
+    const REQUEST = "the account number is 4417 9812 3345";
+    const gateway = async () =>
+      new Response("<html><body>502 Bad Gateway - upstream refused</body></html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    const resolution = resolveModel(EVERY_ROLE, "fast", held, gateway as never);
+    expect("model" in resolution).toBe(true);
+    if (!("model" in resolution)) return;
+
+    const answer = await resolution.model.send({ prompt: REQUEST });
+    expect(answer.ok).toBe(false);
+    if (answer.ok) return;
+    expect(answer.refusal).toContain("could not read");
+    // A misrouted answer is not established to be safe, so none of it travels.
+    expect(answer.refusal).not.toContain("Bad Gateway");
+    expect(answer.refusal).not.toContain(REQUEST);
+    expect(answer.refusal).not.toContain(FICTITIOUS);
+  });
 });

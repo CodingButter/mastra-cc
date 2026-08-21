@@ -155,7 +155,7 @@ reported, not how the user edits them.
 | the schema already describes actions as a property of the element | `protocol/schema.json:56` |
 | both backends derive actions from a hardcoded role table | `daemon/src/backends/atspi/roles.ts:104`; `daemon/src/backends/cdp/roles.ts:93` |
 | nothing asks the platform what an element can do | grep for `GetActions`/`GetNActions`/`doAction` across both backends: zero hits, 2026-08-16 |
-| the closed action enum is exactly four values | `protocol/schema.json`, `enums.action` (press, focus, select, expand) |
+| the closed action enum is exactly four values | the four-value list this record argues against (press, focus, select, expand). **Not** `protocol/schema.json`, `enums.action` — corrected 2026-08-21, see below |
 | AT-SPI exposes a real, enumerable Action interface | [can Node act on the desktop](../proofs/can-node-act-on-the-desktop.md) |
 | the browser route does not expose actions on a11y nodes, but they are derivable | [09-QUESTIONS.md](../09-QUESTIONS.md), "Affordances in the tree" |
 | an advertised action can be unperformable | [what hidden actually means](../proofs/what-hidden-actually-means.md) |
@@ -163,3 +163,21 @@ reported, not how the user edits them.
 | three states are never collapsed to two | [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md), 2026-08-08 amendment |
 | effect-class operations are enforced before the call | `docs/01-ARCHITECTURE.md` §5 (B11) |
 | the user configures, the daemon enforces; the layer-order ruling | Jamie, 2026-08-16 |
+
+**Correction, 2026-08-21.** The row about the four-value enum cited
+`protocol/schema.json` under `enums.action`. There is no such object, and — unlike
+the similar correction at
+[ADR-0021](0021-standing-authority-is-armable-attestation-is-not-waivable.md) — this
+one is not even a prototype artefact: `git log -S'enums' -- protocol/schema.json`
+returns nothing, so no commit in this repository's history has ever put an `enums`
+container in the schema. The four values were real as a *hardcoded role table in
+both backends*, which is the thing this record argues against and
+[ADR-0047](0047-the-wire-carries-words-we-did-not-invent.md) removed; `action.name` on the
+wire is deliberately open text, because "a closed list of verbs is a list somebody
+invented" (`protocol/schema.json:76`).
+
+Found by the fourth round of M3's whole-feature review, sweeping outside the string
+the previous three rounds had been chasing. The reviewer flagged it and declined to
+hold the milestone for it, correctly — it is outside M3 entirely — and could not
+determine from a read-only seat whether the object had ever existed. History
+answers that: it never did.

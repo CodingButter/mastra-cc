@@ -53,9 +53,16 @@ The schema moves to **schema version 1.1.0**, adding one method —
    unpermitted name, because the probe itself is an observation (ADR-0008
    rule 6).
 5. **An unknown name and an unpermitted name produce byte-identical
-   refusals** — one constant, one code path, one timing: "no application by
-   that name is available to this session". The equality is the security
-   property: a refusal must never reveal whether an application is installed.
+   refusals** — one constant, one code path, one timing. **The equality
+   survives; its stated reason does not.** As written here, the reason was that
+   a refusal must never reveal whether an application is installed, and
+   [ADR-0042](0042-existence-is-readable-content-is-not.md) overturned exactly
+   that: `listApplications` now names every application this machine has. The
+   refusal constant was rewritten with it. What the equality buys under the new
+   rule is narrower and still worth having — *this method* is not where
+   existence is answered, so probing it teaches a caller nothing, and existence
+   is readable in one honest place instead of leaking a bit at a time through a
+   gate never designed to answer it.
 6. **A running copy the daemon does not own is refused, never killed**
    (ADR-0027: ask, never kill — the asking surface arrives with a later
    milestone). A running copy the daemon *does* own is returned as-is:

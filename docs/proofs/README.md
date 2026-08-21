@@ -55,6 +55,7 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 | [the Qt6 accessibility knob, measured](the-qt6-accessibility-knob-measured.md) | Q05's Qt row — three states asserted; the always-on variable is the knob, the Qt5-era knob is a no-op. Produced by the untracked leg `.proof/qt6.sh` |
 | [every action the desktop offers, measured](every-action-the-desktop-offers.md) | M2.6 exit gate — the verbs act and an independent witness confirms it; existence and permission are readable while content is not; and the focus guarantee's named Wayland limitation, measured rather than assumed. Produced by the untracked legs `.proof/demo.sh`, `.proof/listing.sh` and `.proof/focus.sh` |
 | [the daemon is finished](the-daemon-is-finished.md) | M2.7 exit gate — a red/green pair per segment on real hardware: the wire completed, the tooling guarding itself, CI witnessing the live lane, the keyboard and Gmail's vocabulary measured, and nothing outliving the daemon. Produced by the untracked legs under `.proof/segment-1..5/` |
+| [which credential the voice lane accepts](which-credential-the-voice-lane-accepts.md) | M3 exit gate — one dial on a token minted for it alone, against the real provider, and three refusals that each name which failure they were: an absent account, a rejected key, and a token seen expiring on the close. Produced by the untracked legs under `.mastracode/plans/m3-the-hub-thinks.proof/segment-4/` |
 
 ## Release-gate checks
 

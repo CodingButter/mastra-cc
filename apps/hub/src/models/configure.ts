@@ -130,6 +130,20 @@ function unreachableRefusal(provider: Provider, model: string): string {
   return `refused upstream: ${provider} did not answer for "${model}" - the request never reached a response, and the connection error is not carried here`;
 }
 
+/** The sentinel a body takes when it cannot be read. Identity-compared, so no real answer can impersonate it. */
+const UNREADABLE = Object.freeze({});
+
+/**
+ * The provider answered, and what came back was not a model's reply. A gateway
+ * in front of a provider can answer 200 with an HTML page, and a truncated
+ * response is a 200 too. The status is true and travels; the body does not,
+ * for the same reason the prose of a refusal does not - nobody audits what a
+ * misrouted response contains, and it can contain the request.
+ */
+function unreadableRefusal(provider: Provider, model: string): string {
+  return `refused upstream: ${provider} answered for "${model}" with a body this hub could not read - the body is not carried here, because nothing establishes what a misrouted answer contains`;
+}
+
 function unconfiguredRole(role: Role): string {
   return `no model is configured for the role "${role}" - the hub does not choose one for you; name it in the configuration as provider/model`;
 }
@@ -196,7 +210,13 @@ export function resolveModel(
           return { ok: false, refusal: unreachableRefusal(provider, model) };
         }
         if (!response.ok) return { ok: false, refusal: upstreamRefusal(provider, model, response.status) };
-        return { ok: true, body: await response.json() };
+        // A body that does not parse is an answer too, by the same rule as the
+        // connection failure above: a 200 carrying a gateway's HTML is not a
+        // model's reply, and it belongs inside the union rather than thrown
+        // past a caller that has handled every ProviderAnswer there is.
+        const answered = await response.json().catch(() => UNREADABLE);
+        if (answered === UNREADABLE) return { ok: false, refusal: unreadableRefusal(provider, model) };
+        return { ok: true, body: answered };
       },
     },
   };

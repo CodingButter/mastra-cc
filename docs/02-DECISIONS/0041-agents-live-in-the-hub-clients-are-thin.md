@@ -61,9 +61,17 @@ it is *in* the hub, which is the one place those things are allowed to live.
 **2. The transport seam.** The hub reaches the daemon through
 `packages/transport` and through nothing else
 ([ADR-0003](0003-one-shared-transport-package.md)). When the hub needs a
-capability the transport does not yet have — M3 will need at least a
-subscription feeding the lanes and a call site that writes an audit entry — the
-change **lands inside the transport package**. It is never written beside it.
+capability the transport does not yet have, the change **lands inside the
+transport package**. It is never written beside it.
+
+M3 expected to need two such capabilities and needed neither, which is worth
+recording rather than quietly dropping. The **audit entry** is written by the
+daemon at the point of effect, not by the transport ([ADR-0026](0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md),
+[ADR-0050](0050-the-record-names-the-refusal-not-the-sentence.md)) — so no
+transport call site was owed. The **lane subscription** is deferred: M3's lanes
+run in-process, opening no socket, because there is no client to carry one yet.
+When M4 brings the first client, that carrier lands inside the transport
+package, and this rule is what says so in advance.
 
 This is a rule with a test, not a discipline, because the prototype proves
 discipline is not enough: its hub grew a second client that located the socket

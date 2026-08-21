@@ -56,6 +56,13 @@
     "testFile": "__tests__/freeze-gate.test.mjs"
   },
   {
+    "name": "the-digest-message-that-truncates-what-it-found",
+    "file": "tools/digest-agreement.mjs",
+    "find": "was cut from digest ${declared[1]} but the schema on disk is ${schemaDigest}",
+    "cwd": "tools",
+    "testFile": "__tests__/digest-agreement.test.mjs"
+  },
+  {
     "name": "effect-class-gate-name-dropped-from-refusal",
     "file": "daemon/src/server.ts",
     "find": "refused by the effect-class gate: \"${request.method}\" is not a method of ",
@@ -511,6 +518,13 @@
     "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
   },
   {
+    "name": "the-answer-that-throws-past-the-union",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": ".catch(() => UNREADABLE)",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
     "name": "the-model-that-resolves-without-a-credential",
     "file": "apps/hub/src/models/configure.ts",
     "find": "  if (credentials.credentialFor(account) === undefined) return { refusal: noCredential(account, role) };\n",
@@ -563,6 +577,27 @@
     "name": "the-refusal-that-blames-the-credential-for-everything",
     "file": "apps/hub/src/voice/mint.ts",
     "find": "      if (!credentialWasRejected(lastStatus)) return mintRefused(log, model, lastStatus);\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-two-hundred-that-is-not-json",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": ".catch(() => UNREADABLE_BODY)",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-two-causes-that-tell-one-story",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": "            if (body === UNREADABLE_BODY) saw = \"a body this lane could not read\";\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-empty-name-that-passes-for-a-token",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": " || body.name.length === 0",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
   },
