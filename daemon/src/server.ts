@@ -1043,7 +1043,18 @@ async function openApplication(
   // with no name at all would tell an auditor that something was refused
   // without saying what was asked for.
   const name = typeof params.name === "string" ? params.name : "";
-  const answer = await decideOpenApplication(params, backend, launch);
+  let answer: Classified<OpenApplicationResult>;
+  try {
+    answer = await decideOpenApplication(params, backend, launch);
+  } catch (error) {
+    // Symmetric with performEffect's FAILED path, and for the same reason: a
+    // throw nobody classified reaches the caller as the opaque backstop, and a
+    // launch that left no entry at all would be the one route where an
+    // unexplained failure is also an unrecorded one. The name is the caller's
+    // own word - past no gate, nothing has been resolved.
+    recordAudit({ application: normalise(name), element: [], scope: "launch", cause: causeOf(undefined), outcome: FAILED });
+    throw error;
+  }
   const application = answer.auditApplication ?? normalise(name);
   recordAudit({
     application,

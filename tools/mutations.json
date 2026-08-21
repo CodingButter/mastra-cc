@@ -434,9 +434,30 @@
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
   {
+    "name": "the-failed-launch-that-leaves-no-receipt",
+    "file": "daemon/src/server.ts",
+    "find": "    recordAudit({ application: normalise(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome: FAILED });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
     "name": "the-read-that-leaves-no-receipt",
     "file": "daemon/src/server.ts",
     "find": "      recordAudit({ application: undefined, element: answeredElements(result), scope: \"observe\", cause: causeOf(undefined), outcome: observeOutcome(result) });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-watch-that-names-no-element",
+    "file": "daemon/src/server.ts",
+    "find": ", auditElement: [{ id }]",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-ended-watch-that-names-no-element",
+    "file": "daemon/src/server.ts",
+    "find": ", ...(watched === undefined ? {} : { auditElement: [{ id: watched }] })",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   }

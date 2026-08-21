@@ -4,14 +4,19 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AttestationFailedError,
+  type Backend,
+  type BackendChange,
   EffectUnsupportedError,
   MagnitudeOutOfRangeError,
   OperationNotExposedError,
   RecordingNotPerformableError,
   TextOffsetOutOfRangeError,
+  UnknownSubscriptionError,
   UnperformableElementError,
   UnpublishedActionError,
+  UnwatchableElementError,
   WriteNotObservedError,
+  mintSubscriptionId,
 } from "../backend.js";
 import {
   isRefusalClass,
@@ -24,9 +29,10 @@ import {
 import type { Channel, Exchange } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
 import { registry } from "../backends/registry.js";
-import { handleRequest, type LaunchContext } from "../server.js";
+import { handleRequest, SubscriptionBook, type LaunchContext } from "../server.js";
 import { OwnershipTable } from "../launch/table.js";
 import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
+import { observeOnlyEffects } from "./support/observe-only.js";
 
 // THE RECEIPT NAMES WHAT WAS TOUCHED, AND NOTHING ELSE (ADR-0026, ADR-0042).
 //
@@ -148,6 +154,46 @@ afterEach(() => {
 
 async function call(method: string, params: unknown, backend: Parameters<typeof handleRequest>[1], launch = context()) {
   const response = await handleRequest({ type: "request", id: 1, method, params }, backend, launch);
+  return response as { result?: Record<string, unknown>; refusal?: string };
+}
+
+// A watch has to be driven through the real dispatch like everything else, and
+// the recorded tape cannot watch ("this channel does not watch"), so the
+// backend that answers a subscription is staged in the shape
+// subscription-lifetime.test.ts established.
+const WATCHED = "el-0123456789ab";
+
+function watchable() {
+  const sinks = new Map<string, (change: BackendChange) => void>();
+  const backend: Backend = {
+    ...observeOnlyEffects,
+    name: "watchable",
+    queryElements: async () => ({ elements: [] }),
+    attestElement: async () => ({}),
+    subscribeElement: async (id, sink) => {
+      if (id !== WATCHED) throw new UnwatchableElementError(id);
+      const subscriptionId = mintSubscriptionId();
+      sinks.set(subscriptionId, sink);
+      return {
+        subscriptionId,
+        application: "test-app",
+        close: async () => {
+          sinks.delete(subscriptionId);
+        },
+      };
+    },
+    applicationOfElement: () => undefined,
+    unsubscribeElement: async (subscriptionId) => {
+      if (!sinks.has(subscriptionId)) throw new UnknownSubscriptionError(subscriptionId);
+      sinks.delete(subscriptionId);
+    },
+    close: async () => undefined,
+  };
+  return { backend };
+}
+
+async function watch(method: string, params: unknown, backend: Backend, book: SubscriptionBook) {
+  const response = await handleRequest({ type: "request", id: 1, method, params }, backend, context(), book);
   return response as { result?: Record<string, unknown>; refusal?: string };
 }
 
@@ -358,6 +404,39 @@ describe("the launch and the read keep receipts of their own", () => {
     expect(written[0]!.element).toEqual([]);
   });
 
+  // The launch route's own FAILED path. performEffect has one and the observe
+  // point has one; without this the launch was the single route where a throw
+  // nobody classified reached the caller as the opaque backstop and left the
+  // record silent about the attempt entirely.
+  it("7b: a launch that throws unclassified is recorded as an attempt", async () => {
+    const path = auditing();
+    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    const table = new OwnershipTable();
+    // The table is what openApplication consults past the permit gate; a table
+    // that throws stands in for any internal failure the route does not catch.
+    vi.spyOn(table, "ownsName").mockImplementation(() => {
+      throw new Error("the ownership table went away mid-launch");
+    });
+
+    const answer = await call("openApplication", { name: "yad" }, backend, context({ permits: new Set(["yad"]), table }));
+    await backend.close();
+
+    // The caller gets the opaque backstop, as it always has - the throw stays
+    // on this side of the wire.
+    expect(answer.refusal).toContain("the desktop could not be read");
+    expect(answer.refusal).not.toContain("went away mid-launch");
+
+    const written = entries(path);
+    expect(written).toHaveLength(1);
+    expect(written[0]!.scope).toBe("launch");
+    expect(written[0]!.outcome).toBe("failed");
+    expect(written[0]!.application).toBe("yad");
+    expect(written[0]!.element).toEqual([]);
+    // The thrown sentence is the daemon's own internal noise. It goes to the
+    // caller as the opaque backstop and it does not go to the disk.
+    expect(readFileSync(path, "utf8")).not.toContain("went away mid-launch");
+  });
+
   it("8: a read writes exactly one entry naming every element it answered", async () => {
     const path = auditing();
     const backend = registry.replay({ visibility: new Set(["yad"]) });
@@ -400,6 +479,54 @@ describe("the launch and the read keep receipts of their own", () => {
     expect(written[0]!.cause).toEqual({ attribution: "external" });
     expect(written[0]!.attestation).toBeNull();
     expect(answered.map((element) => element.id).sort()).toEqual(["el-47577e4569ef", "el-a174b78401c1"]);
+  });
+
+  // A WATCH IS A STANDING READ, and it is the one observe-class answer whose
+  // result shape names no element: subscribe answers a subscription and
+  // unsubscribe answers a boolean. Both therefore state their subject directly
+  // (auditElement), and both are asserted here for the reason the plan gives -
+  // an entry that still writes, still says `read`, and names NOTHING would look
+  // exactly like a scored receipt while reporting nothing at all. That is the
+  // failure mode this whole suite exists to refuse, one level down.
+  it("8b: establishing a watch records the element the watch was established ON", async () => {
+    const path = auditing();
+    const world = watchable();
+    const book = new SubscriptionBook(() => undefined);
+
+    const answer = await watch("subscribeElement", { id: WATCHED, priority: "medium" }, world.backend, book);
+
+    expect(answer.result?.refusal, "the staged backend accepts this watch").toBeUndefined();
+    const written = entries(path);
+    expect(written).toHaveLength(1);
+    expect(written[0]!.scope).toBe("observe");
+    expect(written[0]!.outcome).toBe("read");
+    expect(written[0]!.element).toEqual([{ id: WATCHED }]);
+    // The subscription id is the daemon's own minting and is not the access;
+    // the element watched is. A receipt naming the id and not the element would
+    // say a watch happened without saying on what.
+    expect(JSON.stringify(written[0]!)).not.toContain(
+      (answer.result?.subscription as { subscriptionId: string }).subscriptionId,
+    );
+  });
+
+  it("8c: ending a watch records which element stopped being watched", async () => {
+    const path = auditing();
+    const world = watchable();
+    const book = new SubscriptionBook(() => undefined);
+
+    const opened = await watch("subscribeElement", { id: WATCHED, priority: "medium" }, world.backend, book);
+    const subscriptionId = (opened.result?.subscription as { subscriptionId: string }).subscriptionId;
+    const closed = await watch("unsubscribeElement", { subscriptionId }, world.backend, book);
+
+    expect(closed.result?.ended, "the watch was open, so ending it succeeds").toBe(true);
+    const written = entries(path);
+    expect(written).toHaveLength(2);
+    // Asked before the book forgets. Once `end` has run the book no longer
+    // holds the element, so a receipt built afterwards could only name the
+    // subscription - which is why the server reads it first.
+    expect(written[1]!.element).toEqual([{ id: WATCHED }]);
+    expect(written[1]!.scope).toBe("observe");
+    expect(written[1]!.outcome).toBe("read");
   });
 });
 

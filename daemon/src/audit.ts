@@ -77,10 +77,21 @@ export interface AuditEntry {
 // THE CLOSED REFUSAL VOCABULARY, and the reason `outcome` is an enumeration
 // rather than prose.
 //
-// The set is TOTAL over the refusals this daemon writes, not merely over the
-// ones a receipt happens to carry today: every place that answers with a
+// The set is TOTAL over the refusals of REQUESTS, not merely over the ones a
+// receipt happens to carry today: every place that answers a request with a
 // refusal sentence names one of these, and a refusal naming anything else is a
-// build error (the closed-set test). Three of them - UnknownMethod,
+// build error (the closed-set test).
+//
+// It is deliberately NOT total over the connection. Four refusals sit below the
+// request layer and carry no class: a line that is not JSON (server.ts), a
+// first message that is not a hello, a hello whose digest disagrees, and a
+// message whose shape is not a request at all. They are the protocol refusing
+// to read a line, decided before there is a request to classify - there is no
+// method, no element, and nothing was accessed. Classifying them would put four
+// names in the vocabulary that no entry can ever carry, which is a different
+// kind of dishonesty from the one this set exists to prevent.
+//
+// Three members of the set do record no access - UnknownMethod,
 // EnforcementUnrepresentable and NoMatch - label refusals that record no access
 // at all, because they are decided before any route runs, or on the one-shot
 // resolve path that serves no request. They belong in the vocabulary anyway:
@@ -323,10 +334,6 @@ let sink: AuditSink | undefined;
 
 export function useAuditLog(next: AuditSink | undefined): void {
   sink = next;
-}
-
-export function currentAuditLog(): AuditSink | undefined {
-  return sink;
 }
 
 export function recordAudit(record: AuditRecord): void {

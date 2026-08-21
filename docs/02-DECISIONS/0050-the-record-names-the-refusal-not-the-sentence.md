@@ -51,6 +51,13 @@ hand-authored string is a sentence with fewer words.
    the record and the throw site cannot drift, plus twenty-one names for the server's
    own string-constant and interpolated refusal paths.
 
+   The set is total over the refusals of **requests**, and deliberately not over the
+   connection. Four refusals sit below the request layer — a line that is not JSON, a
+   first message that is not a hello, a hello whose digest disagrees, and a message
+   whose shape is not a request — and carry no class. They are decided before there
+   is a request to classify: no method, no element, nothing accessed. Naming them
+   would add four members no entry can ever carry.
+
 3. **A seam error the server translates is recorded under the SERVER's name for it.**
    Where the server converts a backend error into its own constant, the record follows
    the caller: the server's constant is what the caller was actually handed.
