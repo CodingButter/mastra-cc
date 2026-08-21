@@ -259,6 +259,35 @@ describe("the voice lane mints one token", () => {
     expect(said).not.toContain("could not read");
   });
 
+  it("an empty token name is not a token, and is not handed to a device as one", async () => {
+    // Third review round: the empty-string half of the guard had no case, and
+    // deleting it survived. A 200 carrying `{"name": ""}` would otherwise
+    // return ok with a token that is not one - and the device would take an
+    // empty string to the provider and be refused there, which puts the lie one
+    // hop further from the thing that told it.
+    let attempts = 0;
+    const lane = createVoiceLane({
+      credentials: held,
+      model: MODEL,
+      log: sink().log,
+      fetchImplementation: async () => {
+        attempts += 1;
+        return new Response(JSON.stringify({ name: "" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
+      sleep: async () => {},
+    });
+
+    const outcome: DialOutcome = await lane.dial();
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(outcome.code).toBe("UPSTREAM_UNAVAILABLE");
+    expect(attempts).toBe(3);
+  });
+
   it("a credential the provider forbids is a rejected credential, and is still not retried", async () => {
     // 403 belongs with 401 and not with the unattributable statuses: the
     // provider looked at this key and said no. Same remedy, same no-retry rule.
