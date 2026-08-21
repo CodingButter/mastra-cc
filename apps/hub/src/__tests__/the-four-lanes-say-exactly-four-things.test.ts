@@ -30,7 +30,12 @@ describe("the four lanes say exactly four things", () => {
     // vocabulary that can drift as a pair.
     const architecture = readFileSync(join(import.meta.dirname, "../../../../docs/01-ARCHITECTURE.md"), "utf8");
     const table = architecture.slice(architecture.indexOf("| Lane event | Meaning |"));
-    const declared = [...table.matchAll(/^\| `([a-z_]+)` \| (.+?) \|$/gm)].slice(0, 4);
+    // NO SLICE. Taking the first four rows would let a fifth row be appended to
+    // the table without a word of complaint, and the pair would stop being a
+    // pair while both halves stayed green - review's catch. The table's row
+    // count is part of the assertion.
+    const declared = [...table.matchAll(/^\| `([a-z_]+)` \| (.+?) \|$/gm)];
+    expect(declared).toHaveLength(4);
     expect(declared.map((m) => m[1])).toEqual([...LANE_EVENTS]);
     expect(declared.map((m) => m[2])).toEqual([
       "the agent is working; here is what it is doing",
