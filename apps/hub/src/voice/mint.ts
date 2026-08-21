@@ -66,7 +66,7 @@ export interface DialRefusal {
   readonly refusal: string;
 }
 
-export const REFUSAL_CODES = ["NO_GOOGLE_ACCOUNT", "CREDENTIAL_REJECTED", "UPSTREAM_UNAVAILABLE"] as const;
+export const REFUSAL_CODES = ["NO_GOOGLE_ACCOUNT", "CREDENTIAL_REJECTED", "MINT_REFUSED", "UPSTREAM_UNAVAILABLE"] as const;
 export type RefusalCode = (typeof REFUSAL_CODES)[number];
 
 export type DialOutcome = DialTicket | DialRefusal;
@@ -122,6 +122,33 @@ export function verdictOnClose(reason: string): CloseVerdict {
 /** Only these are worth trying again. A credential rejection is NOT among them, by ADR-0006's explicit instruction. */
 function transient(status: number): boolean {
   return status === 429 || status >= 500;
+}
+
+/**
+ * ONLY A REJECTED CREDENTIAL IS A REJECTED CREDENTIAL.
+ *
+ * Review caught this module telling a person to go fix a key that is fine: a
+ * 400 from a body format the provider changed, a 403 from an API nobody enabled
+ * on the project, a 404 from an endpoint that moved off v1alpha - each of them
+ * left the loop and arrived as `CREDENTIAL_REJECTED`, a cause this lane never
+ * observed. Worse, a provider-returned 409 collided with this lane's OWN 409,
+ * so the one field a client is told to branch on could carry two unrelated
+ * meanings. Only the two statuses that actually mean "this credential was not
+ * accepted" claim that; everything else says the mint refused and does not
+ * invent a reason for it.
+ */
+function credentialWasRejected(status: number): boolean {
+  return status === 401 || status === 403;
+}
+
+/** What a status without an attributable cause is worth saying about: the status, and no story around it. */
+function mintRefused(log: (line: string) => void, model: string, status: number): DialRefusal {
+  log(`voice: refusing a dial for "${model}" - MINT_REFUSED`);
+  return sanitised(
+    status,
+    "MINT_REFUSED",
+    "the mint refused this request and the reason is not one this lane can name; the status is the whole of what was observed",
+  );
 }
 
 export interface VoiceLaneOptions {
@@ -220,6 +247,11 @@ export function createVoiceLane(options: VoiceLaneOptions): VoiceLane {
           `the mint did not succeed in ${MAX_ATTEMPTS} attempts and this lane does not keep trying`,
         );
       }
+      // One line, and its deletion is the bug it was written to close: without
+      // it every non-transient status falls into the sentence below and blames
+      // a credential nobody watched fail. That is the mutation
+      // `the-refusal-that-blames-the-credential-for-everything`.
+      if (!credentialWasRejected(lastStatus)) return mintRefused(log, model, lastStatus);
       log(`voice: refusing a dial for "${model}" - CREDENTIAL_REJECTED`);
       return sanitised(lastStatus, "CREDENTIAL_REJECTED", `the "${VOICE_ACCOUNT}" account's credential was not accepted, and a rejection is not retried`);
     },

@@ -560,6 +560,13 @@
     "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
   },
   {
+    "name": "the-refusal-that-blames-the-credential-for-everything",
+    "file": "apps/hub/src/voice/mint.ts",
+    "find": "      if (!credentialWasRejected(lastStatus)) return mintRefused(log, model, lastStatus);\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
     "name": "the-dial-that-needs-no-account",
     "file": "apps/hub/src/voice/mint.ts",
     "find": "      if (credential === undefined) return noGoogleAccount(log, model);\n",

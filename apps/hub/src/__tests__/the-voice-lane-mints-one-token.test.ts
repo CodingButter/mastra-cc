@@ -94,8 +94,8 @@ describe("the voice lane mints one token", () => {
     expect(outcome.refusal).toContain('"google" account');
     expect(called).toBe(0);
 
-    // The closed set, asserted as a set: a fourth code cannot appear unnoticed.
-    expect([...REFUSAL_CODES]).toEqual(["NO_GOOGLE_ACCOUNT", "CREDENTIAL_REJECTED", "UPSTREAM_UNAVAILABLE"]);
+    // The closed set, asserted as a set: a fifth code cannot appear unnoticed.
+    expect([...REFUSAL_CODES]).toEqual(["NO_GOOGLE_ACCOUNT", "CREDENTIAL_REJECTED", "MINT_REFUSED", "UPSTREAM_UNAVAILABLE"]);
   });
 
   it("a rejected credential relays the status, sanitises the provider's text, and is not retried", async () => {
@@ -132,6 +132,86 @@ describe("the voice lane mints one token", () => {
     expect(everythingSaid).not.toContain(REAL_401_PROSE);
     expect(everythingSaid).not.toContain("OAuth");
     expect(everythingSaid).not.toContain("login cookie");
+  });
+
+  it("a failure the lane cannot attribute is not blamed on the credential", async () => {
+    // Review's catch: every non-transient status left the loop as
+    // CREDENTIAL_REJECTED, so a project with the API switched off, a body the
+    // provider stopped accepting, or an endpoint that moved all told a person
+    // to go fix a key that was never the problem. The 409 is the sharpest of
+    // them - it is this lane's OWN status for "no account attached", and a
+    // client is told to branch on that field.
+    const unattributable = [400, 404, 409, 418];
+    for (const status of unattributable) {
+      let attempts = 0;
+      const captured = sink();
+      const lane = createVoiceLane({
+        credentials: held,
+        model: MODEL,
+        log: captured.log,
+        fetchImplementation: async () => {
+          attempts += 1;
+          return respond(status, { error: { code: status, status: "FAILED_PRECONDITION", message: "some prose about the request" } });
+        },
+        sleep: async () => {
+          throw new Error("an unattributable refusal must not reach the backoff");
+        },
+      });
+
+      const outcome = await lane.dial();
+
+      expect(outcome.ok).toBe(false);
+      if (outcome.ok) throw new Error("unreachable");
+      expect(outcome.status).toBe(status);
+      expect(outcome.code).toBe("MINT_REFUSED");
+      expect(attempts).toBe(1);
+      // The status is the whole of what was observed, so the sentence may not
+      // name a cause - and may not carry the provider's prose either.
+      expect(outcome.refusal).not.toContain("credential was not accepted");
+      expect([outcome.refusal, ...captured.lines].join("\n")).not.toContain("some prose about the request");
+    }
+
+    // A 409 from the provider and this lane's own 409 are told apart by the
+    // code, which is the field that carries the meaning.
+    const noAccountLane = createVoiceLane({
+      credentials: { credentialFor: () => undefined },
+      model: MODEL,
+      log: sink().log,
+      fetchImplementation: async () => {
+        throw new Error("nothing is dialled when there is no account");
+      },
+    });
+    const noAccount = await noAccountLane.dial();
+    expect(noAccount.ok).toBe(false);
+    if (noAccount.ok) throw new Error("unreachable");
+    expect(noAccount.status).toBe(409);
+    expect(noAccount.code).toBe("NO_GOOGLE_ACCOUNT");
+  });
+
+  it("a credential the provider forbids is a rejected credential, and is still not retried", async () => {
+    // 403 belongs with 401 and not with the unattributable statuses: the
+    // provider looked at this key and said no. Same remedy, same no-retry rule.
+    let attempts = 0;
+    const lane = createVoiceLane({
+      credentials: held,
+      model: MODEL,
+      log: sink().log,
+      fetchImplementation: async () => {
+        attempts += 1;
+        return respond(403, { error: { code: 403, status: "PERMISSION_DENIED", message: "denied" } });
+      },
+      sleep: async () => {
+        throw new Error("a credential rejection must not reach the backoff");
+      },
+    });
+
+    const outcome = await lane.dial();
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(outcome.status).toBe(403);
+    expect(outcome.code).toBe("CREDENTIAL_REJECTED");
+    expect(attempts).toBe(1);
   });
 
   it("a transient failure is retried with bounded backoff and gives up by name", async () => {
