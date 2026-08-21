@@ -43,7 +43,12 @@ Deliberately not wired — three, each because its subject does not exist:
   trips its own vacuity guard. The *runtime* half is wired and tested at
   `apps/hub/src/__tests__/the-voice-lane-mints-one-token.test.ts` — a credential
   presented by a caller is refused rather than honoured. The source half wires
-  in M4 alongside the first client.
+  in M4 alongside the first client. The other half of that same wait, kept here
+  so the two facts sit together: the voice lane is exported from
+  `apps/hub/src/index.ts` but `run()` never dials it. M3 proved the lane against
+  a real provider with an out-of-process client standing in for a device; the
+  hub does not dial on its own behalf until something with a microphone asks it
+  to, which is the same milestone that gives B3 a client to scan.
 - **B4** (microphone consumers) — there is no client.
 - **B9** (transcriber isolation) — there is no client.
 

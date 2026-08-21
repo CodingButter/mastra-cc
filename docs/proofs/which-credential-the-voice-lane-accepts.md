@@ -178,8 +178,11 @@ inferred:
   AFL-2.1 is **not** on the allowlist at `tools/licences.mjs:14`; the package
   passes only because `licenceAllowed()` accepts an `OR` if either side is
   allowed, and the BSD side is. That is the correct reading of a dual licence,
-  but it means the tree's only non-allowlisted licence name is admitted by a
-  branch nobody exercised deliberately.
+  but it means a non-allowlisted licence name is admitted by a branch nobody
+  exercised deliberately. (This bullet said "the tree's **only** non-allowlisted
+  licence name" until the review pointed at the next bullet, which names another
+  one. The word was wrong by exactly the overclaim this section exists to
+  prevent, and there is no scope in which it was true.)
 - `lightningcss` and its native variants declare MPL-2.0, reaching the tree
   through `vite`. Dev tooling, outside anything M3 ships, and equally invisible
   to a gate that reads manifests.

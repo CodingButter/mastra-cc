@@ -95,9 +95,18 @@ precondition, never consent. A refusal caused by missing user authority must nev
 reported as an operating-system limitation, and the authority check runs first so that
 the two can never be confused.
 
-**Consistency note.** [00-PRODUCT.md](../00-PRODUCT.md) §7 describes four scopes and omits
-`destructive`. The schema and this record enumerate five. The product document is the
-simplification for a reader; this record and `protocol/schema.json` are normative.
+**Consistency note, corrected 2026-08-21.** [00-PRODUCT.md](../00-PRODUCT.md) §7 describes
+four scopes and omits `destructive`, and this note used to explain that away: *"The schema
+and this record enumerate five… this record and `protocol/schema.json` are normative."*
+Both halves were wrong in the same way as the sentence at the top of this record. The
+schema enumerates `capabilityNames` — a different five, with `launch` in it — and
+`destructive` appears in `protocol/schema.json` **zero** times, deliberately:
+[ADR-0037](0037-the-other-three-classes-are-on-the-wire-before-they-are-possible.md) settled that the
+wire speaks methods and the daemon speaks classes, and that destructive stays absent
+because it defines no methods. So the product document is not a simplification of the
+schema here — it is closer to the wire than this record was. What remains true is that
+`destructive` is a class of *harm* this project reasons about and refuses by, via the
+effect-class gate's unknown-method refusal, rather than a name anything can be granted.
 
 ## Evidence
 
