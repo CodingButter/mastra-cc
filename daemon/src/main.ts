@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { CAPABILITY_NAMES, SCHEMA_DIGEST, type CapabilityName } from "@mastra-cc/protocol-types";
+import { openAuditLog, useAuditLog } from "./audit.js";
 import { registry } from "./backends/registry.js";
 import {
   loadCapabilitiesFile,
@@ -180,6 +181,14 @@ if (query !== null || resolve !== null) {
 
 const socketPath =
   arg("--socket") ?? join(process.env.XDG_RUNTIME_DIR ?? "/tmp", "mastra-cc", "daemon.sock");
+
+// --audit <path>: where the access record is kept (ADR-0026). There is NO
+// default path, and that is the decision: an audit log is a standing record of
+// which elements a session touched, and a daemon nobody asked to keep one keeps
+// none. The flag is read after the one-shot modes above, which serve no request
+// and so record no access.
+const auditPath = arg("--audit");
+if (auditPath !== null) useAuditLog(openAuditLog(auditPath));
 
 const table = new OwnershipTable();
 

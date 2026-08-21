@@ -37,6 +37,18 @@ import {
   WatchUnsupportedError,
   WriteNotObservedError,
 } from "./backend.js";
+import {
+  FAILED,
+  PERFORMED,
+  READ,
+  recordAudit,
+  refused,
+  withoutInternals,
+  type AuditCause,
+  type AuditSubject,
+  type Classified,
+  type RefusalClass,
+} from "./audit.js";
 import { normalise } from "./backends/atspi/names.js";
 import {
   OBSERVE_SETTING,
@@ -366,14 +378,14 @@ function sessionSettingFor(capability: CapabilityName): string {
 // inside an application is. The backend answers WHAT EXISTS and this function
 // answers WHAT MAY BE DONE - the second half from the same tables the gates
 // enforce, never from a list written beside them.
-async function listApplications(backend: Backend, launch: LaunchContext): Promise<ListApplicationsResult> {
+async function listApplications(backend: Backend, launch: LaunchContext): Promise<Classified<ListApplicationsResult>> {
   let installed;
   try {
     installed = await backend.installedApplications();
   } catch (error) {
     // A route that cannot enumerate refuses by name rather than answering
     // emptily. Any other failure is the daemon's usual opaque backstop.
-    if (error instanceof InventoryUnsupportedError) return { refusal: LIST_APPLICATIONS_REFUSAL };
+    if (error instanceof InventoryUnsupportedError) return { refusal: LIST_APPLICATIONS_REFUSAL, refusalClass: "InventoryUnsupported" };
     throw error;
   }
   // THE LISTING IS A UNION, not the desktop-entry scan alone.
@@ -597,31 +609,42 @@ export class SubscriptionBook {
   get size(): number {
     return this.open.size;
   }
+
+  // Which element a watch is on. The record names the element a subscription
+  // was established on and the one it ended on, and it can only ask before the
+  // book forgets - the answer is read here rather than reconstructed after.
+  watchedElement(subscriptionId: string): string | undefined {
+    return this.open.get(subscriptionId)?.id;
+  }
 }
 
 async function subscribeElement(
   params: { id?: unknown; priority?: unknown },
   backend: Backend,
   book: SubscriptionBook | undefined,
-): Promise<SubscribeElementResult> {
-  if (book === undefined) return { refusal: SUBSCRIBE_NO_CONNECTION_REFUSAL };
+): Promise<Classified<SubscribeElementResult>> {
+  if (book === undefined) return { refusal: SUBSCRIBE_NO_CONNECTION_REFUSAL, refusalClass: "NoConnection" };
   const id = typeof params.id === "string" ? params.id : "";
   const priority = params.priority;
   if (typeof priority !== "string" || !(PRIORITIES as readonly string[]).includes(priority)) {
-    return { refusal: SUBSCRIBE_PRIORITY_REFUSAL };
+    return { refusal: SUBSCRIBE_PRIORITY_REFUSAL, refusalClass: "MalformedParameter" };
   }
   try {
     const subscriptionId = await book.subscribe(backend, id, priority as Priority);
     // The id is echoed so a client holding several watches can bind this
     // answer to the request that asked for it without keeping its own book.
-    return { subscription: { subscriptionId, id, priority: priority as Priority } };
+    // A watch is a standing read, so the receipt names the element it was
+    // established ON - the changes it goes on to deliver do not each write an
+    // entry of their own, because the access the record is about is the one
+    // granted here.
+    return { subscription: { subscriptionId, id, priority: priority as Priority }, auditElement: [{ id }] };
   } catch (error) {
-    if (error instanceof UnwatchableElementError) return { refusal: SUBSCRIBE_UNKNOWN_REFUSAL };
+    if (error instanceof UnwatchableElementError) return { refusal: SUBSCRIBE_UNKNOWN_REFUSAL, refusalClass: "WatchUnknownElement" };
     // Deaf before unsupported: DeafWatchError is the narrower promise-keeping
     // (built, and cannot hear right now) and must not be reported as "not
     // built yet".
-    if (error instanceof DeafWatchError) return { refusal: SUBSCRIBE_DEAF_REFUSAL };
-    if (error instanceof WatchUnsupportedError) return { refusal: SUBSCRIBE_UNSUPPORTED_REFUSAL };
+    if (error instanceof DeafWatchError) return { refusal: SUBSCRIBE_DEAF_REFUSAL, refusalClass: "WatchDeaf" };
+    if (error instanceof WatchUnsupportedError) return { refusal: SUBSCRIBE_UNSUPPORTED_REFUSAL, refusalClass: "WatchUnsupported" };
     throw error;
   }
 }
@@ -629,13 +652,16 @@ async function subscribeElement(
 async function unsubscribeElement(
   params: { subscriptionId?: unknown },
   book: SubscriptionBook | undefined,
-): Promise<UnsubscribeElementResult> {
+): Promise<Classified<UnsubscribeElementResult>> {
   const subscriptionId = typeof params.subscriptionId === "string" ? params.subscriptionId : "";
-  if (book === undefined) return { refusal: UNSUBSCRIBE_UNKNOWN_REFUSAL };
+  if (book === undefined) return { refusal: UNSUBSCRIBE_UNKNOWN_REFUSAL, refusalClass: "UnknownSubscription" };
+  // Asked before the book forgets: ending a watch is the close of a standing
+  // read, and the receipt says which element stopped being watched.
+  const watched = book.watchedElement(subscriptionId);
   try {
-    return { ended: await book.end(subscriptionId) };
+    return { ended: await book.end(subscriptionId), ...(watched === undefined ? {} : { auditElement: [{ id: watched }] }) };
   } catch (error) {
-    if (error instanceof UnknownSubscriptionError) return { refusal: UNSUBSCRIBE_UNKNOWN_REFUSAL };
+    if (error instanceof UnknownSubscriptionError) return { refusal: UNSUBSCRIBE_UNKNOWN_REFUSAL, refusalClass: "UnknownSubscription" };
     throw error;
   }
 }
@@ -673,38 +699,95 @@ async function performEffect(
   // parameters were any good, and a session that lacks the class must not be
   // handed a critique of the value it sent instead of the sentence about the
   // class it does not hold.
-  perform: () => Promise<{ element?: SemanticElement; refusal?: string }>,
-): Promise<{ element?: SemanticElement; refusal?: string }> {
-  if (!holdsEffectAuthority(launch, effectClass)) return { refusal };
-  // Authority first, configuration second (ADR-0019's order, one rung down):
-  // the session-wide answer needs no application, so asking it first means an
-  // id this daemon never answered is refused without the configuration ever
-  // being consulted about a name nobody can supply. Both run BEFORE the call.
-  const application = backend.applicationOfElement(id);
-  const withheld = configurationWithholding(launch, effectClass, application);
-  if (withheld !== undefined) return { refusal: withheldRefusal(method, effectClass, withheld) };
-  if (application !== undefined) causeNames(application);
-  try {
-    return await perform();
-  } catch (error) {
-    // Every one of these is a refusal the caller can act on, and each carries
-    // the sentence the seam wrote. AttestationFailedError is the daemon's own
-    // inability to describe a commit (ADR-0008 rule 2) and is deliberately in
-    // the same list: it refuses the call, it does not fail it.
-    if (
-      error instanceof AttestationFailedError ||
-      error instanceof UnperformableElementError ||
-      error instanceof UnpublishedActionError ||
-      error instanceof OperationNotExposedError ||
-      error instanceof MagnitudeOutOfRangeError ||
-      error instanceof TextOffsetOutOfRangeError ||
-      error instanceof WriteNotObservedError ||
-      error instanceof EffectUnsupportedError
-    ) {
-      return { refusal: error.message };
+  perform: () => Promise<Classified<{ element?: SemanticElement; refusal?: string }>>,
+  // The attestation the caller carried, where the method takes one. The audit
+  // module hashes it into an identifier; the words never reach the record.
+  attestation?: string,
+): Promise<Classified<{ element?: SemanticElement; refusal?: string }>> {
+  // THE FIRST OF THE THREE AUDIT CALL SITES (ADR-0026). Every element effect
+  // this daemon performs or refuses passes through the decision below, and the
+  // receipt is written once, here, after it - never inside the branches, which
+  // is how an effect ends up with a path that leaves no receipt.
+  //
+  // The application is read from the same value the gates were handed, and the
+  // cause from the attribution machinery that already exists (attribute(), one
+  // implementation): a second one written for the record could disagree with
+  // the one the change stream states, and two attributions of one effect is
+  // worse than none.
+  let application: string | undefined;
+  const decide = async (): Promise<Classified<{ element?: SemanticElement; refusal?: string }>> => {
+    // Refused for want of authority, and the application is deliberately not
+    // asked for: ADR-0019's ordering says an unheld class is answered before
+    // anything names a target, and the receipt records what the daemon knew,
+    // not what it could have gone and looked up to fill a field in.
+    if (!holdsEffectAuthority(launch, effectClass)) return { refusal, refusalClass: "EffectClassGate" };
+    // Authority first, configuration second (ADR-0019's order, one rung down):
+    // the session-wide answer needs no application, so asking it first means an
+    // id this daemon never answered is refused without the configuration ever
+    // being consulted about a name nobody can supply. Both run BEFORE the call.
+    application = backend.applicationOfElement(id);
+    const withheld = configurationWithholding(launch, effectClass, application);
+    if (withheld !== undefined) {
+      return { refusal: withheldRefusal(method, effectClass, withheld), refusalClass: "DisabledByConfiguration" };
     }
+    if (application !== undefined) causeNames(application);
+    try {
+      return await perform();
+    } catch (error) {
+      // Every one of these is a refusal the caller can act on, and each carries
+      // the sentence the seam wrote. AttestationFailedError is the daemon's own
+      // inability to describe a commit (ADR-0008 rule 2) and is deliberately in
+      // the same list: it refuses the call, it does not fail it.
+      if (
+        error instanceof AttestationFailedError ||
+        error instanceof UnperformableElementError ||
+        error instanceof UnpublishedActionError ||
+        error instanceof OperationNotExposedError ||
+        error instanceof MagnitudeOutOfRangeError ||
+        error instanceof TextOffsetOutOfRangeError ||
+        error instanceof WriteNotObservedError ||
+        error instanceof EffectUnsupportedError
+      ) {
+        return { refusal: error.message, refusalClass: error.constructor.name as RefusalClass };
+      }
+      throw error;
+    }
+  };
+  let answer: Classified<{ element?: SemanticElement; refusal?: string }>;
+  try {
+    answer = await decide();
+  } catch (error) {
+    // The route threw something that is not a refusal. The caller gets the
+    // opaque backstop as it always has; the record says an effect was attempted
+    // on this element and did not finish, which is a fact about access and is
+    // exactly what an access record loses by only writing down the tidy cases.
+    recordAudit({ application, element: [{ id }], scope: effectClass, cause: causeOf(application), attestation, outcome: FAILED });
     throw error;
   }
+  recordAudit({ application, element: [elementOf(id, answer.element)], scope: effectClass, cause: causeOf(application), attestation, outcome: outcomeOf(answer) });
+  return answer;
+}
+
+// Identity, and the role only where the daemon actually answered one: a
+// refused effect answers no element, and inventing a role for it would put a
+// guess in the record beside facts.
+function elementOf(id: string, element: SemanticElement | undefined): AuditSubject {
+  return element === undefined ? { id } : element;
+}
+
+// The record's own reading of what happened, in the closed vocabulary. A
+// refusal is named by its class; the sentence goes to the caller, as it always
+// has, and it does not go to disk.
+function outcomeOf(answer: Classified<{ refusal?: string }>): string {
+  return answer.refusal === undefined ? PERFORMED : refused(answer.refusalClass);
+}
+
+// The cause, from the machinery that already answers this question. An effect
+// that named its application is self-attributed under the id minted for it;
+// one that named nothing is unattributed, and that honest third answer is
+// recorded rather than smoothed into a guess (ADR-0039).
+function causeOf(application: string | undefined): AuditCause {
+  return attribute(application ?? "");
 }
 
 function editElement(params: { id?: unknown; value?: unknown }, backend: Backend, launch: LaunchContext) {
@@ -726,7 +809,7 @@ function activateElement(params: { id?: unknown; action?: unknown }, backend: Ba
 function submitElement(params: { id?: unknown; attestation?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const attestation = typeof params.attestation === "string" ? params.attestation : "";
-  return performEffect("submit", "submitElement", SUBMIT_SCOPE_REFUSAL, launch, backend, id, () => backend.submitElement({ id, attestation }) as Promise<{ element: SemanticElement }>);
+  return performEffect("submit", "submitElement", SUBMIT_SCOPE_REFUSAL, launch, backend, id, () => backend.submitElement({ id, attestation }) as Promise<{ element: SemanticElement }>, attestation);
 }
 
 // A number that arrives as something other than a number is refused here, by
@@ -760,7 +843,7 @@ function setElementValue(params: { id?: unknown; value?: unknown }, backend: Bac
   const id = typeof params.id === "string" ? params.id : "";
   const value = params.value;
   return performEffect("edit", "setElementValue", SET_VALUE_SCOPE_REFUSAL, launch, backend, id, async () => {
-    if (typeof value !== "number" || !Number.isFinite(value)) return { refusal: malformedNumberRefusal("setElementValue", "value") };
+    if (typeof value !== "number" || !Number.isFinite(value)) return { refusal: malformedNumberRefusal("setElementValue", "value"), refusalClass: "MalformedParameter" as const };
     return backend.setElementValue({ id, value });
   });
 }
@@ -779,7 +862,7 @@ function setElementText(params: { id?: unknown; text?: unknown; offset?: unknown
   const text = typeof params.text === "string" ? params.text : "";
   const offset = offsetOf(params.offset);
   return performEffect("edit", "setElementText", SET_TEXT_SCOPE_REFUSAL, launch, backend, id, async () => {
-    if (offset === "malformed") return { refusal: malformedNumberRefusal("setElementText", "offset") };
+    if (offset === "malformed") return { refusal: malformedNumberRefusal("setElementText", "offset"), refusalClass: "MalformedParameter" as const };
     return backend.setElementText({ id, text, offset });
   });
 }
@@ -788,7 +871,7 @@ function setElementCaret(params: { id?: unknown; offset?: unknown }, backend: Ba
   const id = typeof params.id === "string" ? params.id : "";
   const offset = offsetOf(params.offset);
   return performEffect("edit", "setElementCaret", SET_CARET_SCOPE_REFUSAL, launch, backend, id, async () => {
-    if (offset === "malformed") return { refusal: malformedNumberRefusal("setElementCaret", "offset") };
+    if (offset === "malformed") return { refusal: malformedNumberRefusal("setElementCaret", "offset"), refusalClass: "MalformedParameter" as const };
     return backend.setElementCaret({ id, offset });
   });
 }
@@ -944,9 +1027,53 @@ async function openApplication(
   backend: Backend,
   launch: LaunchContext,
 ): Promise<OpenApplicationResult> {
+  // THE SECOND AUDIT CALL SITE. A launch is an effect on the machine that no
+  // element verb passes through, so a receipt written only in performEffect
+  // would leave the one effect that starts a program keeping no record at all.
+  //
+  // The application is read back OFF the answer, never resolved here. Resolving
+  // it up front means reading the catalog before the permit check, which is the
+  // capability probe ADR-0019 forbids - and which the launch-authority spies
+  // catch, as they did when this call site was first written.
+  //
+  // So the field is recorded at the fidelity the daemon actually had. Past both
+  // gates a launch has resolved the name the tree answers to, and that is what
+  // appears. Before them it has only the name the CALLER said, which costs no
+  // catalog read because the caller supplied it - and a refused launch recorded
+  // with no name at all would tell an auditor that something was refused
+  // without saying what was asked for.
+  const name = typeof params.name === "string" ? params.name : "";
+  let answer: Classified<OpenApplicationResult>;
+  try {
+    answer = await decideOpenApplication(params, backend, launch);
+  } catch (error) {
+    // Symmetric with performEffect's FAILED path, and for the same reason: a
+    // throw nobody classified reaches the caller as the opaque backstop, and a
+    // launch that left no entry at all would be the one route where an
+    // unexplained failure is also an unrecorded one. The name is the caller's
+    // own word - past no gate, nothing has been resolved.
+    recordAudit({ application: normalise(name), element: [], scope: "launch", cause: causeOf(undefined), outcome: FAILED });
+    throw error;
+  }
+  const application = answer.auditApplication ?? normalise(name);
+  recordAudit({
+    application,
+    element: answer.application === undefined ? [] : [answer.application],
+    scope: "launch",
+    cause: causeOf(application),
+    outcome: outcomeOf(answer),
+  });
+  return withoutInternals(answer);
+}
+
+async function decideOpenApplication(
+  params: { name?: string },
+  backend: Backend,
+  launch: LaunchContext,
+): Promise<Classified<OpenApplicationResult>> {
   const name = typeof params.name === "string" ? params.name : "";
   if (!launch.permits.has(normalise(name))) {
-    return { refusal: UNAVAILABLE_REFUSAL };
+    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
   }
   // The user's configuration, asked after the session's authority and before
   // anything is spawned or probed. A name that got this far is one this session
@@ -954,9 +1081,14 @@ async function openApplication(
   // nothing it did not already know - and it is the difference between "you
   // cannot" and "it is switched off, here is the switch" (ADR-0042).
   const withheld = configurationWithholding(launch, "launch", name);
-  if (withheld !== undefined) return { refusal: withheldRefusal("openApplication", "launch", withheld) };
+  if (withheld !== undefined) return { refusal: withheldRefusal("openApplication", "launch", withheld), refusalClass: "DisabledByConfiguration" };
   const budget = launch.pollBudgetMs ?? POLL_BUDGET_MS;
   const interval = launch.pollIntervalMs ?? POLL_INTERVAL_MS;
+  //
+  // The catalog is read HERE, after BOTH gates, and every answer from this
+  // point on can say which application it was about (auditApplication). The two
+  // refusals above cannot, and do not pretend to: a name this session may not
+  // launch, or one the owner switched off, is recorded as the refusal it was.
   const treeName = treeNameOf(name, launch.catalog);
   // Past the authority gate, this launch can say what it is acting on: a
   // change inside this application while the launch runs is ours (ADR-0039).
@@ -970,7 +1102,7 @@ async function openApplication(
   for (const key of Object.keys(launch.catalog)) {
     if (normalise(key) === normalise(name)) continue;
     if (treeNameOf(key, launch.catalog) !== treeName) continue;
-    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL };
+    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: "OneBrowserIdentity", auditApplication: treeName };
   }
   // Idempotent re-open: a live entry of ours wins - no second spawn, no
   // refusal, even when a foreign same-name copy is also running (the by-name
@@ -986,7 +1118,7 @@ async function openApplication(
     if (running !== undefined) {
       // Running, and not ours: refuse, never kill (ADR-0027 - the asking
       // surface arrives with a later milestone).
-      return { refusal: ALREADY_RUNNING_REFUSAL };
+      return { refusal: ALREADY_RUNNING_REFUSAL, refusalClass: "AlreadyRunning", auditApplication: treeName };
     }
     held = await focusBeforeLaunch(backend);
     try {
@@ -996,7 +1128,8 @@ async function openApplication(
       // (a spawn failure) is normalised to a constant so a raw system error
       // never reaches the wire.
       const message = (error as Error).message;
-      return { refusal: message === NO_RECIPE_REFUSAL ? message : COULD_NOT_START_REFUSAL };
+      const noRecipe = message === NO_RECIPE_REFUSAL;
+      return { refusal: noRecipe ? message : COULD_NOT_START_REFUSAL, refusalClass: noRecipe ? "NoRecipe" : "CouldNotStart", auditApplication: treeName };
     }
   }
   const deadline = Date.now() + budget;
@@ -1008,7 +1141,7 @@ async function openApplication(
       // taken the keyboard. A restore before that races the window that has
       // not appeared yet.
       const note = await restoreFocusAfterLaunch(backend, held);
-      return { application: withFocusNote(application, note) };
+      return { application: withFocusNote(application, note), auditApplication: treeName };
     }
     if (Date.now() >= deadline) {
       // The launch is already not clean; a focus it could not protect is said
@@ -1016,7 +1149,7 @@ async function openApplication(
       // hang it on.
       const note = await restoreFocusAfterLaunch(backend, held);
       const timedOut = `the application was opened but did not become readable within ${budget}ms - refusing to pretend it is ready`;
-      return { refusal: note === undefined ? timedOut : `${timedOut}; ${note}` };
+      return { refusal: note === undefined ? timedOut : `${timedOut}; ${note}`, refusalClass: "NotReadableInTime", auditApplication: treeName };
     }
     await new Promise((r) => setTimeout(r, interval));
   }
@@ -1044,6 +1177,38 @@ function serialised<T>(work: () => Promise<T>): Promise<T> {
   return next;
 }
 
+// WHAT "TOUCHED" MEANS, DECIDED HERE. A query walks the tree - up to 150 nodes
+// in an application and 2500 across the desktop - and ANSWERS the few that
+// matched. The record names what was answered, not what was walked, and it says
+// so out loud because the two are genuinely different claims: recording every
+// walked node would put the accessible name of nearly every element on the
+// desktop into an access record whose whole point is restraint, and it would
+// make the record's size track the desktop's size rather than the reader's
+// access. The consequence is stated rather than hidden: an element a query
+// walked past and discarded leaves no entry.
+//
+// A watch answers no element in its result shape, so subscribe and unsubscribe
+// state theirs directly (auditElement), which is why this reads both.
+// The elements travel WHOLE from here; audit.ts narrows them to identity on
+// the way to the disk, in one place, rather than each route remembering to.
+function answeredElements(result: unknown): AuditSubject[] {
+  if (result === null || typeof result !== "object") return [];
+  const answer = result as Classified<{ elements?: SemanticElement[]; element?: SemanticElement }>;
+  if (answer.auditElement !== undefined) return answer.auditElement;
+  if (answer.elements !== undefined) return answer.elements;
+  if (answer.element !== undefined) return [answer.element];
+  return [];
+}
+
+// A read that answered is `read`; one that refused is named by its class. The
+// distinction matters to an auditor in the one direction that counts: whether
+// anything was actually seen.
+function observeOutcome(result: unknown): string {
+  if (result === null || typeof result !== "object") return READ;
+  const answer = result as Classified<{ refusal?: string }>;
+  return answer.refusal === undefined ? READ : refused(answer.refusalClass);
+}
+
 export async function handleRequest(
   request: Request,
   backend: Backend,
@@ -1059,6 +1224,10 @@ export async function handleRequest(
         `refused by the effect-class gate: "${request.method}" is not a method of ` +
         `schema v${PROTOCOL_VERSION} - the daemon serves what the schema defines and nothing else`,
     };
+    // No receipt: a method the schema does not define reaches no route and
+    // touches nothing, so there is no access to record. The refusal still has
+    // a class (UnknownMethod) because the vocabulary is closed over what this
+    // daemon refuses, not over what it happens to write down.
   }
   // A non-observe entry without before-call enforcement is unrepresentable in
   // the table above (B11 reads the source to keep it that way); this check is
@@ -1069,6 +1238,8 @@ export async function handleRequest(
       id: request.id,
       refusal: `refused by the effect-class gate: "${request.method}" is ${entry.effectClass}-class but not marked for before-call enforcement`,
     };
+    // No receipt, same reason: the backstop fires before the handler runs
+    // (class EnforcementUnrepresentable).
   }
   try {
     const result = await serialised<unknown>(async () => {
@@ -1082,10 +1253,29 @@ export async function handleRequest(
         inFlight = undefined;
       }
     });
-    return { type: "response", id: request.id, result };
+    // THE THIRD AUDIT CALL SITE, and the one the artifact turns on. ADR-0026's
+    // own defining example of an access record is a READ - "the subject field
+    // of the third message was read" - so a log recording only effects would
+    // answer an audit of a reading session with an empty file. All five
+    // observe-class methods write from this ONE point, deliberately: an entry
+    // per handler would be five places to forget.
+    //
+    // The effect routes are excluded because they already wrote, in the places
+    // that know which scope they were permitted under; a second entry here
+    // would double every effect in the record.
+    if (entry.effectClass === "observe") {
+      recordAudit({ application: undefined, element: answeredElements(result), scope: "observe", cause: causeOf(undefined), outcome: observeOutcome(result) });
+    }
+    return { type: "response", id: request.id, result: withoutInternals(result) };
   } catch {
     // Whatever the backend threw stays on this side of the wire; the client
-    // gets one honest constant, never the raw error (98ac7fd's lesson).
+    // gets one honest constant, never the raw error (98ac7fd's lesson). The
+    // attempt is still recorded: an access the daemon could not complete is a
+    // fact about access, and a record that keeps only the tidy cases is a
+    // record of the tidy cases.
+    if (entry.effectClass === "observe") {
+      recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
+    }
     return { type: "response", id: request.id, refusal: BACKEND_UNREADABLE_REFUSAL };
   }
 }

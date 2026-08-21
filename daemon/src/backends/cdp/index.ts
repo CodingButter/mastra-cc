@@ -56,6 +56,7 @@ import {
 import { NOTHING_TO_OPERATE_ON, readPublishedOperations } from "./magnitudes.js";
 import { type CdpChannel, replayCdpChannel } from "./channel.js";
 import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
+import type { Classified } from "../../audit.js";
 
 // The browser backend: reads the page's own semantic tree over the browser's
 // debugging protocol, through the CdpChannel seam - every exchange it performs
@@ -330,10 +331,10 @@ export class CdpBackend implements Backend {
   // The tape is captured via a query, so an attest-only exchange (e.g.
   // DOM.describeNode) would throw UnrecordedCdpExchangeError in offline
   // conformance - do not add one.
-  async attestElement(params: AttestElementParams): Promise<AttestElementResult> {
+  async attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>> {
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
-      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest` };
+      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest`, refusalClass: "UnknownElement" };
     }
     if (ref.kind === "browser") {
       return { element: this.applicationElement(await this.version()) };
@@ -351,7 +352,7 @@ export class CdpBackend implements Backend {
         if (hit) return { element: this.nodeElement(targetId, node) };
       }
     }
-    return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again` };
+    return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again`, refusalClass: "ElementGone" };
   }
 
   // A watch is only ever established on an element this backend has already
