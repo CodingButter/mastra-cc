@@ -7,14 +7,17 @@
  * ships no Python and a gate should not be the one thing that drags a second
  * runtime into CI (ADR-0030).
  *
- * Four checks — `index` reports both a missing entry and a gap or duplicate in
+ * Five checks — `index` reports both a missing entry and a gap or duplicate in
  * the ADR numbering, and each was proven to fail on purpose (the first three
- * before the Python original was deleted, `proofs` when issue #16 closed):
+ * before the Python original was deleted, `proofs` when issue #16 closed,
+ * `citations` against the four sites M3's review found by hand):
  *   links     every relative markdown link resolves to a file on disk
  *   index     every ADR file is listed in the ADR index, and vice versa,
  *             and the numbering is contiguous
  *   coverage  every numbered doc named in the README exists
  *   proofs    every artifact in docs/proofs/ is listed in the proofs index
+ *   citations a document naming a JSON file and a name beside it must not
+ *             cite a name that file has never contained
  *
  * Known limits, both of which fail loudly rather than passing vacuously: a link
  * target containing a closing parenthesis is truncated at it, and an unclosed
@@ -142,6 +145,168 @@ function checkProofsIndex() {
     .map((n) => `proof artifact not listed in the proofs index: ${n}`);
 }
 
+// M3's whole-feature review found the same false citation four times, in four
+// rounds, each time by a person reading. Three ADRs cited operation classes as
+// living in `protocol/schema.json` under `enums.operationClass`, and a fourth
+// cited an action enum under `enums.action`; `git log -S'enums' --
+// protocol/schema.json` returns nothing, so no commit has ever put an `enums`
+// container in that file. The reviewer's own conclusion is the reason this
+// exists: the fifth copy should be found by a tool, not by a reader.
+//
+// WHAT IT CLAIMS, AND NOT MORE. It asks one question: does the cited name
+// occur ANYWHERE in that file, as a key or as a value. Not "does the path
+// resolve" — `types.action.fields.name` is real, and a document writing it as
+// `action.name` is telling the truth about the shape while naming it loosely;
+// reddening that teaches people to delete the check. Values count as well as
+// keys, because `launch` is a member of `capabilityNames` rather than a key,
+// and a document citing it is right. For a dotted name only the head is
+// judged, for the same reason. What survives every one of those allowances is
+// the defect this was written for: a name the file has never contained at all.
+const CITED_JSON = /`([A-Za-z0-9_./-]+\.json)`/g;
+const CITED_KEY = /`([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)`/g;
+// A dotted name ending in a file extension is a filename, not a key into one.
+const LOOKS_LIKE_A_FILE = /\.(py|ts|tsx|js|mjs|cjs|json|md|yaml|yml|sh|txt|jsonl|toml|lock|mts|mod)$/;
+// Measured, not guessed: across this repository's documents every genuine
+// citation puts the two within ninety characters of each other ("`x.json`
+// under `y`", or a table row naming both), and every coincidental pairing —
+// a roadmap paragraph mentioning `tools/mutations.json` and, four thousand
+// characters later, an AT-SPI method name — is far outside it.
+// A correction has to quote the citation it is correcting, so the row that
+// does the correcting is excused - and only that row.
+const EXEMPT = /\*\*not\*\*|\bnot\b `|corrected|correction|no such|never carried|has ever/i;
+
+const CITATION_PROXIMITY = 90;
+
+function namesAnywhere(node, found = new Set()) {
+  if (Array.isArray(node)) {
+    for (const item of node) namesAnywhere(item, found);
+  } else if (node && typeof node === 'object') {
+    for (const [key, value] of Object.entries(node)) {
+      found.add(key);
+      namesAnywhere(value, found);
+    }
+  } else if (typeof node === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(node)) {
+    // A vocabulary member is a name this file carries: `launch` lives in
+    // `capabilityNames` as a value, and a document citing it is correct.
+    found.add(node);
+  }
+  return found;
+}
+
+// Paragraph scope, not line scope: prose hard-wraps, and ADR-0037 states its
+// citation with the path on one line and the key on the next. A line-scoped
+// version of this check reads that site as clean.
+//
+// The block carries a map from character offset back to source line, because
+// PAIRING and EXEMPTING want different scopes. A markdown table has no blank
+// line in it, so the whole table is one block: a block-scoped exemption lets
+// one corrected row darken every other row in the table, permanently. Pairs
+// are found across the block; the exemption is judged on the rows the pair
+// actually spans.
+function paragraphs(body) {
+  const lines = body.split('\n');
+  const blocks = [];
+  let start = 0;
+  const build = (from, to) => {
+    const slice = lines.slice(from, to);
+    const spans = [];
+    let at = 0;
+    slice.forEach((line, i) => {
+      spans.push({ from: at, to: at + line.length, line: from + i + 1, text: line });
+      at += line.length + 1; // the join's separator
+    });
+    blocks.push({ line: from + 1, text: slice.join(' '), spans });
+  };
+  lines.forEach((line, i) => {
+    if (line.trim() === '') {
+      if (i > start) build(start, i);
+      start = i + 1;
+    }
+  });
+  if (start < lines.length) build(start, lines.length);
+  return blocks;
+}
+
+// The rows a citation pair sits on - one row for a table, two for a sentence
+// that hard-wraps between the path and the key.
+function rowsSpanning(block, from, to) {
+  return block.spans.filter((s) => s.to >= from && s.from <= to);
+}
+
+function checkCitations(files) {
+  const problems = [];
+  const namesByFile = new Map();
+  let examined = 0;
+
+  for (const path of files) {
+    const body = readFileSync(path, 'utf8').replace(FENCE, '');
+    for (const block of paragraphs(body)) {
+      const cited = [...block.text.matchAll(CITED_JSON)];
+      if (cited.length === 0) continue;
+      const keys = [...block.text.matchAll(CITED_KEY)].filter((m) => !LOOKS_LIKE_A_FILE.test(m[1]));
+
+      for (const file of cited) {
+        for (const key of keys) {
+          const [first, second] = file.index < key.index ? [file, key] : [key, file];
+          if (second.index - (first.index + first[0].length) > CITATION_PROXIMITY) continue;
+
+          // A line that says a citation is wrong has to quote the wrong
+          // citation to say so, and reddening the fixes would be the check
+          // eating its own tail. The excused unit is the smallest thing that
+          // is a whole statement, and that differs by shape: a table ROW is a
+          // standalone record, so it is excused alone and the rows around it
+          // are not; a paragraph of prose is one statement that hard-wraps,
+          // so a correction on its second line still covers a pair on its
+          // first. Block scope for both is what let one corrected row darken
+          // an entire evidence table.
+          const rows = rowsSpanning(block, first.index, second.index + second[0].length);
+          // Deleting the narrowing below widens the excused scope back to the
+          // whole block, which is the permissive direction and the defect this
+          // was written against.
+          let scope = [block.text];
+          if (rows.some((r) => r.text.trimStart().startsWith('|'))) scope = rows.map((r) => r.text);
+          if (scope.some((text) => EXEMPT.test(text))) continue;
+
+          const onDisk = resolve(ROOT, file[1]);
+          if (!existsSync(onDisk)) continue; // A path that does not exist is a dead link, and that is checkLinks' report to make.
+
+          if (!namesByFile.has(onDisk)) {
+            try {
+              namesByFile.set(onDisk, namesAnywhere(JSON.parse(readFileSync(onDisk, 'utf8'))));
+            } catch {
+              namesByFile.set(onDisk, null); // Unparseable: cannot judge, and will not pretend to.
+            }
+          }
+          const present = namesByFile.get(onDisk);
+          if (present === null) continue;
+
+          examined += 1;
+          const head = key[1].split('.')[0];
+          // The line the citation is on, not the line its block opens on. A
+          // table is one block, so a block-scoped number sends every row of a
+          // long evidence table to the table's first line - a report nobody
+          // can follow to the thing it is reporting. Written as two lines so
+          // that deleting the second is a mutation the table can express, and
+          // deleting it reports the block's line rather than crashing.
+          let at = block.line;
+          if (rows.length > 0) at = rows[0].line;
+          const wrong = `${relative(ROOT, path)}:${at}: cites \`${key[1]}\` in \`${file[1]}\`, which contains no \`${head}\``;
+          // One line, deletable, carrying the whole judgement - so the mutation
+          // table can take it away and watch this check stop being one.
+          if (!present.has(head)) problems.push(wrong);
+        }
+      }
+    }
+  }
+
+  // Vacuity: this repository documents its protocol by naming keys in it. A
+  // run that judged nothing is a broken check, not a clean one.
+  if (examined === 0) {
+    problems.push('citations: no document cites a key in a JSON file - the check examined nothing, which is itself wrong');
+  }
+  return problems;
+}
+
 function checkCoverage() {
   const required = [
     'docs/00-PRODUCT.md',
@@ -168,7 +333,7 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-const problems = [...broken, ...checkCoverage(), ...checkLinks(files), ...checkAdrIndex(), ...checkProofsIndex()];
+const problems = [...broken, ...checkCoverage(), ...checkLinks(files), ...checkAdrIndex(), ...checkProofsIndex(), ...checkCitations(files)];
 if (problems.length > 0) {
   console.log(`check-docs: ${problems.length} problem(s) across ${files.length} files\n`);
   for (const p of problems) console.log(`  ${p}`);

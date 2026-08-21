@@ -18,7 +18,7 @@ Verified against a working checkout at `/home/codingbutter/mastra`.
 
 That is the single most important fact for this plan: **a new capability area gets its own top-level domain directory**, in the manner of `voice/` (which holds eleven-plus provider packages) or `signals/` (which currently holds one).
 
-**Shared task graph.** `turbo.json` defines `build`, `lint`, `lint:fix`, `typecheck`, `clean`, `dev`, and `validate:package`. `build` depends on `^build`; `typecheck` depends on `^build`. A package that cannot express itself in those five verbs does not fit.
+**Shared task graph.** The destination's own `turbo.json` — at the checkout named above, not this repository's — defines `build`, `lint`, `lint:fix`, `typecheck`, `clean`, `dev`, and `validate:package`. `build` depends on `^build`; `typecheck` depends on `^build`. A package that cannot express itself in those seven verbs does not fit. (Ours is deliberately smaller: `build`, `lint`, `typecheck`, `test`.)
 
 **Toolchain, and it is opinionated:**
 
@@ -186,8 +186,8 @@ Point 5 is the one that earns its keep. It is how the zod-v3-versus-v4 gap gets 
 | Claim | Source |
 |---|---|
 | workspace globs incl. `voice/*`, `signals/*`, `mastracode/*` | `/home/codingbutter/mastra/pnpm-workspace.yaml`, read 2026-08-08 |
-| turbo tasks: build, lint, typecheck, clean, dev, validate:package | `/home/codingbutter/mastra/turbo.json` |
-| catalog: typescript `^6.0.3`, vitest `4.1.10`, zod `^4.4.3`, react `^19.2.5` | `pnpm-workspace.yaml` catalog block |
+| turbo tasks: build, lint, lint:fix, typecheck, clean, dev, validate:package (seven) | `/home/codingbutter/mastra/turbo.json` |
+| catalog: typescript `^6.0.3`, vitest `4.1.10`, zod `^4.4.3`, react `^19.2.5` | the destination's `/home/codingbutter/mastra/pnpm-workspace.yaml` catalog block — not this repository's, which pins no react (corrected 2026-08-21; the two rows above name their tree and this one did not) |
 | tsdown builds, oxlint+eslint, oxfmt+prettier, changesets | root `package.json`; `voice/openai/package.json` |
 | Apache-2.0 with an `ee/` carve-out | `LICENSE.md` |
 | no Python / Rust / Go anywhere outside `node_modules` | `find` for `*.py`, `pyproject.toml`, `Cargo.toml`, `go.mod` |

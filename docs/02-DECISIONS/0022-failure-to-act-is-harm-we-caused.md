@@ -56,4 +56,4 @@ The rules that follow from it:
 | a fix that is true in code and false in production, unnoticed for hours | [03-LESSONS.md](../03-LESSONS.md) §1; prototype PR #225 vs cron state |
 | phone client and orb scheduled after M6 | [07-ROADMAP.md](../07-ROADMAP.md) "Deliberately not scheduled" |
 | phone transport termination is unresolved | [01-ARCHITECTURE.md §9](../01-ARCHITECTURE.md) |
-| the audit log names every element touched and nothing else | [07-ROADMAP.md](../07-ROADMAP.md) M3, M6 exit gates |
+| the audit log names every element the daemon answered and nothing else | [07-ROADMAP.md](../07-ROADMAP.md) M3, M6 exit gates. (This row said *touched* until 2026-08-21, quoting the boxes' own wording of the time; both boxes now say answered, and [ADR-0050](0050-the-record-names-the-refusal-not-the-sentence.md) holds the reasoning.) |

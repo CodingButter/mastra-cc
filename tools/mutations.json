@@ -56,6 +56,41 @@
     "testFile": "__tests__/freeze-gate.test.mjs"
   },
   {
+    "name": "the-closure-that-is-never-walked",
+    "file": "tools/licences.mjs",
+    "find": "      walkRuntime(child, dirname(installed), [...chain, name], optional);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-walk-that-stops-at-the-symlink",
+    "file": "tools/licences.mjs",
+    "find": "    if (existsSync(candidate)) return realpathSync(candidate);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-licence-problem-that-a-guard-speaks-over",
+    "file": "tools/licences.mjs",
+    "find": "  for (const problem of problems) console.error(problem);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-citation-nobody-checks",
+    "file": "scripts/check-docs.mjs",
+    "find": "          if (!present.has(head)) problems.push(wrong);",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-citation-check-that-passes-on-an-empty-verdict",
+    "file": "scripts/check-docs.mjs",
+    "find": "    problems.push('citations: no document cites a key in a JSON file - the check examined nothing, which is itself wrong');",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
     "name": "the-digest-message-that-truncates-what-it-found",
     "file": "tools/digest-agreement.mjs",
     "find": "was cut from digest ${declared[1]} but the schema on disk is ${schemaDigest}",
@@ -635,5 +670,33 @@
     "find": "        if (peer.awaitingPong) {\n          hangUp(peer);\n          continue;\n        }\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-exemption-that-darkens-a-whole-table",
+    "file": "scripts/check-docs.mjs",
+    "find": "          if (rows.some((r) => r.text.trimStart().startsWith('|'))) scope = rows.map((r) => r.text);",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-catalog-pin-that-leaves-the-gate",
+    "file": "tools/licences.mjs",
+    "find": "    if (spec.startsWith(\"workspace:\")) continue;\n    const installed = resolveInstalled(name, here);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-line-number-that-points-at-the-table-instead-of-the-row",
+    "file": "scripts/check-docs.mjs",
+    "find": "          if (rows.length > 0) at = rows[0].line;",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-dev-record-that-truncates-the-runtime-walk",
+    "file": "tools/licences.mjs",
+    "find": "const walkedDev = new Map();",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
   }
 ]

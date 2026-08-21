@@ -50,4 +50,4 @@ Consequences of that mapping, made explicit so they are not rediscovered:
 | effects are attributed at the daemon | prototype delta/attribution model; `external` vs cause id |
 | attestation text describes a submit before it happens | protocol `attestElement` / `commitElement`; `ATTESTATION_FAILED` |
 | audit JSONL with redaction existed alongside episodes | prototype daemon audit implementation |
-| `getDeltaSince` is the change-query primitive | `protocol/schema.json` |
+| `getDeltaSince` is the change-query primitive | the **prototype's** protocol. This repository never carried that method: change arrives by watching a subtree (`subscribeElement`), not by polling for a delta since a marker (corrected 2026-08-21; the row read as a citation into our own `protocol/schema.json`) |

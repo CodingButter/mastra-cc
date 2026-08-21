@@ -149,7 +149,7 @@ Each boundary below is a rule, a reason, and a test. If it has no test, it is a 
 | B9 | No transcriber in any client | source-level test (ADR-0005) |
 | B10 | No platform-specific vocabulary in `protocol/schema.json` | source-level test over the schema (ADR-0018) |
 | B11 | No effect-class operation relies solely on post-hoc enforcement | source-level test over the daemon's dispatch table |
-| B12 | Every dependency carries a permissive licence | CI job over every manifest, against an allowlist |
+| B12 | Every dependency carries a permissive licence | CI job over the shipped runtime closure and every declared development dependency, against an allowlist |
 
 **Which of these exist:** six source pins are wired — B1, B2, B5, B8, B10 and B11 — plus B6 and B7 as CI steps and B12 as its own CI job. B11 arrived with M2.1's `openApplication`, in the same commit as the first effect-class dispatch entry, as required. **B2 was wired in M3**, when the hub gained a voice lane and therefore a subject: it scans the hub's source for an audio API and the hub's manifest for an audio dependency, because the prototype's transcriber removal was only half a removal — the source went and the dependency stayed declared.
 
@@ -190,7 +190,7 @@ Tracing *"tell me my most recent email"* through the boundaries, because a diagr
 4. **Dial.** The device dials the provider *directly* with that token. Audio flows device ↔ provider. The hub sees text and control frames only.
 5. **Intent.** The provider returns an intent; the hub's agent takes over. `voice_opened` goes out on the lane; every other client's ears unplug so one machine's speakers cannot feed another's microphone.
 6. **Resolve.** The agent asks the daemon to find the mail application semantically — by role and name, not by coordinates — within the set of applications the user has permitted. An unpermitted application is not visible to this query at all.
-7. **Read.** The daemon reads the message list and the message body through the accessibility tree, under `observe` scope. Every element touched lands in the audit log.
+7. **Read.** The daemon reads the message list and the message body through the accessibility tree, under `observe` scope. Every element the daemon **answers** lands in the audit log; an element the query walked past and discarded does not, because a record of the walk would name nearly every element on the desktop ([ADR-0050](02-DECISIONS/0050-the-record-names-the-refusal-not-the-sentence.md)).
 8. **Answer.** The hub emits `answer` on the lane. The device speaks it. The face shows who is talking.
 9. **Close.** The turn ends on silence, or because the person said something that means *stop* — a decline is a complete turn, and ending the session closes the microphone gate rather than letting a silence timer run out (PR #231). `voice_closed` goes out; other clients' ears unplug. The wake word stays armed: being told *no* ends the conversation, not the wake word.
 

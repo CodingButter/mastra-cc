@@ -175,7 +175,7 @@ inferred:
 
 - `json-schema@0.4.0` declares `(AFL-2.1 OR BSD-3-Clause)`. It reaches the tree
   under `@mastra/core` and `@mastra/memory` (`pnpm-lock.yaml:1789`, `:1816`).
-  AFL-2.1 is **not** on the allowlist at `tools/licences.mjs:14`; the package
+  AFL-2.1 is **not** on the allowlist at `tools/licences.mjs`; the package
   passes only because `licenceAllowed()` accepts an `OR` if either side is
   allowed, and the BSD side is. That is the correct reading of a dual licence,
   but it means a non-allowlisted licence name is admitted by a branch nobody
@@ -194,6 +194,18 @@ the answer". Issue \#36 is about replacing the person with a check that walks
 the installed closure; [the roadmap's own M5 entry](../07-ROADMAP.md) records
 the sharpest instance of why (openWakeWord ships Apache-2.0 code with
 CC BY-NC-SA weights, and a gate reading manifests would have passed it).
+
+> **Closed 2026-08-21, and the measurement it was resting on was wrong.** The
+> gate now walks the runtime closure: two hundred and seven packages scored
+> where twenty-two were before. The walk found the same three BlueOak packages
+> the hand measurement did — which is the pleasant outcome, not the guaranteed
+> one, and issue \#36's own text expected *seven*. The number this section
+> should be read for is not three or seven but the distance between twenty-two
+> and two hundred and seven: what nobody was looking at. Blue Oak is now on the
+> allowlist with its reason recorded beside it (OSI-approved January 2024,
+> notice-only, express patent grant). Development dependencies are still read
+> as declared, which is where `lightningcss` sits, and that boundary is now
+> stated in the gate rather than left to be discovered here.
 
 **2. The token's lifetime is enforced upstream and is not readable.** The hub
 requests a two-minute window at mint. The mint response carries only a name —

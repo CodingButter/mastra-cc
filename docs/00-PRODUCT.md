@@ -24,7 +24,7 @@ This sentence has been the acceptance test for the whole system since the first 
 | the machine to find "mail" | a semantic model of the desktop, not coordinates |
 | the machine to read a message | structured reads through the accessibility layer |
 | the machine to answer aloud | a voice lane, with the audio staying near the person |
-| you to trust the answer | an audit trail of what was touched and why |
+| you to trust the answer | an audit trail of what was answered and why |
 
 If a change does not move that sentence closer to working reliably on a stranger's machine, it is not a priority. In the prototype this discipline slipped: seven days produced an orb with volumetric smoke and a glowing reflection (`08-04`, four consecutive visual commits in one night — see [03-LESSONS.md §3](03-LESSONS.md)) before the north star sentence worked end to end.
 
@@ -129,7 +129,7 @@ Carry these forward without renegotiation. Each was expensive to learn and none 
 Stated here because product decisions caused some of it. Full treatment in [03-LESSONS.md](03-LESSONS.md).
 
 - **Rework, not throughput, was the constraint.** 332 commits in a week, and the top-churned file was rewritten 35 times (`desktop_service/server.py`). Volume was never the problem.
-- **The freeze was a comment.** `protocol/schema.json` was declared frozen on day one at `04:03` and then modified in 8 further commits, the last on `08-04 10:31`. Nothing failed. Nothing could fail: the freeze was prose.
+- **The freeze was a comment.** `protocol/schema.json` was declared frozen on day one at `04:03` and then modified in **twenty-two** further commits, the last on `08-04 10:31`. Nothing failed. Nothing could fail: the freeze was prose.
 - **The interesting bugs lived outside the repo.** A sandbox setup command stored in a Postgres column, a maintenance script living in `~/bin`, a memory ceiling in a systemd unit. All three broke silently, and no test in the tree could have caught any of them.
 - **Truth was duplicated three ways.** Seven live modules existed as TypeScript source, as emitted JavaScript, and as a vendored copy inside the widget. Parity tests caught the drift, which means the drift kept happening.
 - **The face got attention the north star did not.** Visual polish is not free; it competed with the sentence in §2.
@@ -143,7 +143,7 @@ The product is real when a person who did not build it can do this, on their own
 3. Enrol their voice by recording a short phrase a handful of times.
 4. Say the wake phrase from across the room and see the face wake.
 5. Say *"tell me my most recent email"* and hear the answer.
-6. Open the audit log and see exactly which application was read, which elements were touched, and that nothing else was.
+6. Open the audit log and see exactly which application was read, which elements were **answered**, and that nothing else was. (An element a query walked past and discarded leaves no entry: recording the walk would name nearly every element on the desktop, which is the opposite of what the record is for — [ADR-0050](02-DECISIONS/0050-the-record-names-the-refusal-not-the-sentence.md). This line said *touched* until 2026-08-21.)
 
 Steps 4 and 5 are the product. Step 6 is why anyone will let it near their desktop. Step 1 is why anyone will try.
 
@@ -160,7 +160,7 @@ Every milestone in [07-ROADMAP.md](07-ROADMAP.md) is scored against this list, a
 | 127 PRs, only #219 open at pivot | `gh pr list --state all` |
 | 105 issues | `gh issue list --state all` |
 | schema.json changed 23–26× post-freeze | `git log --oneline -- protocol/schema.json` |
-| protocol v1.0, 33 methods, 80,127 bytes | `protocol/schema.json` |
+| protocol v1.0, 33 methods, 80,127 bytes | the **prototype's** `protocol/schema.json`, on the `computer-controls` checkout named above — not this repository's, which carries 13 methods at v1.5.0 (corrected 2026-08-21; every other row in this table describes the prototype and this one read as a citation into our own tree) |
 | `server.py` 35 revisions | `git log --format=%H -- desktop_service/server.py \| wc -l` |
 | widget permissions = `["media"]`, `screenCapture: false` | `clients/widget/src/boundaries.test.ts` |
 | minted tool surface read-only | hub token-mint tool list; launch tool tracked as issue #183 |
