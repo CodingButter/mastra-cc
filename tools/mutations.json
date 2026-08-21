@@ -460,5 +460,19 @@
     "find": ", ...(watched === undefined ? {} : { auditElement: [{ id: watched }] })",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-tool-that-was-never-enumerated",
+    "file": "apps/hub/src/tools/mint.ts",
+    "find": "\"attestElement\", ",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
+  },
+  {
+    "name": "the-verb-that-needs-no-capability",
+    "file": "apps/hub/src/tools/mint.ts",
+    "find": "    if (!capabilities.includes(capability)) continue;\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
   }
 ]
