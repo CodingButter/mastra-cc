@@ -17,6 +17,22 @@ import type { TransportClient } from "@mastra-cc/transport";
 
 export type Capability = "edit" | "activate" | "submit";
 
+/**
+ * A method the transport actually binds - the string-keyed, callable ones. Not
+ * `keyof TransportClient`, which also admits `close` and `onChangeEvent`: those
+ * are the client's own lifecycle and are not desktop verbs, and a surface that
+ * could name `close` would hand an agent the ability to hang up on itself.
+ */
+type DaemonMethod = {
+  [K in keyof TransportClient]: K extends string
+    ? TransportClient[K] extends (input: never) => Promise<unknown>
+      ? K extends "close" | "onChangeEvent"
+        ? never
+        : K
+      : never
+    : never;
+}[keyof TransportClient];
+
 export interface Tool {
   readonly name: string;
   readonly description: string;
@@ -29,13 +45,29 @@ export interface Tool {
 // adds to or removes from them: reading is what this daemon does by default
 // (ADR-0007, "read-only by default"), and a session that could not read would
 // have nothing to act on.
-const OBSERVE_TOOLS = ["queryElements", "attestElement", "listApplications"] as const;
+//
+// The names are the transport's OWN method names, typed as such: a typo, or a
+// method renamed on the seam, is a build error here rather than a TypeError in
+// front of an agent halfway through a session. Only two of these are executed
+// by any test, so the compiler is what checks the other eleven.
+//
+// subscribeElement and unsubscribeElement are observe-class on the daemon and
+// are deliberately NOT here. A watch is a standing read that outlives the call
+// that made it, and nothing in this milestone gives an agent anywhere to put a
+// change event; a tool that established a subscription nobody drained would
+// leave the daemon narrating to no one. They arrive with the lane events.
+const OBSERVE_TOOLS: readonly (DaemonMethod)[] = ["queryElements", "attestElement", "listApplications"];
 
 // Each effect verb, and the ONE capability that puts it in the surface. The
 // mapping is the daemon's own effect-class split (ADR-0019) read from this
 // side: a session holding "edit" sees the three writing verbs and does not see
 // the two that commit.
-const CAPABILITY_TOOLS: Record<Capability, readonly string[]> = {
+//
+// openApplication is activate-class on the daemon (server.ts DISPATCH) and is
+// deliberately absent: launch is its own capability there, gated by a permit
+// list this hub does not hold, and granting it under "activate" would let a
+// session that may press buttons also start programs.
+const CAPABILITY_TOOLS: Record<Capability, readonly (DaemonMethod)[]> = {
   edit: ["editElement", "setElementValue", "setElementText", "setElementCaret"],
   activate: ["activateElement", "revealElement"],
   submit: ["submitElement"],
@@ -48,17 +80,17 @@ const CAPABILITY_TOOLS: Record<Capability, readonly string[]> = {
 // the daemon said, byte for byte.
 async function callDaemon(
   client: TransportClient,
-  method: string,
+  method: DaemonMethod,
   input: Record<string, unknown>,
 ): Promise<unknown> {
   const call = (client as unknown as Record<string, (p: unknown) => Promise<unknown>>)[method];
   return await call.call(client, input);
 }
 
-function toolFor(client: TransportClient, name: string, kind: Tool["kind"]): Tool {
+function toolFor(client: TransportClient, name: DaemonMethod, kind: Tool["kind"]): Tool {
   return {
     name,
-    description: `${name} on the daemon`,
+    description: `${name} on the daemon - ${kind === "observe" ? "reads the desktop" : `acts on the desktop (${kind}-class)`}`,
     kind,
     execute: (input) => callDaemon(client, name, input),
   };
@@ -80,7 +112,10 @@ export interface MintOptions {
   extra?: readonly Tool[];
 }
 
-export function mintToolSurface(options: MintOptions): Map<string, Tool> {
+// ReadonlyMap, not Map: "a surface an agent can widen is not a surface" is
+// currently true because no consumer exists to widen it, which is a guarantee
+// that expires the moment one does. The type is what should carry it.
+export function mintToolSurface(options: MintOptions): ReadonlyMap<string, Tool> {
   const { client, capabilities = [], extra = [] } = options;
   const surface = new Map<string, Tool>();
   const owner = new Map<string, string>();

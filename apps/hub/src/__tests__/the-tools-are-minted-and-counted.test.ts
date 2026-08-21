@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -36,7 +36,7 @@ afterAll(async () => {
   (await serverPromise).close();
 });
 
-function names(surface: Map<string, Tool>): string[] {
+function names(surface: ReadonlyMap<string, Tool>): string[] {
   return [...surface.keys()].sort();
 }
 
@@ -65,6 +65,67 @@ describe("the tool surface is minted for a session and its list is asserted", ()
     // authorities on the daemon's side, and the surface reads the same split.
     expect(surface.has("submitElement")).toBe(false);
     expect(surface.has("activateElement")).toBe(false);
+  });
+
+  it("every capability's list is enumerated, not only the floor's", async () => {
+    // The three tests above pin the floor and the edit list. Without this one,
+    // ten verbs live in the capability table and only four are ever asserted as
+    // a SET: a verb appended to the activate or submit row would be a green
+    // build, which is the exact hole the enumeration claim exists to close.
+    const activate = mintToolSurface({ client: await connected(), capabilities: ["activate"] });
+    expect(names(activate)).toEqual([...READ_ONLY, "activateElement", "revealElement"].sort());
+
+    const submit = mintToolSurface({ client: await connected(), capabilities: ["submit"] });
+    expect(names(submit)).toEqual([...READ_ONLY, "submitElement"].sort());
+
+    // And the whole table at once, so the surface's largest possible shape is
+    // written down somewhere a reader can count.
+    const everything = mintToolSurface({
+      client: await connected(),
+      capabilities: ["edit", "activate", "submit"],
+    });
+    expect(names(everything)).toEqual(
+      [
+        ...READ_ONLY,
+        "editElement",
+        "setElementValue",
+        "setElementText",
+        "setElementCaret",
+        "activateElement",
+        "revealElement",
+        "submitElement",
+      ].sort(),
+    );
+  });
+
+  it("every minted tool sits under the capability the daemon classifies it as", async () => {
+    // THE TWO SIDES ARE PINNED TO EACH OTHER, not each to itself. The hub's
+    // table says it is "the daemon's own effect-class split read from this
+    // side" - a claim nothing checked. Move a method between classes in the
+    // daemon and this hub would go on granting it under the old capability,
+    // silently, with every test on both sides green.
+    //
+    // The daemon's DISPATCH is read from source because it is the enforcement
+    // itself, not a description of it; b11.mjs already reads the same table the
+    // same way, and the one-entry-per-line rule it depends on is what makes
+    // this parse honest.
+    const dispatch = readFileSync(join(__dirname, "..", "..", "..", "..", "daemon", "src", "server.ts"), "utf8");
+    const classified = new Map<string, string>();
+    for (const line of dispatch.split("\n")) {
+      const entry = /^\s{2}(\w+): \{ effectClass: "(\w+)"/.exec(line);
+      if (entry !== null) classified.set(entry[1]!, entry[2]!);
+    }
+    expect(classified.size, "the daemon's dispatch table did not parse - this check would pass forever").toBe(13);
+
+    const surface = mintToolSurface({
+      client: await connected(),
+      capabilities: ["edit", "activate", "submit"],
+    });
+    for (const tool of surface.values()) {
+      expect(classified.get(tool.name), `${tool.name} is in the surface and not in the daemon's dispatch`).toBe(
+        tool.kind,
+      );
+    }
   });
 
   it("two tools with one name throw at mint, and the error names both owners", async () => {

@@ -469,6 +469,13 @@
     "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
   },
   {
+    "name": "the-granted-verb-that-was-never-enumerated",
+    "file": "apps/hub/src/tools/mint.ts",
+    "find": ", \"revealElement\"",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
+  },
+  {
     "name": "the-verb-that-needs-no-capability",
     "file": "apps/hub/src/tools/mint.ts",
     "find": "    if (!capabilities.includes(capability)) continue;\n",

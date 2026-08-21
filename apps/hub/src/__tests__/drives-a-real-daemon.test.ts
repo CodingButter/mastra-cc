@@ -93,7 +93,13 @@ describe("the hub drives a real daemon process and reads a real element", () => 
     expect(answer.elements.map((e) => e.role).sort()).toEqual(["button", "label"]);
   });
 
-  it("the audit file names what that run touched, and nothing else", () => {
+  // NAMED FOR WHAT IT MEASURES. Exit box 5 says "every element touched"; this
+  // asserts the elements the query ANSWERED, which ADR-0050 records as a
+  // deliberate divergence - a walk reads up to 2500 nodes and recording all of
+  // them would put every element name on the desktop into the record. The two
+  // readings are not the same claim, so this title does not borrow the box's
+  // wording. Whether the box moves is not this test's to decide.
+  it("the audit file names every element the run answered, and nothing else", () => {
     const record = readFileSync(auditPath, "utf8");
     const lines = record.trim().split("\n").filter(Boolean);
     // A content check against an empty file passes forever. The count is the
@@ -142,6 +148,11 @@ describe("the hub drives a real daemon process and reads a real element", () => 
     words.delete("");
     const vocabulary = [...words];
     expect(vocabulary.length).toBeGreaterThan(3);
+    // And it holds the name THIS run's two elements are called. A vocabulary
+    // that drifted to four unrelated strings would satisfy the count and the
+    // planted-term check below while never searching for the one word a leak
+    // would actually be made of.
+    expect(vocabulary).toContain("OK");
     // The instrument is proven to bite before its silence is read as a finding.
     expect(leakedTerms(`${record}${vocabulary[0]}`, vocabulary)).toContain(vocabulary[0]);
     expect(leakedTerms(record, vocabulary)).toEqual([]);
