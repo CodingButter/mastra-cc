@@ -97,6 +97,16 @@ rather than buried:
   reader's access. The consequence is stated rather than hidden: an element a query
   walked past and discarded leaves no entry.
 
+  *Where the wording ended up.* ADR-0026 said touched, and so did M3's exit box 5,
+  and the code has said answered since this record was written. For the whole of M3
+  the difference was carried as a disclosure on the tick rather than a correction to
+  the box, deliberately: a milestone that edits its own exit criterion while it is
+  open cannot be failed by it. When M3 merged, `docs/07-ROADMAP.md` box 5 was
+  reworded to say *answered* — the guarantee did not move, the sentence describing it
+  did, and this paragraph is where a reader who finds the old wording quoted
+  elsewhere can see why. ADR-0026's own sentence is left as written; it is an
+  accepted record, and this is the one that narrows it.
+
 - **The seven-key set is frozen, and extending it is an ADR.** A new key means a new
   decision and a changed set assertion, deliberately — not a quiet append.
 
