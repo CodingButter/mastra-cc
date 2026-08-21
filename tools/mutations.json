@@ -56,6 +56,27 @@
     "testFile": "__tests__/freeze-gate.test.mjs"
   },
   {
+    "name": "the-closure-that-is-never-walked",
+    "file": "tools/licences.mjs",
+    "find": "    walkRuntime(child, dirname(installed), [...chain, name]);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-walk-that-stops-at-the-symlink",
+    "file": "tools/licences.mjs",
+    "find": "    if (existsSync(candidate)) return realpathSync(candidate);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-licence-problem-that-a-guard-speaks-over",
+    "file": "tools/licences.mjs",
+    "find": "  for (const problem of problems) console.error(problem);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
     "name": "the-citation-nobody-checks",
     "file": "scripts/check-docs.mjs",
     "find": "          if (!present.has(head)) problems.push(wrong);",

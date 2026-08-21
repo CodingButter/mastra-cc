@@ -149,7 +149,7 @@ Each boundary below is a rule, a reason, and a test. If it has no test, it is a 
 | B9 | No transcriber in any client | source-level test (ADR-0005) |
 | B10 | No platform-specific vocabulary in `protocol/schema.json` | source-level test over the schema (ADR-0018) |
 | B11 | No effect-class operation relies solely on post-hoc enforcement | source-level test over the daemon's dispatch table |
-| B12 | Every dependency carries a permissive licence | CI job over every manifest, against an allowlist |
+| B12 | Every dependency carries a permissive licence | CI job over the shipped runtime closure and every declared development dependency, against an allowlist |
 
 **Which of these exist:** six source pins are wired — B1, B2, B5, B8, B10 and B11 — plus B6 and B7 as CI steps and B12 as its own CI job. B11 arrived with M2.1's `openApplication`, in the same commit as the first effect-class dispatch entry, as required. **B2 was wired in M3**, when the hub gained a voice lane and therefore a subject: it scans the hub's source for an audio API and the hub's manifest for an audio dependency, because the prototype's transcriber removal was only half a removal — the source went and the dependency stayed declared.
 
