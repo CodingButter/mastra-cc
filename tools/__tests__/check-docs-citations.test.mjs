@@ -162,6 +162,25 @@ describe("the citation check", () => {
     expect(r.stdout).not.toContain("which contains no `enums`");
   });
 
+  it("names the line the citation is on, not the line its table starts on", () => {
+    // The report is what a person opens the file at. A table is one block, so
+    // a block-scoped line number sends every row of a long evidence table to
+    // the table's first line: the real tree's worst case pointed at `:46` for
+    // a citation on `:54`. Reporting a line nobody can follow is the same
+    // defect as a message that truncates what it found.
+    record(
+      "# 0001\n\n| Claim | Source |\n|---|---|\n" +
+        "| one | nothing to see |\n| two | nothing to see |\n| three | nothing to see |\n" +
+        "| four | `protocol/schema.json`, `launchApplication` |\n",
+    );
+    const r = run();
+    expect(r.status).toBe(1);
+    // The table opens on line 3 (header), 4 is its separator, and the false
+    // citation is the fourth data row: line 8.
+    expect(r.stdout).toContain("0001-a-record.md:8: cites `launchApplication`");
+    expect(r.stdout).not.toContain("0001-a-record.md:3:");
+  });
+
   it("excuses a prose correction whose disclaimer wraps onto the next line", () => {
     // The counterpart to the table case: prose hard-wraps, so a correction can
     // state the false citation on one line and say it is false on the next.

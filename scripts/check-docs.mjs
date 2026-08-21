@@ -282,7 +282,15 @@ function checkCitations(files) {
 
           examined += 1;
           const head = key[1].split('.')[0];
-          const wrong = `${relative(ROOT, path)}:${block.line}: cites \`${key[1]}\` in \`${file[1]}\`, which contains no \`${head}\``;
+          // The line the citation is on, not the line its block opens on. A
+          // table is one block, so a block-scoped number sends every row of a
+          // long evidence table to the table's first line - a report nobody
+          // can follow to the thing it is reporting. Written as two lines so
+          // that deleting the second is a mutation the table can express, and
+          // deleting it reports the block's line rather than crashing.
+          let at = block.line;
+          if (rows.length > 0) at = rows[0].line;
+          const wrong = `${relative(ROOT, path)}:${at}: cites \`${key[1]}\` in \`${file[1]}\`, which contains no \`${head}\``;
           // One line, deletable, carrying the whole judgement - so the mutation
           // table can take it away and watch this check stop being one.
           if (!present.has(head)) problems.push(wrong);
