@@ -10,7 +10,7 @@
 // real-shaped to fail on.
 
 import { describe, expect, it } from "vitest";
-import { createVoiceLane, REFUSAL_CODES, verdictOnClose, type CredentialStore } from "../voice/mint.js";
+import { createVoiceLane, REFUSAL_CODES, verdictOnClose, type CredentialStore, type DialOutcome } from "../voice/mint.js";
 
 const FICTITIOUS_KEY = "AQ.not-a-real-key-0000000000000000000000";
 const MODEL = "gemini-2.5-flash-native-audio-latest";
@@ -209,6 +209,67 @@ describe("the voice lane mints one token", () => {
     expect(everything).not.toMatch(/[A-Za-z0-9_-]{40,}/);
     // It does say what happened, which is the point of a log.
     expect(everything).toContain(MODEL);
+  });
+
+  // BOUNDARY B3, RUNTIME HALF. The source half of B3 - no client scans a
+  // credential onto the wire - has no client to scan until M4, so it stays
+  // unwired rather than passing vacuously over an empty file set. What CAN be
+  // pinned today is the behaviour the boundary exists for: a credential
+  // presented by a caller is not honoured. ADR-0007 amendment A13 deleted the
+  // prototype's presentable grant key on exactly this reasoning - "a key an
+  // agent can present is a key an agent can be tricked into presenting".
+  //
+  // NOT IN THE MUTATION TABLE, and the reason is a property of the runner
+  // rather than an oversight: mutations delete, and honouring a presented
+  // credential requires ADDING a parameter and a fallback. So this one was
+  // bitten by hand instead - the presented key wired in as `presented ??
+  // credentials.credentialFor(...)`, which turned this test and only this test
+  // red, and was restored. The type surface is the other half of the guard:
+  // `dial()` declares no parameters, so an honest caller cannot pass one.
+  it("a credential presented by a caller is ignored, and cannot rescue a dial the hub has no key for", async () => {
+    const PRESENTED = "AQ.presented-by-the-caller-999999999999";
+
+    // One: with a key held, the presented one is not the one that travels.
+    const headers: string[] = [];
+    const lane = createVoiceLane({
+      credentials: held,
+      model: MODEL,
+      log: sink().log,
+      fetchImplementation: async (_url, init) => {
+        headers.push(String(((init as RequestInit).headers as Record<string, string>)["x-goog-api-key"]));
+        return respond(200, { name: mintedName(1) });
+      },
+    });
+
+    // The surface offers nowhere to put it: `dial` declares no parameters. The
+    // cast is the test being adversarial on a client's behalf - TypeScript
+    // would stop an honest caller, and this asserts the runtime does too.
+    await (lane.dial as (credential?: string) => Promise<unknown>)(PRESENTED);
+
+    expect(headers).toEqual([FICTITIOUS_KEY]);
+    expect(lane.dial.length).toBe(0);
+
+    // Two, and this is the half that matters: with NO key held, a presented one
+    // does not become the key. The refusal is the same refusal - a caller
+    // cannot supply what the hub was not given.
+    let called = 0;
+    const empty = createVoiceLane({
+      credentials: store({}),
+      model: MODEL,
+      log: sink().log,
+      fetchImplementation: async () => {
+        called += 1;
+        return respond(200, { name: mintedName(2) });
+      },
+    });
+
+    const outcome = await (empty.dial as (credential?: string) => Promise<DialOutcome>)(PRESENTED);
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(outcome.code).toBe("NO_GOOGLE_ACCOUNT");
+    expect(called).toBe(0);
+    expect(outcome.refusal).not.toContain(PRESENTED);
   });
 
   it("an expiry seen at close is a different outcome from a rejection seen at dial", () => {

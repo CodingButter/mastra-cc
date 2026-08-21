@@ -7,6 +7,27 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
+    "name": "b2-vacuous-guard-removed",
+    "file": "tools/pins/b2.mjs",
+    "find": "if (files.length === 0) fail(\"pin-b2: no files matched - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b2-source-half-removed",
+    "file": "tools/pins/b2.mjs",
+    "find": "      violations.push(`pin-b2: audio API \"${api}\" in the hub at ${relative(root, file)} - audio never enters the hub process (ADR-0006)`);\n",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b2-manifest-half-removed",
+    "file": "tools/pins/b2.mjs",
+    "find": "    violations.push(`pin-b2: audio dependency \"${name}\" declared in apps/hub/package.json - a declared package is a package, imported or not (ADR-0006)`);\n",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
     "name": "b5-vacuous-guard-removed",
     "file": "tools/pins/b5.mjs",
     "find": "if (files.length === 0) fail(\"pin-b5: no files matched - the pin would pass vacuously\");",
