@@ -34,6 +34,15 @@ absent account, a key the provider rejects, a failure the lane cannot
 attribute, a token that outlived its window, and a key a caller presents — is
 refused by a name that says which of those it was.
 
+**Fetching the commits these legs name.** Every segment's transcript stamps the
+branch-point build it ran, not the squashed commit that landed on `master` — so
+none of `d3ad210` (S1), `634668e` (S2), `a3cbc8e` (S3) or `964fa6c` (S4) is an
+ancestor of `master`, and a cold reader checking one out will not find it by
+`git log` alone. They remain reachable from their pull requests' head refs,
+checked 2026-08-21: `git fetch origin refs/pull/37/head` reaches `d3ad210`, and
+`38`, `39`, `40` reach the other three respectively. Raised by the whole-feature
+review, which could see the mismatch and could not run git to resolve it.
+
 ## Leg 1 — a real dial, on a token minted for it alone
 
 **Provenance.** Environment: minibeast, Wayland, no display (this lane has no
@@ -158,6 +167,30 @@ was measured by hand instead: three BlueOak-licensed transitives
 (`@isaacs/ttlcache`, `lru-cache`, `sax`). That measurement is a person reading
 a tree, not a check that will notice when the tree changes. Tracked as issue
 \#36.
+
+That list was the whole disclosure in the first version of this document, and
+the whole-feature review was right that it undersold the gap. Two more things
+the declared-only gate does not see, both verified at source rather than
+inferred:
+
+- `json-schema@0.4.0` declares `(AFL-2.1 OR BSD-3-Clause)`. It reaches the tree
+  under `@mastra/core` and `@mastra/memory` (`pnpm-lock.yaml:1789`, `:1816`).
+  AFL-2.1 is **not** on the allowlist at `tools/licences.mjs:14`; the package
+  passes only because `licenceAllowed()` accepts an `OR` if either side is
+  allowed, and the BSD side is. That is the correct reading of a dual licence,
+  but it means the tree's only non-allowlisted licence name is admitted by a
+  branch nobody exercised deliberately.
+- `lightningcss` and its native variants declare MPL-2.0, reaching the tree
+  through `vite`. Dev tooling, outside anything M3 ships, and equally invisible
+  to a gate that reads manifests.
+
+Neither is a violation. Both are things a receipt claiming to state its licence
+gap should have named the first time, and the honest version of gap 1 is that
+nobody knows what else is in there — three names were measured, not "three is
+the answer". Issue \#36 is about replacing the person with a check that walks
+the installed closure; [the roadmap's own M5 entry](../07-ROADMAP.md) records
+the sharpest instance of why (openWakeWord ships Apache-2.0 code with
+CC BY-NC-SA weights, and a gate reading manifests would have passed it).
 
 **2. The token's lifetime is enforced upstream and is not readable.** The hub
 requests a two-minute window at mint. The mint response carries only a name —

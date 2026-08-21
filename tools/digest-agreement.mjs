@@ -41,7 +41,10 @@ for (const artifact of artifacts) {
     problems += 1;
   } else if (declared[1] !== schemaDigest) {
     console.error(
-      `digest-agreement: ${artifact} was cut from digest ${declared[1].slice(0, 12)}... but the schema on disk is ${schemaDigest.slice(0, 12)}...`,
+      // Untruncated on the FAILURE path only. A one-digit difference printed as
+      // two twelve-character prefixes reads as two identical strings, which is
+      // a check that cannot show what it found. The passing line stays short.
+      `digest-agreement: ${artifact} was cut from digest ${declared[1]} but the schema on disk is ${schemaDigest}`,
     );
     problems += 1;
   }
