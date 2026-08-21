@@ -62,9 +62,28 @@ There is a second reason, and it is stronger than the ergonomic one. **Approval 
 |---|---|
 | approve-every-action harnesses lost; people want to walk away | Jamie, 2026-08-08, rebuild design conversation |
 | the four-hundred-message counter-example that killed the fixed ceiling | Jamie, 2026-08-08, same conversation |
-| five operation classes ordered by consequence | [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md); `protocol/schema.json`, `enums.operationClass` |
+| five operation classes ordered by consequence | [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md). **Not** `protocol/schema.json`, `enums.operationClass` — see the correction note below |
 | attestation exists so a commit can be described and reviewed | [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md) rule 2; protocol methods `attestElement` / `commitElement` |
 | approval criteria the agent cannot author | prototype amendment A15, issue #74 |
 | never tune a constant to hide an upstream inconsistency | [03-LESSONS.md](../03-LESSONS.md) §6 |
 | the person wins; `emergencyStop` is not advisory | [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md) rule 7; issues #25, #4 |
 | security refusals are mutation-tested | [05-TEST-STRATEGY.md](../05-TEST-STRATEGY.md) |
+
+**Correction, 2026-08-21.** The evidence row above cited `protocol/schema.json`
+under `enums.operationClass` as a source for the five operation classes. No v1.x
+schema has ever carried that object: `protocol/schema.json` contains one
+enumeration site — `capabilityNames` at `:29`, a deliberately different five with
+`launch` in it — and zero occurrences of `enums`, `operationClass` or
+`destructive`. The classes this record reasons about live in
+[ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md) as doctrine and
+in the daemon's dispatch table as `effectClass` values; the fifth,
+`destructive`, is absent from the wire on purpose
+([ADR-0037](0037-the-other-three-classes-are-on-the-wire-before-they-are-possible.md)).
+Nothing about this record's decision changes — the citation was wrong, not the
+reasoning. Corrected in place rather than by rewriting an accepted record.
+
+Found by the third round of M3's whole-feature review. The same stale citation
+was corrected at ADR-0008 in round two and here in round three, each time by a
+reader noticing one more copy; the standing lesson is that a correction which
+stops at the line a reviewer quoted is not a correction, and the search for the
+next copy belongs to a check rather than to a reader.
