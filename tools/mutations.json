@@ -481,5 +481,26 @@
     "find": "    if (!capabilities.includes(capability)) continue;\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
+  },
+  {
+    "name": "the-role-that-falls-back-to-a-model-nobody-chose",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "  if (specifier === undefined) return { refusal: unconfiguredRole(role) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-model-that-resolves-without-a-credential",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "  if (credentials.credentialFor(account) === undefined) return { refusal: noCredential(account, role) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-provider-error-that-is-relayed-word-for-word",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "        if (!response.ok) return { ok: false, refusal: upstreamRefusal(provider, model, response.status) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
   }
 ]
