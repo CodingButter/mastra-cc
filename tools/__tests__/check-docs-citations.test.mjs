@@ -144,6 +144,37 @@ describe("the citation check", () => {
     expect(r.stdout).toContain("which contains no `enums`");
   });
 
+  it("does not let one corrected row darken the rest of its table", () => {
+    // A markdown table has no blank line in it, so a block-scoped exemption
+    // reads the WHOLE table as one excused paragraph: correct one row and
+    // every other row goes permanently unjudged. Five real evidence tables
+    // were dark this way, including one whose neighbouring row carried a live
+    // false citation. The corrected row is excused; its neighbours are not.
+    record(
+      "# 0001\n\n| Claim | Source |\n|---|---|\n" +
+        "| the classes | **Not** in `protocol/schema.json` under `enums.operationClass` - corrected 2026-08-21 |\n" +
+        "| the methods | `protocol/schema.json`, `launchApplication` |\n",
+    );
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("which contains no `launchApplication`");
+    // ...and the corrected row is still excused, or the check eats its own tail.
+    expect(r.stdout).not.toContain("which contains no `enums`");
+  });
+
+  it("excuses a prose correction whose disclaimer wraps onto the next line", () => {
+    // The counterpart to the table case: prose hard-wraps, so a correction can
+    // state the false citation on one line and say it is false on the next.
+    // Row-scoping BOTH shapes would redden every prose correction in the tree.
+    record(
+      "# 0001\n\nADR-0008 claimed the classes are enumerated in `protocol/schema.json`\n" +
+        "under `enums.operationClass`. No schema here has ever carried one, and the\n" +
+        "citation was corrected 2026-08-21.\n",
+    );
+    const r = run();
+    expect(r.status).toBe(0);
+  });
+
   it("reads a citation whose path and name sit on different lines", () => {
     // Prose hard-wraps, and one of the four sites states its citation with the
     // path ending one line and the name opening the next. A line-scoped

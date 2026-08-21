@@ -171,6 +171,10 @@ const LOOKS_LIKE_A_FILE = /\.(py|ts|tsx|js|mjs|cjs|json|md|yaml|yml|sh|txt|jsonl
 // under `y`", or a table row naming both), and every coincidental pairing —
 // a roadmap paragraph mentioning `tools/mutations.json` and, four thousand
 // characters later, an AT-SPI method name — is far outside it.
+// A correction has to quote the citation it is correcting, so the row that
+// does the correcting is excused - and only that row.
+const EXEMPT = /\*\*not\*\*|\bnot\b `|corrected|correction|no such|never carried|has ever/i;
+
 const CITATION_PROXIMITY = 90;
 
 function namesAnywhere(node, found = new Set()) {
@@ -192,18 +196,41 @@ function namesAnywhere(node, found = new Set()) {
 // Paragraph scope, not line scope: prose hard-wraps, and ADR-0037 states its
 // citation with the path on one line and the key on the next. A line-scoped
 // version of this check reads that site as clean.
+//
+// The block carries a map from character offset back to source line, because
+// PAIRING and EXEMPTING want different scopes. A markdown table has no blank
+// line in it, so the whole table is one block: a block-scoped exemption lets
+// one corrected row darken every other row in the table, permanently. Pairs
+// are found across the block; the exemption is judged on the rows the pair
+// actually spans.
 function paragraphs(body) {
   const lines = body.split('\n');
   const blocks = [];
   let start = 0;
+  const build = (from, to) => {
+    const slice = lines.slice(from, to);
+    const spans = [];
+    let at = 0;
+    slice.forEach((line, i) => {
+      spans.push({ from: at, to: at + line.length, line: from + i + 1, text: line });
+      at += line.length + 1; // the join's separator
+    });
+    blocks.push({ line: from + 1, text: slice.join(' '), spans });
+  };
   lines.forEach((line, i) => {
     if (line.trim() === '') {
-      if (i > start) blocks.push({ line: start + 1, text: lines.slice(start, i).join(' ') });
+      if (i > start) build(start, i);
       start = i + 1;
     }
   });
-  if (start < lines.length) blocks.push({ line: start + 1, text: lines.slice(start).join(' ') });
+  if (start < lines.length) build(start, lines.length);
   return blocks;
+}
+
+// The rows a citation pair sits on - one row for a table, two for a sentence
+// that hard-wraps between the path and the key.
+function rowsSpanning(block, from, to) {
+  return block.spans.filter((s) => s.to >= from && s.from <= to);
 }
 
 function checkCitations(files) {
@@ -214,11 +241,6 @@ function checkCitations(files) {
   for (const path of files) {
     const body = readFileSync(path, 'utf8').replace(FENCE, '');
     for (const block of paragraphs(body)) {
-      // A line that says a citation is wrong has to quote the wrong citation
-      // to say so. Every correction this check was written for reads like
-      // that, and reddening the fixes would be the check eating its own tail.
-      if (/\*\*not\*\*|\bnot\b `|corrected|correction|no such|never carried|has ever/i.test(block.text)) continue;
-
       const cited = [...block.text.matchAll(CITED_JSON)];
       if (cited.length === 0) continue;
       const keys = [...block.text.matchAll(CITED_KEY)].filter((m) => !LOOKS_LIKE_A_FILE.test(m[1]));
@@ -227,6 +249,23 @@ function checkCitations(files) {
         for (const key of keys) {
           const [first, second] = file.index < key.index ? [file, key] : [key, file];
           if (second.index - (first.index + first[0].length) > CITATION_PROXIMITY) continue;
+
+          // A line that says a citation is wrong has to quote the wrong
+          // citation to say so, and reddening the fixes would be the check
+          // eating its own tail. The excused unit is the smallest thing that
+          // is a whole statement, and that differs by shape: a table ROW is a
+          // standalone record, so it is excused alone and the rows around it
+          // are not; a paragraph of prose is one statement that hard-wraps,
+          // so a correction on its second line still covers a pair on its
+          // first. Block scope for both is what let one corrected row darken
+          // an entire evidence table.
+          const rows = rowsSpanning(block, first.index, second.index + second[0].length);
+          // Deleting the narrowing below widens the excused scope back to the
+          // whole block, which is the permissive direction and the defect this
+          // was written against.
+          let scope = [block.text];
+          if (rows.some((r) => r.text.trimStart().startsWith('|'))) scope = rows.map((r) => r.text);
+          if (scope.some((text) => EXEMPT.test(text))) continue;
 
           const onDisk = resolve(ROOT, file[1]);
           if (!existsSync(onDisk)) continue; // A path that does not exist is a dead link, and that is checkLinks' report to make.

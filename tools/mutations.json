@@ -58,7 +58,7 @@
   {
     "name": "the-closure-that-is-never-walked",
     "file": "tools/licences.mjs",
-    "find": "    walkRuntime(child, dirname(installed), [...chain, name]);",
+    "find": "      walkRuntime(child, dirname(installed), [...chain, name], optional);",
     "cwd": "tools",
     "testFile": "__tests__/licences.test.mjs"
   },
@@ -670,5 +670,19 @@
     "find": "        if (peer.awaitingPong) {\n          hangUp(peer);\n          continue;\n        }\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-exemption-that-darkens-a-whole-table",
+    "file": "scripts/check-docs.mjs",
+    "find": "          if (rows.some((r) => r.text.trimStart().startsWith('|'))) scope = rows.map((r) => r.text);",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-catalog-pin-that-leaves-the-gate",
+    "file": "tools/licences.mjs",
+    "find": "    if (spec.startsWith(\"workspace:\")) continue;\n    const installed = resolveInstalled(name, here);",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
   }
 ]
