@@ -1,5 +1,7 @@
 import { connect } from "@mastra-cc/transport";
 
+export { type Capability, mintToolSurface, type Tool } from "./tools/mint.js";
+
 // The hub: calls the daemon through packages/transport and prints the
 // result. Nothing else (docs/07-ROADMAP.md:88 - "apps/hub calling through
 // transport and printing the result"). --query lists elements; --open asks
