@@ -18,7 +18,7 @@ Verified against a working checkout at `/home/codingbutter/mastra`.
 
 That is the single most important fact for this plan: **a new capability area gets its own top-level domain directory**, in the manner of `voice/` (which holds eleven-plus provider packages) or `signals/` (which currently holds one).
 
-**Shared task graph.** `turbo.json` defines `build`, `lint`, `lint:fix`, `typecheck`, `clean`, `dev`, and `validate:package`. `build` depends on `^build`; `typecheck` depends on `^build`. A package that cannot express itself in those five verbs does not fit.
+**Shared task graph.** The destination's own `turbo.json` — at the checkout named above, not this repository's — defines `build`, `lint`, `lint:fix`, `typecheck`, `clean`, `dev`, and `validate:package`. `build` depends on `^build`; `typecheck` depends on `^build`. A package that cannot express itself in those five verbs does not fit. (Ours is deliberately smaller: `build`, `lint`, `typecheck`, `test`.)
 
 **Toolchain, and it is opinionated:**
 

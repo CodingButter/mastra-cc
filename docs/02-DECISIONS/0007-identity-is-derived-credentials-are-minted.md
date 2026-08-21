@@ -51,5 +51,5 @@ A related decision, arrived at by removal: an early design had a **grant key** t
 | grant key removed | amendment A13, issue #72 |
 | minted tool surface = READ_FILE / LIST_FILES / FILE_STAT / GREP | hub token-mint tool list |
 | launch capability tracked separately | issue #183, open at pivot |
-| protocol already exposes `listInstallableApplications` / `launchApplication` | `protocol/schema.json`, 33 methods |
+| protocol already exposes `listInstallableApplications` / `launchApplication` | the **prototype's** schema, 33 methods — not this repository's `protocol/schema.json`, which carries 13 and names the pair `listApplications` / `openApplication` (corrected 2026-08-21; the row read as a citation into our own file) |
 | deny-by-default user registry with live toggle | issue #116, closed by PR #144 |
