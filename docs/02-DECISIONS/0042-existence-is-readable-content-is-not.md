@@ -121,15 +121,21 @@ correct — but it is a trade, not a free win. What still holds after the trade 
 the part that was always doing the work: **nothing inside an unpermitted
 application is readable, and no refused capability becomes performable.**
 
-**Cost — existing code and tests encode the old doctrine and must change.**
-`daemon/src/__tests__/launch-authority.test.ts:19` and `:153` assert that a
+**Cost — existing code and tests encoded the old doctrine and had to change.
+They did.** `daemon/src/__tests__/launch-authority.test.ts` asserted that a
 launch refusal is indistinguishable from one for an application that is not
-installed (*"the refusal names no path, no command, and nothing about what is
-installed"*), and `daemon/src/server.ts:56` carries the comment *"never reveal
-whether an application is installed on this machine."* Those assertions were
-correct under the old rule and are wrong under this one. They are rewritten, not
-deleted: the new assertion is that a refusal names the *capability and its
-setting* and still names **nothing about the application's contents**.
+installed, and `daemon/src/server.ts` carried a comment saying a refusal must
+*never reveal whether an application is installed on this machine.* Both were
+correct under the old rule and wrong under this one, and both were rewritten
+rather than deleted. What stands in their place: the test named *"the refusal
+names no path and no command, and points at where existence IS answered"*, and
+`UNAVAILABLE_REFUSAL`'s comment, which now says the sentence names the
+capability and the place the answer lives while naming **nothing about this
+machine's contents — no path, no command, no installed-or-not.**
+
+Line numbers are deliberately not cited here. This ADR once cited two that had
+already moved, which is a citation pointing at whatever happens to occupy that
+line today. Names survive edits; line numbers do not.
 
 **Cost — a new surface to get right.** Enumerating installed applications means
 the daemon reads an application inventory it did not read before, and the
@@ -156,5 +162,5 @@ still protects contents; only the subject of concealment narrows.
 | effect-class operations are enforced before the call, with a failing test if not | `docs/01-ARCHITECTURE.md` §5 (B11); [ADR-0034](0034-launch-is-the-first-effect-class-operation.md) |
 | the OBS case, and the transparency ruling | Jamie, 2026-08-16 |
 | enforcement is the precondition for a readable capability list | Jamie, 2026-08-16 |
-| tests and comments encoding the old doctrine | `daemon/src/__tests__/launch-authority.test.ts:19,153`; `daemon/src/server.ts:56` |
+| tests and comments encoding the old doctrine, since rewritten | `daemon/src/__tests__/launch-authority.test.ts` (the *"names no path and no command"* case); `daemon/src/server.ts` (`UNAVAILABLE_REFUSAL`'s comment) |
 | a refusal must name the check that ran | [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md); prototype issue #194, PR #220 |
