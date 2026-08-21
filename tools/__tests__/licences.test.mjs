@@ -158,6 +158,34 @@ describe("the licence gate", () => {
     expect(r.stdout).toContain("development as declared");
   });
 
+  it("keeps walking a runtime package that is also somebody's development dependency", () => {
+    // The dev loop and the runtime walk used to share one visited-map, so a
+    // package recorded as dev first made the runtime walk early-return AT it -
+    // and everything below it went unlicenced, silently, depending only on the
+    // order manifests happen to be read in. Measured on the real tree:
+    // `@types/node` is a root dev dependency and a hard runtime dependency of
+    // `protobufjs`, and `undici-types` beneath it was never reached.
+    //
+    // The order is the whole defect, so the fixture has to carry it: the dev
+    // record must land while reading an EARLIER manifest than the runtime walk
+    // that later reaches the same package. Root declares it as dev; apps/hub
+    // reaches it as runtime. Written the other way round - both in one
+    // manifest - the runtime walk runs first and a shared map looks harmless.
+    manifest({}, { shared: "^1.0.0" });
+    mkdirSync(join(root, "apps", "hub"), { recursive: true });
+    writeFileSync(
+      join(root, "apps", "hub", "package.json"),
+      JSON.stringify({ name: "hub", dependencies: { alpha: "^1.0.0" } }),
+    );
+    install("alpha", "MIT", { shared: "^1.0.0" });
+    install("shared", "MIT", { beneath: "^1.0.0" });
+    install("beneath", "GPL-3.0");
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('beneath is "GPL-3.0"');
+    expect(r.stderr).toContain("shipped via apps/hub/package.json > alpha > shared");
+  });
+
   it("checks a development dependency pinned through the workspace catalog", () => {
     // A `catalog:` spec is a version held in pnpm-workspace.yaml; the package
     // behind it is as third-party as any other. Skipping the spec put

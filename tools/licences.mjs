@@ -106,8 +106,15 @@ const problems = [];
 // map the runtime walk early-returns on, so anything that is a dev dependency
 // somewhere AND a runtime transitive under a manifest processed later would
 // truncate the runtime closure at that node - silently, and dependent on the
-// order manifests happen to be walked in. No live collision today; separate
-// maps cost nothing and remove the ordering dependency entirely.
+// order manifests happen to be walked in.
+//
+// This was not theoretical, and the first version of this comment said it was.
+// Measured across the split: `@types/node` is a dev dependency of the root
+// manifest AND a hard runtime dependency of `protobufjs` (`@google/genai` pulls
+// it in under apps/hub), so the shared map recorded it as dev first and the
+// runtime walk then stopped there - never reaching `undici-types`, which the
+// split now licences. One package, MIT either way, and it would have been any
+// package with that shape.
 const walked = new Map(); // real manifest path -> how it got here, for the report
 const walkedDev = new Map();
 

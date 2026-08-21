@@ -684,5 +684,19 @@
     "find": "    if (spec.startsWith(\"workspace:\")) continue;\n    const installed = resolveInstalled(name, here);",
     "cwd": "tools",
     "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-line-number-that-points-at-the-table-instead-of-the-row",
+    "file": "scripts/check-docs.mjs",
+    "find": "          if (rows.length > 0) at = rows[0].line;",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-dev-record-that-truncates-the-runtime-walk",
+    "file": "tools/licences.mjs",
+    "find": "const walkedDev = new Map();",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
   }
 ]
