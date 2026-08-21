@@ -158,6 +158,66 @@ describe("the licence gate", () => {
     expect(r.stdout).toContain("development as declared");
   });
 
+  it("checks a development dependency pinned through the workspace catalog", () => {
+    // A `catalog:` spec is a version held in pnpm-workspace.yaml; the package
+    // behind it is as third-party as any other. Skipping the spec put
+    // typescript and vitest - two of this tree's main dev tools - outside a
+    // gate whose success line reported them as inside it.
+    install("catalogued", "GPL-3.0");
+    manifest({}, { catalogued: "catalog:" });
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("catalogued");
+    expect(r.stderr).toContain("GPL-3.0");
+  });
+
+  it("walks an optional dependency, because pnpm installs those by default", () => {
+    // An optional dependency that IS installed ships, so it is licence-checked
+    // like any other. Seven packages in the real tree declare them.
+    install("ships", "MIT");
+    writeFileSync(
+      join(root, "node_modules", "ships", "package.json"),
+      JSON.stringify({ name: "ships", version: "1.0.0", license: "MIT", optionalDependencies: { optional: "^1" } }),
+    );
+    install("optional", "GPL-3.0");
+    manifest({ ships: "^1" });
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("optional");
+  });
+
+  it("does not call an absent optional dependency a finding, the way it would an absent hard one", () => {
+    // Being absent is exactly what `optionalDependencies` allows. A hard
+    // dependency that is missing is still a package whose licence nobody can
+    // verify, and still reports.
+    install("ships", "MIT");
+    writeFileSync(
+      join(root, "node_modules", "ships", "package.json"),
+      JSON.stringify({ name: "ships", version: "1.0.0", license: "MIT", optionalDependencies: { nowhere: "^1" }, dependencies: { present: "^1" } }),
+    );
+    install("present", "MIT");
+    manifest({ ships: "^1" });
+    const r = run();
+    expect(r.status).toBe(0);
+    expect(r.stdout).not.toContain("nowhere");
+  });
+
+  it("walks a peer dependency that is present in the tree", () => {
+    // A peer is code the user receives however it got there. In the real tree
+    // zod arrives as a peer of @mastra/core and was licence-checked only
+    // because one unrelated package happened to declare it as a dependency.
+    install("ships", "MIT");
+    writeFileSync(
+      join(root, "node_modules", "ships", "package.json"),
+      JSON.stringify({ name: "ships", version: "1.0.0", license: "MIT", peerDependencies: { peer: "^1" } }),
+    );
+    install("peer", "GPL-3.0");
+    manifest({ ships: "^1" });
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("peer");
+  });
+
   it("still refuses a development dependency whose own licence is not permitted", () => {
     manifest({ alpha: "^1.0.0" }, { tool: "^1.0.0" });
     install("alpha", "MIT", { beta: "^1.0.0" });

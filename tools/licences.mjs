@@ -20,13 +20,24 @@ import { fileURLToPath } from "node:url";
 // the runtime half now walks the installed closure and licences what actually
 // ships.
 //
-// THE BOUNDARY, STATED RATHER THAN IMPLIED. The walk follows `dependencies`
-// only. Development dependencies are still checked as declared, exactly as
-// before, and their transitive closure is not walked: a build tool is not
-// distributed, and the licences reached that way (the CSS toolchain vite
-// pulls in is MPL-2.0) are a question about this repository's build, not about
-// what a user of it receives. Widening to that closure is a policy decision
-// and belongs in its own commit, not smuggled in with this one.
+// THE BOUNDARY, STATED RATHER THAN IMPLIED. The runtime walk follows
+// `dependencies`, `optionalDependencies` and `peerDependencies`, because all
+// three ship: pnpm installs optional dependencies by default, and a peer that
+// is present in the tree is code a user receives however it got there. An
+// optional or peer dependency that is NOT installed is not a finding - being
+// absent is what those fields allow - while a missing `dependencies` entry
+// still is. Bundled dependencies are not read: nothing in this tree declares
+// `bundledDependencies`, and a walk for a field no manifest uses would be a
+// branch nobody can test.
+//
+// Development dependencies are checked as declared and their transitive
+// closure is NOT walked: a build tool is not distributed, and the licences
+// reached that way (the CSS toolchain vite pulls in is MPL-2.0) are a question
+// about this repository's build, not about what a user of it receives.
+// Widening to that closure is a policy decision and belongs in its own commit,
+// not smuggled in with this one. That is the one hole here, and it is the only
+// one: this file used to state it as though it were, while `optionalDependencies`
+// and `peerDependencies` went unread in silence.
 
 const ALLOWED = new Set([
   "MIT",
@@ -91,12 +102,22 @@ function resolveInstalled(name, from) {
 
 let checked = 0;
 const problems = [];
+// Two maps, not one. A package recorded by the dev loop used to sit in the same
+// map the runtime walk early-returns on, so anything that is a dev dependency
+// somewhere AND a runtime transitive under a manifest processed later would
+// truncate the runtime closure at that node - silently, and dependent on the
+// order manifests happen to be walked in. No live collision today; separate
+// maps cost nothing and remove the ordering dependency entirely.
 const walked = new Map(); // real manifest path -> how it got here, for the report
+const walkedDev = new Map();
 
-function walkRuntime(name, from, chain) {
+function walkRuntime(name, from, chain, optional = false) {
   const installed = resolveInstalled(name, from);
   if (!installed) {
-    problems.push(`licences: ${name} is shipped via ${chain.join(" > ")} but is not installed - its licence cannot be verified`);
+    // An optional or peer dependency is allowed to be absent; a hard one is not.
+    if (!optional) {
+      problems.push(`licences: ${name} is shipped via ${chain.join(" > ")} but is not installed - its licence cannot be verified`);
+    }
     return;
   }
   if (walked.has(installed)) return;
@@ -109,9 +130,11 @@ function walkRuntime(name, from, chain) {
   checked += 1;
 
   const pkg = JSON.parse(readFileSync(installed, "utf8"));
-  for (const [child, spec] of Object.entries(pkg.dependencies ?? {})) {
-    if (typeof spec === "string" && (spec.startsWith("workspace:") || spec.startsWith("link:"))) continue;
-    walkRuntime(child, dirname(installed), [...chain, name]);
+  for (const [field, optional] of [["dependencies", false], ["optionalDependencies", true], ["peerDependencies", true]]) {
+    for (const [child, spec] of Object.entries(pkg[field] ?? {})) {
+      if (typeof spec === "string" && (spec.startsWith("workspace:") || spec.startsWith("link:"))) continue;
+      walkRuntime(child, dirname(installed), [...chain, name], optional);
+    }
   }
 }
 
@@ -120,21 +143,27 @@ for (const manifest of found) {
   const here = join(root, dirname(manifest));
 
   // Runtime: everything that ships, however far down.
-  for (const [name, spec] of Object.entries(pkg.dependencies ?? {})) {
-    if (spec.startsWith("workspace:")) continue;
-    walkRuntime(name, here, [manifest]);
+  for (const [field, optional] of [["dependencies", false], ["optionalDependencies", true], ["peerDependencies", true]]) {
+    for (const [name, spec] of Object.entries(pkg[field] ?? {})) {
+      if (spec.startsWith("workspace:")) continue;
+      walkRuntime(name, here, [manifest], optional);
+    }
   }
 
   // Development: as declared, for the reason stated at the top of this file.
   for (const [name, spec] of Object.entries(pkg.devDependencies ?? {})) {
-    if (spec.startsWith("workspace:") || spec.startsWith("catalog:")) continue;
+    // A `catalog:` pin is a version held in pnpm-workspace.yaml, not a reason
+    // to skip: the package behind it is as third-party as any other, and
+    // skipping it put typescript and vitest outside a gate that reported them
+    // as inside it. Resolution is by NAME, so the spec's shape does not matter.
+    if (spec.startsWith("workspace:")) continue;
     const installed = resolveInstalled(name, here);
     if (!installed) {
       problems.push(`licences: ${name} (declared in ${manifest}) is not installed - its licence cannot be verified`);
       continue;
     }
-    if (walked.has(installed)) continue;
-    walked.set(installed, [manifest]);
+    if (walkedDev.has(installed)) continue;
+    walkedDev.set(installed, [manifest]);
     const value = declaredLicence(installed);
     if (!licenceAllowed(value)) {
       problems.push(`licences: ${name} is "${value}" - not on the permissive allowlist (declared in ${manifest})`);
