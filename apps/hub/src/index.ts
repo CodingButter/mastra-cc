@@ -1,6 +1,17 @@
 import { connect } from "@mastra-cc/transport";
 
 export { type Capability, mintToolSurface, type Tool } from "./tools/mint.js";
+export { type HubActivity, type ObservedElement, STRIPPED_KEYS, type StrippedObservation, strippedView } from "./memory/stripped.js";
+export { announce, bootSubconscious } from "./memory/subconscious.js";
+export {
+  type CredentialStore,
+  type ModelConfiguration,
+  PROVIDERS,
+  type Provider,
+  type Resolution,
+  resolveModel,
+  type ResolvedModel,
+} from "./models/configure.js";
 
 // The hub: calls the daemon through packages/transport and prints the
 // result. Nothing else (docs/07-ROADMAP.md:88 - "apps/hub calling through

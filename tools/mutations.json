@@ -481,5 +481,47 @@
     "find": "    if (!capabilities.includes(capability)) continue;\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
+  },
+  {
+    "name": "the-role-that-falls-back-to-a-model-nobody-chose",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "  if (specifier === undefined) return { refusal: unconfiguredRole(role) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-model-that-resolves-without-a-credential",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "  if (credentials.credentialFor(account) === undefined) return { refusal: noCredential(account, role) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-provider-error-that-is-relayed-word-for-word",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "        if (!response.ok) return { ok: false, refusal: upstreamRefusal(provider, model, response.status) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-memory-that-keeps-the-content",
+    "file": "apps/hub/src/memory/stripped.ts",
+    "find": ".map(identityOf)",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
+  },
+  {
+    "name": "the-provider-that-vanishes-and-is-not-answered-for",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "          return { ok: false, refusal: unreachableRefusal(provider, model) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-memory-that-was-never-given-the-store",
+    "file": "apps/hub/src/memory/subconscious.ts",
+    "find": "      options: { observationalMemory: { experimental_subconscious: subconscious } },\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
   }
 ]
