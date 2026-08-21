@@ -509,5 +509,19 @@
     "find": ".map(identityOf)",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
+  },
+  {
+    "name": "the-provider-that-vanishes-and-is-not-answered-for",
+    "file": "apps/hub/src/models/configure.ts",
+    "find": "          return { ok: false, refusal: unreachableRefusal(provider, model) };\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
+  },
+  {
+    "name": "the-memory-that-was-never-given-the-store",
+    "file": "apps/hub/src/memory/subconscious.ts",
+    "find": "      options: { observationalMemory: { experimental_subconscious: subconscious } },\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
   }
 ]

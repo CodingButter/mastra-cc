@@ -120,6 +120,16 @@ function upstreamRefusal(provider: Provider, model: string, status: number): str
   return `refused upstream: ${provider} answered ${status} for "${model}" - the provider's own message is not carried here, because a provider's error text can quote the request back and the request is the user's`;
 }
 
+/**
+ * The provider did not answer at all - DNS, a reset connection, an abort. A
+ * status would be a lie here, because there was no response to have one, and
+ * "did not answer" is the one true thing that can be said without carrying the
+ * error object's stack anywhere.
+ */
+function unreachableRefusal(provider: Provider, model: string): string {
+  return `refused upstream: ${provider} did not answer for "${model}" - the request never reached a response, and the connection error is not carried here`;
+}
+
 function unconfiguredRole(role: Role): string {
   return `no model is configured for the role "${role}" - the hub does not choose one for you; name it in the configuration as provider/model`;
 }
@@ -168,11 +178,23 @@ export function resolveModel(
             refusal: `the "${account}" account no longer has a credential - it had one when this role was resolved, and does not now`,
           };
         }
-        const response = await fetchImplementation(ENDPOINT[provider], {
-          method: "POST",
-          headers: { "content-type": "application/json", ...AUTHORISATION[provider](credential) },
-          body: JSON.stringify(body),
-        });
+        let response: Awaited<ReturnType<typeof fetchImplementation>>;
+        try {
+          response = await fetchImplementation(ENDPOINT[provider], {
+            method: "POST",
+            headers: { "content-type": "application/json", ...AUTHORISATION[provider](credential) },
+            body: JSON.stringify(body),
+          });
+        } catch {
+          // A CONNECTION FAILURE IS AN ANSWER, and it belongs inside the union
+          // rather than escaping past it as a rejection: a caller that handles
+          // every case of ProviderAnswer has handled this one too. The thrown
+          // error itself is dropped whole. It is the one object in this module
+          // nobody designed with "the request is the user's" in mind - undici
+          // hangs a cause chain and a stack off it, and a request body is
+          // reachable from a stack in a way nobody audits.
+          return { ok: false, refusal: unreachableRefusal(provider, model) };
+        }
         if (!response.ok) return { ok: false, refusal: upstreamRefusal(provider, model, response.status) };
         return { ok: true, body: await response.json() };
       },

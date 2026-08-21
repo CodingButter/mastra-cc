@@ -56,15 +56,54 @@ describe("the subconscious keeps a stripped view", () => {
     if (partial.on) return;
     expect(partial.reason).toContain("vector");
     expect(partial.reason).not.toContain("storage");
+    // And it says it in English. Review found the previous wording telling this
+    // very operator - the one who wired everything but the index - that the hub
+    // "was given neither", which is both wrong and the most likely real case.
+    expect(partial.reason).toContain("it needs vector, and this hub was given no such thing");
+    expect(partial.reason).not.toContain("neither");
   });
 
-  it("with everything it needs, the subconscious is on and is a real one", () => {
-    const state = bootSubconscious({ storage: {}, vector: {}, embedder: {} });
+  it("the parts the operator supplied are what the memory holds - not a class constructed with nothing", () => {
+    // The trap this test exists for, and review found the code in it: check the
+    // three parts, then call `new Subconscious()` with none of them. Both the
+    // constructor name and the resolved config are true of a Subconscious built
+    // out of thin air, so asserting them proves the DEPENDENCY ships a class and
+    // proves nothing about this hub. The parts are therefore marked, and looked
+    // for on the other side.
+    const storage = { marked: "the-store" };
+    const vector = { marked: "the-index" };
+    const embedder = { marked: "the-embedder" };
+    const state = bootSubconscious({ storage, vector, embedder });
     expect(state.on).toBe(true);
     if (!state.on) return;
-    // Not a stand-in: the published Subconscious, resolving its own config.
-    expect(state.subconscious.constructor.name).toBe("Subconscious");
-    expect(state.subconscious.resolved.observation.map((agent) => agent.name)).toContain("capture");
+
+    const held = state.memory as unknown as Record<string, unknown>;
+    expect(held["vector"], "the vector index this hub was given is not the one the memory holds").toBe(vector);
+    expect(held["embedder"], "the embedder this hub was given is not the one the memory holds").toBe(embedder);
+    // The subconscious instance reaches the memory's own configuration rather
+    // than being constructed beside it and dropped.
+    const configured = (held["threadConfig"] as { observationalMemory?: { experimental_subconscious?: unknown } })
+      .observationalMemory?.experimental_subconscious;
+    expect(configured, "the subconscious was built and then not given to the memory").toBe(state.subconscious);
+  });
+
+  it("a memory that will not take a subconscious turns it OFF, in the library's own words", () => {
+    // The gate is @mastra/memory's, not ours: it refuses a subconscious with no
+    // vector index. Proving the hub RELAYS that refusal is what proves the hub
+    // is asking the library rather than deciding for itself - the exact
+    // difference between wiring and a presence check.
+    // `null` is the case that reaches the library: it is present, so this
+    // module's own missing-part check waves it through, and @mastra/memory is
+    // what refuses. A hub that decided for itself would answer this ON.
+    const state = bootSubconscious({ storage: {}, vector: null, embedder: {} });
+    expect(state.on).toBe(false);
+    if (state.on) return;
+    expect(state.reason).toContain("would not take it");
+    expect(state.reason).toContain("requires a vector store");
+    // The library's own words about the operator's own configuration are carried
+    // whole. This is not a provider quoting a request back; it is the store
+    // saying what it is missing, and an operator who cannot read it cannot fix it.
+    expect(bootSubconscious({ storage: {}, vector: {}, embedder: null }).on).toBe(false);
   });
 
   it("2a: the stripped view carries exactly four fields - the set is frozen, not merely free of a name key", () => {

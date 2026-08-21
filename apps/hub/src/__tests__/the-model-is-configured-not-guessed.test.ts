@@ -177,4 +177,32 @@ describe("the model is configured, not guessed", () => {
     expect(answer.ok).toBe(false);
     expect(sent).toHaveLength(2);
   });
+
+  it("a provider that does not answer at all is refused inside the union, not thrown past it", async () => {
+    // A transport failure is not an HTTP response, so it has no status, and
+    // before this it escaped ProviderAnswer as a rejection - a caller with
+    // exhaustive handling of the union would still have crashed. The thrown
+    // object is also the one thing here nobody designed for privacy: undici
+    // hangs a cause chain and a stack off it, and the request body is reachable
+    // from a stack in a way nobody audits.
+    const REQUEST = "the account number is 4417 9812 3345";
+    const exploded = () => {
+      const error = new TypeError("fetch failed");
+      (error as { cause?: unknown }).cause = new Error(`connect ECONNREFUSED while sending ${REQUEST}`);
+      throw error;
+    };
+    const resolution = resolveModel(EVERY_ROLE, "fast", held, exploded as never);
+    expect("model" in resolution).toBe(true);
+    if (!("model" in resolution)) return;
+
+    const answer = await resolution.model.send({ prompt: REQUEST });
+    expect(answer.ok).toBe(false);
+    if (answer.ok) return;
+    expect(answer.refusal).toContain("did not answer");
+    // Neither the request nor the error's own words survive.
+    expect(answer.refusal).not.toContain(REQUEST);
+    expect(answer.refusal).not.toContain("ECONNREFUSED");
+    expect(answer.refusal).not.toContain("fetch failed");
+    expect(answer.refusal).not.toContain(FICTITIOUS);
+  });
 });
