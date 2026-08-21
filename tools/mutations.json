@@ -544,5 +544,33 @@
     "find": "      if (credential === undefined) return noGoogleAccount(log, model);\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
+  },
+  {
+    "name": "the-late-joiner-hears-silence",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "      if (sessions.size > 0) deliver({ event: \"voice_opened\" });\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-heartbeat-that-counts-as-speech",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "        if (kind === \"pong\") return;\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-voice-closed-that-is-not-the-last",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "      if (sessions.size === 0) broadcast({ event: \"voice_closed\" });\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
+  },
+  {
+    "name": "the-connection-that-is-never-hung-up",
+    "file": "apps/hub/src/lanes/lanes.ts",
+    "find": "        if (peer.awaitingPong) {\n          hangUp(peer);\n          continue;\n        }\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
   }
 ]
