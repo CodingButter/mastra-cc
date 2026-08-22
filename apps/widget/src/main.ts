@@ -1,10 +1,10 @@
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 import { app, BrowserWindow, screen, type Rectangle } from "electron";
 
 import { clickableRegions, FACE_LAYOUT } from "./layout.js";
-import { restorePlacement, snapToEdges, type Point } from "./placement.js";
+import { placementAfterMove, readStoredPlacement, writeStoredPlacement } from "./placement-store.js";
+import { restorePlacement } from "./placement.js";
 import { FACE_HEIGHT, FACE_WIDTH, faceWindowOptions } from "./window-model.js";
 
 /**
@@ -15,43 +15,14 @@ import { FACE_HEIGHT, FACE_WIDTH, faceWindowOptions } from "./window-model.js";
  * credential (pin B3) and it reaches nothing over a socket of its own.
  */
 
-function placementFile(): string {
-  return join(app.getPath("userData"), "placement.json");
-}
-
-function readStoredPlacement(): Point | undefined {
-  try {
-    const raw = JSON.parse(readFileSync(placementFile(), "utf8")) as unknown;
-    if (
-      typeof raw === "object" &&
-      raw !== null &&
-      typeof (raw as Point).x === "number" &&
-      typeof (raw as Point).y === "number"
-    ) {
-      return { x: (raw as Point).x, y: (raw as Point).y };
-    }
-    // A placement file that exists but says nothing usable is a placement the
-    // face has never had. Falling back is right; doing it silently is not.
-    console.warn("widget: placement file is unreadable, opening at default");
-  } catch {
-    // No file yet, on a first run. Not a condition worth reporting.
-  }
-  return undefined;
-}
-
-function writeStoredPlacement(position: Point): void {
-  const file = placementFile();
-  mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify(position));
-}
-
 function displayBounds(): Rectangle[] {
   return screen.getAllDisplays().map((d) => d.bounds);
 }
 
 export function createFace(): BrowserWindow {
+  const profile = app.getPath("userData");
   const restored = restorePlacement(
-    readStoredPlacement(),
+    readStoredPlacement(profile),
     { width: FACE_WIDTH, height: FACE_HEIGHT },
     displayBounds(),
   );
@@ -89,11 +60,17 @@ export function createFace(): BrowserWindow {
   face.on("moved", () => {
     const bounds = face.getBounds();
     const display = screen.getDisplayMatching(bounds).bounds;
-    const snapped = snapToEdges(bounds, display);
-    if (snapped.x !== bounds.x || snapped.y !== bounds.y) {
-      face.setBounds({ ...bounds, ...snapped });
+    const { position, moves } = placementAfterMove(bounds, display);
+    if (moves) {
+      // Which re-fires this event. The second pass finds nothing to snap and
+      // writes the same bytes again, so a snapped drag costs two writes of an
+      // identical file. That is the deliberate half of the trade: skipping the
+      // first write instead would leave the placement unrecorded if the
+      // re-fire ever failed to arrive, and an unrecorded placement is the
+      // failure decision 3 exists to prevent.
+      face.setBounds({ ...bounds, ...position });
     }
-    writeStoredPlacement(snapped);
+    writeStoredPlacement(profile, position);
   });
 
   return face;
