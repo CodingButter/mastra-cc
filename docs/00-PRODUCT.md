@@ -45,7 +45,7 @@ The desktop exposes an accessibility tree — the same structure a screen reader
 - synthesise raw input events at the X11 or `uinput` layer
 - run shell commands on the user's behalf as a substitute for interacting with an app
 
-The prototype banned `xdotool`, `wmctrl`, and `uinput` outright and never lifted the ban. Pixels exist as a **tier of last resort, addressed by window** (`08-01 12:22`, "pixels as the tier of last resort, addressed by window") — a photograph is something you take *of a named window you already resolved semantically*, not a way to find things.
+The prototype banned `xdotool`, `wmctrl`, and `uinput` outright and never lifted the ban. This repository carried that ban until 2026-08-17, when [ADR-0046](02-DECISIONS/0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md) replaced it with containment: raw input is the most restricted operation class, off by default, never self-granted and never reachable as a fallback — and no such class has been built yet. Pixels exist as a **tier of last resort, addressed by window** (`08-01 12:22`, "pixels as the tier of last resort, addressed by window") — a photograph is something you take *of a named window you already resolved semantically*, not a way to find things.
 
 ### Why this is the interesting bet
 

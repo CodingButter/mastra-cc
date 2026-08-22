@@ -3,7 +3,7 @@ name: ci
 on:
   push:
     # feat/** is included so the freeze gate's red/green proof can be observed
-    # in CI on the working branch, as docs/07-ROADMAP.md:95-99 requires.
+    # in CI on the working branch, as docs/07-ROADMAP.md:96-98 requires.
     branches: [master, "feat/**"]
   pull_request:
 

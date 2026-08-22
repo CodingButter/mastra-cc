@@ -25,7 +25,7 @@ What 1.0.0 contains, and why it is this small:
 
 - **Exactly two methods** — `queryElements` and `attestElement`. One cannot
   exercise shared types; twenty is a week of work before anything is proven
-  (`docs/07-ROADMAP.md:84`).
+  (`docs/07-ROADMAP.md:90`).
 - **`semanticElement.id` matches `^(el|win|app)-[0-9a-f]{12}$`** and is never
   reused. Identity is hashed to twelve hex digits behind a kind prefix; what it
   is hashed *from* is the backend's business (ADR-0029 for ownership,
@@ -65,7 +65,7 @@ What 1.0.0 contains, and why it is this small:
 
 - Freeze-gate mechanics and the 23-revision churn table: ADR-0002,
   `docs/02-DECISIONS/0009-generated-code-is-build-output.md`.
-- The two-method floor: `docs/07-ROADMAP.md:84`.
+- The two-method floor: `docs/07-ROADMAP.md:90`.
 - Neutral vocabulary and the enum-value clause: ADR-0018, clauses 1, 3 and 6.
 - The gate going red on a one-character edit and green on the revert: recorded
   in this phase's commit message with both CI run identifiers, and in

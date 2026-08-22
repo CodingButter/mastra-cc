@@ -23,7 +23,12 @@ Wired: b1, b10, b11, b2, b5, b8
   that declares nothing.
 - **B5** — no second socket implementation outside `packages/transport` (the one
   daemon client, ADR-0003). The daemon serves the socket, so it is not scanned.
-- **B8** — no `xdotool`, `wmctrl`, or `uinput` anywhere (ADR-0004:32).
+- **B8** — `xdotool`, `wmctrl` and `uinput` appear only inside the raw-input
+  operation class, and nowhere else (ADR-0046:46, which struck ADR-0004's
+  outright ban at `0004:34` and replaced it with containment). The contained
+  set is empty today because no such class exists yet, so the pin behaves as
+  the ban did and says so in its own report; the milestone that builds the
+  class adds its path in a diff.
 - **B10** — no platform vocabulary on the wire (ADR-0018): a deny-list matched
   against every field name, enum value, method name, description, role and
   state in `protocol/schema.json`. The one exemption is any subtree under a

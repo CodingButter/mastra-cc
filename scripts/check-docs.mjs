@@ -7,7 +7,7 @@
  * ships no Python and a gate should not be the one thing that drags a second
  * runtime into CI (ADR-0030).
  *
- * Five checks — `index` reports both a missing entry and a gap or duplicate in
+ * Six checks — `index` reports both a missing entry and a gap or duplicate in
  * the ADR numbering, and each was proven to fail on purpose (the first three
  * before the Python original was deleted, `proofs` when issue #16 closed,
  * `citations` against the four sites M3's review found by hand):
@@ -18,6 +18,8 @@
  *   proofs    every artifact in docs/proofs/ is listed in the proofs index
  *   citations a document naming a JSON file and a name beside it must not
  *             cite a name that file has never contained
+ *   lines     a document citing a line in another document must land on a line
+ *             that carries something - not a blank, a heading or a table rule
  *
  * Known limits, both of which fail loudly rather than passing vacuously: a link
  * target containing a closing parenthesis is truncated at it, and an unclosed
@@ -307,6 +309,130 @@ function checkCitations(files) {
   return problems;
 }
 
+// A citation into a document by line, in the two forms this corpus uses:
+// `docs/05-TEST-STRATEGY.md:34` and the ADR shorthand `0004:45` (also written
+// `ADR-0046:46`). Matched inside backticks or bare, because both occur.
+const CITED_LINE = /([A-Za-z0-9_./-]+\.md):(\d+)/g;
+const CITED_ADR_LINE = /(?:ADR-)?\b(\d{4}):(\d+)\b/g;
+const DECISIONS = join(ROOT, 'docs', '02-DECISIONS');
+
+// `0004` names an ADR by number; the filename carries a slug nobody cites. A
+// timestamp like `10:31` and a date like `2026-08` both look like the pattern,
+// so resolution is by EXISTENCE - a four-digit number with no ADR behind it is
+// not a citation, and this check says nothing about it.
+function adrByNumber(number) {
+  try {
+    const match = readdirSync(DECISIONS).find((f) => f.startsWith(`${number}-`) && f.endsWith('.md'));
+    return match ? join(DECISIONS, match) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A document citing a LINE in another document must land on something.
+ *
+ * The citation check above catches a name a file has never carried. It cannot
+ * catch this: a line citation is a number, every number is a real line, and a
+ * claim that moved leaves the citation pointing confidently at whatever now
+ * occupies its old address. ADR-0046 struck a clause in ADR-0004 and inserted
+ * two lines above it in the same commit, which silently moved six citations
+ * off their claims - three inside ADR-0046 itself, one in the B8 pin's header,
+ * one in its violation message, one in the pins README.
+ *
+ * Judging whether a line still bears the claim requires reading prose, which
+ * this check will not pretend to do. What it can say without judgement: a
+ * BLANK line, a bare HEADING and a table RULE carry no claim at all, so a
+ * citation landing on one has certainly drifted. That is deliberately the weak
+ * half of the problem - and on the day it was written it found every one of
+ * the seven live sites in this repository.
+ */
+function citingSources(dir, found = [], seen = new Set()) {
+  const real = realpathSync(dir);
+  if (seen.has(real)) return found;
+  seen.add(real);
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    let isDir;
+    try {
+      isDir = statSync(path).isDirectory();
+    } catch {
+      continue;
+    }
+    if (isDir) {
+      if (!SKIP_DIRS.has(entry.name)) citingSources(path, found, seen);
+      // A test's fixtures are citations into a scratch tree that exists for
+      // milliseconds, not claims about this repository - and a check that
+      // reddens on its own test data is one people delete. The pins do the
+      // same thing by excluding `tools/pins/__tests__`.
+    } else if (/\.(mjs|cjs|js|ts|tsx|sh|yml|yaml)$/.test(entry.name) && !path.includes(`${sep}__tests__${sep}`)) {
+      found.push(path);
+    }
+  }
+  return found.sort();
+}
+
+function checkLineCitations(files) {
+  const problems = [];
+  const lineCache = new Map();
+  let examined = 0;
+
+  const linesOf = (target) => {
+    if (!lineCache.has(target)) {
+      try {
+        lineCache.set(target, readFileSync(target, 'utf8').split('\n'));
+      } catch {
+        lineCache.set(target, null);
+      }
+    }
+    return lineCache.get(target);
+  };
+
+  for (const path of [...files, ...citingSources(ROOT)]) {
+    const body = readFileSync(path, 'utf8').replace(FENCE, '');
+    body.split('\n').forEach((line, index) => {
+      const cited = [
+        ...[...line.matchAll(CITED_LINE)].map((m) => ({ m, target: [join(ROOT, m[1]), join(dirname(path), m[1]), join(ROOT, 'docs', m[1])].map((c) => resolve(c)).find((c) => linesOf(c)) })),
+        ...[...line.matchAll(CITED_ADR_LINE)].map((m) => ({ m, target: adrByNumber(m[1]) })),
+      ];
+      for (const { m: match, target } of cited) {
+        // A citation into a file that is not there is a dead link, and
+        // checkLinks owns that report. Saying it twice teaches people to skim.
+        if (!target) continue;
+        const lines = linesOf(target);
+        const at = lines[Number(match[2]) - 1];
+        // Past the end of the file is out of this check's range in both senses.
+        if (at === undefined) continue;
+        examined += 1;
+
+        const text = at.trim();
+        let empty = null;
+        if (text === '') empty = 'a blank line';
+        else if (/^#+\s/.test(text)) empty = `a heading, "${text.replace(/^#+\s*/, '').slice(0, 60)}"`;
+        else if (/^\|[-\s|:]*\|$/.test(text)) empty = 'a table rule';
+        // Struck text is text this repository explicitly retired. A live
+        // citation into it is stale - UNLESS the citing line is the one doing
+        // the striking, which has to quote the clause to retire it. Same tail
+        // the name-citation check has to avoid eating, same exemption.
+        else if (text.includes('~~') && !/struck|strik|supersed|corrected|replaced|no longer|used to/i.test(line)) {
+          empty = 'a clause this repository has struck';
+        }
+        // One line, deletable, carrying the whole judgement - so the mutation
+        // table can take it away and watch this check stop being one.
+        if (empty) problems.push(`${relative(ROOT, path)}:${index + 1}: cites \`${match[0]}\`, which is ${empty}`);
+      }
+    });
+  }
+
+  // Vacuity, the same doctrine as every other gate here: a corpus that stopped
+  // citing lines and a check that stopped resolving them look identical from
+  // the outside, so silence has to be loud.
+  if (examined === 0) {
+    problems.push('citations: no document cites a line in another document - the check examined nothing, which is itself wrong');
+  }
+  return problems;
+}
+
 function checkCoverage() {
   const required = [
     'docs/00-PRODUCT.md',
@@ -333,7 +459,15 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-const problems = [...broken, ...checkCoverage(), ...checkLinks(files), ...checkAdrIndex(), ...checkProofsIndex(), ...checkCitations(files)];
+const problems = [
+  ...broken,
+  ...checkCoverage(),
+  ...checkLinks(files),
+  ...checkAdrIndex(),
+  ...checkProofsIndex(),
+  ...checkCitations(files),
+  ...checkLineCitations(files),
+];
 if (problems.length > 0) {
   console.log(`check-docs: ${problems.length} problem(s) across ${files.length} files\n`);
   for (const p of problems) console.log(`  ${p}`);

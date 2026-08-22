@@ -3,7 +3,7 @@ import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Shared plumbing for the source-level pins. The four rules of
-// docs/05-TEST-STRATEGY.md:36-38 are enforced here and in each pin:
+// docs/05-TEST-STRATEGY.md:40-46 are enforced here and in each pin:
 // - every pin asserts its file set is non-empty (in the pin, so the assertion
 //   is individually mutable by tools/mutations.mjs);
 // - comments are stripped before matching, so a comment naming a banned thing

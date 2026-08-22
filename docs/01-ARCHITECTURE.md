@@ -145,7 +145,7 @@ Each boundary below is a rule, a reason, and a test. If it has no test, it is a 
 | B5 | Every client reaches the daemon through `packages/transport` | source-level test: no second socket implementation anywhere |
 | B6 | The protocol schema changes only through a reviewed gate | CI job (ADR-0002) |
 | B7 | Generated bindings are reproducible from the schema | CI regenerates and diffs |
-| B8 | No `xdotool`, `wmctrl`, or `uinput` anywhere | source-level test over the whole tree |
+| B8 | `xdotool`, `wmctrl` and `uinput` only inside the raw-input operation class | source-level test over the whole tree (ADR-0046) |
 | B9 | No transcriber in any client | source-level test (ADR-0005) |
 | B10 | No platform-specific vocabulary in `protocol/schema.json` | source-level test over the schema (ADR-0018) |
 | B11 | No effect-class operation relies solely on post-hoc enforcement | source-level test over the daemon's dispatch table |
