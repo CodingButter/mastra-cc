@@ -748,5 +748,40 @@
     "replace": "    .split(/(?<=\\.)\\s+/)",
     "cwd": "tools",
     "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-shape-that-has-quietly-become-the-whole-rectangle",
+    "file": "apps/widget/src/layout.ts",
+    "find": " - dy * dy",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/clicks-land-only-on-the-face.test.ts"
+  },
+  {
+    "name": "the-renderer-that-paints-where-the-shape-is-not",
+    "file": "apps/widget/src/layout.ts",
+    "find": "    `#orb { position: absolute; left: ${orb.cx - orb.r}px; top: ${orb.cy - orb.r}px;`,",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/clicks-land-only-on-the-face.test.ts"
+  },
+  {
+    "name": "the-record-that-was-never-written",
+    "file": "scripts/check-docs.mjs",
+    "find": "          problems.push(`${relative(ROOT, path)}:${index + 1}: names \\`${match[0]}\\`, and there is no such record in docs/02-DECISIONS`);",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-named-record-check-that-passes-on-an-empty-verdict",
+    "file": "scripts/check-docs.mjs",
+    "find": "    problems.push('citations: no document names a record by number - the check judged nothing, which is itself wrong');",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-named-record-check-that-reads-documents-but-not-the-code-naming-them",
+    "file": "scripts/check-docs.mjs",
+    "find": ".concat(citingSources(ROOT))",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
   }
 ]

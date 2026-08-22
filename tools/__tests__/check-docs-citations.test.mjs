@@ -74,7 +74,7 @@ function scratchRepo() {
 function record(body) {
   const trueCitation =
     "\nThe wire's capabilities are `capabilityNames` in `protocol/schema.json`," +
-    " and the fact is at `docs/06-OPERATIONS.md:3`.\n";
+    " and the fact is at `docs/06-OPERATIONS.md:3`, as ADR-0001 says.\n";
   writeFileSync(join(root, "docs", "02-DECISIONS", "0001-a-record.md"), `${body}\n${trueCitation}`);
 }
 
@@ -192,7 +192,7 @@ describe("the citation check", () => {
     // state the false citation on one line and say it is false on the next.
     // Row-scoping BOTH shapes would redden every prose correction in the tree.
     record(
-      "# 0001\n\nADR-0008 claimed the classes are enumerated in `protocol/schema.json`\n" +
+      "# 0001\n\nAn earlier record claimed the classes are enumerated in `protocol/schema.json`\n" +
         "under `enums.operationClass`. No schema here has ever carried one, and the\n" +
         "citation was corrected 2026-08-21.\n",
     );
@@ -402,5 +402,101 @@ describe("the line-citation check", () => {
     const r = run();
     expect(r.status).toBe(1);
     expect(r.stdout).toContain("no document cites a line");
+  });
+});
+
+describe("the named-record check", () => {
+  // WHY IT EXISTS. Segment 1 shipped two files citing `ADR-0051` by name, in
+  // prose, as the record explaining a measured condition. There was no ADR-0051.
+  // Every check in this file passed: the dead-link check saw no link, the ADR
+  // index check saw a contiguous 0001-0050 with nothing missing, the citation
+  // checks judge JSON keys and line numbers and neither one was involved. A
+  // human reviewer found it by reading.
+  //
+  // The gap is precise. A citation written as a LINK is checked, and a citation
+  // written as a LINE is checked, but a record named in running prose - the
+  // form an author reaches for first - was invisible.
+
+  function decisions(entries) {
+    // entries: [number, filename] pairs that exist on disk and in the index.
+    const lines = ["# Decisions", ""];
+    for (const [n, file] of entries) {
+      lines.push(`- [${String(n).padStart(4, "0")}](${file})`);
+    }
+    writeFileSync(join(root, "docs", "02-DECISIONS", "README.md"), `${lines.join("\n")}\n`);
+  }
+
+  it("passes when a document names a record that exists", () => {
+    record("# 0001\n\nThe reason is recorded in ADR-0001.\n");
+    expect(run().status).toBe(0);
+  });
+
+  it("reds when a document names a record that does not exist", () => {
+    record("# 0001\n\nThe measured condition is recorded in ADR-0051.\n");
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("ADR-0051");
+    expect(r.stdout).toContain("no such record");
+  });
+
+  it("names the file and line the dead reference is on", () => {
+    // A report that says only "ADR-0051 does not exist" sends the reader
+    // grepping. The thirteenth finding of this class was that an error naming
+    // the block instead of the row is a report nobody can follow.
+    // Line 1 is the heading, 2 blank, 3 the filler line, 4 blank, 5 the
+    // reference. Counted wrong on the first write, which is why the assertion
+    // pins the number rather than the sentence.
+    record("# 0001\n\nA line.\n\nThe condition is recorded in ADR-0051.\n");
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("docs/02-DECISIONS/0001-a-record.md:5");
+  });
+
+  it("reads the source files that name records, not only the documents", () => {
+    // Both live sites were in `tools/proofs/window-model.mjs` - a comment and a
+    // measurement label. Markdown-only walking would have called that clean,
+    // which is exactly what the line-citation check learned the hard way.
+    mkdirSync(join(root, "tools"), { recursive: true });
+    writeFileSync(
+      join(root, "tools", "a-harness.mjs"),
+      "// Both halves are reported. ADR-0051 records why.\nexport const harness = true;\n",
+    );
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("tools/a-harness.mjs:1");
+    expect(r.stdout).toContain("ADR-0051");
+  });
+
+  it("says nothing about a record named inside a resolvable link", () => {
+    // `[ADR-0002](0002-another.md)` is the dead-link check's business. Judging
+    // it here would double-report the same defect in two voices.
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "0002-another.md"),
+      "# 0002\n\n**A rule.**\n",
+    );
+    decisions([[1, "0001-a-record.md"], [2, "0002-another.md"]]);
+    record("# 0001\n\nSee [ADR-0002](0002-another.md).\n");
+    expect(run().status).toBe(0);
+  });
+
+  it("judges the number, not the four digits next to it", () => {
+    // `M4 segment 1` and `PR #228` and `0004:45` are not record names. A check
+    // that reddens on those is one people delete.
+    record("# 0001\n\nM4 segment 1, PR #228, and the rule at `0001:3`.\n");
+    expect(run().status).toBe(0);
+  });
+
+  it("refuses to pass when it judged no named record at all", () => {
+    // Same vacuity doctrine as the two checks above it. A corpus that stopped
+    // naming records in prose, or a walker that stopped reaching them, must be
+    // loud rather than green.
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "0001-a-record.md"),
+      "# 0001\n\nThe capabilities are `capabilityNames` in `protocol/schema.json`," +
+        " and the fact is at `docs/06-OPERATIONS.md:3`.\n",
+    );
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("no document names a record");
   });
 });

@@ -7,7 +7,7 @@
  * ships no Python and a gate should not be the one thing that drags a second
  * runtime into CI (ADR-0030).
  *
- * Six checks — `index` reports both a missing entry and a gap or duplicate in
+ * Seven checks — `index` reports both a missing entry and a gap or duplicate in
  * the ADR numbering, and each was proven to fail on purpose (the first three
  * before the Python original was deleted, `proofs` when issue #16 closed,
  * `citations` against the four sites M3's review found by hand):
@@ -20,6 +20,8 @@
  *             cite a name that file has never contained
  *   lines     a document citing a line in another document must land on a line
  *             that carries something - not a blank, a heading or a table rule
+ *   records   a decision named in prose must be a decision that exists; the
+ *             link and index checks are both blind to a record never written
  *
  * Known limits, both of which fail loudly rather than passing vacuously: a link
  * target containing a closing parenthesis is truncated at it, and an unclosed
@@ -433,6 +435,62 @@ function checkLineCitations(files) {
   return problems;
 }
 
+// A record named in running prose: `ADR-0051`. Not `0051` bare - four digits
+// alone are a year, a port, a byte count, and judging them would make this
+// check noise. The `ADR-` prefix is what makes the reference unambiguous, and
+// it is the form every live site used.
+const NAMED_RECORD = /\bADR-(\d{4})\b/g;
+// A named record inside a markdown link is the dead-link check's business.
+const LINKED = /\[[^\]]*\]\([^)]*\)/g;
+
+/**
+ * A record named in prose must be a record that exists.
+ *
+ * The two checks above judge citations that point INTO a file - a key, a line.
+ * This one judges the reference that points AT a file without linking to it,
+ * which is the form an author reaches for first and the only form nothing here
+ * could see. M4 segment 1 shipped two files explaining a measured condition by
+ * saying "ADR-0051 records why" while `docs/02-DECISIONS` ended at 0050. The
+ * dead-link check saw no link; the index check saw a contiguous run with
+ * nothing missing or unlisted, because an ADR that was never written is absent
+ * from both sides of the comparison it makes. A human reviewer found it by
+ * reading, which is the thing this file exists to stop being necessary.
+ */
+function checkNamedRecords(files) {
+  const problems = [];
+  let examined = 0;
+
+  // This file is left out of its own corpus, and the reason is not squeamish-
+  // ness: the test suite runs this gate against scratch trees holding two ADRs,
+  // so the records these comments legitimately name are absent there and every
+  // case would red for a reason no case is about. The cost is real and is
+  // stated rather than hidden - the six records named in the comments above are
+  // judged by nothing, and a seventh added here would be judged by nothing too.
+  const self = resolve(fileURLToPath(import.meta.url));
+  const corpus = files.concat(citingSources(ROOT));
+
+  for (const path of corpus) {
+    if (resolve(path) === self) continue;
+    const body = readFileSync(path, 'utf8').replace(FENCE, '');
+    body.split('\n').forEach((line, index) => {
+      for (const match of [...line.replace(LINKED, '').matchAll(NAMED_RECORD)]) {
+        examined += 1;
+        // One line, deletable, carrying the whole judgement.
+        if (!adrByNumber(match[1])) {
+          problems.push(`${relative(ROOT, path)}:${index + 1}: names \`${match[0]}\`, and there is no such record in docs/02-DECISIONS`);
+        }
+      }
+    });
+  }
+
+  // Vacuity: a corpus that stopped naming records and a walker that stopped
+  // reaching them are indistinguishable from the outside.
+  if (examined === 0) {
+    problems.push('citations: no document names a record by number - the check judged nothing, which is itself wrong');
+  }
+  return problems;
+}
+
 function checkCoverage() {
   const required = [
     'docs/00-PRODUCT.md',
@@ -467,6 +525,7 @@ const problems = [
   ...checkProofsIndex(),
   ...checkCitations(files),
   ...checkLineCitations(files),
+  ...checkNamedRecords(files),
 ];
 if (problems.length > 0) {
   console.log(`check-docs: ${problems.length} problem(s) across ${files.length} files\n`);
