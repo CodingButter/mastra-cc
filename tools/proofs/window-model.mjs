@@ -15,17 +15,25 @@
 //   because both would score a box on something other than its subject;
 // - the artifact states its own hardware, date and limits.
 //
-// Exit statuses, distinct so a failure says which failure it was:
-//   2  --no-live, or no desk on the requested display
+// Exit statuses, distinct so a failure says which failure it was. The list is
+// asserted against the code by this harness's own tests, because it drifted
+// once already: it claimed 6 meant a single-headed desk while the code used 6
+// for measured failures and 7 for the desk, so a red artifact and a bad desk
+// were being read as each other.
+//   0  every measurement passed (a `measured` verdict is not a failure)
+//   2  refused before measuring - no --live, no desk on the display, or the
+//      widget is not built
 //   3  the desk is dirty - windows present that this harness did not open
-//   4  a measurement is missing or unreadable
-//   5  the widget never appeared
-//   6  the desk is not two-headed
+//   4  the artifact would be partial or would overclaim, so nothing is written
+//   5  the widget never put a window on the desk, or never came back after a
+//      restart
+//   6  measurements were taken and at least one FAILED
+//   7  the desk is not two-headed, so the monitor box would score on nothing
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { release, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 /** The face's width, which is how its window is told apart from the tray's. */
 const FACE_SIZE = 220;
@@ -35,28 +43,71 @@ const ROOT = join(HERE, "..", "..");
 const DEFAULT_OUT = join(ROOT, "docs", "proofs", "what-the-face-does-on-a-real-desk.md");
 
 /**
- * The CLAIM this artifact must never make: that the face beats a full-screen
- * window, full stop. It does not - it loses while that window holds focus, and
- * returns when focus leaves.
+ * The CLAIM this artifact must never make: that the face stays on top of a
+ * rival window unconditionally. It does not - it loses while a full-screen
+ * window holds focus, and returns when focus leaves.
  *
- * Written as a shape rather than a sentence. The first version matched only the
- * roadmap's exact phrasing, and "the face survives a full-screen window" - the
- * same claim in different words - passed it. A guard that matches the sample
- * instead of the class is a guard the next wording walks around.
+ * TWO REWRITES, BOTH FOR THE SAME REASON. The first version matched the
+ * roadmap's exact phrasing, so the same claim in other words walked past it.
+ * The second required the literal token `full-screen`, so "the face is never
+ * buried by any window" - a claim strictly BROADER than the one being guarded
+ * against - walked past it too. The class is not "sentences about full-screen
+ * windows". It is "sentences asserting the face wins, with no condition".
  *
- * The escape is the focus condition: any sentence that names focus is stating
- * the condition rather than hiding it.
+ * So the shape is: a survival verb, plus an unconditional quantifier or a
+ * rival window, and no condition stated. Matching the class means the rival
+ * does not have to be named at all - "never buried" says it about everything.
  */
-export const OVERCLAIM =
-  /\b(?:surviv\w*|stays? (?:on top|above|visible)|remains? (?:on top|above|visible)|unaffected|(?:does not|cannot|never|doesn't) (?:bur\w+|cover|hide))\b[^.|]*\bfull-?screen\b|\bfull-?screen\b[^.|]*\b(?:surviv\w*|(?:does not|cannot|never|doesn't) (?:bur\w+|cover|hide))\b/i;
+const SURVIVAL =
+  /\b(?:surviv\w*|stays? (?:on top|above|visible)|remains? (?:on top|above|visible)|unaffected|outranks?|wins? (?:against|over)|is (?:always )?(?:on top|above)|(?:does not|do not|cannot|can't|never|doesn't|is never|are never) (?:get )?(?:bur\w+|cover\w*|hidden|hide|obscur\w*))\b/i;
+
+/** Says it about EVERYTHING, which is the strongest form of the claim. */
+const UNCONDITIONAL =
+  /\b(?:any|every|all|everything|anything|no|nothing|regardless|whatever|always)\b/i;
 
 /**
- * Does this sentence state box 3's condition rather than hide it? A sentence
- * naming focus is disclosing the very thing the overclaim omits.
+ * The same claim with the negation moved off the verb and onto the subject:
+ * "no window can cover the face" asserts exactly what "the face is never
+ * covered" does, and a verb-shaped check reads the verb as positive and lets
+ * it through. Whoever writes the next one will not have read this file.
+ */
+const NEGATED_SUBJECT = /\b(?:no|nothing|never|none)\b[^.|]*\b(?:bur\w+|cover\w*|hide|hides|obscur\w*|occlude\w*)\b/i;
+
+/** Names the rival the box is about. */
+const RIVAL = /\bfull-?screen\b/i;
+
+/**
+ * Does this sentence state box 3's condition rather than hide it?
+ *
+ * Naming focus is not enough on its own: "survives a full-screen window
+ * regardless of focus" names focus in order to DENY the condition. So a
+ * sentence that carries an unconditional quantifier is not disclosing
+ * anything, whatever tokens it also contains.
  */
 export function statesTheCondition(sentence) {
-  return /\bfocus(?:ed|es|sing)?\b/i.test(sentence);
+  if (!/\bfocus(?:ed|es|sing)?\b/i.test(sentence)) return false;
+  // "regardless of focus" and "whatever has focus" name focus in order to
+  // dismiss it. Those are the denials, and they are a closed set of words -
+  // unlike a bare `no`, which is usually part of the condition itself, as in
+  // "with no focused full-screen window, the face stays on top". That sentence
+  // is true and is one of this artifact's own rows.
+  return !/\b(?:regardless|whatever|no matter|irrespective|either way)\b/i.test(sentence);
 }
+
+/**
+ * Is this an unconditional survival claim? Exported as a predicate rather than
+ * a bare regex because the judgement is three tests and their combination, and
+ * a caller reaching for the regex alone would get the version that let the
+ * broader claim through.
+ */
+export function isOverclaim(sentence) {
+  if (statesTheCondition(sentence)) return false;
+  if (NEGATED_SUBJECT.test(sentence)) return true;
+  if (!SURVIVAL.test(sentence)) return false;
+  return UNCONDITIONAL.test(sentence) || RIVAL.test(sentence);
+}
+
+
 
 export function x(display, argv) {
   const child = spawnSync(argv[0], argv.slice(1), {
@@ -261,10 +312,10 @@ ${rows}
   // over: a table row is a standalone record.
   const overclaim = artifact
     .split(/(?<=\.)\s+|\n/)
-    .find((claim) => OVERCLAIM.test(claim) && !statesTheCondition(claim));
+    .find((claim) => isOverclaim(claim));
   if (overclaim !== undefined) {
     throw new Error(
-      `window-model: the artifact would overclaim - "${overclaim.replace(/\s+/g, " ").trim()}" says the face beats a full-screen window without the focus condition that makes it true`,
+      `window-model: the artifact would overclaim - "${overclaim.replace(/\s+/g, " ").trim()}" asserts the face wins without the focus condition that makes it true`,
     );
   }
 
@@ -302,8 +353,9 @@ function hostName() {
  * it, and because the restart half of box 4 needs a process that can actually
  * be restarted.
  */
-export function measure(display, outputs) {
+export async function measure(display, outputs) {
   const rows = [];
+  const store = await widgetPlacementStore();
   const [, right] = outputs;
 
   // A fresh profile: a placement left behind by an earlier run would make the
@@ -463,8 +515,19 @@ export function measure(display, outputs) {
   // measures the two things a machine can honestly witness: that the face ends
   // up on the second output at a position the X server confirms, and that the
   // position survives a restart. The drag gesture itself is the human item.
-  const landing = { x: right.x + 60, y: right.y + 120 };
-  writeFileSync(join(profile, "placement.json"), JSON.stringify(landing));
+  //
+  // The placement the restart restores from is written by the WIDGET'S OWN
+  // writer, not by this file. Hand-writing the placement here measured the
+  // restore path twice and never once executed the write: a widget that wrote
+  // nothing on a drag, or wrote something it could not read back, passed both
+  // rows of this box. `placementAfterMove` and `writeStoredPlacement` are the
+  // same functions the `moved` handler calls, so what lands on disk is what a
+  // release produces.
+  const landing = store.placementAfterMove(
+    { x: right.x + 60, y: right.y + 120, width: FACE_SIZE, height: FACE_SIZE },
+    right,
+  ).position;
+  store.writeStoredPlacement(profile, landing);
 
   // Restart so the widget restores the placement. This is also the half of the
   // box that can pass on a lie: a widget that persists nothing opens at its
@@ -535,6 +598,21 @@ export function measure(display, outputs) {
 
 
 const ELECTRON = join(ROOT, "apps", "widget", "node_modules", "electron", "dist", "electron");
+const WIDGET_DIST = join(ROOT, "apps", "widget", "dist");
+const WIDGET_BUNDLE = join(WIDGET_DIST, "main.mjs");
+
+/**
+ * The widget's own placement writer, loaded from the bundle that ships.
+ *
+ * Loaded rather than imported at the top of the file so that the refusals
+ * above - no --live, no desk - still work in a checkout that has never been
+ * built. It is deliberately the BUILT module and not `src/`: the file this
+ * harness restarts the widget against has to be written by the same code the
+ * user's widget runs, or box 4 measures a promise nobody keeps.
+ */
+async function widgetPlacementStore() {
+  return import(pathToFileURL(join(WIDGET_DIST, "placement-store.mjs")).href);
+}
 
 /**
  * Start the widget on the desk and wait for its window to appear in the window
@@ -705,16 +783,39 @@ export function faceWindows(display) {
   );
 }
 
-export function main(argv, out = DEFAULT_OUT) {
+/**
+ * Why a run stops before it starts when the widget has not been built.
+ *
+ * An unbuilt widget is not a widget defect and must not be reported as one.
+ * Without this, the harness spends its whole thirty-second appearance budget
+ * waiting for a window that was never going to open, and then says "the widget
+ * never put a window on the desk" with status 5 - a sentence that reads as a
+ * finding about the face rather than about the checkout.
+ *
+ * Returns null when there is nothing to refuse.
+ */
+export function buildRefusal(bundle) {
+  if (existsSync(bundle)) return null;
+  return `the widget is not built - ${bundle} does not exist. Build it with: pnpm --filter @mastra-cc/widget build`;
+}
+
+export async function main(argv, out = DEFAULT_OUT) {
   if (!argv.includes("--live")) {
     console.error("window-model: refusing to write without --live (docs/05-TEST-STRATEGY.md:160)");
     return 2;
   }
+
   const displayArg = argv[argv.indexOf("--display") + 1];
   const display = argv.includes("--display") ? displayArg : "83";
 
   if (x(display, ["xdpyinfo"]).status !== 0) {
     console.error(`window-model: no X server on :${display} - bring one up with infra/x11-desk.sh`);
+    return 2;
+  }
+
+  const unbuilt = buildRefusal(WIDGET_BUNDLE);
+  if (unbuilt !== null) {
+    console.error(`window-model: ${unbuilt}`);
     return 2;
   }
 
@@ -732,7 +833,7 @@ export function main(argv, out = DEFAULT_OUT) {
     return 3;
   }
 
-  const measurements = measure(display, outputs);
+  const measurements = await measure(display, outputs);
   if (measurements.error !== undefined) {
     console.error(`window-model: ${measurements.error.message}`);
     return measurements.error.status;
@@ -772,5 +873,5 @@ export function main(argv, out = DEFAULT_OUT) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  process.exit(main(process.argv.slice(2)));
+  process.exit(await main(process.argv.slice(2)));
 }

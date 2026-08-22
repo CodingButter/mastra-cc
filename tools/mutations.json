@@ -797,5 +797,51 @@
     "find": "`licences: ${name}'s payload has changed since it was reviewed on ${pin.reviewed} - found ${digest}, pinned ${pin.digest}. The third-party code it credits has not been reviewed at this version`,",
     "cwd": "tools",
     "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-overclaim-check-that-only-knows-the-word-full-screen",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  if (NEGATED_SUBJECT.test(sentence)) return true;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-disclosure-escape-that-accepts-a-denial",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  return !/\\b(?:regardless|whatever|no matter|irrespective|either way)\\b/i.test(sentence);",
+    "replace": "  return true;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-harness-that-blames-the-widget-for-an-unbuilt-checkout",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  if (existsSync(bundle)) return null;",
+    "replace": "  if (true) return null;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-widget-that-remembers-nothing-it-was-told",
+    "file": "apps/widget/src/placement-store.ts",
+    "find": "  writeFileSync(file, JSON.stringify({ x: position.x, y: position.y }));",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
+  },
+  {
+    "name": "the-placement-that-records-where-the-drag-was-let-go-not-where-it-settled",
+    "file": "apps/widget/src/placement-store.ts",
+    "find": "  const snapped = snapToEdges(bounds, display);",
+    "replace": "  const snapped = { x: bounds.x, y: bounds.y };",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
+  },
+  {
+    "name": "the-reader-that-accepts-a-position-it-cannot-use",
+    "file": "apps/widget/src/placement-store.ts",
+    "find": "    Number.isFinite((raw as Point).x) &&",
+    "replace": "    true &&",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
   }
 ]

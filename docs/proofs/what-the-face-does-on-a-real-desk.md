@@ -3,7 +3,7 @@
 **Produced by:** `node tools/proofs/window-model.mjs --live --display <n>`
 **Date:** 2026-08-22
 **Host:** minibeast, kernel 7.0.0-28-generic
-**Tree:** adc580f-dirty
+**Tree:** 732114a-dirty
 
 This artifact answers "does the face hold its place on a desk without stealing
 focus" (docs/09-QUESTIONS.md). Every row below was read from the X server with

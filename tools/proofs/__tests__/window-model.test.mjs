@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { renderArtifact, verdictExit } from "../window-model.mjs";
+import { buildRefusal, isOverclaim, renderArtifact, verdictExit } from "../window-model.mjs";
 
 // The harness's own guarantees. Everything here is about the SCORING - whether
 // a verdict can be wrong while the run looks right - because that is the way a
@@ -70,6 +71,81 @@ describe("the artifact cannot overclaim", () => {
     expect(() => renderArtifact(rows, ENV)).toThrow(/overclaim/i);
   });
 
+  it("refuses the same claim made without the words full-screen", () => {
+    // The guard's first shape required the literal token `full-screen`, so the
+    // BROADER claim - never buried by anything at all - walked straight past
+    // the check written to stop the narrower one. A claim that says more than
+    // the overclaim is not a smaller problem than the overclaim.
+    for (const claim of [
+      "the face is never buried by any window",
+      "no window can cover the face",
+      "the face stays on top of everything",
+    ]) {
+      const rows = passingRows();
+      rows[2] = { ...rows[2], what: claim, verdict: "**pass**" };
+      expect(() => renderArtifact(rows, ENV), claim).toThrow(/overclaim/i);
+    }
+  });
+
+  it("judges the class, over every phrasing the claim has taken so far", () => {
+    // Each rewrite of this guard was caused by ONE new phrasing walking past
+    // it. Keeping the whole set here means the next rewrite has to keep every
+    // earlier one caught, and has to keep the honest sentences renderable -
+    // the failure mode of a widened guard is that it refuses the truth.
+    for (const claim of [
+      "the face survives a full-screen window",
+      "the face is never buried by any window",
+      "no window can cover the face",
+      "the face stays on top of everything",
+      "the face survives a full-screen window regardless of focus",
+      "the face outranks a full-screen window",
+      "the face wins against any window",
+      "the face is always on top",
+    ]) {
+      expect(isOverclaim(claim), claim).toBe(true);
+    }
+
+    for (const honest of [
+      "a focused full-screen window is above the face (the measured condition, ADR-0051)",
+      "the face is not buried by a full-screen window that does not hold focus",
+      "with no focused full-screen window, the face stays on top",
+      "the face returns to the top of the stack when focus leaves the full-screen window",
+    ]) {
+      expect(isOverclaim(honest), honest).toBe(false);
+    }
+  });
+
+  it("does not accept a claim merely for mentioning focus somewhere", () => {
+    // The disclosure escape was any sentence containing the word focus. That
+    // let a sentence deny the condition and be exempted by naming it: the
+    // exemption must belong to a sentence that STATES the condition, not to
+    // one that happens to carry the token.
+    const rows = passingRows();
+    rows[2] = {
+      ...rows[2],
+      what: "the face survives a full-screen window regardless of focus",
+      verdict: "**pass**",
+    };
+    expect(() => renderArtifact(rows, ENV)).toThrow(/overclaim/i);
+  });
+
+  it("still allows the honest forms", () => {
+    // The guard is worth nothing if it also refuses the true sentences: both
+    // of these are what the measurement actually found.
+    for (const honest of [
+      "a focused full-screen window is above the face (the measured condition, ADR-0051)",
+      "the face is not buried by a full-screen window that does not hold focus",
+      // The negation here belongs to the CONDITION, not to the claim: this is
+      // the artifact's own second box 3 row, and a guard that refuses it is a
+      // guard that refuses the truth.
+      "with no focused full-screen window, the face stays on top",
+    ]) {
+      const rows = passingRows();
+      rows[2] = { ...rows[2], what: honest, verdict: "**measured**" };
+      expect(() => renderArtifact(rows, ENV), honest).not.toThrow();
+    }
+  });
+
   it("states its limitations before its results", () => {
     const artifact = renderArtifact(passingRows(), ENV);
     expect(artifact.indexOf("Limitations")).toBeLessThan(artifact.indexOf("## Measurements"));
@@ -100,6 +176,46 @@ describe("the harness refuses rather than guessing", () => {
     const run = spawnSync("node", [SCRIPT, "--live", "--display", "99"], { encoding: "utf8" });
     expect(run.status).toBe(2);
     expect(run.stderr).toMatch(/no X server on :99/);
+  });
+
+  it("returns the status its own header documents", () => {
+    // The header drifted from the code once: it said 6 meant a single-headed
+    // desk while the code returned 6 for measured failures and 7 for the desk.
+    // Anyone reading a 6 in CI would have gone looking at the wrong thing. The
+    // header is only worth having if it is checked, so every status the header
+    // names is asserted here against what the code does with it.
+    const header = readFileSync(SCRIPT, "utf8").split("import {")[0];
+    const documented = new Set(
+      [...header.matchAll(/^\/\/\s{3}(\d)\s{2}/gm)].map((m) => Number(m[1])),
+    );
+    expect(documented).toEqual(new Set([0, 2, 3, 4, 5, 6, 7]));
+
+    // 6 is measured failures, not a desk problem.
+    const failed = passingRows();
+    failed[0] = { ...failed[0], verdict: "**FAIL**" };
+    expect(verdictExit(failed)).toBe(6);
+    expect(verdictExit(passingRows())).toBe(0);
+
+    // 2 is a refusal before measuring, on all three of its causes.
+    expect(spawnSync("node", [SCRIPT], { encoding: "utf8" }).status).toBe(2);
+    expect(
+      spawnSync("node", [SCRIPT, "--live", "--display", "99"], { encoding: "utf8" }).status,
+    ).toBe(2);
+    expect(buildRefusal(join(dirname(SCRIPT), "nope.mjs"))).not.toBeNull();
+  });
+
+  it("names an unbuilt widget as an unbuilt widget rather than as a missing window", () => {
+    // The failure this separates: without the check, an unbuilt checkout waits
+    // out the whole appearance budget and then reports "the widget never put a
+    // window on the desk" with status 5 - a sentence that reads as a defect in
+    // the face. The refusal must name the build and say how to fix it.
+    const refusal = buildRefusal(join(dirname(SCRIPT), "no-such-bundle.mjs"));
+    expect(refusal).toMatch(/not built/);
+    expect(refusal).toMatch(/pnpm --filter @mastra-cc\/widget build/);
+  });
+
+  it("says nothing about a build that is there", () => {
+    expect(buildRefusal(SCRIPT)).toBeNull();
   });
 
   // Note deliberately absent: a test that the harness never reaches for a raw
