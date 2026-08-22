@@ -927,5 +927,9 @@ is honoured, and a full-screen window that **holds focus** is promoted above it 
 the face returns to the top on its own when focus moves. `_NET_WM_WINDOW_TYPE_DOCK` does
 not change it.
 
-*Blocking:* M4's exit gate, which is why it was measured before the milestone's window
-model was built rather than after.
+*Blocking:* M4's exit gate. The burial condition was first measured during planning, on a
+probe window rather than on the face, which is why the exit gate could be written with the
+condition already known. The rows in the artifact were then taken again against the built
+face — the artifact records the tree it was measured on, and that tree contains the window
+model. Both readings agree; the planning one is not evidence for the box, and this line
+does not claim it is.
