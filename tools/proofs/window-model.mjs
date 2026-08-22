@@ -145,6 +145,29 @@ export function windowState(display, id) {
   return out;
 }
 
+/**
+ * The window's input shape, as the X server holds it (ADR-0016 decision 4).
+ *
+ * `xwininfo -shape` prints "Window shape extents: WxH+X+Y" when a shape is set
+ * and "No window shape defined" when the window is a plain rectangle. That
+ * distinction is the whole measurement: `transparent: true` produces an alpha
+ * visual and NO shape, so an unshaped window consumes every click inside its
+ * rectangle no matter what its pixels look like.
+ *
+ * Extents are a bounding box, not the shape itself - a shape's extents being
+ * smaller than the window proves the rectangle was given up, and does not by
+ * itself prove which interior pixels were kept. The artifact says so rather
+ * than letting the number imply more than it carries.
+ */
+export function windowShape(display, id) {
+  const { status, out } = x(display, ["xwininfo", "-id", id, "-shape"]);
+  if (status !== 0) return null;
+  if (/No window shape defined/.test(out)) return { shaped: false, extents: null };
+  const found = /Window shape extents:\s+(\d+x\d+[+-]\d+[+-]\d+)/.exec(out);
+  if (found === null) return null;
+  return { shaped: true, extents: found[1] };
+}
+
 export function activeWindow(display) {
   const { out } = x(display, ["xprop", "-root", "_NET_ACTIVE_WINDOW"]);
   const id = /0x[0-9a-f]+/.exec(out);
@@ -357,6 +380,34 @@ export function measure(display, outputs) {
     command: "xprop -root _NET_ACTIVE_WINDOW, cleared before the face appears",
     observed: `before: none - after: ${activeAfter ?? "none"}`,
     verdict: activeAfter === null ? "**pass**" : "**FAIL**",
+  });
+
+  // Box 5, decision 4. The claim is that clicks land on the orb, the caption
+  // and the menu, and pass through everywhere else. What a machine can witness
+  // out of band is the input SHAPE the X server holds: shaped at all, and
+  // smaller than the window. Whether a human's click on the orb produces the
+  // right gesture is the human item - this is the half that can be false
+  // silently, because a transparent window with no shape looks identical on
+  // screen and eats every click in its rectangle.
+  const shape = windowShape(display, face.id);
+  const shapeSmaller =
+    shape !== null &&
+    shape.shaped &&
+    (() => {
+      const box = /^(\d+)x(\d+)/.exec(shape.extents);
+      return box !== null && (Number(box[1]) < FACE_SIZE || Number(box[2]) < FACE_SIZE);
+    })();
+  rows.push({
+    box: 5,
+    what: "the window has an input shape smaller than its rectangle (decision 4)",
+    command: `xwininfo -id ${face.id} -shape`,
+    observed:
+      shape === null
+        ? "xwininfo returned nothing usable"
+        : shape.shaped
+          ? `shape extents ${shape.extents}, window ${FACE_SIZE}x${FACE_SIZE}`
+          : `No window shape defined - the whole ${FACE_SIZE}x${FACE_SIZE} rectangle takes clicks`,
+    verdict: shapeSmaller ? "**pass**" : "**FAIL**",
   });
 
   // Box 3, in two halves, because the roadmap's one-line reading of it is false

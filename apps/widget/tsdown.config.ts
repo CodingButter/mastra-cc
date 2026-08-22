@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/main.ts"],
+  entry: ["src/main.ts", "src/face.ts"],
   deps: { neverBundle: ["electron"] },
   hooks: {
     "build:done": () => {
