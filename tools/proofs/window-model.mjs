@@ -376,14 +376,10 @@ export async function measure(display, outputs) {
   // ghost, and the row is scored on what the window manager writes back.
   clearActiveWindow(display);
   const activeBefore = activeWindow(display);
-  if (activeBefore !== null) {
+  const uncleared = unclearedActiveWindowRefusal(activeBefore);
+  if (uncleared !== null) {
     rmSync(profile, { recursive: true, force: true });
-    return {
-      error: {
-        status: 4,
-        message: `the desk still reports an active window (${activeBefore}) after clearing it, so decision 2 cannot be measured here`,
-      },
-    };
+    return { error: uncleared };
   }
   const face = launchFace(display, profile);
   if (face.id === null) {
@@ -581,11 +577,16 @@ export async function measure(display, outputs) {
     observed: `Absolute upper-left X: ${afterRestart.x}, Y: ${afterRestart.y} (on ${landedOn === null ? "no output" : landedOn.name})`,
     verdict: landedOn !== null && landedOn.name === right.name ? "**pass**" : "**FAIL**",
   });
+  // The restart evidence is rendered, not merely checked. Both rows carry the
+  // same window id because X reuses it, so a reader with only the id in front
+  // of them has to take the restart on faith - and the thing that proves it is
+  // the process behind the window, which is measured above and would otherwise
+  // never leave this file.
   rows.push({
     box: 4,
     what: "placement survives a restart, from a non-default position on the second output",
-    command: `xwininfo -id ${restarted.id}`,
-    observed: `stored: ${landing.x},${landing.y} - after restart: ${afterRestart.x},${afterRestart.y}`,
+    command: `xwininfo -id ${restarted.id}, xprop -id ${restarted.id} _NET_WM_PID`,
+    observed: `stored: ${landing.x},${landing.y} - after restart: ${afterRestart.x},${afterRestart.y} (process ${before ?? "unknown"} before the restart, ${after ?? "unknown"} after)`,
     verdict:
       afterRestart.x === landing.x && afterRestart.y === landing.y ? "**pass**" : "**FAIL**",
   });
@@ -690,6 +691,23 @@ export function deskEnv(display) {
  */
 export function clearActiveWindow(display) {
   x(display, ["xprop", "-root", "-remove", "_NET_ACTIVE_WINDOW"]);
+}
+
+/**
+ * Refuse when the clear did not take.
+ *
+ * Clearing the pointer is half the guard; the other half is confirming it is
+ * gone. Without the confirmation, a desk whose pointer survived the removal
+ * hands box 2 a `before` that already names a window, and the row then scores
+ * a real focus grab as "no change" - the exact wrong answer, arrived at
+ * silently. Returns null when there is nothing to refuse.
+ */
+export function unclearedActiveWindowRefusal(activeBefore) {
+  if (activeBefore === null) return null;
+  return {
+    status: 4,
+    message: `the desk still reports an active window (${activeBefore}) after clearing it, so decision 2 cannot be measured here`,
+  };
 }
 
 /** The window manager's bottom-to-top stacking order. */
@@ -799,14 +817,41 @@ export function buildRefusal(bundle) {
   return `the widget is not built - ${bundle} does not exist. Build it with: pnpm --filter @mastra-cc/widget build`;
 }
 
+/**
+ * The display number to measure on, from the command line.
+ *
+ * A display is written `:84` in every environment that carries one, and `84`
+ * by every program that takes one as an argument. This repository's own
+ * documents used both spellings against the same two programs, and each
+ * spelling silently produced `::84` in the other - a doubled colon that
+ * reaches `xdpyinfo` as a display that cannot exist, so the run refuses with
+ * a sentence blaming the desk. Both spellings are accepted here, and a flag
+ * with nothing usable after it refuses by name rather than measuring
+ * `:undefined`.
+ */
+export function displayArg(argv, fallback = "83") {
+  if (!argv.includes("--display")) return fallback;
+  const value = argv[argv.indexOf("--display") + 1];
+  const number = value === undefined ? "" : value.replace(/^:/, "");
+  if (!/^\d+$/.test(number)) {
+    throw new Error(`--display needs a display number, such as :84 or 84 - got ${value ?? "none"}`);
+  }
+  return number;
+}
+
 export async function main(argv, out = DEFAULT_OUT) {
   if (!argv.includes("--live")) {
     console.error("window-model: refusing to write without --live (docs/05-TEST-STRATEGY.md:160)");
     return 2;
   }
 
-  const displayArg = argv[argv.indexOf("--display") + 1];
-  const display = argv.includes("--display") ? displayArg : "83";
+  let display;
+  try {
+    display = displayArg(argv);
+  } catch (error) {
+    console.error(`window-model: ${error.message}`);
+    return 2;
+  }
 
   if (x(display, ["xdpyinfo"]).status !== 0) {
     console.error(`window-model: no X server on :${display} - bring one up with infra/x11-desk.sh`);

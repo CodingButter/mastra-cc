@@ -843,5 +843,21 @@
     "replace": "    true &&",
     "cwd": "apps/widget",
     "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
+  },
+  {
+    "name": "the-active-window-guard-that-never-checks-it-cleared",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  if (activeBefore === null) return null;\n",
+    "replace": "  if (false) {",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-display-that-is-taken-only-one-way",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  const number = value === undefined ? \"\" : value.replace(/^:/, \"\");",
+    "replace": "  const number = value === undefined ? \"\" : value;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
   }
 ]

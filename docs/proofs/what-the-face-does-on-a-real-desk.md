@@ -3,7 +3,7 @@
 **Produced by:** `node tools/proofs/window-model.mjs --live --display <n>`
 **Date:** 2026-08-22
 **Host:** minibeast, kernel 7.0.0-28-generic
-**Tree:** 732114a-dirty
+**Tree:** 0bdfa08-dirty
 
 This artifact answers "does the face hold its place on a desk without stealing
 focus" (docs/09-QUESTIONS.md). Every row below was read from the X server with
@@ -45,4 +45,4 @@ itself.
 | 3 | a focused full-screen window is above the face (the measured condition, ADR-0051) | `xprop -root _NET_CLIENT_LIST_STACKING` | face 0x600003 below full-screen 0x1000003 | **measured** |
 | 3 | with no focused full-screen window, the face is top of the stack | `xprop -root _NET_CLIENT_LIST_STACKING` | face 0x600003 is top of the stacking order | **pass** |
 | 4 | the face sits on the second output, where the X server confirms it | `xwininfo -id 0x600003` | Absolute upper-left X: 1084, Y: 120 (on DUMMY1) | **pass** |
-| 4 | placement survives a restart, from a non-default position on the second output | `xwininfo -id 0x600003` | stored: 1084,120 - after restart: 1084,120 | **pass** |
+| 4 | placement survives a restart, from a non-default position on the second output | `xwininfo -id 0x600003, xprop -id 0x600003 _NET_WM_PID` | stored: 1084,120 - after restart: 1084,120 (process 893000 before the restart, 893148 after) | **pass** |

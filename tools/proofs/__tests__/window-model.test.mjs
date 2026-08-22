@@ -5,7 +5,14 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { buildRefusal, isOverclaim, renderArtifact, verdictExit } from "../window-model.mjs";
+import {
+  buildRefusal,
+  displayArg,
+  isOverclaim,
+  renderArtifact,
+  unclearedActiveWindowRefusal,
+  verdictExit,
+} from "../window-model.mjs";
 
 // The harness's own guarantees. Everything here is about the SCORING - whether
 // a verdict can be wrong while the run looks right - because that is the way a
@@ -216,6 +223,61 @@ describe("the harness refuses rather than guessing", () => {
 
   it("says nothing about a build that is there", () => {
     expect(buildRefusal(SCRIPT)).toBeNull();
+  });
+
+  it("refuses to measure box 2 on a desk whose active-window pointer did not clear", () => {
+    // Clearing the pointer is only half of the guard. Without the half that
+    // confirms the clear took, box 2's `before` can already name a window, and
+    // the row then reads a real focus grab as "no change" - which is not a
+    // failure to measure, it is a wrong answer that looks like a pass.
+    const refusal = unclearedActiveWindowRefusal("0x600003");
+    expect(refusal?.status).toBe(4);
+    expect(refusal?.message).toMatch(/0x600003/);
+    expect(refusal?.message).toMatch(/decision 2 cannot be measured here/);
+  });
+
+  it("says nothing when the pointer did clear", () => {
+    expect(unclearedActiveWindowRefusal(null)).toBeNull();
+  });
+});
+
+describe("the display argument", () => {
+  // Both spellings are in the tree's own documents: the plan wrote
+  // `--display :82`, the progress file wrote `up :84`, and the tests wrote
+  // `--display 99`. Two files by two authors made the same mistake, so the
+  // fix is to accept both spellings rather than to correct the callers.
+  it("accepts a display written with a colon, the way DISPLAY itself is written", () => {
+    expect(displayArg(["--live", "--display", ":84"])).toBe("84");
+  });
+
+  it("accepts a bare display number", () => {
+    expect(displayArg(["--live", "--display", "84"])).toBe("84");
+  });
+
+  it("defaults when no display is named", () => {
+    expect(displayArg(["--live"])).toBe("83");
+  });
+
+  it("refuses a --display with nothing after it rather than measuring :undefined", () => {
+    expect(() => displayArg(["--live", "--display"])).toThrow(/--display needs a display number/);
+  });
+
+  it("refuses a display that is not a number", () => {
+    expect(() => displayArg(["--live", "--display", "eighty-four"])).toThrow(
+      /--display needs a display number/,
+    );
+  });
+
+  it("reports the flag with no value as a refusal, not as a missing X server", () => {
+    const run = spawnSync("node", [SCRIPT, "--live", "--display"], { encoding: "utf8" });
+    expect(run.status).toBe(2);
+    expect(run.stderr).toMatch(/--display needs a display number/);
+  });
+
+  it("names a colon-written display without doubling the colon", () => {
+    const run = spawnSync("node", [SCRIPT, "--live", "--display", ":99"], { encoding: "utf8" });
+    expect(run.status).toBe(2);
+    expect(run.stderr).toMatch(/no X server on :99 /);
   });
 
   // Note deliberately absent: a test that the harness never reaches for a raw

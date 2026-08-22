@@ -13,9 +13,21 @@
 # the application sees two displays because there are two.
 #
 # Usage: x11-desk.sh up|check|down [display-number]
+#
+# The display may be written either way - `:84` or `84`. A display is spelled
+# with its colon everywhere it is used and without one everywhere it is passed,
+# and taking only one spelling turned the other into `::84`, which is not a
+# display and produces a failure that reads as a broken desk.
 set -eu
 
 DISPLAY_NUM="${2:-83}"
+DISPLAY_NUM="${DISPLAY_NUM#:}"
+case "$DISPLAY_NUM" in
+  '' | *[!0-9]*)
+    echo "x11-desk: display must be a number, such as :84 or 84 - got ${2:-}" >&2
+    exit 1
+    ;;
+esac
 RUN_DIR="/tmp/mastra-cc-x11-desk-${DISPLAY_NUM}"
 CONF="$RUN_DIR/xorg.conf"
 XORG_PID_FILE="$RUN_DIR/xorg.pid"
