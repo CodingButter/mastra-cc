@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { renderArtifact } from "../concurrent-accessibility.mjs";
 
-// The proof script's own guarantees (docs/05-TEST-STRATEGY.md:113-117): a
+// The proof script's own guarantees (docs/05-TEST-STRATEGY.md:160-163): a
 // partial result writes nothing, and the offline lane gets a distinct refusal
 // that never touches a bus.
 

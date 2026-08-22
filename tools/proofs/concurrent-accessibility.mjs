@@ -5,7 +5,7 @@
 // takes the measurement on the route the daemon actually uses, and writes
 // docs/proofs/is-concurrent-accessibility-safe-on-the-node-route.md.
 //
-// Rules it enforces on itself (docs/05-TEST-STRATEGY.md:113-117):
+// Rules it enforces on itself (docs/05-TEST-STRATEGY.md:160-163):
 // - every run is a disposable child process, so an abort is a recorded exit
 //   status, never a lost parent;
 // - it writes NOTHING on a partial result - a missing run or an absent
@@ -61,7 +61,7 @@ export function runMatrix() {
 
 // Refuses to render on a partial result: a missing cell, an absent exit
 // status, or a duration that is not a finite number each throw. A partial
-// table is a lying table (docs/05-TEST-STRATEGY.md:114).
+// table is a lying table (docs/05-TEST-STRATEGY.md:161).
 export function renderArtifact(results, env) {
   const expected = MODES.length * SIZES.length * REPS;
   if (results.length !== expected) {

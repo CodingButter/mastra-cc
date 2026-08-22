@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
-// CI step 8 (docs/05-TEST-STRATEGY.md:134 and §3): mutation checks by the manual
+// CI step 8 (docs/05-TEST-STRATEGY.md:180 and §3): mutation checks by the manual
 // method the prototype practised - break a guarantee on purpose, run the suite,
 // require at least one test to go red, restore. tools/mutations.json is the
 // committed table of mutations. A mutation that produces zero red tests fails
