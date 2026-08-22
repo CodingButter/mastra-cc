@@ -262,4 +262,119 @@ describe("the licence gate", () => {
     install("beta", "MIT", { alpha: "^1.0.0" });
     expect(run().status).toBe(0);
   });
+
+  // A PACKAGE'S DECLARED LICENCE IS NOT ALWAYS ITS PAYLOAD'S.
+  //
+  // `electron` declares MIT, and that is true of the JavaScript in the npm
+  // package. Its postinstall then downloads a 221MB binary that the user
+  // receives, and that binary is Chromium: its own credits file lists 773
+  // components, among them ffmpeg under LGPL-2.1-or-later and glibc, gtk and
+  // liblouis under LGPL. None of it is in any manifest this gate walks, so the
+  // count it reports is a count of the wrapper.
+  //
+  // Reclassifying 773 licence blobs by keyword is not a gate, it is a guess
+  // that goes stale on the next Electron bump - the first scan written here
+  // called Node.js and ICU GPL because their notices quote other licences. So
+  // the payload is PINNED instead, the way this repository pins a schema: the
+  // credits file is recorded by digest with the review that was done against
+  // it, and a payload whose credits change is a payload nobody has reviewed.
+  describe("a downloaded payload", () => {
+    function payload(pkg, contents) {
+      const dist = join(root, "node_modules", pkg, "dist");
+      mkdirSync(dist, { recursive: true });
+      writeFileSync(join(dist, "LICENSES.chromium.html"), contents);
+    }
+
+    function pins(entries) {
+      writeFileSync(join(root, "tools", "payload-licences.json"), JSON.stringify(entries, null, 2));
+    }
+
+    it("passes when the payload's credits match the digest that was reviewed", () => {
+      // `beta` is here so the walk reaches something through a dependent: the
+      // gate refuses a run that walked nothing, and that guard would otherwise
+      // answer this case instead of the payload check it is about.
+      manifest({ alpha: "^1.0.0" });
+      install("alpha", "MIT", { beta: "^1.0.0" });
+      install("beta", "MIT");
+      payload("alpha", "<html>the reviewed credits</html>");
+      pins({
+        alpha: {
+          file: "dist/LICENSES.chromium.html",
+          digest: "e3ff5b2b8b74acbb2d0f0a1b1ad4d5f0d5b0b2d1e6f6a8a0b4b8a2e1c9d3f7a2",
+          reviewed: "2026-08-22",
+          reason: "test fixture",
+        },
+      });
+      const first = run();
+      // The digest above is deliberately wrong: the gate must say what it
+      // actually found rather than accept anything.
+      expect(first.status).toBe(1);
+      const actual = /found ([0-9a-f]{64})/.exec(first.stderr)?.[1];
+      expect(actual).toBeTruthy();
+      pins({
+        alpha: { file: "dist/LICENSES.chromium.html", digest: actual, reviewed: "2026-08-22", reason: "test fixture" },
+      });
+      const second = run();
+      expect(second.status).toBe(0);
+      expect(second.stdout).toContain("1 payload(s)");
+    });
+
+    it("refuses when the payload's credits changed under a pinned digest", () => {
+      manifest({ alpha: "^1.0.0" });
+      install("alpha", "MIT");
+      payload("alpha", "<html>the reviewed credits</html>");
+      pins({
+        alpha: { file: "dist/LICENSES.chromium.html", digest: "0".repeat(64), reviewed: "2026-08-22", reason: "test fixture" },
+      });
+      const r = run();
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("alpha");
+      expect(r.stderr).toContain("has not been reviewed");
+    });
+
+    it("refuses when a pinned payload is not installed at all", () => {
+      // The failure is not that the file is missing - it is that a review this
+      // gate reports as done was done against nothing.
+      manifest({ alpha: "^1.0.0" });
+      install("alpha", "MIT");
+      pins({
+        alpha: { file: "dist/LICENSES.chromium.html", digest: "0".repeat(64), reviewed: "2026-08-22", reason: "test fixture" },
+      });
+      const r = run();
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("cannot be verified");
+    });
+
+    it("refuses a runtime package that ships a payload nobody pinned", () => {
+      // THE HOLE ITSELF. A package can arrive, download a binary and pass on
+      // its wrapper's MIT, exactly as electron did. An unpinned payload is not
+      // a silent pass.
+      manifest({ alpha: "^1.0.0" });
+      install("alpha", "MIT");
+      payload("alpha", "<html>credits nobody read</html>");
+      pins({});
+      const r = run();
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("alpha");
+      expect(r.stderr).toContain("ships a licence manifest of its own");
+    });
+
+    it("says nothing about a payload under a package it never walked", () => {
+      // Scope follows the walk. A payload inside a development dependency's
+      // own closure is the same question this gate already answers with "a
+      // build tool is not distributed"; answering it differently here would be
+      // a policy change smuggled in as a bug fix.
+      // A runtime pair as well, or the walk reaches nothing and the vacuity
+      // guard answers instead of the check this case is about.
+      manifest({ alpha: "^1.0.0" }, { tool: "^1.0.0" });
+      install("alpha", "MIT", { beta: "^1.0.0" });
+      install("beta", "MIT");
+      install("tool", "MIT");
+      payload("tool", "<html>a build tool's own credits</html>");
+      pins({});
+      const r = run();
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain("tool");
+    });
+  });
 });

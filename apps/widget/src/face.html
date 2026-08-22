@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>mastra-face</title>
+    <style>
+      /*
+        Structure and colour only. Every coordinate in this file would be a
+        second copy of the geometry that layout.ts owns, and ADR-0016 warns
+        that shaped click-through breaks when the layout changes underneath it.
+        The positions arrive from layoutCss() at load.
+      */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        /*
+          The window's SHAPE decides what takes a click (decision 4, applied
+          with setShape in the main process). Nothing here may claim a click
+          the shape has already given away, and a drag region would claim all
+          of them - including the orb's, which must send a gesture instead.
+        */
+        -webkit-app-region: no-drag;
+        user-select: none;
+      }
+      #orb {
+        background: radial-gradient(circle at 35% 30%, #7dd3fc, #0369a1);
+        cursor: pointer;
+      }
+      #caption {
+        font: 12px system-ui, sans-serif;
+        color: #e2e8f0;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      #menu {
+        border-radius: 4px;
+        background: rgba(15, 23, 42, 0.5);
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="orb"></div>
+    <div id="caption"></div>
+    <div id="menu"></div>
+    <script type="module" src="./face.mjs"></script>
+  </body>
+</html>

@@ -902,3 +902,34 @@ path is needed. Anything less is a second path built on a guess.
 
 *Blocking:* nothing. The daemon's capability work is upstream of this question and
 narrows it. Revisit once the verb set is complete.
+
+**Q22 — Does an always-on-top window actually stay on top?**
+*Opened 2026-08-22.*
+
+[ADR-0016](02-DECISIONS/0016-the-face-is-a-managed-window-that-hides-when-told.md) rests on a window
+manager honouring `_NET_WM_STATE_ABOVE` for a window it manages, and
+[07-ROADMAP.md](07-ROADMAP.md)'s M4 exit gate states the consequence in one line: a
+raised full-screen window does not bury the face. The prototype's evidence for that line
+came from a face that was override-redirect, which is a window the window manager does
+not manage at all — so what it measured was raw stacking order, not the guarantee.
+
+*What changes:* whether the face needs anything beyond `ABOVE` to hold its place. If
+`ABOVE` is sufficient, decision 1 is the whole window model. If it is not, the face needs
+either a remedy the ADR does not currently name, or the exit gate needs its condition
+stated, and a milestone that ticks the box without stating it has ticked a box that is
+false in the common case of a user watching a video.
+
+*Answer requires:* not argument — a managed window carrying `ABOVE` on a real X server
+with a real EWMH window manager, measured against a real full-screen window with
+`xwininfo` and `xprop`, out of band. Answered by
+[what the face does on a real desk](proofs/what-the-face-does-on-a-real-desk.md): `ABOVE`
+is honoured, and a full-screen window that **holds focus** is promoted above it anyway;
+the face returns to the top on its own when focus moves. `_NET_WM_WINDOW_TYPE_DOCK` does
+not change it.
+
+*Blocking:* M4's exit gate. The burial condition was first measured during planning, on a
+probe window rather than on the face, which is why the exit gate could be written with the
+condition already known. The rows in the artifact were then taken again against the built
+face — the artifact records the tree it was measured on, and that tree contains the window
+model. Both readings agree; the planning one is not evidence for the box, and this line
+does not claim it is.

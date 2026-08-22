@@ -726,5 +726,138 @@
     "find": "    problems.push('citations: no document cites a line in another document - the check examined nothing, which is itself wrong');",
     "cwd": "tools",
     "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-harness-whose-exit-code-ignores-its-own-verdicts",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  return measurements.some((m) => m.verdict.includes(\"FAIL\")) ? 6 : 0;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-artifact-that-renders-an-empty-table",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "    throw new Error(\"window-model: no measurements, so there is nothing to write\");",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-overclaim-check-that-never-looks-at-a-table-row",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "    .split(/(?<=\\.)\\s+|\\n/)",
+    "replace": "    .split(/(?<=\\.)\\s+/)",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-shape-that-has-quietly-become-the-whole-rectangle",
+    "file": "apps/widget/src/layout.ts",
+    "find": " - dy * dy",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/clicks-land-only-on-the-face.test.ts"
+  },
+  {
+    "name": "the-renderer-that-paints-where-the-shape-is-not",
+    "file": "apps/widget/src/layout.ts",
+    "find": "    `#orb { position: absolute; left: ${orb.cx - orb.r}px; top: ${orb.cy - orb.r}px;`,",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/clicks-land-only-on-the-face.test.ts"
+  },
+  {
+    "name": "the-record-that-was-never-written",
+    "file": "scripts/check-docs.mjs",
+    "find": "          problems.push(`${relative(ROOT, path)}:${index + 1}: names \\`${match[0]}\\`, and there is no such record in docs/02-DECISIONS`);",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-named-record-check-that-passes-on-an-empty-verdict",
+    "file": "scripts/check-docs.mjs",
+    "find": "    problems.push('citations: no document names a record by number - the check judged nothing, which is itself wrong');",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-named-record-check-that-reads-documents-but-not-the-code-naming-them",
+    "file": "scripts/check-docs.mjs",
+    "find": ".concat(citingSources(ROOT))",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-payload-nobody-pinned-that-passes-anyway",
+    "file": "tools/licences.mjs",
+    "find": "  checkPayload(name, dirname(installed));",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-payload-digest-that-is-never-compared",
+    "file": "tools/licences.mjs",
+    "find": "`licences: ${name}'s payload has changed since it was reviewed on ${pin.reviewed} - found ${digest}, pinned ${pin.digest}. The third-party code it credits has not been reviewed at this version`,",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-overclaim-check-that-only-knows-the-word-full-screen",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  if (NEGATED_SUBJECT.test(sentence)) return true;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-disclosure-escape-that-accepts-a-denial",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  return !/\\b(?:regardless|whatever|no matter|irrespective|either way)\\b/i.test(sentence);",
+    "replace": "  return true;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-harness-that-blames-the-widget-for-an-unbuilt-checkout",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  if (existsSync(bundle)) return null;",
+    "replace": "  if (true) return null;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-widget-that-remembers-nothing-it-was-told",
+    "file": "apps/widget/src/placement-store.ts",
+    "find": "  writeFileSync(file, JSON.stringify({ x: position.x, y: position.y }));",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
+  },
+  {
+    "name": "the-placement-that-records-where-the-drag-was-let-go-not-where-it-settled",
+    "file": "apps/widget/src/placement-store.ts",
+    "find": "  const snapped = snapToEdges(bounds, display);",
+    "replace": "  const snapped = { x: bounds.x, y: bounds.y };",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
+  },
+  {
+    "name": "the-reader-that-accepts-a-position-it-cannot-use",
+    "file": "apps/widget/src/placement-store.ts",
+    "find": "    Number.isFinite((raw as Point).x) &&",
+    "replace": "    true &&",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
+  },
+  {
+    "name": "the-active-window-guard-that-never-checks-it-cleared",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  if (activeBefore === null) return null;\n",
+    "replace": "  if (false) {",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-display-that-is-taken-only-one-way",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  const number = value === undefined ? \"\" : value.replace(/^:/, \"\");",
+    "replace": "  const number = value === undefined ? \"\" : value;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
   }
 ]
