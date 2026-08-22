@@ -50,7 +50,7 @@ Concretely:
 |---|---|
 | semantic model established day one | `08-01 03:37`, semantic element model + stability registry |
 | pixels as last resort, addressed by window | `08-01 12:22` |
-| raw input banned | standing project rule; no `xdotool`/`wmctrl`/`uinput` in the tree |
+| raw input banned | standing project rule at the time of this record; struck 2026-08-17 by [ADR-0046](0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md), which replaced the ban with containment |
 | browser unreadable ≠ absent | `6657915`, 2026-08-04 10:31 |
 | human outranks agent | issue #25 |
 | keystroke proof artifact | `docs/proofs/keystrokes-reach-a-field-with-no-way-in.md` |

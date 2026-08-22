@@ -121,6 +121,19 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = 
   });
 }
 
+test("b8: the raw-input class it contains is stated, not assumed", () => {
+  // ADR-0046 struck the outright ban and re-specified this pin as containment:
+  // the tool names appear ONLY inside the raw-input class implementation. The
+  // class does not exist yet, so the contained set is empty - and an empty set
+  // has to SAY so rather than let a reader assume the pin still bans outright.
+  // Without this, the pin's report is identical whether containment was
+  // implemented or forgotten, which is the shape of a gate that cannot fail.
+  const r = runPin("b8");
+  expect(r.status).toBe(0);
+  expect(r.output).toContain("outside the raw-input class");
+  expect(r.output).toContain("no raw-input class exists yet");
+});
+
 test("b8: a comment mentioning a banned tool is not a violation", () => {
   const root = plant("daemon/src/notes.ts", "// xdotool is banned here (ADR-0004)\nexport {};\n");
   const r = runPin("b8", ["--root", root]);

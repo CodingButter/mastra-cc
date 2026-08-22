@@ -8,7 +8,7 @@
 
 [ADR-0004](0004-semantic-first-pixels-last.md) chose the accessibility tree over pixels and over raw input, and banned raw input outright, enforced by boundary test B8 (`tools/pins/b8.mjs`) grepping `xdotool`, `wmctrl` and `uinput` across `daemon`, `packages`, `apps`, `tools`, `scripts` and `infra`. The reason it gives is worth quoting, because it is the thing this record has to preserve:
 
-> "Under deadline pressure, 'just screenshot it' is always the shortest path. B8 and the addressed-capture rule exist so that taking it requires deleting a test, which is a visible act." — `0004:43`
+> "Under deadline pressure, 'just screenshot it' is always the shortest path. B8 and the addressed-capture rule exist so that taking it requires deleting a test, which is a visible act." — `0004:45`
 
 That reasoning was correct and remains correct. The ban existed to make the shortcut expensive.
 
@@ -22,7 +22,7 @@ The user's framing, which this record adopts: the goal is **true cohabitation** 
 
 Two adjacent asks turned out to need no change at all, and are recorded here so the boundary is not re-litigated:
 
-- **Screenshots were never banned.** `0004:33` already permits capture *of a named window or element resolved through the tree*, and forbids only the full-desktop grab handed to a model to search. "Screenshot this window and send it to someone" is a legitimate deliverable and always was.
+- **Screenshots were never banned.** `0004:35` already permits capture *of a named window or element resolved through the tree*, and forbids only the full-desktop grab handed to a model to search. "Screenshot this window and send it to someone" is a legitimate deliverable and always was.
 - **Never sending pixels for something that does not need pixels** is the title of ADR-0004, not a new constraint.
 
 ## Decision
@@ -61,16 +61,16 @@ Two adjacent asks turned out to need no change at all, and are recorded here so 
 
 **Risk.** The no-fallback rule is the load-bearing clause and the easiest one to erode with a well-intentioned convenience. It needs a test that fails when a semantic refusal path can reach the raw-input class, not a paragraph.
 
-**Risk.** Screenshot capture stays addressed under `0004:33`, but a raw-input class adjacent to a capture capability is the shape of a general "just look and click" fallback. Nothing here loosens capture; the implementing milestone must keep the addressed-capture rule intact and pinned.
+**Risk.** Screenshot capture stays addressed under `0004:35`, but a raw-input class adjacent to a capture capability is the shape of a general "just look and click" fallback. Nothing here loosens capture; the implementing milestone must keep the addressed-capture rule intact and pinned.
 
 ## Evidence
 
 | Claim | Source |
 |---|---|
-| raw input banned outright, enforced by grep across six directories | `tools/pins/b8.mjs`, banned pattern `xdotool\|wmctrl\|uinput` |
-| the ban's stated purpose was making the shortcut a visible act | `0004:43` |
-| screenshots were always permitted when addressed to a resolved window or element | `0004:33` |
-| attribution is what the human-outranks-agent rule rests on | `0004:19` |
+| raw input banned outright, enforced by grep across six directories | `tools/pins/b8.mjs` as it stood when this record was written; decision 8 above reshaped it to containment on 2026-08-21, and its contained set is empty until the class exists |
+| the ban's stated purpose was making the shortcut a visible act | `0004:45` |
+| screenshots were always permitted when addressed to a resolved window or element | `0004:35` |
+| attribution is what the human-outranks-agent rule rests on | `0004:21` |
 | effect-class operations are enforced before the call under a pin | boundary test B11, `tools/pins/b11.mjs`, `daemon/src/server.ts` dispatch table |
 | refusals name the check that ran and what would change the answer | [ADR-0008](0008-scopes-operation-classes-and-honest-refusals.md) |
 | a hidden capability manufactures a false belief | [ADR-0042](0042-existence-is-readable-content-is-not.md) |
