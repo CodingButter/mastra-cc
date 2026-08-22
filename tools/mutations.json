@@ -698,5 +698,33 @@
     "find": "const walkedDev = new Map();",
     "cwd": "tools",
     "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-pin-that-stops-naming-the-class-it-contains",
+    "file": "tools/pins/b8.mjs",
+    "find": " (${home})",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "the-line-citation-nobody-checks",
+    "file": "scripts/check-docs.mjs",
+    "find": "        if (empty) problems.push(`${relative(ROOT, path)}:${index + 1}: cites \\`${match[0]}\\`, which is ${empty}`);",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-citation-check-that-reads-documents-but-not-the-code-citing-them",
+    "file": "scripts/check-docs.mjs",
+    "find": ", ...citingSources(ROOT)",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-line-check-that-passes-on-an-empty-verdict",
+    "file": "scripts/check-docs.mjs",
+    "find": "    problems.push('citations: no document cites a line in another document - the check examined nothing, which is itself wrong');",
+    "cwd": "tools",
+    "testFile": "__tests__/check-docs-citations.test.mjs"
   }
 ]

@@ -45,6 +45,9 @@ function scratchRepo() {
   ]) {
     writeFileSync(join(dir, "docs", `${name}.md`), `# ${name}\n`);
   }
+  // A document with a citable line on it, for the true line citation every
+  // case carries. 06-OPERATIONS is the one no case rewrites.
+  writeFileSync(join(dir, "docs", "06-OPERATIONS.md"), "# 06-OPERATIONS\n\n**A fact.** Which this line states.\n");
   writeFileSync(join(dir, "README.md"), "# scratch\n");
   writeFileSync(join(dir, "CONTRIBUTING.md"), "# contributing\n");
   writeFileSync(
@@ -62,13 +65,16 @@ function scratchRepo() {
 /**
  * Write the one ADR whose citation each case is about.
  *
- * Every case keeps one citation that is true, because a case whose document
- * cites nothing at all trips the vacuity guard and reds for a reason that has
- * nothing to do with what the case is asserting. Two of these cases were
- * written without it and failed exactly that way, which is the guard working.
+ * Every case keeps one citation of EACH kind that is true, because a case whose
+ * document cites nothing at all trips a vacuity guard and reds for a reason
+ * that has nothing to do with what the case is asserting. Two of these cases
+ * were written without the first and failed exactly that way; adding the line
+ * check reproduced it across nine more. The guard working, twice.
  */
 function record(body) {
-  const trueCitation = "\nThe wire's capabilities are `capabilityNames` in `protocol/schema.json`.\n";
+  const trueCitation =
+    "\nThe wire's capabilities are `capabilityNames` in `protocol/schema.json`," +
+    " and the fact is at `docs/06-OPERATIONS.md:3`.\n";
   writeFileSync(join(root, "docs", "02-DECISIONS", "0001-a-record.md"), `${body}\n${trueCitation}`);
 }
 
@@ -225,7 +231,10 @@ describe("the citation check", () => {
     writeFileSync(join(root, "docs", "02-DECISIONS", "0001-a-record.md"), "# 0001\n\nA record that cites nothing.\n");
     const r = run();
     expect(r.status).toBe(1);
-    expect(r.stdout).toContain("the check examined nothing");
+    // Names THIS guard, not the shared tail. Two vacuity guards now print the
+    // same closing sentence, so asserting on "examined nothing" let the line
+    // guard answer for the deleted key guard - and the mutation survived.
+    expect(r.stdout).toContain("no document cites a key in a JSON file");
   });
 
   it("says nothing about a JSON file it cannot parse, rather than guessing", () => {
@@ -241,5 +250,157 @@ describe("the citation check", () => {
     const r = run();
     expect(r.status).toBe(0);
     expect(readFileSync(join(root, "docs", "02-DECISIONS", "0001-a-record.md"), "utf8")).toContain("absent.json");
+  });
+});
+
+/**
+ * The second citation key: `some/file.md:41`.
+ *
+ * WHY IT EXISTS. The key above catches a document naming something a file has
+ * never contained. It cannot catch a citation that was true when it was
+ * written and drifted, because the name it cites is a LINE NUMBER and every
+ * line number is real. ADR-0046 struck a clause in ADR-0004 and, in the same
+ * commit, inserted two lines above it - so its own three back-references, the
+ * B8 pin's comment, the pin's violation message and the pins README all
+ * pointed two lines short of the claim they named. Six sites, one edit, and a
+ * green gate the whole time. Found by hand on 2026-08-21, which is the thing
+ * this file exists to stop happening twice.
+ *
+ * The machine-checkable core: a cited line that is BLANK, or a bare heading,
+ * or a table rule, cannot be carrying a claim. That is a weak assertion by
+ * design - it is the part that is true without a human judging prose - and it
+ * caught all seven live sites in this repository.
+ */
+describe("the line-citation check", () => {
+  function target(lines) {
+    writeFileSync(join(root, "docs", "05-TEST-STRATEGY.md"), lines.join("\n"));
+  }
+
+  it("passes when a cited line carries something", () => {
+    target(["# strategy", "", "**A rule.** Which this line states.", ""]);
+    record("# 0001\n\nThe rule is at `docs/05-TEST-STRATEGY.md:3`.\n");
+    const r = run();
+    expect(r.status).toBe(0);
+  });
+
+  it("reds when a citation lands on a blank line", () => {
+    target(["# strategy", "", "**A rule.** Which this line states.", ""]);
+    record("# 0001\n\nThe rule is at `docs/05-TEST-STRATEGY.md:2`.\n");
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("docs/05-TEST-STRATEGY.md:2");
+    expect(r.stdout).toContain("blank line");
+  });
+
+  it("reds when a citation lands on a bare heading, naming the line it landed on", () => {
+    // The real shape of the drift: the claim moved down, the citation stayed,
+    // and it now points at the section header above it. A reader following it
+    // finds a title where they were promised a rule.
+    target(["# strategy", "", "### Four rules for writing one", "", "**1. A rule.**"]);
+    record("# 0001\n\nSee `docs/05-TEST-STRATEGY.md:3`.\n");
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("Four rules for writing one");
+  });
+
+  it("says nothing about a line number past the end of the file", () => {
+    // Out of range is a different defect and belongs to whoever reports dead
+    // links; reporting it here would double-count and teach people to skim
+    // this check's output.
+    target(["# strategy", "", "**A rule.**"]);
+    record("# 0001\n\nSee `docs/05-TEST-STRATEGY.md:900`.\n");
+    expect(run().status).toBe(0);
+  });
+
+  it("reads the source files that cite documents, not only the documents", () => {
+    // FOUR OF THE SEVEN LIVE SITES WERE IN SOURCE. A pin's header comment
+    // citing the ADR it enforces, a violation message quoting that ADR to the
+    // person who tripped it, a proof script naming the rules it holds itself
+    // to - all of them drifted with the same edit, and a check that walks
+    // markdown alone would have called that tree clean. It nearly did: the
+    // first bite of this check on the real repository passed, because the
+    // stale citation it was aimed at lived in `tools/pins/b8.mjs`.
+    target(["# strategy", "", "### A heading", "", "**A rule.**"]);
+    mkdirSync(join(root, "tools"), { recursive: true });
+    writeFileSync(
+      join(root, "tools", "a-gate.mjs"),
+      "// The rule this enforces is at docs/05-TEST-STRATEGY.md:3.\nexport const gate = true;\n",
+    );
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("tools/a-gate.mjs:1");
+    expect(r.stdout).toContain("A heading");
+  });
+
+  it("resolves the shorthand this corpus actually uses", () => {
+    // `0004:45` and `ADR-0046:46`, not `docs/02-DECISIONS/0004-....md:45`.
+    // TWELVE of the repository's line citations are written this way and
+    // ALL SIX SITES OF THE DEFECT THAT PROMPTED THIS CHECK were - so a check
+    // that only understood full paths would have watched the whole incident
+    // go by. Its first bite on the real tree did exactly that: the stale
+    // citation it was aimed at read `0004:32`, and the check passed.
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "0002-another.md"),
+      "# 0002\n\n### A heading\n\n**A rule.** Which this line states.\n",
+    );
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "README.md"),
+      "# Decisions\n\n- [0001](0001-a-record.md)\n- [0002](0002-another.md)\n",
+    );
+    record("# 0001\n\nThe rule is at `0002:3`.\n");
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("`0002:3`");
+    expect(r.stdout).toContain("A heading");
+  });
+
+  it("reds when a citation lands on a struck clause", () => {
+    // The exact shape of the ADR-0046 incident, and the one part of it a
+    // machine can judge without reading prose: struck text is text the
+    // repository has explicitly retired, so a live citation pointing INTO it
+    // is either stale or is quoting a correction - and a correction says so
+    // in the words around it, which is the exemption below.
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "0002-another.md"),
+      "# 0002\n\n- ~~**A banned thing.**~~ struck by a later record.\n\n**The live rule.**\n",
+    );
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "README.md"),
+      "# Decisions\n\n- [0001](0001-a-record.md)\n- [0002](0002-another.md)\n",
+    );
+    record("# 0001\n\nThe ban is stated at `0002:3`.\n");
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("struck");
+  });
+
+  it("lets a record quote the struck clause it is striking", () => {
+    // ADR-0046 cites ADR-0004's struck ban on purpose, to say what it struck.
+    // Reddening that is the check eating its own tail - the same exemption
+    // the name-citation check needed, for the same reason.
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "0002-another.md"),
+      "# 0002\n\n- ~~**A banned thing.**~~ struck by a later record.\n\n**The live rule.**\n",
+    );
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "README.md"),
+      "# Decisions\n\n- [0001](0001-a-record.md)\n- [0002](0002-another.md)\n",
+    );
+    record("# 0001\n\nThis record struck the ban stated at `0002:3`.\n");
+    expect(run().status).toBe(0);
+  });
+
+  it("refuses to pass when it resolved no line citation at all", () => {
+    // Same vacuity doctrine as every other gate here. The `.mastracode` skip
+    // and a corpus that stopped citing lines would both silence this check;
+    // silence has to be loud.
+    target(["# strategy", "", "**A rule.**"]);
+    writeFileSync(
+      join(root, "docs", "02-DECISIONS", "0001-a-record.md"),
+      "# 0001\n\nThe wire's capabilities are `capabilityNames` in `protocol/schema.json`.\n",
+    );
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("no document cites a line");
   });
 });
