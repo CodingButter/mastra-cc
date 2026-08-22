@@ -726,5 +726,27 @@
     "find": "    problems.push('citations: no document cites a line in another document - the check examined nothing, which is itself wrong');",
     "cwd": "tools",
     "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-harness-whose-exit-code-ignores-its-own-verdicts",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "  return measurements.some((m) => m.verdict.includes(\"FAIL\")) ? 6 : 0;",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-artifact-that-renders-an-empty-table",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "    throw new Error(\"window-model: no measurements, so there is nothing to write\");",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-overclaim-check-that-never-looks-at-a-table-row",
+    "file": "tools/proofs/window-model.mjs",
+    "find": "    .split(/(?<=\\.)\\s+|\\n/)",
+    "replace": "    .split(/(?<=\\.)\\s+/)",
+    "cwd": "tools",
+    "testFile": "proofs/__tests__/window-model.test.mjs"
   }
 ]
