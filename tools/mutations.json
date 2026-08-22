@@ -783,5 +783,19 @@
     "find": ".concat(citingSources(ROOT))",
     "cwd": "tools",
     "testFile": "__tests__/check-docs-citations.test.mjs"
+  },
+  {
+    "name": "the-payload-nobody-pinned-that-passes-anyway",
+    "file": "tools/licences.mjs",
+    "find": "  checkPayload(name, dirname(installed));",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
+  },
+  {
+    "name": "the-payload-digest-that-is-never-compared",
+    "file": "tools/licences.mjs",
+    "find": "`licences: ${name}'s payload has changed since it was reviewed on ${pin.reviewed} - found ${digest}, pinned ${pin.digest}. The third-party code it credits has not been reviewed at this version`,",
+    "cwd": "tools",
+    "testFile": "__tests__/licences.test.mjs"
   }
 ]

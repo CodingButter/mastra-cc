@@ -1,0 +1,9 @@
+{
+  "electron": {
+    "file": "dist/LICENSES.chromium.html",
+    "digest": "4fc0507a046b9ecd0738b2dd64119b5ec8bc29ac0221b63edb693fd5fd497c87",
+    "reviewed": "2026-08-22",
+    "components": 773,
+    "reason": "The npm package declares MIT and that is true of its JavaScript. Its postinstall downloads a 221MB Chromium build, and this file is that build's credits. Reviewed at this digest: of 773 components, 56 blocks quote LGPL or MPL text. All but one are either dynamically linked system libraries the user already has (glibc, gtk, libsecret, libusbx, liblouis and libbrlapi via Speech Dispatcher and the braille stack, plasma-wayland-protocols) or code compiled out of a desktop Linux build (the play-services and Android NDK blocks are Chromium's Android targets; Checker Qual is a Java annotation library). The exception is libffmpeg.so, shipped in dist/ under LGPL-2.1-or-later: it is a separate shared object the user can replace with their own build, which is the condition that licence attaches, and Electron ships it separately for exactly that reason. Nothing here is relicensed by inclusion and nothing obliges this repository to publish its own source. The keyword scan that produced the first version of this list called Node.js and ICU copyleft because their notices quote other licences - that is why this is a reviewed digest rather than a rule, and why a changed digest is a payload nobody has read."
+  }
+}

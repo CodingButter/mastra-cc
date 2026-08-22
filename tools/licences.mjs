@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +39,20 @@ import { fileURLToPath } from "node:url";
 // not smuggled in with this one. That is the one hole here, and it is the only
 // one: this file used to state it as though it were, while `optionalDependencies`
 // and `peerDependencies` went unread in silence.
+//
+// A DECLARED LICENCE IS NOT ALWAYS A PAYLOAD'S (2026-08-22, M4 segment 1
+// review). `electron` declares MIT and that is true of the JavaScript in the
+// npm package; its postinstall then downloads a 221MB binary the user
+// receives, and that binary is Chromium. Nothing about it appears in any
+// manifest walked above, so the package count reported below was a count of
+// wrappers. Reclassifying the 773 components in a credits file by keyword is
+// not a gate but a guess - the first scan written for this called Node.js and
+// ICU copyleft because their notices quote other licences - so a payload is
+// PINNED instead, the way this repository pins a schema. `payload-licences.json`
+// records the credits file's digest with the review that was done against it,
+// and a payload whose credits change is a payload nobody has reviewed. A
+// runtime package that ships a licence manifest of its own and is not pinned
+// is a finding, because that is the shape the hole had.
 
 const ALLOWED = new Set([
   "MIT",
@@ -100,8 +115,66 @@ function resolveInstalled(name, from) {
   }
 }
 
-let checked = 0;
+// A payload is a licence manifest a package ships beside its code rather than
+// declaring in its own. These are the names such a file goes by; a package
+// carrying one has third-party code the walk above cannot see.
+const PAYLOAD_CREDITS = ["LICENSES.chromium.html", "LICENSE.electron.txt", "THIRD_PARTY_NOTICES.txt"];
+
 const problems = [];
+
+const pinnedPayloads = (() => {
+  const path = join(root, "tools", "payload-licences.json");
+  if (!existsSync(path)) return {};
+  return JSON.parse(readFileSync(path, "utf8"));
+})();
+
+/** Every credits file a package carries, relative to its own directory. */
+function payloadsOf(packageDir) {
+  const found = [];
+  for (const sub of ["", "dist"]) {
+    const dir = sub ? join(packageDir, sub) : packageDir;
+    if (!existsSync(dir)) continue;
+    for (const name of PAYLOAD_CREDITS) {
+      if (existsSync(join(dir, name))) found.push(sub ? `${sub}/${name}` : name);
+    }
+  }
+  return found;
+}
+
+let payloadsChecked = 0;
+
+function checkPayload(name, packageDir) {
+  const pin = pinnedPayloads[name];
+  const carried = payloadsOf(packageDir);
+
+  if (!pin) {
+    if (carried.length > 0) {
+      problems.push(
+        `licences: ${name} ships a licence manifest of its own (${carried.join(", ")}) - the code it credits is not in any manifest this gate walks, so it needs an entry in tools/payload-licences.json`,
+      );
+    }
+    return;
+  }
+
+  const file = join(packageDir, pin.file);
+  if (!existsSync(file)) {
+    problems.push(
+      `licences: ${name}'s pinned payload ${pin.file} is not installed - the review recorded against it cannot be verified`,
+    );
+    return;
+  }
+
+  const digest = createHash("sha256").update(readFileSync(file)).digest("hex");
+  if (digest !== pin.digest) {
+    problems.push(
+      `licences: ${name}'s payload has changed since it was reviewed on ${pin.reviewed} - found ${digest}, pinned ${pin.digest}. The third-party code it credits has not been reviewed at this version`,
+    );
+    return;
+  }
+  payloadsChecked += 1;
+}
+
+let checked = 0;
 // Two maps, not one. A package recorded by the dev loop used to sit in the same
 // map the runtime walk early-returns on, so anything that is a dev dependency
 // somewhere AND a runtime transitive under a manifest processed later would
@@ -135,6 +208,10 @@ function walkRuntime(name, from, chain, optional = false) {
     problems.push(`licences: ${name} is "${value}" - not on the permissive allowlist (shipped via ${chain.join(" > ")})`);
   }
   checked += 1;
+  // Payloads are judged exactly where the walk reaches, so their scope is the
+  // distribution boundary this file already argues for rather than a second
+  // one invented here.
+  checkPayload(name, dirname(installed));
 
   const pkg = JSON.parse(readFileSync(installed, "utf8"));
   for (const [field, optional] of [["dependencies", false], ["optionalDependencies", true], ["peerDependencies", true]]) {
@@ -207,6 +284,18 @@ if (transitive === 0) {
   );
   process.exit(1);
 }
+// A pinned payload that the walk never reached is a review reported as done
+// against a package this tree no longer ships. Silence there is the same
+// vacuity the guards above refuse.
+for (const name of Object.keys(pinnedPayloads)) {
+  const reached = [...walked.keys()].some((p) => JSON.parse(readFileSync(p, "utf8")).name === name);
+  if (!reached) {
+    console.error(`licences: ${name} is pinned in payload-licences.json but the runtime walk never reached it - the pin is stale`);
+    process.exit(1);
+  }
+}
+
+const payloadReport = payloadsChecked > 0 ? `, ${payloadsChecked} payload(s) pinned to a reviewed digest` : "";
 console.log(
-  `licences: ok - ${found.length} manifest(s), ${checked} package(s) on the permissive allowlist (runtime walked to its closure, development as declared)`,
+  `licences: ok - ${found.length} manifest(s), ${checked} package(s) on the permissive allowlist (runtime walked to its closure, development as declared)${payloadReport}`,
 );
