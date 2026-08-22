@@ -3,7 +3,7 @@
 **Produced by:** `node tools/proofs/window-model.mjs --live --display <n>`
 **Date:** 2026-08-22
 **Host:** minibeast, kernel 7.0.0-28-generic
-**Tree:** cae155b
+**Tree:** 5ba7631-dirty
 
 This artifact answers "does the face hold its place on a desk without stealing
 focus" (docs/09-QUESTIONS.md). Every row below was read from the X server with
@@ -45,4 +45,5 @@ itself.
 | 3 | a focused full-screen window is above the face (the measured condition, ADR-0051) | `xprop -root _NET_CLIENT_LIST_STACKING` | face 0x800003 below full-screen 0x1000003 | **measured** |
 | 3 | with no focused full-screen window, the face is top of the stack | `xprop -root _NET_CLIENT_LIST_STACKING` | face 0x800003 is top of the stacking order | **pass** |
 | 4 | the face sits on the second output, where the X server confirms it | `xwininfo -id 0x800003` | Absolute upper-left X: 1084, Y: 120 (on DUMMY1) | **pass** |
-| 4 | placement survives a restart, from a non-default position on the second output | `xwininfo -id 0x800003, xprop -id 0x800003 _NET_WM_PID` | stored: 1084,120 - after restart: 1084,120 (process 907022 before the restart, 907173 after) | **pass** |
+| 4 | placement survives a restart, from a non-default position on the second output | `xwininfo -id 0x800003, xprop -id 0x800003 _NET_WM_PID` | stored: 1084,120 - after restart: 1084,120 (process 938637 before the restart, 938787 after) | **pass** |
+| 6 | the tray-bound dismissal path unmaps the face without synthetic input | `kill -USR1 938787; xprop -root _NET_CLIENT_LIST` | 0x800003 is unmapped | **pass** |

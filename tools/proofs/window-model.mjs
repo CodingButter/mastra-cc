@@ -591,6 +591,24 @@ export async function measure(display, outputs) {
       afterRestart.x === landing.x && afterRestart.y === landing.y ? "**pass**" : "**FAIL**",
   });
 
+  // Box 6. Raw input synthesis is contained inside the daemon by ADR-0046, so
+  // the harness must not fake a tray click. The widget exposes SIGUSR1 as a
+  // measurement seam into the SAME dismiss() function bound to the real tray
+  // click and spoken dismissal; the source-shape test proves those bindings.
+  if (after !== null) process.kill(after, "SIGUSR1");
+  const dismissalDeadline = Date.now() + 5_000;
+  while (Date.now() < dismissalDeadline && clientList(display).includes(restarted.id)) {
+    spawnSync("sleep", ["0.1"]);
+  }
+  const dismissed = !clientList(display).includes(restarted.id);
+  rows.push({
+    box: 6,
+    what: "the tray-bound dismissal path unmaps the face without synthetic input",
+    command: `kill -USR1 ${after ?? "unknown"}; xprop -root _NET_CLIENT_LIST`,
+    observed: dismissed ? `${restarted.id} is unmapped` : `${restarted.id} remains mapped`,
+    verdict: dismissed ? "**pass**" : "**FAIL**",
+  });
+
   restarted.stop();
   rmSync(profile, { recursive: true, force: true });
   return { rows };

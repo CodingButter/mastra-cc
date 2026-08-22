@@ -1,7 +1,15 @@
 import { join } from "node:path";
 
-import { app, BrowserWindow, screen, type Rectangle } from "electron";
+import { app, BrowserWindow, nativeImage, screen, Tray, type Rectangle } from "electron";
+import { defaultLaneSocketPath } from "@mastra-cc/transport";
 
+import { connectToHub } from "./hub-connection.js";
+import {
+  dismissFace,
+  INITIAL_FACE_STATE,
+  isSpokenDismissal,
+  type FaceState,
+} from "./hiding-model.js";
 import { clickableRegions, FACE_LAYOUT } from "./layout.js";
 import { placementAfterMove, readStoredPlacement, writeStoredPlacement } from "./placement-store.js";
 import { restorePlacement } from "./placement.js";
@@ -19,6 +27,38 @@ function displayBounds(): Rectangle[] {
   return screen.getAllDisplays().map((d) => d.bounds);
 }
 
+let state: FaceState = INITIAL_FACE_STATE;
+let faceWindow: BrowserWindow | undefined;
+let tray: Tray | undefined;
+
+function render(next: FaceState): void {
+  state = next;
+  if (next.visible) faceWindow?.showInactive();
+  else faceWindow?.hide();
+  faceWindow?.webContents.send("face:state", next);
+}
+
+// THE ONE DISMISSAL PATH. The tray and M5's spoken seam both enter here.
+export function dismiss(): void {
+  render(dismissFace(state));
+}
+
+export function spoken(utterance: string): boolean {
+  if (!isSpokenDismissal(utterance)) return false;
+  dismiss();
+  return true;
+}
+
+// The live desk harness cannot synthesize a tray click without introducing raw
+// input outside the daemon. SIGUSR1 enters the exact dismissal function instead,
+// while the source-shape test proves the tray and spoken seam bind to it too.
+process.on("SIGUSR1", dismiss);
+
+function trayIcon() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><circle cx="8" cy="8" r="7" fill="#38bdf8"/></svg>`;
+  return nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`);
+}
+
 export function createFace(): BrowserWindow {
   const profile = app.getPath("userData");
   const restored = restorePlacement(
@@ -34,7 +74,11 @@ export function createFace(): BrowserWindow {
     );
   }
 
-  const face = new BrowserWindow(faceWindowOptions(restored.position));
+  const face = new BrowserWindow({
+    ...faceWindowOptions(restored.position),
+    webPreferences: { preload: join(import.meta.dirname, "preload.mjs") },
+  });
+  faceWindow = face;
 
   // The face's pixels. Loading is also what makes `ready-to-show` fire - a
   // window that loads nothing never becomes ready and never appears, silently.
@@ -51,12 +95,11 @@ export function createFace(): BrowserWindow {
   // window is not there.
   face.once("ready-to-show", () => {
     face.setShape(clickableRegions(FACE_LAYOUT));
-    face.showInactive();
+    render(state);
   });
 
-  // Decision 3: where the user put it is where it is next time. Snapping is
-  // applied on release rather than during the drag, so the face follows the
-  // pointer honestly and settles at the end.
+  // Decision 3: where the user put it is where it is next time. The window
+  // reports each settled move; edge snapping may cause one final moved event.
   face.on("moved", () => {
     const bounds = face.getBounds();
     const display = screen.getDisplayMatching(bounds).bounds;
@@ -76,6 +119,16 @@ export function createFace(): BrowserWindow {
   return face;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createFace();
+
+  tray = new Tray(trayIcon());
+  tray.setToolTip("Mastra face");
+  tray.on("click", dismiss);
+
+  try {
+    await connectToHub({ socketPath: defaultLaneSocketPath(), onState: render });
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : String(error));
+  }
 });

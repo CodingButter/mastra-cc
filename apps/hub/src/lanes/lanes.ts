@@ -17,23 +17,15 @@
 // the boundary it exists to defend was breached, which is exactly why the
 // carrier is named here in prose instead of inferred from a passing pin.
 
-/**
- * The vocabulary, verbatim from `docs/01-ARCHITECTURE.md:125-128` including the
- * meanings, because the meaning is the part that drifted.
- *
- * - `progress` - the agent is working; here is what it is doing
- * - `answer` - the agent has something to say to the person
- * - `voice_opened` - a voice session became active somewhere
- * - `voice_closed` - the last voice session ended
- */
-export const LANE_EVENTS = ["progress", "answer", "voice_opened", "voice_closed"] as const;
-export type LaneEvent = (typeof LANE_EVENTS)[number];
-
-export interface LaneFrame {
-  readonly event: LaneEvent;
-  /** What the agent is doing, or has to say. Absent on the voice edges, which carry no prose. */
-  readonly detail?: string;
-}
+// THE VOCABULARY MOVED DOWN, and this file consumes it rather than declaring a
+// second copy. M4 gave the events a carrier (ADR-0052), and the carrier is the
+// lowest layer that must know the four names: both ends of the wire need them,
+// and `packages/transport` cannot import the hub back. Re-declaring them here
+// would be the three-copy problem arriving as four strings. The SET is still
+// asserted against `docs/01-ARCHITECTURE.md` by this package's test, so the
+// words remain pinned to the document rather than to whichever file holds them.
+export { LANE_EVENTS, type LaneEvent, type LaneFrame } from "@mastra-cc/transport";
+import type { LaneFrame } from "@mastra-cc/transport";
 
 export interface LaneConnection {
   /**
