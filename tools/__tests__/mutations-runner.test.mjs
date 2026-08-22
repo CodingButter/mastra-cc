@@ -113,7 +113,15 @@ describe("the mutation runner puts the file back", () => {
     // And the run does not report a result for work it did not finish.
     expect(stderr).not.toContain("none survived");
     expect(ended.code).not.toBe(0);
-  }, 20000);
+    // THE BUDGET, AND WHY IT IS NOT 20 SECONDS. This case waits on two
+    // conditions, each with a ten second budget of its own, and those waits are
+    // what make its failures legible: `waitFor` names the condition that never
+    // held. A twenty second case timeout is exactly the sum of them, so under
+    // the parallel load of the full suite the case died of the timeout instead
+    // - one run in six, reporting nothing but a line number. The headroom means
+    // a slow machine still reaches the assertion, and a genuine failure still
+    // says which half broke.
+  }, 45000);
 
   it("restores the mutated file when the signal is sent to the runner alone", async () => {
     // The other half of issue #18, and the one with the subtler mechanism.
