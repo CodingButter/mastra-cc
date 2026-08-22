@@ -57,10 +57,16 @@ importers:
 
   apps/widget:
     dependencies:
+      '@mastra-cc/transport':
+        specifier: workspace:*
+        version: link:../../packages/transport
       electron:
         specifier: ^43.4.1
         version: 43.4.1
     devDependencies:
+      '@mastra-cc/hub':
+        specifier: workspace:*
+        version: link:../hub
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3

@@ -859,5 +859,29 @@
     "replace": "  const number = value === undefined ? \"\" : value;",
     "cwd": "tools",
     "testFile": "proofs/__tests__/window-model.test.mjs"
+  },
+  {
+    "name": "the-late-joiner-hears-silence",
+    "file": "packages/transport/src/lane.ts",
+    "find": "      (frame) => socket.write(`${JSON.stringify(frame)}\\n`),",
+    "replace": "      (frame) => void frame,",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/the-lane-wire.test.ts"
+  },
+  {
+    "name": "the-progress-that-does-not-bring-the-face-back",
+    "file": "apps/widget/src/hiding-model.ts",
+    "find": "      return { ...state, visible: true, working: true, caption: frame.detail };",
+    "replace": "      return { ...state, working: true, caption: frame.detail };",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-hides-when-told.test.ts"
+  },
+  {
+    "name": "the-timer-that-recreates-the-auto-hide-bug",
+    "file": "apps/widget/src/hiding-model.ts",
+    "find": "      return { ...state, visible: true, working: true, caption: frame.detail };",
+    "replace": "      setTimeout(() => dismissFace(state), 0);\n      return { ...state, visible: true, working: true, caption: frame.detail };",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-hides-when-told.test.ts"
   }
 ]
