@@ -31,6 +31,7 @@ function plant(relPath, content, alongside = {}) {
 // to scan and a manifest to read. A tree with only the source would fail on the
 // unreadable manifest, which is a true failure for the wrong reason.
 const CLEAN_HUB_MANIFEST = JSON.stringify({ name: "@mastra-cc/hub", dependencies: { "@mastra-cc/transport": "workspace:*" } });
+const CLEAN_WIDGET_MANIFEST = JSON.stringify({ name: "@mastra-cc/widget", dependencies: { "@mastra-cc/transport": "workspace:*" } });
 
 // `vacuity` is each pin's OWN vacuous-pass sentence, not the shared tail of it.
 // Asserting only "would pass vacuously" let B2's source-half guard be deleted
@@ -51,6 +52,20 @@ const cases = [
     plantSource: "export const stream = await navigator.mediaDevices.getUserMedia({ audio: true });\n",
     expectedMessage: 'audio API "getUserMedia" in the hub',
     alongside: { "apps/hub/package.json": CLEAN_HUB_MANIFEST },
+  },
+  {
+    pin: "b3",
+    plantPath: "apps/widget/src/provider.ts",
+    plantSource: "export const key = process.env.OPENAI_API_KEY;\n",
+    expectedMessage: 'provider credential "OPENAI_API_KEY"',
+    alongside: { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
+  },
+  {
+    pin: "b9",
+    plantPath: "apps/widget/src/transcriber.ts",
+    plantSource: 'import { pipeline } from "@huggingface/transformers";\n',
+    expectedMessage: 'transcriber "@huggingface/transformers"',
+    alongside: { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
   },
   {
     pin: "b5",
@@ -175,6 +190,67 @@ test("b2: an unreadable manifest fails rather than passing the manifest half vac
   const r = runPin("b2", ["--root", root]);
   expect(r.status).toBe(1);
   expect(r.output).toContain("would pass vacuously");
+});
+
+for (const [pin, dependency, expected] of [
+  ["b3", "openai", 'provider SDK "openai"'],
+  ["b9", "@huggingface/transformers", 'transcriber "@huggingface/transformers"'],
+]) {
+  test(`${pin}: a forbidden dependency declared but never imported still fails`, () => {
+    const root = plant(
+      "apps/widget/src/index.ts",
+      "export const widget = true;\n",
+      { "apps/widget/package.json": JSON.stringify({ name: "@mastra-cc/widget", dependencies: { [dependency]: "1.0.0" } }) },
+    );
+    const r = runPin(pin, ["--root", root]);
+    expect(r.status).toBe(1);
+    expect(r.output).toContain(expected);
+    expect(r.output).toContain("apps/widget/package.json");
+  });
+}
+
+test("b9: its own transcriber-removal explanation is not a violation", () => {
+  const root = plant(
+    "apps/widget/src/why.ts",
+    '// @huggingface/transformers was removed; transcription does not belong here (ADR-0005).\nexport {};\n',
+    { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
+  );
+  const r = runPin("b9", ["--root", root]);
+  expect(r.status).toBe(0);
+  expect(r.output).toContain("pin-b9: ok");
+});
+
+test("b4: zero microphone consumers is green and visible", () => {
+  const root = plant("apps/widget/src/index.ts", "export const widget = true;\n", { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST });
+  const r = runPin("b4", ["--root", root]);
+  expect(r.status).toBe(0);
+  expect(r.output).toContain("0 microphone consumer(s)");
+});
+
+test("b4: exactly one microphone consumer is the shape M5 will add", () => {
+  const root = plant("apps/widget/src/microphone.ts", "navigator.mediaDevices.getUserMedia({ audio: true });\n", { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST });
+  const r = runPin("b4", ["--root", root]);
+  expect(r.status).toBe(0);
+  expect(r.output).toContain("1 microphone consumer(s)");
+});
+
+test("b4: two microphone consumers fail with both paths named", () => {
+  const root = plant(
+    "apps/widget/src/first.ts",
+    "navigator.mediaDevices.getUserMedia({ audio: true });\n",
+    { "apps/widget/src/second.ts": "new MediaRecorder(stream);\n", "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
+  );
+  const r = runPin("b4", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("2 microphone consumers");
+  expect(r.output).toContain("apps/widget/src/first.ts");
+  expect(r.output).toContain("apps/widget/src/second.ts");
+});
+
+test("b4: an empty client file set fails rather than reporting zero", () => {
+  const r = runPin("b4", ["--root", mkdtempSync(join(tmpdir(), "pin-empty-"))]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain(VACUOUS_FILE_SET);
 });
 
 test("b11: an observe-only dispatch table fails rather than passing vacuously", () => {
