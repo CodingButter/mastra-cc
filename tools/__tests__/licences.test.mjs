@@ -345,6 +345,91 @@ describe("the licence gate", () => {
       expect(r.stderr).toContain("cannot be verified");
     });
 
+    it("pins a repository-owned model payload to its bytes and licence evidence", () => {
+      manifest({ alpha: "^1.0.0" });
+      install("alpha", "MIT", { beta: "^1.0.0" });
+      install("beta", "MIT");
+      mkdirSync(join(root, "packages", "voice", "models"), { recursive: true });
+      writeFileSync(join(root, "packages", "voice", "models", "wake.onnx"), "model bytes");
+      pins({
+        packages: {},
+        files: {
+          "packages/voice/models/wake.onnx": {
+            digest: "0".repeat(64),
+            license: "Apache-2.0",
+            source: "https://example.invalid/pinned-source",
+            reviewed: "2026-08-23",
+            reason: "test fixture",
+          },
+        },
+      });
+      const first = run();
+      expect(first.status).toBe(1);
+      expect(first.stderr).toContain("repository payload packages/voice/models/wake.onnx has not been reviewed");
+      const actual = /found ([0-9a-f]{64})/.exec(first.stderr)?.[1];
+      expect(actual).toBeTruthy();
+
+      pins({
+        packages: {},
+        files: {
+          "packages/voice/models/wake.onnx": {
+            digest: actual,
+            license: "Apache-2.0",
+            source: "https://example.invalid/pinned-source",
+            reviewed: "2026-08-23",
+            reason: "test fixture",
+          },
+        },
+      });
+      const second = run();
+      expect(second.status).toBe(0);
+      expect(second.stdout).toContain("1 repository payload(s)");
+    });
+
+    it("refuses a repository model declaration when the payload is absent", () => {
+      manifest({ alpha: "^1.0.0" });
+      install("alpha", "MIT", { beta: "^1.0.0" });
+      install("beta", "MIT");
+      pins({
+        packages: {},
+        files: {
+          "packages/voice/models/missing.onnx": {
+            digest: "0".repeat(64),
+            license: "Apache-2.0",
+            source: "https://example.invalid/pinned-source",
+            reviewed: "2026-08-23",
+            reason: "manifest-only declarations do not license absent bytes",
+          },
+        },
+      });
+      const r = run();
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("repository payload packages/voice/models/missing.onnx cannot be verified");
+    });
+
+    it("refuses a forbidden openWakeWord model payload despite Apache-licensed wrapper code", () => {
+      manifest({ alpha: "^1.0.0" });
+      install("alpha", "Apache-2.0", { beta: "^1.0.0" });
+      install("beta", "MIT");
+      mkdirSync(join(root, "packages", "voice", "models"), { recursive: true });
+      writeFileSync(join(root, "packages", "voice", "models", "openwakeword-feature.onnx"), "forbidden model bytes");
+      pins({
+        packages: {},
+        files: {
+          "packages/voice/models/openwakeword-feature.onnx": {
+            digest: "0".repeat(64),
+            license: "CC-BY-NC-SA-4.0",
+            source: "https://github.com/dscripka/openWakeWord/tree/368c03716d1e92591906a84949bc477f3a834455",
+            reviewed: "2026-08-23",
+            reason: "the wrapper is Apache-2.0 but the distributed pretrained model is non-commercial",
+          },
+        },
+      });
+      const r = run();
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("repository payload packages/voice/models/openwakeword-feature.onnx lacks permitted licence");
+    });
+
     it("refuses a runtime package that ships a payload nobody pinned", () => {
       // THE HOLE ITSELF. A package can arrive, download a binary and pass on
       // its wrapper's MIT, exactly as electron did. An unpinned payload is not

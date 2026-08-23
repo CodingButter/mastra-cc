@@ -234,6 +234,17 @@ test("b4: exactly one microphone consumer is the shape M5 will add", () => {
   expect(r.output).toContain("1 microphone consumer(s)");
 });
 
+test("b4: the selected voice capture boundary is a microphone consumer", () => {
+  const root = plant(
+    "apps/widget/src/microphone.ts",
+    'import { createMicrophoneCapture } from "@mastra-cc/voice/node";\ncreateMicrophoneCapture();\n',
+    { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
+  );
+  const r = runPin("b4", ["--root", root]);
+  expect(r.status).toBe(0);
+  expect(r.output).toContain("1 microphone consumer(s)");
+});
+
 test("b4: two microphone consumers fail with both paths named", () => {
   const root = plant(
     "apps/widget/src/first.ts",

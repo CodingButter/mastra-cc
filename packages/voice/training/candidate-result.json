@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "seed": 20260823,
+  "architecture": "openWakeWord-style flattened 16x96 speech embeddings -> dense 32 ReLU -> sigmoid",
+  "featureModel": {
+    "path": "/tmp/m5-wake-spike/google/speech_embedding.onnx",
+    "sha256": "e6d1aaf9f052a340ee1a006103f4de4897ad9894c880b74afc90571e6596a18e"
+  },
+  "keywordModel": {
+    "path": "/tmp/m5-wake-spike/hey-mastra-keyword.onnx",
+    "sha256": "f70e19a02544faba9a1850646f518430391b06dcfdbcb430c73c480064351264",
+    "bytes": 198067
+  },
+  "training": {
+    "positiveCount": 1000,
+    "negativeCount": 500,
+    "speakers": 210,
+    "iterations": 18,
+    "loss": 5.166012358235761e-05
+  },
+  "validation": {
+    "positiveCount": 100,
+    "negativeCount": 300,
+    "trueAccepts": 99,
+    "falseAccepts": 0,
+    "recall": 0.99,
+    "maxNegativeScore": 0.9834977984428406,
+    "minPositiveScore": 0.9999988079071045,
+    "threshold": 1.0
+  },
+  "candidateTest": {
+    "positiveCount": 100,
+    "negativeCount": 1000,
+    "trueAccepts": 98,
+    "falseAccepts": 0,
+    "recall": 0.98,
+    "maxNegativeScore": 0.9901314973831177,
+    "minPositiveScore": 0.9999997615814209,
+    "passes": true
+  },
+  "candidateCohorts": {
+    "positiveSpeakers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "negativeSpeakers": [
+      "librispeech-1272",
+      "librispeech-1462",
+      "librispeech-1988",
+      "librispeech-2035",
+      "librispeech-2277",
+      "librispeech-2428",
+      "librispeech-251",
+      "librispeech-3081",
+      "librispeech-3752",
+      "librispeech-5694",
+      "librispeech-5895",
+      "librispeech-6241",
+      "librispeech-6295",
+      "librispeech-6313",
+      "librispeech-6345",
+      "librispeech-652",
+      "librispeech-777",
+      "librispeech-7850",
+      "librispeech-7976",
+      "librispeech-8297"
+    ]
+  },
+  "onnxExportMaxAbsoluteError": 5.364418029785156e-07,
+  "featureExtractionSeconds": 2.45286793098785
+}

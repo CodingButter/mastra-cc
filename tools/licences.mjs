@@ -122,11 +122,17 @@ const PAYLOAD_CREDITS = ["LICENSES.chromium.html", "LICENSE.electron.txt", "THIR
 
 const problems = [];
 
-const pinnedPayloads = (() => {
+const payloadPins = (() => {
   const path = join(root, "tools", "payload-licences.json");
-  if (!existsSync(path)) return {};
-  return JSON.parse(readFileSync(path, "utf8"));
+  if (!existsSync(path)) return { packages: {}, files: {} };
+  const parsed = JSON.parse(readFileSync(path, "utf8"));
+  if ("packages" in parsed || "files" in parsed) {
+    return { packages: parsed.packages ?? {}, files: parsed.files ?? {} };
+  }
+  return { packages: parsed, files: {} };
 })();
+const pinnedPayloads = payloadPins.packages;
+const pinnedRepositoryPayloads = payloadPins.files;
 
 /** Every credits file a package carries, relative to its own directory. */
 function payloadsOf(packageDir) {
@@ -256,6 +262,27 @@ for (const manifest of found) {
   }
 }
 
+let repositoryPayloadsChecked = 0;
+for (const [path, pin] of Object.entries(pinnedRepositoryPayloads)) {
+  const file = join(root, path);
+  if (!existsSync(file)) {
+    problems.push(`licences: repository payload ${path} cannot be verified because the pinned file is absent`);
+    continue;
+  }
+  if (!licenceAllowed(pin.license) || typeof pin.source !== "string" || pin.source.length === 0) {
+    problems.push(`licences: repository payload ${path} lacks permitted licence and pinned-source evidence`);
+    continue;
+  }
+  const digest = createHash("sha256").update(readFileSync(file)).digest("hex");
+  if (digest !== pin.digest) {
+    problems.push(
+      `licences: repository payload ${path} has not been reviewed at these bytes - found ${digest}, pinned ${pin.digest}`,
+    );
+    continue;
+  }
+  repositoryPayloadsChecked += 1;
+}
+
 // Real findings are reported before any guard about the shape of the run.
 // A vacuity guard exists to stop a false GREEN; letting one speak over a
 // licence this gate actually objected to would hide the answer behind a
@@ -296,6 +323,7 @@ for (const name of Object.keys(pinnedPayloads)) {
 }
 
 const payloadReport = payloadsChecked > 0 ? `, ${payloadsChecked} payload(s) pinned to a reviewed digest` : "";
+const repositoryPayloadReport = repositoryPayloadsChecked > 0 ? `, ${repositoryPayloadsChecked} repository payload(s) pinned to licence evidence and a reviewed digest` : "";
 console.log(
-  `licences: ok - ${found.length} manifest(s), ${checked} package(s) on the permissive allowlist (runtime walked to its closure, development as declared)${payloadReport}`,
+  `licences: ok - ${found.length} manifest(s), ${checked} package(s) on the permissive allowlist (runtime walked to its closure, development as declared)${payloadReport}${repositoryPayloadReport}`,
 );

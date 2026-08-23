@@ -947,5 +947,19 @@
     "replace": "",
     "cwd": "apps/widget",
     "testFile": "src/__tests__/the-face-hears-the-hub.test.ts"
+  },
+  {
+    "name": "wake-gate-bypasses-keyword-decision",
+    "file": "packages/voice/src/gate.ts",
+    "find": "keyword.accepted && ",
+    "cwd": "packages/voice",
+    "testFile": "src/__tests__/wake-gate.test.ts"
+  },
+  {
+    "name": "wake-gate-bypasses-speaker-decision",
+    "file": "packages/voice/src/gate.ts",
+    "find": " && speaker.accepted",
+    "cwd": "packages/voice",
+    "testFile": "src/__tests__/wake-gate.test.ts"
   }
 ]
