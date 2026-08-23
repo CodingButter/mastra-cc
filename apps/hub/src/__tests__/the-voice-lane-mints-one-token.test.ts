@@ -391,10 +391,9 @@ describe("the voice lane mints one token", () => {
     expect(everything).toContain(MODEL);
   });
 
-  // BOUNDARY B3, RUNTIME HALF. The source half of B3 - no client scans a
-  // credential onto the wire - has no client to scan until M4, so it stays
-  // unwired rather than passing vacuously over an empty file set. What CAN be
-  // pinned today is the behaviour the boundary exists for: a credential
+  // BOUNDARY B3, RUNTIME HALF. M4 wired the source half over the first client:
+  // no client reads or declares provider credential machinery. This test pins
+  // the behaviour the boundary exists for at runtime: a credential
   // presented by a caller is not honoured. ADR-0007 amendment A13 deleted the
   // prototype's presentable grant key on exactly this reasoning - "a key an
   // agent can present is a key an agent can be tricked into presenting".

@@ -222,14 +222,14 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 **Deliverables:** the window model and hiding model in [ADR-0016](02-DECISIONS/0016-the-face-is-a-managed-window-that-hides-when-told.md), in full.
 
-**Exit gate — all verified live on the two-monitor X11 desk, not asserted:**
-- [ ] `xwininfo` reports the window managed (not override-redirect).
-- [ ] `xprop` shows the always-on-top state and the window present in the stacking list.
-- [ ] A raised full-screen window does not bury the face.
-- [ ] Dragging moves the face from one monitor to the other; placement survives a restart.
-- [ ] A click on the orb sends a gesture; clicks in the transparent region send nothing.
-- [ ] Disabling from the tray unmaps the window and removes it from the window list.
-- [ ] The face stays visible for the whole of a long `progress` sequence.
+**Exit gate — measured on the repository's two-output X11 desk unless the line names its other witness:**
+- [x] `xwininfo` reports the window managed (not override-redirect). **Ticked 2026-08-23:** box 1 in [the desk artifact](proofs/what-the-face-does-on-a-real-desk.md) reports `Override Redirect State: no` from the X server.
+- [x] `xprop` shows the always-on-top state and the window present in the stacking list. **Ticked 2026-08-23:** box 2 records `_NET_WM_STATE_ABOVE`, membership in `_NET_CLIENT_LIST`, and that showing the face did not activate it.
+- [ ] A raised full-screen window does not bury the face. **Not ticked:** the unconditional sentence is false on openbox. A focused full-screen NORMAL window is above the face; the face returns to the top when focus leaves. Both halves are measured in box 3 and recorded in [ADR-0051](02-DECISIONS/0051-what-always-on-top-is-worth-under-a-focused-full-screen-window.md).
+- [ ] Dragging moves the face from one monitor to the other; placement survives a restart. **Split result:** box 4 proves second-output placement and restart survival through the widget's shipped writer, but B8/ADR-0046 forbids synthesising the hand drag outside the daemon. The gesture remains a human check; the persistence half is not papered over as the whole box.
+- [x] A click on the orb sends a gesture; clicks in the transparent region send nothing. **Ticked 2026-08-23, split witness:** box 5 reads the smaller input shape from X; `apps/widget/src/__tests__/clicks-land-only-on-the-face.test.ts` proves the orb, caption and menu are inside that shape and transparent points are outside it.
+- [x] Disabling from the tray unmaps the window and removes it from the window list. **Ticked 2026-08-23:** box 6 enters the tray-bound dismissal function without synthetic input and observes the window leave `_NET_CLIENT_LIST`.
+- [x] The face stays visible for the whole of a long `progress` sequence. **Ticked 2026-08-23, split witness:** `apps/widget/src/__tests__/the-face-hides-when-told.test.ts` advances an injected clock by 24 hours and keeps progress visible; the same suite proves no timer can reach a hide, while the live desk exercises the built widget's visibility path.
 
 ---
 

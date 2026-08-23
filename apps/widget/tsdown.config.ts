@@ -8,7 +8,7 @@ export default defineConfig({
   // imports it: the placement file a restart measurement restores from has to
   // be written by the shipped writer, or the measurement scores the reading
   // half twice and never executes the writing half at all.
-  entry: ["src/main.ts", "src/face.ts", "src/preload.ts", "src/placement-store.ts"],
+  entry: ["src/main.ts", "src/face.ts", "src/placement-store.ts"],
   deps: { neverBundle: ["electron"] },
   hooks: {
     "build:done": () => {
@@ -16,6 +16,7 @@ export default defineConfig({
       // than committed twice: a second hand-editable copy is the three-copy
       // problem ADR-0003 names.
       copyFileSync(join("src", "face.html"), join("dist", "face.html"));
+      copyFileSync(join("src", "preload.cjs"), join("dist", "preload.cjs"));
     },
   },
 });

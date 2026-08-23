@@ -182,6 +182,15 @@ describe("the face hears the hub", () => {
     const importing = sources.filter(([, text]) => /@mastra-cc\/hub/.test(text));
     expect(importing.map(([name]) => name)).toEqual([]);
   });
+
+  it("replays the current face state after the renderer starts listening", () => {
+    const source = join(import.meta.dirname, "..");
+    const preload = readFileSync(join(source, "preload.cjs"), "utf8");
+    const main = readFileSync(join(source, "main.ts"), "utf8");
+
+    expect(preload).toMatch(/ipcRenderer\.on\("face:state"[\s\S]*ipcRenderer\.send\("face:ready"\)/);
+    expect(main).toMatch(/ipcMain\.on\("face:ready"[\s\S]*render\(state\)/);
+  });
 });
 
 /** Every shipped source file in the widget, comments stripped, tests excluded. */

@@ -21,6 +21,10 @@ precise claim about a blind spot rather than a slogan, and it checks out: `tools
 matches an import of `node:net`, so a carrier built on a WebSocket library inside the hub
 would be a second wire implementation that the pin cannot see.
 
+> **Consistency note, 2026-08-23:** The quotation above preserves the comment as
+> this decision found it. The source comment now records the carrier's arrival in
+> the past tense; the constraint and its B5 blind-spot reasoning are unchanged.
+
 **The second constraint is ADR-0003's own risk clause.** That record lists four
 responsibilities — framing and correlation, address resolution per operating system, daemon
 discovery, and the generated protocol bindings ([ADR-0003:23](0003-one-shared-transport-package.md)) —
