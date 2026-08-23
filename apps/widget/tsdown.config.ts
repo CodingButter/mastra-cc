@@ -8,7 +8,13 @@ export default defineConfig({
   // imports it: the placement file a restart measurement restores from has to
   // be written by the shipped writer, or the measurement scores the reading
   // half twice and never executes the writing half at all.
-  entry: ["src/main.ts", "src/face.ts", "src/placement-store.ts"],
+  entry: [
+    "src/main.ts",
+    "src/face.ts",
+    "src/placement-store.ts",
+    "src/control-proof.ts",
+    "src/offset-spike.ts",
+  ],
   deps: { neverBundle: ["electron"] },
   hooks: {
     "build:done": () => {

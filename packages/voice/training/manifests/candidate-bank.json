@@ -32403,6 +32403,28 @@
       "noise_w_scale": 0.79,
       "path": "validation-positive/speaker-319-take-04.wav",
       "sha256": "b819c230241c588060df1e9a9f79d65cc53262aaa292b0d486a093a0eae25c17"
+    },
+    {
+      "cohort": "train-negative",
+      "label": 0,
+      "speaker_id": "librispeech-121",
+      "take": 8,
+      "text": null,
+      "source": "LibriSpeech/test-clean/121/121726/121-121726-0008.flac",
+      "path": "train-negative/hard-speaker-121-take-008.wav",
+      "sha256": "406767894105314d4b9028f29013897db0bf487dfc46ec8066288385f5d2f32c",
+      "hardNegativeFromShippingPath": "shipping-keyword-negative/speaker-121-take-008.wav"
+    },
+    {
+      "cohort": "train-negative",
+      "label": 0,
+      "speaker_id": "librispeech-61",
+      "take": 10,
+      "text": null,
+      "source": "LibriSpeech/test-clean/61/70968/61-70968-0010.flac",
+      "path": "train-negative/hard-speaker-61-take-010.wav",
+      "sha256": "e13c3c0f3fb469ac3bb9fff16b4231ed152c06d8f8ef72ec9bc565942185ad96",
+      "hardNegativeFromShippingPath": "shipping-keyword-negative/speaker-61-take-010.wav"
     }
   ],
   "negativeCorpus": {
@@ -32458,5 +32480,15 @@
       ]
     }
   },
-  "manifestContent": "Every row names one normalized 16 kHz mono two-second WAV used by the frozen bank; raw audio is not shipped."
+  "manifestContent": "Every row names one normalized 16 kHz mono two-second WAV used by the frozen bank; raw audio is not shipped.",
+  "hardNegativeAmendment": [
+    {
+      "path": "shipping-keyword-negative/speaker-121-take-008.wav",
+      "sha256": "406767894105314d4b9028f29013897db0bf487dfc46ec8066288385f5d2f32c"
+    },
+    {
+      "path": "shipping-keyword-negative/speaker-61-take-010.wav",
+      "sha256": "e13c3c0f3fb469ac3bb9fff16b4231ed152c06d8f8ef72ec9bc565942185ad96"
+    }
+  ]
 }

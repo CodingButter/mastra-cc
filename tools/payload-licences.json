@@ -17,11 +17,11 @@
       "reason": "Converted from Google's official speech_embedding SavedModel with tf2onnx 1.16.1, TensorFlow 2.18.1, ONNX 1.17.0, opset 17. Google Research's pinned repository carries Apache-2.0 licence text sha256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30. The downloaded archive has no embedded licence file; Jamie explicitly accepted the pinned official source evidence for this named payload on 2026-08-23. Numerical parity max absolute error was 3.8147e-05. This exception does not cover openWakeWord's CC BY-NC-SA pretrained payloads."
     },
     "packages/voice/models/hey-mastra-keyword.onnx": {
-      "digest": "f70e19a02544faba9a1850646f518430391b06dcfdbcb430c73c480064351264",
+      "digest": "4bfc990f9dcc65444b3b93ed1cd22d180487ffec2e835a52327aa26f7427fa80",
       "license": "Apache-2.0",
-      "source": "repository training result packages/voice/training/candidate-result.json sha256 4cc0a3d65a622fbc6936e932c2ce10fca30232701e15e41ad14497747c3c7742",
+      "source": "repository training result packages/voice/training/candidate-result.json sha256 954f1eb79cbd2f78e04e73930c0b631ed60aa21d3641d500928031326a942a65",
       "reviewed": "2026-08-23",
-      "reason": "Repository-trained hey-mastra classifier over the pinned speech embedding. Inputs are commercially usable Piper LibriTTS synthetic positives and CC BY 4.0 LibriSpeech negatives, frozen in candidate-bank.json sha256 2b12b60836432f106aa81fd63c493f4775d77075a77cf3b3d707226edaa02927. Candidate test measured 98/100 recall and zero false accepts across 1,000 negatives from 20 speakers."
+      "reason": "Repository-trained hey-mastra classifier over the pinned speech embedding. Inputs are commercially usable Piper LibriTTS synthetic positives and CC BY 4.0 LibriSpeech negatives, frozen in candidate-bank.json sha256 8644943b1c829230890ca2976ca480f11b273866b98f4dd583e07254fad687f7. Jamie amended the plan after the first threshold freeze: the two observed shipping false positives remain in the unchanged shipping bank and were also added as explicit hard-negative training rows with their original source paths and SHA-256 digests. The unchanged candidate test measured 99/100 recall and zero false accepts across 1,000 negatives from 20 speakers."
     }
   }
 }

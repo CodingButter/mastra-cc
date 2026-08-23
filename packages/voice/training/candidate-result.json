@@ -7,35 +7,35 @@
     "sha256": "e6d1aaf9f052a340ee1a006103f4de4897ad9894c880b74afc90571e6596a18e"
   },
   "keywordModel": {
-    "path": "/tmp/m5-wake-spike/hey-mastra-keyword.onnx",
-    "sha256": "f70e19a02544faba9a1850646f518430391b06dcfdbcb430c73c480064351264",
+    "path": "/tmp/m5-wake-spike/hey-mastra-keyword-hard.onnx",
+    "sha256": "4bfc990f9dcc65444b3b93ed1cd22d180487ffec2e835a52327aa26f7427fa80",
     "bytes": 198067
   },
   "training": {
     "positiveCount": 1000,
-    "negativeCount": 500,
-    "speakers": 210,
-    "iterations": 18,
-    "loss": 5.166012358235761e-05
+    "negativeCount": 502,
+    "speakers": 212,
+    "iterations": 19,
+    "loss": 5.142793232973293e-05
   },
   "validation": {
     "positiveCount": 100,
     "negativeCount": 300,
-    "trueAccepts": 99,
+    "trueAccepts": 100,
     "falseAccepts": 0,
-    "recall": 0.99,
-    "maxNegativeScore": 0.9834977984428406,
-    "minPositiveScore": 0.9999988079071045,
+    "recall": 1.0,
+    "maxNegativeScore": 0.9980985522270203,
+    "minPositiveScore": 1.0,
     "threshold": 1.0
   },
   "candidateTest": {
     "positiveCount": 100,
     "negativeCount": 1000,
-    "trueAccepts": 98,
+    "trueAccepts": 99,
     "falseAccepts": 0,
-    "recall": 0.98,
-    "maxNegativeScore": 0.9901314973831177,
-    "minPositiveScore": 0.9999997615814209,
+    "recall": 0.99,
+    "maxNegativeScore": 0.9994663596153259,
+    "minPositiveScore": 0.9999996423721313,
     "passes": true
   },
   "candidateCohorts": {
@@ -84,6 +84,6 @@
       "librispeech-8297"
     ]
   },
-  "onnxExportMaxAbsoluteError": 5.364418029785156e-07,
-  "featureExtractionSeconds": 2.45286793098785
+  "onnxExportMaxAbsoluteError": 1.0132789611816406e-06,
+  "featureExtractionSeconds": 2.4096564089413732
 }

@@ -28,5 +28,8 @@
     "tsdown": "^0.22.14",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "onnxruntime-node": "1.27.0"
   }
 }

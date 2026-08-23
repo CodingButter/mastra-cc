@@ -1,9 +1,15 @@
 import { join } from "node:path";
 
-import { app, BrowserWindow, ipcMain, nativeImage, screen, Tray, type Rectangle } from "electron";
+import { randomBytes } from "node:crypto";
+
+import { app, BrowserWindow, ipcMain, nativeImage, screen, shell, Tray, type Rectangle } from "electron";
 import { defaultLaneSocketPath } from "@mastra-cc/transport";
+import { createTemplateStore } from "@mastra-cc/voice/node";
 
 import { connectToHub } from "./hub-connection.js";
+import { createWakeControl } from "./wake-control.js";
+import { startWakeControlServer } from "./wake-control-server.js";
+import { captureWakeAudio } from "./wake-adapters.js";
 import {
   dismissFace,
   INITIAL_FACE_STATE,
@@ -121,8 +127,34 @@ export function createFace(): BrowserWindow {
   return face;
 }
 
+async function startWakeControl(): Promise<void> {
+  const dashboardOrigin = process.env.MASTRA_CC_WAKE_DASHBOARD_ORIGIN ?? "http://127.0.0.1:4173";
+  const nonce = randomBytes(32).toString("hex");
+  const control = createWakeControl({
+    origin: dashboardOrigin,
+    nonce,
+    templates: createTemplateStore(join(app.getPath("userData"), "wake-templates.json")),
+    capture: captureWakeAudio,
+  });
+  const server = await startWakeControlServer(control);
+  const sweep = setInterval(() => control.sweep(), 2_000);
+  sweep.unref();
+  app.once("before-quit", () => {
+    clearInterval(sweep);
+    control.expire();
+    void server.close();
+  });
+
+  if (process.env.MASTRA_CC_WAKE_DASHBOARD_ORIGIN !== undefined) {
+    const launch = new URL("/wake-enrolment", dashboardOrigin);
+    launch.hash = new URLSearchParams({ bootstrap: nonce, controlPort: String(server.port) }).toString();
+    await shell.openExternal(launch.toString());
+  }
+}
+
 app.whenReady().then(async () => {
   createFace();
+  await startWakeControl();
 
   tray = new Tray(trayIcon());
   tray.setToolTip("Mastra face");
