@@ -73,7 +73,7 @@ run in-process, opening no socket, because there is no client to carry one yet.
 When M4 brings the first client, that carrier lands inside the transport
 package, and this rule is what says so in advance.
 
-> **Consistency note, 2026-08-22:** M4 has now brought that client, and the lane
+> **Consistency note, 2026-08-23:** M4 has now brought that client, and the lane
 > carrier landed in `packages/transport` under [ADR-0052](0052-the-lane-carrier-is-transports-second-wire.md).
 > The paragraph above records what this decision deferred at acceptance; it no
 > longer describes the current tree as clientless.

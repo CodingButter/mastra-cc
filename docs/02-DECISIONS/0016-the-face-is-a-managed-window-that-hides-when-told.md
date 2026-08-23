@@ -37,7 +37,7 @@ The tray face — the orb — is the product's physical presence on the desktop,
 
 **Good.** The face behaves like a window on a desk with more than one monitor, stays on top for real, and leaves when asked instead of when a timer decides. All ten points above were verified live on a real dual-monitor X11 session, not asserted.
 
-> **Correction, 2026-08-22:** The sentence above records the prototype evidence cited in this ADR; it is not a claim that this rebuild repeated every gesture on physical monitors. The rebuild's machine-scored evidence uses an Xorg dummy-driver desk with two connected outputs and a standalone tray. Its exact limits and measurements are recorded in [the M4 proof artifact](../proofs/what-the-face-does-on-a-real-desk.md).
+> **Correction, 2026-08-23:** The sentence above records the prototype evidence cited in this ADR; it is not a claim that this rebuild repeated every gesture on physical monitors. The rebuild's machine-scored evidence uses an Xorg dummy-driver desk with two connected outputs and a standalone tray. Its exact limits and measurements are recorded in [the M4 proof artifact](../proofs/what-the-face-does-on-a-real-desk.md).
 
 **Cost.** The element-highlight overlay is gone until it gets its own surface. That was a genuine feature and its loss is the price of a face-sized window.
 
