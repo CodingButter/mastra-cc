@@ -931,5 +931,21 @@
     "replace": "",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "the-renderer-that-never-says-it-is-ready",
+    "file": "apps/widget/src/preload.cjs",
+    "find": "    ipcRenderer.send(\"face:ready\");\n",
+    "replace": "",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-hears-the-hub.test.ts"
+  },
+  {
+    "name": "the-current-state-that-is-never-replayed",
+    "file": "apps/widget/src/main.ts",
+    "find": "ipcMain.on(\"face:ready\", () => render(state));\n",
+    "replace": "",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/the-face-hears-the-hub.test.ts"
   }
 ]

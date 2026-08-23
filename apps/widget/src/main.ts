@@ -1,6 +1,6 @@
 import { join } from "node:path";
 
-import { app, BrowserWindow, nativeImage, screen, Tray, type Rectangle } from "electron";
+import { app, BrowserWindow, ipcMain, nativeImage, screen, Tray, type Rectangle } from "electron";
 import { defaultLaneSocketPath } from "@mastra-cc/transport";
 
 import { connectToHub } from "./hub-connection.js";
@@ -37,6 +37,8 @@ function render(next: FaceState): void {
   else faceWindow?.hide();
   faceWindow?.webContents.send("face:state", next);
 }
+
+ipcMain.on("face:ready", () => render(state));
 
 // THE ONE DISMISSAL PATH. The tray and M5's spoken seam both enter here.
 export function dismiss(): void {
@@ -76,7 +78,7 @@ export function createFace(): BrowserWindow {
 
   const face = new BrowserWindow({
     ...faceWindowOptions(restored.position),
-    webPreferences: { preload: join(import.meta.dirname, "preload.mjs") },
+    webPreferences: { preload: join(import.meta.dirname, "preload.cjs") },
   });
   faceWindow = face;
 
