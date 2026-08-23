@@ -158,6 +158,24 @@ describe("the artifact cannot overclaim", () => {
     expect(artifact.indexOf("Limitations")).toBeLessThan(artifact.indexOf("## Measurements"));
   });
 
+  it("does not promote source witnesses into live desk measurements", () => {
+    const artifact = renderArtifact(passingRows(), ENV);
+    const prose = artifact.replace(/\s+/g, " ");
+    expect(prose).toContain("Neither witness is silently promoted into the other");
+    expect(prose).toContain("does not pretend 24 wall-clock hours elapsed");
+    expect(artifact.indexOf("Limitations")).toBeLessThan(
+      artifact.indexOf("What the desk row and the source witness each prove"),
+    );
+  });
+
+  it("records why the dummy-driver desk replaced three one-display attempts", () => {
+    const prose = renderArtifact(passingRows(), ENV).replace(/\s+/g, " ");
+    expect(prose).toContain("xrandr --setmonitor");
+    expect(prose).toContain("Xvfb XINERAMA");
+    expect(prose).toContain("Xephyr with two screens");
+    expect(prose).toContain("real CRTCs, the layer Chromium reads");
+  });
+
   it("names the tree it was measured against, dirt included", () => {
     // A bare hash on an artifact produced from a modified tree names a tree
     // that does not contain what was measured.

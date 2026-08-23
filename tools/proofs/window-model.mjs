@@ -279,7 +279,11 @@ itself.
    monitors, and the tray is a standalone tray rather than a desktop
    environment's own. What this proves is that the widget's monitor and tray
    behaviour is correct against the interfaces X and EWMH expose - not that it
-   looks right on glass. The visual confirmation is a separate, human item.
+   looks right on glass. Three earlier desks (\`xrandr --setmonitor\`, Xvfb
+   XINERAMA, and Xephyr with two screens) still gave Chromium one display; the
+   dummy driver succeeds because it advertises two connected outputs with real
+   CRTCs, the layer Chromium reads. The rendered-pixel capture is a separate
+   artifact because geometry is not appearance.
 2. **Box 3 holds with a condition.** A face carrying \`_NET_WM_STATE_ABOVE\` is
    buried by a full-screen window *while that window holds focus*, and returns
    to the top on its own when focus moves. Both halves are measured below.
@@ -299,6 +303,19 @@ ${(outputs ?? []).map((o) => `- \`${o.name}\` ${o.width}x${o.height} at ${o.x},$
 | Box | What | Command | Observed | Verdict |
 |---|---|---|---|---|
 ${rows}
+
+## What the desk row and the source witness each prove
+
+- **Click regions (box 5):** the X-server row proves the built window carries a
+  smaller input shape. \`apps/widget/src/__tests__/clicks-land-only-on-the-face.test.ts\`
+  proves the orb, caption and menu are inside that shape and transparent points
+  are outside it. Neither witness is silently promoted into the other.
+- **Long progress (box 7):**
+  \`apps/widget/src/__tests__/the-face-hides-when-told.test.ts\` advances an
+  injected clock by 24 hours and proves progress remains visible; it also
+  excludes timer-driven dismissal. The desk proves the same built widget can map and
+  unmap through its real main-process visibility path; it does not pretend 24
+  wall-clock hours elapsed during this capture.
 `;
 
   // ADR-0012: a proof that overclaims is worse than no proof. Box 3 does not
