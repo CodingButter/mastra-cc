@@ -11,10 +11,10 @@
 // from a green pin: this module is IN-PROCESS. It opens no socket and no
 // WebSocket server. Boundary pin B5 greps for `node:net` imports, so it is
 // silent here - and it is silent for the right reason rather than by luck,
-// because there is no second socket implementation to find. When M4 brings a
-// client, the carrier lands inside `packages/transport` (ADR-0003), never
-// beside it. A WebSocket server growing in the hub would leave B5 green while
-// the boundary it exists to defend was breached, which is exactly why the
+// because there is no second socket implementation to find. M4 brought the
+// first client, and its carrier landed inside `packages/transport` (ADR-0052),
+// never beside it. A WebSocket server growing in the hub would leave B5 green
+// while the boundary it exists to defend was breached, which is exactly why the
 // carrier is named here in prose instead of inferred from a passing pin.
 
 // THE VOCABULARY MOVED DOWN, and this file consumes it rather than declaring a
