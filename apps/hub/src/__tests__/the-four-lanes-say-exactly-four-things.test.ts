@@ -124,6 +124,31 @@ describe("the four lanes say exactly four things", () => {
     expect(peer.saidAt).toBe(5_000);
   });
 
+  it("closes an inactive client session once after exactly sixty seconds without actual speech", () => {
+    let clock = 1_000;
+    const hub = createLaneHub({ now: () => clock });
+    const listener = client();
+    hub.join(listener.deliver);
+    const speaker = hub.join(client().deliver);
+
+    speaker.openVoiceSession();
+    expect(listener.frames).toEqual([{ event: "voice_opened" }]);
+
+    clock += 59_999;
+    hub.sweep();
+    expect(hub.voiceSessions).toBe(1);
+
+    speaker.pong();
+    clock += 1;
+    hub.sweep();
+    expect(hub.voiceSessions).toBe(0);
+    expect(listener.frames).toEqual([{ event: "voice_opened" }, { event: "voice_closed" }]);
+
+    hub.sweep();
+    speaker.closeVoiceSession();
+    expect(listener.frames).toEqual([{ event: "voice_opened" }, { event: "voice_closed" }]);
+  });
+
   it("voice_closed fires when the last session ends, not the first", () => {
     const hub = createLaneHub();
     const listener = client();

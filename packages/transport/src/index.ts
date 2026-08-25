@@ -232,9 +232,12 @@ export {
   isLaneFrame,
   LANE_EVENTS,
   serveLane,
+  VOICE_DIAL_TIMEOUT_MS,
   type LaneClient,
   type LaneEvent,
   type LaneFrame,
   type LaneServer,
   type LaneSource,
+  type VoiceDialRequest,
+  type VoiceDialResult,
 } from "./lane.js";

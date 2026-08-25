@@ -10,6 +10,8 @@ import {
   type LaneFrame,
   type LaneServer,
   type LaneSource,
+  type VoiceDialRequest,
+  type VoiceDialResult,
   serveLane,
 } from "../lane.js";
 
@@ -51,7 +53,12 @@ interface Peer {
 }
 
 /** The hub's lane behaviour, small enough to read, with the same shape the real one has. */
-function miniature(options: { voiceOpen?: boolean } = {}) {
+function miniature(
+  options: {
+    voiceOpen?: boolean;
+    mintVoiceDial?: (request: VoiceDialRequest) => Promise<VoiceDialResult>;
+  } = {},
+) {
   const peers = new Set<Peer>();
   let clock = 0;
   const source: LaneSource = {
@@ -67,6 +74,7 @@ function miniature(options: { voiceOpen?: boolean } = {}) {
           peer.awaitingPong = false;
           peer.saidAt = clock += 1;
         },
+        mintVoiceDial: options.mintVoiceDial,
         get open() {
           return peer.open;
         },
@@ -204,6 +212,34 @@ describe("the lane wire", () => {
     hub.publish("answer", "still here");
     await until(() => seen.frames.length > 0, "the wire survived the junk line");
     expect(seen.frames).toEqual([{ event: "answer", detail: "still here" }]);
+  });
+
+  it("carries one fresh provider dial ticket without exposing it as a lane event", async () => {
+    const requests: VoiceDialRequest[] = [];
+    const hub = miniature({
+      mintVoiceDial: async (request) => {
+        requests.push(request);
+        return {
+          type: "voice_dial_result",
+          id: request.id,
+          ok: true,
+          token: "auth_tokens/fictitious-single-use",
+          model: "gemini-live-test",
+        };
+      },
+    });
+    const path = socketPath();
+    running.push(await serveLane({ source: hub.source, socketPath: path }));
+    const seen = collector();
+    const client = await dialLane({ socketPath: path, deliver: seen.deliver });
+    running.push(client);
+
+    const result = await client.mintVoiceDial();
+
+    expect(result).toMatchObject({ ok: true, model: "gemini-live-test" });
+    expect(requests).toHaveLength(1);
+    expect(seen.frames).toEqual([]);
+    expect(LANE_EVENTS).toEqual(["progress", "answer", "voice_opened", "voice_closed"]);
   });
 
   // A PONG IS NOT SPEECH. The client answers pings automatically, so a face

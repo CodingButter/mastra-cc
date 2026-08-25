@@ -1,4 +1,4 @@
-import { dialLane, type LaneClient } from "@mastra-cc/transport";
+import { dialLane, type LaneClient, type VoiceDialResult } from "@mastra-cc/transport";
 
 import { applyFrame, INITIAL_FACE_STATE, type FaceState } from "./hiding-model.js";
 
@@ -19,6 +19,10 @@ export { applyFrame, INITIAL_FACE_STATE, type FaceState } from "./hiding-model.j
 
 export interface HubConnection {
   readonly connected: boolean;
+  said(): void;
+  mintVoiceDial(signal?: AbortSignal): Promise<VoiceDialResult>;
+  openVoiceSession(): void;
+  closeVoiceSession(): void;
   close(): Promise<void>;
 }
 
@@ -26,6 +30,8 @@ export async function connectToHub(options: {
   socketPath: string;
   /** Called with the new state after every frame the wire delivered. */
   onState: (state: FaceState) => void;
+  onVoiceClosed?: () => void;
+  onSignal?: (signal: { id: string; priority: "urgent" | "normal"; detail: string }) => void;
 }): Promise<HubConnection> {
   let state = INITIAL_FACE_STATE;
   let client: LaneClient;
@@ -35,6 +41,14 @@ export async function connectToHub(options: {
       deliver: (frame) => {
         state = applyFrame(state, frame);
         options.onState(state);
+        if (frame.event === "voice_closed") options.onVoiceClosed?.();
+        if ((frame.event === "progress" || frame.event === "answer") && frame.detail !== undefined) {
+          options.onSignal?.({
+            id: `${frame.event}:${frame.detail}`,
+            priority: frame.event === "answer" ? "urgent" : "normal",
+            detail: frame.detail,
+          });
+        }
       },
       // A REFUSED FRAME IS SAID OUT LOUD. A client that drops a frame silently
       // is a client that lies about what it heard, and the vocabulary
@@ -52,6 +66,10 @@ export async function connectToHub(options: {
     get connected() {
       return client.connected;
     },
+    said: () => client.said(),
+    mintVoiceDial: (signal) => client.mintVoiceDial(signal),
+    openVoiceSession: () => client.openVoiceSession(),
+    closeVoiceSession: () => client.closeVoiceSession(),
     close: () => client.close(),
   };
 }

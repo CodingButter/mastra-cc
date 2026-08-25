@@ -11,15 +11,18 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@mastra-cc/hub": "workspace:*",
     "@types/node": "^24.10.1",
     "oxlint": "^1.77.0",
     "tsdown": "^0.22.14",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@mastra-cc/hub": "workspace:*"
+    "vitest": "catalog:"
   },
   "dependencies": {
+    "@hono/node-server": "2.1.1",
+    "@mastra-cc/transport": "workspace:*",
+    "@mastra-cc/voice": "workspace:*",
     "electron": "^43.4.1",
-    "@mastra-cc/transport": "workspace:*"
+    "hono": "4.13.3"
   }
 }

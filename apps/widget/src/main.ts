@@ -1,9 +1,16 @@
 import { join } from "node:path";
 
-import { app, BrowserWindow, ipcMain, nativeImage, screen, Tray, type Rectangle } from "electron";
+import { app, BrowserWindow, ipcMain, nativeImage, screen, Tray, type IpcMainEvent, type Rectangle } from "electron";
 import { defaultLaneSocketPath } from "@mastra-cc/transport";
+import { loadWakeKeywordModel, packagedWakeModelPayload } from "@mastra-cc/voice/node";
 
 import { connectToHub } from "./hub-connection.js";
+import { createLiveWakeDetector } from "./live-wake.js";
+import { admitOpening } from "./voice/admission.js";
+import { createActiveVoiceSession } from "./voice/active-session.js";
+import { createMicrophoneSource, createProviderSession } from "./voice/provider-session.js";
+import { createSignalScheduler } from "./voice/signal-scheduler.js";
+import { advanceSpeechActivity, createSpeechActivityState } from "./voice/speech-activity.js";
 import {
   dismissFace,
   INITIAL_FACE_STATE,
@@ -30,6 +37,7 @@ function displayBounds(): Rectangle[] {
 let state: FaceState = INITIAL_FACE_STATE;
 let faceWindow: BrowserWindow | undefined;
 let tray: Tray | undefined;
+let closeVoiceSession = () => {};
 
 function render(next: FaceState): void {
   state = next;
@@ -42,7 +50,8 @@ ipcMain.on("face:ready", () => render(state));
 
 // THE ONE DISMISSAL PATH. The tray and M5's spoken seam both enter here.
 export function dismiss(): void {
-  render(dismissFace(state));
+  closeVoiceSession();
+  render(dismissFace({ ...state, voiceOpen: false, microphoneGateOpen: false }));
 }
 
 export function spoken(utterance: string): boolean {
@@ -81,6 +90,8 @@ export function createFace(): BrowserWindow {
     webPreferences: { preload: join(import.meta.dirname, "preload.cjs") },
   });
   faceWindow = face;
+  face.webContents.session.setPermissionCheckHandler((_webContents, permission) => permission === "media");
+  face.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => callback(permission === "media"));
 
   // The face's pixels. Loading is also what makes `ready-to-show` fire - a
   // window that loads nothing never becomes ready and never appears, silently.
@@ -129,7 +140,119 @@ app.whenReady().then(async () => {
   tray.on("click", dismiss);
 
   try {
-    await connectToHub({ socketPath: defaultLaneSocketPath(), onState: render });
+    const model = await loadWakeKeywordModel(packagedWakeModelPayload());
+    let scheduler: ReturnType<typeof createSignalScheduler> | undefined;
+    let handleHubVoiceClosed = () => {};
+    const hub = await connectToHub({
+      socketPath: defaultLaneSocketPath(),
+      onState: render,
+      onVoiceClosed: () => handleHubVoiceClosed(),
+      onSignal: (signal) => scheduler?.enqueue(signal),
+    });
+    const microphoneSource = createMicrophoneSource();
+    let detector: ReturnType<typeof createLiveWakeDetector>;
+    let provider: ReturnType<typeof createProviderSession>;
+    const conversation = createActiveVoiceSession({
+      said: hub.said,
+      openHubSession: hub.openVoiceSession,
+      closeHubSession: hub.closeVoiceSession,
+      closeProvider: () => {
+        faceWindow?.webContents.send("face:provider-audio-stopped");
+        provider.close();
+      },
+      resetWake: () => detector?.discard("session-closed"),
+    });
+    handleHubVoiceClosed = conversation.hubClosed;
+    provider = createProviderSession({
+      onAudio: (chunk) => faceWindow?.webContents.send("face:provider-audio", chunk),
+      onInputTranscript: (text) => {
+        if (isSpokenDismissal(text)) {
+          console.log(JSON.stringify({ type: "voice-session", pid: process.pid, at: new Date().toISOString(), event: "dismissal", source: "input-transcript" }));
+        }
+        spoken(text);
+      },
+      onModelSpeechStarted: () => scheduler?.modelSpeechStarted(),
+      onModelSpeechFinished: () => scheduler?.modelSpeechFinished(),
+      onAdmitted: () => {
+        console.log(JSON.stringify({ type: "provider-session", pid: process.pid, at: new Date().toISOString(), event: "admitted" }));
+        detector.admit("realtime-admitted");
+        conversation.admit();
+      },
+      onStopListening: () => {
+        console.log(JSON.stringify({ type: "voice-session", pid: process.pid, at: new Date().toISOString(), event: "dismissal", source: "provider-control" }));
+        spoken("stop");
+      },
+      onTerminalDecision: (reason) => {
+        console.log(JSON.stringify({ type: "provider-session", pid: process.pid, at: new Date().toISOString(), event: "terminal-decision", reason }));
+      },
+      onClosed: () => {
+        console.log(JSON.stringify({ type: "provider-session", pid: process.pid, at: new Date().toISOString(), event: "closed" }));
+        conversation.close(conversation.state() === "active" ? "active" : "provisional");
+      },
+    });
+    scheduler = createSignalScheduler({ deliver: (batch) => provider.sendSignals(batch) });
+    closeVoiceSession = () => conversation.close(conversation.state() === "active" ? "active" : "provisional");
+    const controller = new AbortController();
+    detector = createLiveWakeDetector({
+      model,
+      state: () => state,
+      onDecision: (result) => console.log(JSON.stringify({ type: "wake-decision", pid: process.pid, at: new Date().toISOString(), ...result })),
+      onMetadata: (metadata) => {
+        console.log(JSON.stringify({ type: "provisional-listening", pid: process.pid, at: new Date().toISOString(), ...metadata }));
+        if (metadata.state === "capturing-opening") render({ ...state, visible: true, caption: "Listening — speak naturally" });
+        else if (metadata.state === "awaiting-admission") render({ ...state, visible: true, caption: "Captured — listening" });
+        else if (metadata.state === "admitted") render({ ...state, visible: true, voiceOpen: true, microphoneGateOpen: true, caption: undefined });
+      },
+      onOpening: (opening) => {
+        void admitOpening({
+          opening,
+          hub,
+          detector,
+          provider,
+          microphone: microphoneSource,
+          signal: controller.signal,
+        }).catch((error) => {
+          detector.discard("admission-failed");
+          console.warn(error instanceof Error ? error.message : String(error));
+        });
+      },
+    });
+    let speechActivity = createSpeechActivityState();
+    const onMicrophone = (_event: IpcMainEvent, payload: unknown) => {
+      const samples = payload instanceof ArrayBuffer
+        ? new Int16Array(payload)
+        : ArrayBuffer.isView(payload)
+          ? new Int16Array(payload.buffer, payload.byteOffset, Math.floor(payload.byteLength / 2))
+          : undefined;
+      if (!samples || samples.byteLength === 0 || samples.byteLength > 640 || samples.byteLength % 2 !== 0) return;
+      detector.acceptSamples(samples);
+      microphoneSource.push(samples);
+      if (conversation.state() === "active") {
+        const activity = advanceSpeechActivity(speechActivity, samples);
+        speechActivity = activity.state;
+        if (activity.onset) {
+          conversation.heard("speech");
+          scheduler?.userTurn();
+        }
+      } else {
+        speechActivity = createSpeechActivityState();
+      }
+    };
+    const onMicrophoneFailed = (_event: IpcMainEvent, message: unknown) => {
+      detector.captureFailed();
+      console.warn(`widget: Chromium microphone failed - ${String(message)}`);
+    };
+    ipcMain.on("face:microphone", onMicrophone);
+    ipcMain.on("face:microphone-failed", onMicrophoneFailed);
+    app.once("before-quit", () => {
+      controller.abort();
+      ipcMain.removeListener("face:microphone", onMicrophone);
+      ipcMain.removeListener("face:microphone-failed", onMicrophoneFailed);
+      detector.stop();
+      provider.close();
+      scheduler?.close();
+      void hub.close();
+    });
   } catch (error) {
     console.warn(error instanceof Error ? error.message : String(error));
   }

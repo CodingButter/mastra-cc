@@ -8,10 +8,11 @@
 
 import type { FaceState } from "./hiding-model.js";
 import { FACE_LAYOUT, layoutCss } from "./layout.js";
+import { startRendererAudio, type FaceAudioBridge } from "./renderer-audio.js";
 
 declare global {
   interface Window {
-    mastraFace: { onState(listener: (state: FaceState) => void): void };
+    mastraFace: FaceAudioBridge & { onState(listener: (state: FaceState) => void): void };
   }
 }
 
@@ -22,3 +23,9 @@ document.head.appendChild(style);
 window.mastraFace.onState((state) => {
   document.querySelector("#caption")!.textContent = state.caption ?? "";
 });
+
+void startRendererAudio(window.mastraFace)
+  .then((close) => window.addEventListener("pagehide", () => void close(), { once: true }))
+  .catch((error) => {
+    window.mastraFace.microphoneFailed(error instanceof Error ? error.message : String(error));
+  });

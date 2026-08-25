@@ -660,7 +660,7 @@
   {
     "name": "the-voice-closed-that-is-not-the-last",
     "file": "apps/hub/src/lanes/lanes.ts",
-    "find": "      if (sessions.size === 0) broadcast({ event: \"voice_closed\" });\n",
+    "find": "    if (sessions.size === 0) broadcast({ event: \"voice_closed\" });\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
   },
@@ -947,5 +947,27 @@
     "replace": "",
     "cwd": "apps/widget",
     "testFile": "src/__tests__/the-face-hears-the-hub.test.ts"
+  },
+  {
+    "name": "wake-gate-bypasses-keyword-validation",
+    "file": "packages/voice/src/gate.ts",
+    "find": "    modelState === \"ready\" &&\n",
+    "replace": "",
+    "cwd": "packages/voice",
+    "testFile": "src/__tests__/wake-gate.test.ts"
+  },
+  {
+    "name": "live-wake-ignores-session-exclusivity",
+    "file": "apps/widget/src/live-wake.ts",
+    "find": " || options.state().microphoneGateOpen",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/live-wake.test.ts"
+  },
+  {
+    "name": "live-wake-retries-device-loss-forever",
+    "file": "apps/widget/src/live-wake.ts",
+    "find": "      unavailable = true;\n",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/live-wake.test.ts"
   }
 ]

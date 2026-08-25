@@ -85,7 +85,7 @@ These are not preferences. Each one is a scar.
 - **Machine configuration lives in this repository**, in `infra/`, applied by a checked-in script. Not in a database column. Not in a home directory. → [ADR-0001](docs/02-DECISIONS/0001-machine-config-lives-in-the-repo.md)
 - **The protocol freeze is a CI job**, not a comment. The prototype's schema was frozen in its own commit and then changed twenty-two more times. → [ADR-0002](docs/02-DECISIONS/0002-schema-freeze-is-a-ci-job.md)
 - **One transport package from the first commit.** The prototype grew a second, drifted daemon client inside the hub and did not notice for a week. → [ADR-0003](docs/02-DECISIONS/0003-one-shared-transport-package.md)
-- **Wake is enrolment-first fingerprinting.** No transcription model in the wake path. The one that was tried heard "He master." → [ADR-0005](docs/02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md)
+- **Wake is phrase-only; conversation admission is directedness, not identity.** A bounded opening stays provisional until the hub decides it was addressed to Mastra. → [ADR-0053](docs/02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md)
 - **One vertical slice before any parallel agents.** → [ADR-0015](docs/02-DECISIONS/0015-one-vertical-slice-before-parallel-agents.md)
 - **A claim that needs a desktop is proved by an artifact**, produced by a script, committed to the repository. → [ADR-0012](docs/02-DECISIONS/0012-claims-needing-a-desktop-are-proved-by-artifact.md)
 

@@ -1,0 +1,39 @@
+{
+  "name": "@mastra-cc/dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "clean": "rm -rf dist",
+    "dev": "vite --host 127.0.0.1",
+    "lint": "oxlint src",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mastra/client-js": "1.38.0",
+    "@mastra/core": "1.57.0",
+    "@mastra/memory": "1.27.0",
+    "@mastra/playground-ui": "47.0.0",
+    "@mastra/react": "1.4.1",
+    "@mastra-cc/voice": "workspace:*",
+    "@tanstack/react-query": "5.90.21",
+    "lucide-react": "0.474.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwindcss": "4.3.3",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.4",
+    "oxlint": "^1.50.0",
+    "typescript": "catalog:",
+    "vite": "7.3.6",
+    "vitest": "catalog:"
+  }
+}

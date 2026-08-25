@@ -22,7 +22,7 @@
 
 **Daemon** — the process that speaks to the accessibility layer. The only one that may. Node, single-threaded, one process. → [ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md), superseding [ADR-0010](02-DECISIONS/0010-daemon-is-python-single-threaded-default-glib-context.md)'s language choice while keeping its single-thread rule
 
-**Hub** — the brain. Agents, tools, memory, credentials, audit, lane control. Holds **no audio**. → [ADR-0006](02-DECISIONS/0006-hub-holds-no-audio.md)
+**Hub** — the brain. Agents, tools, memory, credentials, audit, lane control. Holds no realtime conversation audio; it may classify one bounded provisional opening in memory. → [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md)
 
 **Client** — anything with a face or ears. The widget, the phone page, the dashboard. Holds no authority and no long-lived credential.
 

@@ -39,12 +39,45 @@ export interface LaneFrame {
   readonly detail?: string;
 }
 
+export const VOICE_DIAL_TIMEOUT_MS = 10_000;
+
+export interface VoiceDialRequest {
+  readonly type: "voice_dial_request";
+  readonly id: string;
+}
+
+export type VoiceDialResult =
+  | { readonly type: "voice_dial_result"; readonly id: string; readonly ok: true; readonly token: string; readonly model: string }
+  | {
+      readonly type: "voice_dial_result";
+      readonly id: string;
+      readonly ok: false;
+      readonly status: number;
+      readonly code: string;
+      readonly refusal: string;
+    };
+
 /** True when a parsed line is a frame this wire is allowed to deliver. */
 export function isLaneFrame(value: unknown): value is LaneFrame {
   if (typeof value !== "object" || value === null) return false;
   const frame = value as { event?: unknown; detail?: unknown };
   if (!LANE_EVENTS.includes(frame.event as LaneEvent)) return false;
   return frame.detail === undefined || typeof frame.detail === "string";
+}
+
+function validVoiceDialRequest(value: unknown): value is VoiceDialRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const request = value as Partial<VoiceDialRequest>;
+  return request.type === "voice_dial_request" && typeof request.id === "string" && request.id.length > 0;
+}
+
+function validVoiceDialResult(value: unknown): value is VoiceDialResult {
+  if (typeof value !== "object" || value === null) return false;
+  const result = value as Partial<VoiceDialResult>;
+  if (result.type !== "voice_dial_result" || typeof result.id !== "string" || typeof result.ok !== "boolean") return false;
+  if (result.ok) return typeof result.token === "string" && result.token.length > 0 && typeof result.model === "string" && result.model.length > 0;
+  const refusal = result as Partial<Extract<VoiceDialResult, { ok: false }>>;
+  return typeof refusal.status === "number" && typeof refusal.code === "string" && typeof refusal.refusal === "string";
 }
 
 /**
@@ -56,6 +89,9 @@ export interface LaneSource {
   join(deliver: (frame: LaneFrame) => void, ping?: () => void): {
     pong(): void;
     said(): void;
+    mintVoiceDial?(request: VoiceDialRequest): Promise<VoiceDialResult>;
+    openVoiceSession?(): void;
+    closeVoiceSession?(): void;
     readonly open: boolean;
   };
 }
@@ -79,6 +115,10 @@ export function defaultLaneSocketPath(): string {
 export interface LaneClient {
   /** The peer said something a person caused. Not a pong - the hub's clock only moves for this. */
   said(): void;
+  /** Ask the hub to mint one provider ticket for this client to dial directly. */
+  mintVoiceDial(signal?: AbortSignal): Promise<VoiceDialResult>;
+  openVoiceSession(): void;
+  closeVoiceSession(): void;
   readonly connected: boolean;
   close(): Promise<void>;
 }
@@ -116,6 +156,19 @@ export async function serveLane(options: {
         // is where the two arrive on the same socket.
         if (message.type === "pong") connection.pong();
         else if (message.type === "said") connection.said();
+        else if (message.type === "voice_dial_request") {
+          const request = message as unknown;
+          const id = typeof (request as { id?: unknown }).id === "string" ? (request as { id: string }).id : "invalid";
+          if (!validVoiceDialRequest(request) || !connection.mintVoiceDial) {
+            socket.write(`${JSON.stringify({ type: "voice_dial_result", id, ok: false, status: 409, code: "UNCONFIGURED", refusal: "voice: this carrier has no dial capability" })}\n`);
+            continue;
+          }
+          void connection.mintVoiceDial(request).then((result) => socket.write(`${JSON.stringify(result)}\n`));
+        } else if (message.type === "voice_session_open") {
+          connection.openVoiceSession?.();
+        } else if (message.type === "voice_session_close") {
+          connection.closeVoiceSession?.();
+        }
       }
     });
     socket.on("close", () => sockets.delete(socket));
@@ -162,6 +215,11 @@ export async function dialLane(options: {
 
   let buffer = "";
   let connected = true;
+  let nextRequestId = 1;
+  const pendingVoiceDials = new Map<
+    string,
+    { resolve: (result: VoiceDialResult) => void; timer: ReturnType<typeof setTimeout>; abort?: () => void }
+  >();
   socket.on("data", (chunk) => {
     buffer += chunk.toString("utf8");
     let newline = buffer.indexOf("\n");
@@ -175,6 +233,18 @@ export async function dialLane(options: {
         message = JSON.parse(line);
       } catch {
         options.onRefusal?.(`lane: peer sent a line that is not JSON - refusing to deliver it`);
+        continue;
+      }
+      if (validVoiceDialResult(message)) {
+        const request = pendingVoiceDials.get(message.id);
+        if (!request) {
+          options.onRefusal?.(`lane: refusing a voice dial result for unknown id "${message.id}"`);
+          continue;
+        }
+        clearTimeout(request.timer);
+        request.abort?.();
+        pendingVoiceDials.delete(message.id);
+        request.resolve(message);
         continue;
       }
       if ((message as { type?: unknown }).type === "ping") {
@@ -196,11 +266,78 @@ export async function dialLane(options: {
   });
   socket.on("close", () => {
     connected = false;
+    for (const [id, request] of pendingVoiceDials) {
+      clearTimeout(request.timer);
+      request.abort?.();
+      request.resolve({
+        type: "voice_dial_result",
+        id,
+        ok: false,
+        status: 503,
+        code: "HUB_UNAVAILABLE",
+        refusal: "voice: the hub connection closed before a dial ticket arrived",
+      });
+    }
+    pendingVoiceDials.clear();
   });
 
   return {
     said() {
       socket.write(`${JSON.stringify({ type: "said" })}\n`);
+    },
+    openVoiceSession() {
+      socket.write(`${JSON.stringify({ type: "voice_session_open" })}\n`);
+    },
+    closeVoiceSession() {
+      socket.write(`${JSON.stringify({ type: "voice_session_close" })}\n`);
+    },
+    mintVoiceDial(signal) {
+      const id = `${process.pid}-voice-${nextRequestId++}`;
+      if (signal?.aborted) {
+        return Promise.resolve({
+          type: "voice_dial_result",
+          id,
+          ok: false,
+          status: 408,
+          code: "ABORTED",
+          refusal: "voice: the dial request was cancelled before it was sent",
+        });
+      }
+      return new Promise<VoiceDialResult>((resolve) => {
+        const finish = (result: VoiceDialResult) => {
+          const request = pendingVoiceDials.get(id);
+          if (!request) return;
+          clearTimeout(request.timer);
+          request.abort?.();
+          pendingVoiceDials.delete(id);
+          resolve(result);
+        };
+        const timer = setTimeout(
+          () =>
+            finish({
+              type: "voice_dial_result",
+              id,
+              ok: false,
+              status: 504,
+              code: "TIMEOUT",
+              refusal: "voice: the hub did not answer the dial request before its deadline",
+            }),
+          VOICE_DIAL_TIMEOUT_MS,
+        );
+        const abort = signal ? () => signal.removeEventListener("abort", onAbort) : undefined;
+        const onAbort = () =>
+          finish({
+            type: "voice_dial_result",
+            id,
+            ok: false,
+            status: 408,
+            code: "ABORTED",
+            refusal: "voice: the dial request was cancelled",
+          });
+        pendingVoiceDials.set(id, { resolve, timer, abort });
+        signal?.addEventListener("abort", onAbort, { once: true });
+        socket.write(`${JSON.stringify({ type: "voice_dial_request", id } satisfies VoiceDialRequest)}\n`);
+      });
     },
     get connected() {
       return connected;
