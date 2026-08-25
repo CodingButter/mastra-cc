@@ -82,7 +82,7 @@ These are non-goals with teeth. Each one was a live temptation during the protot
 1. **Not a remote shell.** The agent never gets arbitrary command execution as a desktop-control primitive. The prototype's minted-token tool surface was deliberately read-only — `READ_FILE`, `LIST_FILES`, `FILE_STAT`, `GREP` — and adding a launch capability was a *separate, tracked, still-open decision* (issue #183), not something that leaked in.
 2. **Not a screen recorder.** Screen capture is off by design at the client. The widget's capability report says `screenCapture: false` and its permission list is exactly one entry, `["media"]` — the microphone, for its own page (prototype `clients/widget/src/boundaries.test.ts`, `GRANTED_PERMISSIONS`).
 3. **Not a keylogger.** Watching a field the user is typing in is a *feature with an owner and an expiry*, not ambient logging. The prototype ruled that a human at the keyboard outranks the agent (issue #25) and that an element is *owned while it is being written*.
-4. **Not a cloud microphone.** Audio never transits the hub. Wake detection runs on the device, and when a voice session opens, the device dials the provider directly with a short-lived minted token. The key never leaves the hub; the audio never enters it. See [ADR-0006](02-DECISIONS/0006-hub-holds-no-audio.md).
+4. **Not a cloud microphone.** Phrase wake runs on the device. After wake, the client dials one constrained realtime session with a short-lived token and sends one bounded opening directly to it. The hub receives no provisional or realtime audio; tools and memory receive none before admission. See [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md).
 5. **Not a general RPA platform.** No record-and-replay macros, no coordinate scripts. If the accessibility layer cannot describe it, the honest answer is that we cannot do it — and the prototype's security doc has a whole section titled "What this model does NOT guarantee" for exactly this reason.
 6. **Not a thing that pretends.** When a browser's accessibility layer is unreadable, the system reports the browser as *running but unreadable*, not as *absent* (`6657915`, `08-04 10:31`). A refusal must explain itself from a check that actually ran (issue #194).
 
@@ -140,12 +140,12 @@ The product is real when a person who did not build it can do this, on their own
 
 1. Install one package.
 2. Sign in with their own model account.
-3. Enrol their voice by recording a short phrase a handful of times.
-4. Say the wake phrase from across the room and see the face wake.
-5. Say *"tell me my most recent email"* and hear the answer.
+3. Say the wake phrase from across the room and see the face listen provisionally.
+4. Ask *"tell me my most recent email"* naturally and hear the complete answer without repeating the wake phrase.
+5. Ask a follow-up, then say *"never mind"* or `stop` and see the face return to armed idle.
 6. Open the audit log and see exactly which application was read, which elements were **answered**, and that nothing else was. (An element a query walked past and discarded leaves no entry: recording the walk would name nearly every element on the desktop, which is the opposite of what the record is for — [ADR-0050](02-DECISIONS/0050-the-record-names-the-refusal-not-the-sentence.md). This line said *touched* until 2026-08-21.)
 
-Steps 4 and 5 are the product. Step 6 is why anyone will let it near their desktop. Step 1 is why anyone will try.
+Steps 3 through 5 are the product. Step 6 is why anyone will let it near their desktop. Step 1 is why anyone will try.
 
 Every milestone in [07-ROADMAP.md](07-ROADMAP.md) is scored against this list, and each has a verification gate that can fail.
 

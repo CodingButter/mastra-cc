@@ -10,7 +10,7 @@ import type { WakeKeywordModel } from "@mastra-cc/voice/node";
 import type { FaceState } from "./hiding-model.js";
 import { createProvisionalListening, type BufferedOpening, type ProvisionalMetadata } from "./provisional-listening.js";
 
-export const FROZEN_KEYWORD_THRESHOLD = 0.9999867081642151;
+export const FROZEN_KEYWORD_THRESHOLD = 0.99;
 const WAKE_WINDOW_SAMPLES = 32_000;
 const WAKE_STRIDE_SAMPLES = 8_000;
 

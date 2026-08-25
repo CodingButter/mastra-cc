@@ -49,5 +49,5 @@ export function dismissFace(state: FaceState): FaceState {
 const DISMISSALS = new Set(["no", "never mind", "shut up", "stop"]);
 
 export function isSpokenDismissal(utterance: string): boolean {
-  return DISMISSALS.has(utterance.trim().toLowerCase());
+  return DISMISSALS.has(utterance.trim().toLowerCase().replace(/[.!?,]+$/u, ""));
 }

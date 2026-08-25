@@ -106,31 +106,6 @@ describe("the four lanes say exactly four things", () => {
     expect(silent.frames).toEqual([]);
   });
 
-  it("directedness evaluation does not refresh the clock that says the session said something", async () => {
-    let clock = 1_000;
-    const hub = createLaneHub({
-      now: () => clock,
-      classifyDirectedness: async (request) => ({
-        type: "directedness_result",
-        id: request.id,
-        verdict: "directed",
-        reason: "addressed-mastra",
-      }),
-    });
-    const peer = hub.join(client().deliver);
-    const before = peer.saidAt;
-    clock = 2_000;
-
-    await peer.classifyDirectedness({
-      type: "directedness_request",
-      id: "opening-1",
-      format: { sampleRate: 16_000, channels: 1, sampleFormat: "s16le" },
-      audioBase64: "AQI=",
-    });
-
-    expect(peer.saidAt).toBe(before);
-  });
-
   it("a heartbeat does not refresh the clock that says the session said something", () => {
     let clock = 1_000;
     const hub = createLaneHub({ now: () => clock });

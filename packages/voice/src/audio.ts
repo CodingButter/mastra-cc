@@ -26,13 +26,14 @@ const UTTERANCE_SPEECH_RMS = 600;
 export type UtteranceEndState = Readonly<{
   totalSamples: number;
   trailingSilenceSamples: number;
+  peakRms: number;
   speechBegan: boolean;
   ended: boolean;
   reason?: "trailing-silence" | "maximum-duration";
 }>;
 
 export function createUtteranceEndState(): UtteranceEndState {
-  return { totalSamples: 0, trailingSilenceSamples: 0, speechBegan: false, ended: false };
+  return { totalSamples: 0, trailingSilenceSamples: 0, peakRms: 0, speechBegan: false, ended: false };
 }
 
 export function advanceUtteranceEnd(state: UtteranceEndState, frame: Int16Array): UtteranceEndState {
@@ -42,11 +43,14 @@ export function advanceUtteranceEnd(state: UtteranceEndState, frame: Int16Array)
     return { ...state, totalSamples, ended: true, reason: "maximum-duration" };
   }
   const rms = frame.length === 0 ? 0 : Math.sqrt(frame.reduce((sum, sample) => sum + sample * sample, 0) / frame.length);
+  const peakRms = Math.max(state.peakRms, rms);
   const speechBegan = state.speechBegan || rms >= UTTERANCE_SPEECH_RMS;
-  const trailingSilenceSamples = !speechBegan || rms >= UTTERANCE_SPEECH_RMS ? 0 : state.trailingSilenceSamples + frame.length;
+  const silenceThreshold = Math.max(UTTERANCE_SPEECH_RMS, peakRms * 0.25);
+  const trailingSilenceSamples = !speechBegan || rms >= silenceThreshold ? 0 : state.trailingSilenceSamples + frame.length;
   return {
     totalSamples,
     trailingSilenceSamples,
+    peakRms,
     speechBegan,
     ended: speechBegan && trailingSilenceSamples >= UTTERANCE_TRAILING_SILENCE_SAMPLES,
     reason: speechBegan && trailingSilenceSamples >= UTTERANCE_TRAILING_SILENCE_SAMPLES ? "trailing-silence" : undefined,

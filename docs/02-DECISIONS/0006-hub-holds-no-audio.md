@@ -1,8 +1,8 @@
 # ADR-0006 — The hub holds no audio
 
-**Status:** accepted
+**Status:** accepted; reaffirmed by [ADR-0053](0053-phrase-wake-gates-a-client-owned-voice-session.md) on 2026-08-25: provisional and realtime conversation audio both flow client ↔ provider, never through the hub
 **Date:** 2026-08-08
-**Carried forward from the prototype unchanged.**
+**Carried forward from the prototype and reaffirmed by ADR-0053.**
 
 ## Context
 

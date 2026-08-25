@@ -99,6 +99,15 @@ describe("the voice capture pipeline", () => {
     expect(state).toMatchObject({ ended: true, reason: "trailing-silence" });
   });
 
+  it("treats steady room noise below the spoken peak as trailing silence", () => {
+    let state = createUtteranceEndState();
+    state = advanceUtteranceEnd(state, Int16Array.from({ length: 320 }, () => 8_000));
+    for (let index = 0; index < 30; index += 1) {
+      state = advanceUtteranceEnd(state, Int16Array.from({ length: 320 }, () => 900));
+    }
+    expect(state).toMatchObject({ ended: true, reason: "trailing-silence" });
+  });
+
   it("fails closed at the hard utterance maximum even before speech", () => {
     let state = createUtteranceEndState();
     for (let index = 0; index < UTTERANCE_MAX_SAMPLES / UTTERANCE_FRAME_SAMPLES; index += 1) {

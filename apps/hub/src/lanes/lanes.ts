@@ -25,7 +25,7 @@
 // asserted against `docs/01-ARCHITECTURE.md` by this package's test, so the
 // words remain pinned to the document rather than to whichever file holds them.
 export { LANE_EVENTS, type LaneEvent, type LaneFrame } from "@mastra-cc/transport";
-import type { DirectednessRequest, DirectednessResult, LaneFrame, VoiceDialRequest, VoiceDialResult } from "@mastra-cc/transport";
+import type { LaneFrame, VoiceDialRequest, VoiceDialResult } from "@mastra-cc/transport";
 import { createVoiceSessionOwner } from "../voice/session.js";
 
 export interface LaneConnection {
@@ -41,8 +41,6 @@ export interface LaneConnection {
   pong(): void;
   /** The peer sent something a person caused. This is what "said something" means, and it is the only thing that refreshes the clock. */
   said(): void;
-  /** Classify a provisional opening without counting gate machinery as speech. */
-  classifyDirectedness(request: DirectednessRequest): Promise<DirectednessResult>;
   /** Mint one provider ticket without confusing a capability request for speech. */
   mintVoiceDial(request: VoiceDialRequest): Promise<VoiceDialResult>;
   openVoiceSession(): void;
@@ -86,21 +84,11 @@ interface Peer {
 export interface LaneHubOptions {
   /** The clock, so a test can say when things happened instead of sleeping. */
   readonly now?: () => number;
-  readonly classifyDirectedness?: (request: DirectednessRequest) => Promise<DirectednessResult>;
   readonly mintVoiceDial?: (request: VoiceDialRequest) => Promise<VoiceDialResult>;
 }
 
 export function createLaneHub(options: LaneHubOptions = {}): LaneHub {
   const now = options.now ?? Date.now;
-  const classifyDirectedness =
-    options.classifyDirectedness ??
-    ((request: DirectednessRequest) =>
-      Promise.resolve({
-        type: "directedness_result" as const,
-        id: request.id,
-        verdict: "uncertain" as const,
-        reason: "unconfigured" as const,
-      }));
   const mintVoiceDial =
     options.mintVoiceDial ??
     ((request: VoiceDialRequest) =>
@@ -171,7 +159,6 @@ export function createLaneHub(options: LaneHubOptions = {}): LaneHub {
       return {
         pong: () => received("pong"),
         said: () => received("said"),
-        classifyDirectedness,
         mintVoiceDial,
         openVoiceSession: () => openSession(sessionId),
         closeVoiceSession: () => closeSession(sessionId),

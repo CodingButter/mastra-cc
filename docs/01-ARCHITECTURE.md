@@ -65,15 +65,15 @@ That second diagram is the whole reason the first one says "ZERO audio bytes". S
 - Holds credentials. Mints short-lived tokens for devices that need to dial a provider directly. The key itself never leaves.
 - Owns the lanes (§4) and the session/turn state machine.
 - Writes the episode graph. It does **not** write the audit log: that record is written by the daemon, at the point of effect, because a record of what the desktop was asked to do belongs where the asking happens ([ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md)). The two artifacts are deliberately separate — the audit log is an append-only access record, the episode graph is a rewritable narrative, and if the graph were the record then every rewrite would rewrite the evidence.
-- Holds **no audio bytes, ever**.
+- Holds no provisional or realtime conversation audio. It mints a short-lived provider dial; the client sends the bounded opening directly to the constrained realtime session, where admission is decided before audio output or live continuation ([ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md)).
 
 **Runtime:** TypeScript on Node, Mastra agents and tools.
 
 ### Clients — *faces, ears, and mouths*
 
-- The **widget** is the resident tray face: a small always-on-top window that listens for the wake phrase, shows who is talking, and speaks answers.
+- The **widget** is the resident tray face: a small always-on-top window that detects the wake phrase, owns provisional and active audio, shows who is talking, and speaks answers.
 - The **phone page** is the same conversation from the couch.
-- The **dashboard** is configuration, permissions, voice enrolment, and the audit view.
+- The **dashboard** is configuration, permissions, paired devices, and the audit view.
 
 Clients hold no authority. A client asks; the hub decides; the daemon acts. A client that wants to know what is going on subscribes to a lane.
 
@@ -99,7 +99,7 @@ mastra-cc/
 ├── packages/
 │   ├── transport/            # the daemon client every client speaks (ADR-0003)
 │   ├── protocol-types/       # generated bindings; build output, not committed
-│   └── voice/                # wake gate, fingerprint matcher, session dial
+│   └── voice/                # phrase wake, utterance boundaries, shared audio contracts
 ├── apps/
 │   ├── hub/                  # the brain
 │   ├── widget/               # Electron tray face
@@ -184,15 +184,16 @@ Two notes on how to write these, from prototype experience:
 
 Tracing *"tell me my most recent email"* through the boundaries, because a diagram that cannot survive one real sentence is decoration.
 
-1. **Wake.** The widget's ear chain scores incoming audio against the user's enrolled voice templates, on-device. No audio leaves the machine. The chain is: amplitude gate → fingerprint match against the template bank → open. The bank is fetched from the hub and **re-fetched, not snapshotted at boot** — a boot-time snapshot means a fresh enrolment cannot reach the live detector without a restart, which is a real bug the prototype shipped and later fixed.
-2. **Consent gesture.** `getUserMedia` succeeding at ears-start *is* the consent gesture. There is no second prompt, because the browser already asked.
-3. **Session open.** The widget asks the hub for a token. The hub mints one scoped to a new session window, with a short TTL. If the user has no provider account attached, the hub answers `409 NO_GOOGLE_ACCOUNT` — an honest refusal, not a silent failure.
-4. **Dial.** The device dials the provider *directly* with that token. Audio flows device ↔ provider. The hub sees text and control frames only.
-5. **Intent.** The provider returns an intent; the hub's agent takes over. `voice_opened` goes out on the lane; every other client's ears unplug so one machine's speakers cannot feed another's microphone.
-6. **Resolve.** The agent asks the daemon to find the mail application semantically — by role and name, not by coordinates — within the set of applications the user has permitted. An unpermitted application is not visible to this query at all.
-7. **Read.** The daemon reads the message list and the message body through the accessibility tree, under `observe` scope. Every element the daemon **answers** lands in the audit log; an element the query walked past and discarded does not, because a record of the walk would name nearly every element on the desktop ([ADR-0050](02-DECISIONS/0050-the-record-names-the-refusal-not-the-sentence.md)).
-8. **Answer.** The hub emits `answer` on the lane. The device speaks it. The face shows who is talking.
-9. **Close.** The turn ends on silence, or because the person said something that means *stop* — a decline is a complete turn, and ending the session closes the microphone gate rather than letting a silence timer run out (PR #231). `voice_closed` goes out; other clients' ears unplug. The wake word stays armed: being told *no* ends the conversation, not the wake word.
+1. **Phrase wake.** Chromium supplies the widget's one echo-cancelled microphone stream. The widget scores “Hey Mastra” locally; no transcript or speaker identity participates.
+2. **Provisional opening.** The widget buffers one bounded, complete utterance in memory and shows that it is listening.
+3. **Dial.** The widget asks the hub for a single-use provider token. If no account is configured, the hub returns an honest refusal. No audio crosses the hub.
+4. **Realtime admission.** The widget opens one constrained Gemini Live session, sends the buffered opening once as paced frames, and marks it complete. The model initially has exactly `admit_conversation` and `stop_listening`; audio output and live microphone continuation remain blocked until one valid terminal admission decision wins.
+5. **Active conversation.** `voice_opened` goes out on the lane. The existing microphone source attaches to the same provider session. Follow-up speech needs no wake or second admission decision, and actual speech alone refreshes the 60-second inactivity clock.
+6. **Request.** Gemini sends a request signal to the background orchestrator; it has no desktop tools and no execution authority. Priority-aware sanitized result signals return without interrupting model speech.
+7. **Resolve.** The orchestrator asks the daemon to find the mail application semantically — by role and name, not coordinates — within the set of applications the user permitted. Conversational admission granted no authority; sensitive operations are authorized here, at execution.
+8. **Read.** The daemon reads the message list and body through the accessibility tree under `observe` scope. Every element the daemon **answers** lands in the audit log; an element the query discarded does not ([ADR-0050](02-DECISIONS/0050-the-record-names-the-refusal-not-the-sentence.md)).
+9. **Answer.** The orchestrator sends sanitized execution truth to Gemini. The client plays Gemini's answer through Chromium's Web Audio graph while WebRTC echo cancellation keeps that output from returning as user speech.
+10. **Close.** “Never mind”, `stop`, provider failure, or 60 seconds without actual speech closes the provider and global voice session exactly once. `voice_closed` goes out; unrelated work continues, and phrase wake remains armed.
 
 Every step above is a place a boundary from §5 applies. That is the point of the trace.
 
@@ -224,7 +225,7 @@ Real, unresolved, and each one needs a decision before the code that depends on 
 1. **Where the phone client's transport terminates.** Direct to hub, or through a relay when the person is off their network.
 2. **Episode storage.** Episodes-as-git was right; whether the graph lives beside the audit log or inside it was never settled. Whichever way it goes decides whether redaction happens at write time or at read time — see [ADR-0013](02-DECISIONS/0013-episodes-are-a-git-graph.md).
 
-**Settled, 2026-08-08 — the wake capture path.** This was the third open question here. The measurements are solid: enrolment-first fingerprinting admits about 82% of a person's own unseen takes at zero false accepts, with a threshold of 20 and an enrolled-template weight of 1.15. But on the live microphone the same person's voice scored 20.4–21.3 against their own templates — a systematic offset just over the line, not random noise. The measurement rig and the live capture path were built separately, and that is the suspect. **Decision: rebuild capture once, in one place, shared by the enrolment page and the live gate, and re-measure — carry the measurements, not the capture code.** Do not port a constant that has not been re-measured against the rebuilt path. See [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md) and [07-ROADMAP.md](07-ROADMAP.md) M5.
+**Superseded, 2026-08-25 — biometric wake admission.** The enrolment-first measurements remain useful evidence, including their failure to generalize reliably to live speakers. M5 replaced speaker-specific admission with local phrase wake, bounded provisional capture, and a constrained client-owned realtime admission session. The old measurements and rationale remain in [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md); the current ownership and privacy boundaries are [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md).
 
 ---
 

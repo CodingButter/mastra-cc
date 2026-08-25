@@ -6,8 +6,6 @@ import {
   dialLane,
   isLaneFrame,
   LANE_EVENTS,
-  type DirectednessRequest,
-  type DirectednessResult,
   type LaneClient,
   type LaneFrame,
   type LaneServer,
@@ -58,7 +56,6 @@ interface Peer {
 function miniature(
   options: {
     voiceOpen?: boolean;
-    classifyDirectedness?: (request: DirectednessRequest) => Promise<DirectednessResult>;
     mintVoiceDial?: (request: VoiceDialRequest) => Promise<VoiceDialResult>;
   } = {},
 ) {
@@ -77,7 +74,6 @@ function miniature(
           peer.awaitingPong = false;
           peer.saidAt = clock += 1;
         },
-        classifyDirectedness: options.classifyDirectedness,
         mintVoiceDial: options.mintVoiceDial,
         get open() {
           return peer.open;
@@ -216,41 +212,6 @@ describe("the lane wire", () => {
     hub.publish("answer", "still here");
     await until(() => seen.frames.length > 0, "the wire survived the junk line");
     expect(seen.frames).toEqual([{ event: "answer", detail: "still here" }]);
-  });
-
-  it("carries one bounded directedness request and its correlated result without inventing a lane event", async () => {
-    const requests: DirectednessRequest[] = [];
-    const hub = miniature({
-      classifyDirectedness: async (request) => {
-        requests.push(request);
-        return {
-          type: "directedness_result",
-          id: request.id,
-          verdict: "directed",
-          reason: "addressed-mastra",
-        };
-      },
-    });
-    const path = socketPath();
-    running.push(await serveLane({ source: hub.source, socketPath: path }));
-    const seen = collector();
-    const client = await dialLane({ socketPath: path, deliver: seen.deliver });
-    running.push(client);
-
-    const result = await client.classifyDirectedness({
-      audio: new Int16Array([1, -2, 3]),
-      sampleRate: 16_000,
-      channels: 1,
-      sampleFormat: "s16le",
-    });
-
-    expect(result).toMatchObject({ verdict: "directed", reason: "addressed-mastra" });
-    expect(requests).toHaveLength(1);
-    expect(Buffer.from(requests[0]!.audioBase64, "base64")).toEqual(
-      Buffer.from(new Int16Array([1, -2, 3]).buffer),
-    );
-    expect(seen.frames).toEqual([]);
-    expect(LANE_EVENTS).toEqual(["progress", "answer", "voice_opened", "voice_closed"]);
   });
 
   it("carries one fresh provider dial ticket without exposing it as a lane event", async () => {

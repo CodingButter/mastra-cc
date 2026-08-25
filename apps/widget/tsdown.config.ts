@@ -11,6 +11,7 @@ export default defineConfig({
   entry: [
     "src/main.ts",
     "src/face.ts",
+    "src/renderer-audio.ts",
     "src/placement-store.ts",
   ],
   deps: { neverBundle: ["electron"] },
@@ -21,6 +22,7 @@ export default defineConfig({
       // problem ADR-0003 names.
       copyFileSync(join("src", "face.html"), join("dist", "face.html"));
       copyFileSync(join("src", "preload.cjs"), join("dist", "preload.cjs"));
+      copyFileSync(join("src", "audio-worklet.js"), join("dist", "audio-worklet.js"));
     },
   },
 });

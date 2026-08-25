@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 import { INITIAL_FACE_STATE } from "../hiding-model.js";
-import { createLiveWakeDetector, decideWakeWindow } from "../live-wake.js";
+import { FROZEN_KEYWORD_THRESHOLD, createLiveWakeDetector, decideWakeWindow } from "../live-wake.js";
 
 const acceptedModel = { score: async () => 1 };
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -24,6 +24,14 @@ function setup(model = acceptedModel) {
 }
 
 describe("live wake detector", () => {
+  it("admits the measured real-room wake score without opening the gate to background speech", async () => {
+    expect(FROZEN_KEYWORD_THRESHOLD).toBe(0.99);
+    await expect(decideWakeWindow({ score: async () => 0.9994084239006042 }, new Int16Array(32_000)))
+      .resolves.toMatchObject({ accepted: true });
+    await expect(decideWakeWindow({ score: async () => 0.12031245231628418 }, new Int16Array(32_000)))
+      .resolves.toMatchObject({ accepted: false });
+  });
+
   it("opens provisional listening on a passing phrase without opening conversation", async () => {
     const subject = setup();
     subject.detector.acceptSamples(new Int16Array(32_000));
@@ -87,7 +95,7 @@ describe("live wake detector", () => {
     expect(subject.openings).toHaveLength(1);
     expect(subject.openings[0]).toMatchObject({ sampleRate: 16_000, channels: 1, sampleFormat: "s16le" });
     expect((subject.openings[0] as { audio: Int16Array }).audio.length).toBe(32_000 + 320 + 9_600);
-    expect(subject.detector.provisionalState()).toBe("awaiting-directedness");
+    expect(subject.detector.provisionalState()).toBe("awaiting-admission");
   });
 
   it("suppresses duplicate wake evaluation during provisional capture", async () => {
@@ -108,11 +116,13 @@ describe("live wake detector", () => {
     expect(JSON.stringify(subject.metadata)).not.toMatch(/audio|base64|pcm/i);
   });
 
-  it("has one continuous production microphone owner", () => {
-    const adapter = readFileSync(new URL("../wake-adapters.ts", import.meta.url), "utf8");
-    expect(adapter).toContain("startWidgetMicrophone");
-    expect(adapter).not.toContain(["createMicrophone", "Capture"].join(""));
-    expect(adapter).not.toContain("seconds:");
+  it("has one echo-cancelled Chromium microphone owner", () => {
+    const audio = readFileSync(new URL("../renderer-audio.ts", import.meta.url), "utf8");
+    expect(audio.split(["getUser", "Media"].join(""))).toHaveLength(2);
+    expect(audio).toContain("echoCancellation: true");
+    expect(audio).toContain("noiseSuppression: true");
+    expect(audio).toContain("sampleRate: 16_000");
+    expect(audio).toContain("sampleRate: 24_000");
   });
 
   it("has no runtime dependency on speaker identity", () => {
@@ -124,7 +134,7 @@ describe("live wake detector", () => {
   it("visibly distinguishes active capture from completed capture", () => {
     const main = readFileSync(new URL("../main.ts", import.meta.url), "utf8");
     expect(main).toContain('caption: "Listening — speak naturally"');
-    expect(main).toContain('caption: "Captured — deciding if you meant Mastra"');
+    expect(main).toContain('caption: "Captured — listening"');
   });
 
   it("never serializes opening audio or bypasses the admission boundary", () => {

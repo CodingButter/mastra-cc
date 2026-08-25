@@ -1,6 +1,6 @@
 # ADR-0005 — Wake is enrolment-first fingerprinting, not transcription
 
-**Status:** accepted; the §5 sub-decision was taken 2026-08-08 — rebuild the capture path once, carry the measurements, re-measure before trusting any constant
+**Status:** superseded for admission by [ADR-0053](0053-phrase-wake-gates-a-client-owned-voice-session.md) on 2026-08-25; the rejection of transcription-as-wake and the historical measurements remain valid
 **Date:** 2026-08-08
 
 ## Context

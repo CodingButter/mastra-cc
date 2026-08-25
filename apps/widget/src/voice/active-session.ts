@@ -7,17 +7,20 @@ export function createActiveVoiceSession(options: Readonly<{
   openHubSession?(): void;
   closeHubSession?(): void;
   closeProvider(): void;
-  discardProvisional(): void;
+  resetWake(): void;
 }>) {
   let phase: VoiceConversationState = "idle";
   let providerClosed = false;
 
-  const close = (from: Exclude<VoiceConversationState, "idle"> = phase === "active" ? "active" : "provisional"): void => {
-    if (from === "provisional") options.discardProvisional();
-    else if (!providerClosed) {
+  const close = (
+    from: Exclude<VoiceConversationState, "idle"> = phase === "active" ? "active" : "provisional",
+    notifyHub = true,
+  ): void => {
+    options.resetWake();
+    if (!providerClosed) {
       providerClosed = true;
       options.closeProvider();
-      options.closeHubSession?.();
+      if (from === "active" && notifyHub) options.closeHubSession?.();
     }
     phase = "idle";
   };
@@ -42,6 +45,9 @@ export function createActiveVoiceSession(options: Readonly<{
     },
     dismiss,
     close,
+    hubClosed(): void {
+      if (phase !== "idle") close(phase, false);
+    },
     state: () => phase,
   };
 }

@@ -11,7 +11,7 @@ function samples(length: number, value: number): Int16Array {
 }
 
 describe("provisional listening", () => {
-  it("moves through wake, capture, directedness, and admission without duplicating wake", () => {
+  it("moves through wake, capture, realtime admission, and conversation without duplicating wake", () => {
     const subject = createProvisionalListening({ now: () => 100 });
     subject.push(samples(40_000, 10));
     expect(subject.wakeDetected(32_000)).toBe(true);
@@ -19,7 +19,7 @@ describe("provisional listening", () => {
     expect(subject.wakeDetected(32_000)).toBe(false);
     subject.push(samples(2_000, 20));
     const opening = subject.finishOpening();
-    expect(subject.state()).toBe("awaiting-directedness");
+    expect(subject.state()).toBe("awaiting-admission");
     expect(opening.audio.length).toBe(PROVISIONAL_PRE_ROLL_SAMPLES + 32_000 + 2_000);
     expect([...opening.audio.slice(0, 3)]).toEqual([10, 10, 10]);
     subject.admit("verdict-1");

@@ -4,7 +4,7 @@ export const PROVISIONAL_PRE_ROLL_SAMPLES = 8_000;
 export const PROVISIONAL_MAX_SAMPLES = VOICE_CAPTURE_OPTIONS.sampleRate * 12;
 const IDLE_RING_SAMPLES = VOICE_CAPTURE_OPTIONS.sampleRate * 2 + PROVISIONAL_PRE_ROLL_SAMPLES;
 
-export type ProvisionalState = "idle" | "wake-detected" | "capturing-opening" | "awaiting-directedness" | "admitted" | "discarded";
+export type ProvisionalState = "idle" | "wake-detected" | "capturing-opening" | "awaiting-admission" | "admitted" | "discarded";
 
 export type BufferedOpening = Readonly<{
   audio: Int16Array;
@@ -52,7 +52,7 @@ export function createProvisionalListening(options: Readonly<{ now?: () => numbe
   return {
     state: () => phase,
     push(samples: Int16Array): void {
-      if (phase === "awaiting-directedness" || phase === "admitted" || phase === "discarded") return;
+      if (phase === "awaiting-admission" || phase === "admitted" || phase === "discarded") return;
       ring = appendBounded(ring, samples, phase === "idle" ? IDLE_RING_SAMPLES : PROVISIONAL_MAX_SAMPLES);
     },
     wakeDetected(wakeWindowSamples: number): boolean {
@@ -70,7 +70,7 @@ export function createProvisionalListening(options: Readonly<{ now?: () => numbe
       opening = ring.slice();
       ring.fill(0);
       ring = new Int16Array();
-      phase = "awaiting-directedness";
+      phase = "awaiting-admission";
       return {
         audio: opening,
         sampleRate: 16_000,
@@ -81,7 +81,7 @@ export function createProvisionalListening(options: Readonly<{ now?: () => numbe
       };
     },
     admit(id: string): void {
-      if (phase !== "awaiting-directedness") throw new Error("only a classified opening can be admitted");
+      if (phase !== "awaiting-admission") throw new Error("only a classified opening can be admitted");
       verdictId = id;
       phase = "admitted";
     },

@@ -4,7 +4,6 @@ export { type Capability, mintToolSurface, type Tool } from "./tools/mint.js";
 export { type HubActivity, type ObservedElement, STRIPPED_KEYS, type StrippedObservation, strippedView } from "./memory/stripped.js";
 export { announce, bootSubconscious } from "./memory/subconscious.js";
 export { createLaneHub, LANE_EVENTS, type LaneConnection, type LaneEvent, type LaneFrame, type LaneHub, type LaneHubOptions } from "./lanes/lanes.js";
-export { createDirectednessClassifier, type DirectednessClassifierOptions } from "./voice/directedness.js";
 export {
   createVoiceLane,
   type DialOutcome,
