@@ -12,8 +12,6 @@ export default defineConfig({
     "src/main.ts",
     "src/face.ts",
     "src/placement-store.ts",
-    "src/control-proof.ts",
-    "src/offset-spike.ts",
   ],
   deps: { neverBundle: ["electron"] },
   hooks: {

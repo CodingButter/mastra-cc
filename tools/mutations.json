@@ -949,17 +949,25 @@
     "testFile": "src/__tests__/the-face-hears-the-hub.test.ts"
   },
   {
-    "name": "wake-gate-bypasses-keyword-decision",
+    "name": "wake-gate-bypasses-keyword-validation",
     "file": "packages/voice/src/gate.ts",
-    "find": "keyword.accepted && ",
+    "find": "valid && confidence >= threshold",
+    "replace": "confidence >= threshold",
     "cwd": "packages/voice",
     "testFile": "src/__tests__/wake-gate.test.ts"
   },
   {
-    "name": "wake-gate-bypasses-speaker-decision",
-    "file": "packages/voice/src/gate.ts",
-    "find": " && speaker.accepted",
-    "cwd": "packages/voice",
-    "testFile": "src/__tests__/wake-gate.test.ts"
+    "name": "live-wake-ignores-session-exclusivity",
+    "file": "apps/widget/src/live-wake.ts",
+    "find": " || state.microphoneGateOpen",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/live-wake.test.ts"
+  },
+  {
+    "name": "live-wake-retries-device-loss-forever",
+    "file": "apps/widget/src/live-wake.ts",
+    "find": "        unavailable = true;\n",
+    "cwd": "apps/widget",
+    "testFile": "src/__tests__/live-wake.test.ts"
   }
 ]

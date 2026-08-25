@@ -1,11 +1,9 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import * as ort from "onnxruntime-node";
 
 import { modelInputWindow } from "./audio.js";
-import type { SpeakerTemplateBank } from "./gate.js";
 
 export type WakeModelPayload = Readonly<{
   featureModelPath: string;
@@ -14,41 +12,34 @@ export type WakeModelPayload = Readonly<{
 
 export type WakeKeywordModel = Readonly<{
   score(normalized: Int16Array): Promise<number>;
-  speakerEmbedding(normalized: Int16Array): Promise<readonly number[]>;
 }>;
+
+export function packagedWakeModelPayload(): WakeModelPayload {
+  return {
+    featureModelPath: fileURLToPath(new URL("../models/speech-embedding.onnx", import.meta.url)),
+    keywordModelPath: fileURLToPath(new URL("../models/hey-mastra-keyword.onnx", import.meta.url)),
+  };
+}
 
 export async function loadWakeKeywordModel(payload: WakeModelPayload): Promise<WakeKeywordModel> {
   const feature = await ort.InferenceSession.create(payload.featureModelPath);
   const keyword = await ort.InferenceSession.create(payload.keywordModelPath);
-  async function embeddings(normalized: Int16Array): Promise<Float32Array> {
-    const samples = modelInputWindow(normalized);
-    const result = await feature.run({ audio_samples: new ort.Tensor("float32", samples, [1, 32_000]) });
-    const output = result.embeddings;
-    if (output === undefined || output.data.length !== 16 * 96) throw new Error("feature model returned invalid embeddings");
-    return output.data as Float32Array;
-  }
   return {
     async score(normalized) {
-      const featureOutput = await embeddings(normalized);
+      const samples = modelInputWindow(normalized);
+      const features = await feature.run({ audio_samples: new ort.Tensor("float32", samples, [1, 32_000]) });
+      const embeddings = features.embeddings;
+      if (embeddings === undefined || embeddings.data.length !== 16 * 96) {
+        throw new Error("feature model returned invalid embeddings");
+      }
       const probabilities = await keyword.run({
-        embeddings: new ort.Tensor("float32", featureOutput, [1, 16 * 96]),
+        embeddings: new ort.Tensor("float32", embeddings.data as Float32Array, [1, 16 * 96]),
       });
       const output = probabilities.probabilities;
       if (output === undefined || output.data.length < 2) throw new Error("keyword model returned no probability");
       const score = Number(output.data[1]);
       if (!Number.isFinite(score) || score < 0 || score > 1) throw new Error("keyword model returned an invalid probability");
       return score;
-    },
-    async speakerEmbedding(normalized) {
-      const featureOutput = await embeddings(normalized);
-      const pooled = Array.from({ length: 96 }, (_, dimension) => {
-        let sum = 0;
-        for (let frame = 0; frame < 16; frame += 1) sum += featureOutput[frame * 96 + dimension]!;
-        return sum / 16;
-      });
-      const norm = Math.sqrt(pooled.reduce((sum, value) => sum + value * value, 0));
-      if (!Number.isFinite(norm) || norm === 0) throw new Error("feature model returned an invalid speaker embedding");
-      return pooled.map((value) => value / norm);
     },
   };
 }
@@ -107,58 +98,4 @@ export async function createMicrophoneCapture(
       else reject(new Error(`microphone capture failed (${code ?? "signal"}): ${errorText.trim()}`));
     });
   });
-}
-
-function isBank(value: unknown): value is SpeakerTemplateBank {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as Partial<SpeakerTemplateBank>;
-  return (
-    Number.isSafeInteger(candidate.revision) &&
-    (candidate.revision ?? -1) >= 0 &&
-    Array.isArray(candidate.fingerprints) &&
-    candidate.fingerprints.every(
-      (fingerprint) =>
-        Array.isArray(fingerprint) &&
-        fingerprint.length > 0 &&
-        fingerprint.every((entry) => Number.isFinite(entry)),
-    )
-  );
-}
-
-export type TemplateStore = Readonly<{
-  read(): SpeakerTemplateBank;
-  publish(fingerprints: readonly (readonly number[])[]): SpeakerTemplateBank;
-}>;
-
-export function createTemplateStore(path: string): TemplateStore {
-  const empty: SpeakerTemplateBank = { revision: 0, fingerprints: [] };
-  return {
-    read() {
-      try {
-        const value: unknown = JSON.parse(readFileSync(path, "utf8"));
-        return isBank(value) ? value : empty;
-      } catch {
-        return empty;
-      }
-    },
-    publish(fingerprints) {
-      if (
-        fingerprints.length === 0 ||
-        fingerprints.some(
-          (fingerprint) => fingerprint.length === 0 || fingerprint.some((entry) => !Number.isFinite(entry)),
-        )
-      ) {
-        throw new Error("template publication requires a non-empty finite fingerprint bank");
-      }
-      const current = this.read();
-      const next: SpeakerTemplateBank = {
-        revision: current.revision + 1,
-        fingerprints: fingerprints.map((fingerprint) => [...fingerprint]),
-      };
-      mkdirSync(dirname(path), { recursive: true });
-      writeFileSync(`${path}.next`, `${JSON.stringify(next)}\n`, { mode: 0o600 });
-      renameSync(`${path}.next`, path);
-      return next;
-    },
-  };
 }

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  acceptWake,
   applyFrame,
   dismissFace,
   INITIAL_FACE_STATE,
@@ -62,8 +63,9 @@ describe("the face hides when told", () => {
     expect(dismissFace({ ...working, armed: true }).armed).toBe(true);
   });
 
-  it("closes the microphone gate on the session-end path, not on dismissal", () => {
-    const open = applyFrame(INITIAL_FACE_STATE, { event: "voice_opened" });
+  it("opens the existing session gate on wake and closes it on the hub session-end path", () => {
+    const open = acceptWake({ ...INITIAL_FACE_STATE, visible: false });
+    expect(open).toMatchObject({ visible: true, voiceOpen: true, microphoneGateOpen: true, armed: true });
     expect(dismissFace(open).microphoneGateOpen).toBe(true);
     expect(applyFrame(open, { event: "voice_closed" }).microphoneGateOpen).toBe(false);
   });

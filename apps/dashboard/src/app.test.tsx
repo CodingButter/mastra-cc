@@ -3,14 +3,11 @@ import { describe, expect, it } from "vitest";
 
 import { App } from "./App.js";
 
-describe("wake enrolment dashboard", () => {
-  it("renders the thin Mastra shell and closed five-take surface", () => {
+describe("dashboard", () => {
+  it("renders without the superseded biometric enrolment surface", () => {
     const markup = renderToStaticMarkup(<App />);
-    expect(markup).toContain("MASTRA");
-    expect(markup).toContain("ALPHA");
-    expect(markup).toContain("Wake enrolment");
-    expect(markup).toContain("Five clean takes");
-    expect(markup.match(/Take [1-5]/g)).toHaveLength(5);
+    expect(markup).toContain("Mastra dashboard");
+    expect(markup).not.toMatch(/enrol|five clean takes|speaker template/i);
     expect(markup).not.toContain("getUserMedia");
   });
 });

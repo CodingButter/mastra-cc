@@ -19,6 +19,7 @@ export { applyFrame, INITIAL_FACE_STATE, type FaceState } from "./hiding-model.j
 
 export interface HubConnection {
   readonly connected: boolean;
+  said(): void;
   close(): Promise<void>;
 }
 
@@ -52,6 +53,7 @@ export async function connectToHub(options: {
     get connected() {
       return client.connected;
     },
+    said: () => client.said(),
     close: () => client.close(),
   };
 }

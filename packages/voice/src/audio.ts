@@ -8,7 +8,6 @@ export type VoiceCaptureOptions = Readonly<{
   sampleRate: 16_000;
   channels: 1;
   sampleFormat: "s16le";
-  fingerprintBins: 16;
   silenceFloor: 0.05;
 }>;
 
@@ -16,13 +15,11 @@ export const VOICE_CAPTURE_OPTIONS: VoiceCaptureOptions = Object.freeze({
   sampleRate: 16_000,
   channels: 1,
   sampleFormat: "s16le",
-  fingerprintBins: 16,
   silenceFloor: 0.05,
 });
 
 export type ProcessedCapture = Readonly<{
   normalized: Int16Array;
-  fingerprint: readonly number[];
   parameters: Readonly<{
     input: CapturedAudioFormat;
     output: VoiceCaptureOptions;
@@ -83,6 +80,18 @@ function phraseSamples(frames: Int16Array, silenceFloor: number): Int16Array {
   return frames.slice(start, end + 1);
 }
 
+export function overlappingWakeWindows(normalized: Int16Array): readonly Int16Array[] {
+  const windowSamples = VOICE_CAPTURE_OPTIONS.sampleRate * 2;
+  const strideSamples = VOICE_CAPTURE_OPTIONS.sampleRate / 2;
+  if (normalized.length <= windowSamples) return [normalized];
+
+  const starts: number[] = [];
+  for (let start = 0; start + windowSamples <= normalized.length; start += strideSamples) starts.push(start);
+  const finalStart = normalized.length - windowSamples;
+  if (starts.at(-1) !== finalStart) starts.push(finalStart);
+  return starts.map((start) => normalized.slice(start, start + windowSamples));
+}
+
 export function modelInputWindow(normalized: Int16Array): Float32Array {
   const phrase = phraseSamples(normalized, VOICE_CAPTURE_OPTIONS.silenceFloor);
   const output = new Float32Array(32_000);
@@ -96,53 +105,14 @@ export function modelInputWindow(normalized: Int16Array): Float32Array {
   return output;
 }
 
-export function fingerprintFrames(
-  normalized: Int16Array,
-  options: VoiceCaptureOptions = VOICE_CAPTURE_OPTIONS,
-): readonly number[] {
-  const phrase = phraseSamples(normalized, options.silenceFloor);
-  if (phrase.length === 0) return [];
-
-  const peak = phrase.reduce((largest, sample) => Math.max(largest, Math.abs(sample)), 0);
-  return Array.from({ length: options.fingerprintBins }, (_, bin) => {
-    const start = Math.floor((bin * phrase.length) / options.fingerprintBins);
-    const end = Math.max(start + 1, Math.floor(((bin + 1) * phrase.length) / options.fingerprintBins));
-    let energy = 0;
-    for (let index = start; index < Math.min(end, phrase.length); index += 1) {
-      const scaled = phrase[index] / peak;
-      energy += scaled * scaled;
-    }
-    return Math.sqrt(energy / Math.max(1, end - start));
-  });
-}
-
-export const ENROLMENT_CAPTURE_ADAPTER = Object.freeze({
-  pipeline: normalizeCapturedAudio,
-  options: VOICE_CAPTURE_OPTIONS,
-});
-
 export const LIVE_CAPTURE_ADAPTER = Object.freeze({
   pipeline: normalizeCapturedAudio,
   options: VOICE_CAPTURE_OPTIONS,
 });
 
-function processCapture(
-  adapter: typeof ENROLMENT_CAPTURE_ADAPTER,
-  raw: Buffer,
-  input: CapturedAudioFormat,
-): ProcessedCapture {
-  const normalized = adapter.pipeline(raw, input, adapter.options);
-  return {
-    normalized,
-    fingerprint: fingerprintFrames(normalized, adapter.options),
-    parameters: { input, output: adapter.options },
-  };
-}
-
-export function processEnrolmentCapture(raw: Buffer, input: CapturedAudioFormat): ProcessedCapture {
-  return processCapture(ENROLMENT_CAPTURE_ADAPTER, raw, input);
-}
-
 export function processLiveCapture(raw: Buffer, input: CapturedAudioFormat): ProcessedCapture {
-  return processCapture(LIVE_CAPTURE_ADAPTER, raw, input);
+  return {
+    normalized: LIVE_CAPTURE_ADAPTER.pipeline(raw, input, LIVE_CAPTURE_ADAPTER.options),
+    parameters: { input, output: LIVE_CAPTURE_ADAPTER.options },
+  };
 }

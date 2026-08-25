@@ -37,6 +37,10 @@ export function applyFrame(state: FaceState, frame: LaneFrame): FaceState {
  * phrase matcher calls this same function. Dismissal changes presentation only:
  * work, wake arming, voice state, and the session gate survive untouched.
  */
+export function acceptWake(state: FaceState): FaceState {
+  return { ...state, visible: true, voiceOpen: true, microphoneGateOpen: true };
+}
+
 export function dismissFace(state: FaceState): FaceState {
   const { caption: _caption, ...rest } = state;
   return { ...rest, visible: false };
