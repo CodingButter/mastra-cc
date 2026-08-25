@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -107,5 +109,11 @@ describe("clicks land only on the face", () => {
     expect(layoutCss({ ...FACE_LAYOUT, orb: { cx: 40, cy: 40, r: 30 } })).toContain(
       "left: 10px",
     );
+  });
+
+  it("puts the caption on an opaque high-contrast surface", () => {
+    const html = readFileSync(new URL("../face.html", import.meta.url), "utf8");
+    expect(html).toContain("background: rgba(2, 6, 23, 0.96)");
+    expect(html).toContain("color: #ffffff");
   });
 });

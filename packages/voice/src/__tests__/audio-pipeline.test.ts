@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   LIVE_CAPTURE_ADAPTER,
+  UTTERANCE_FRAME_SAMPLES,
+  UTTERANCE_MAX_SAMPLES,
+  UTTERANCE_TRAILING_SILENCE_SAMPLES,
   VOICE_CAPTURE_OPTIONS,
+  advanceUtteranceEnd,
+  createUtteranceEndState,
   modelInputWindow,
   normalizeCapturedAudio,
   overlappingWakeWindows,
   processLiveCapture,
 } from "../index.js";
-import { microphoneCaptureCommand } from "../node.js";
+import { microphoneStreamCommand } from "../node.js";
 
 function pcm(samples: readonly number[]): Buffer {
   const bytes = Buffer.alloc(samples.length * 2);
@@ -69,10 +74,36 @@ describe("the voice capture pipeline", () => {
     expect(overlappingWakeWindows(normalized)).toEqual([normalized]);
   });
 
-  it("defines the only production microphone command at the package boundary", () => {
-    expect(microphoneCaptureCommand({ device: "hw:0,6", seconds: 2 })).toEqual({
+  it("defines the only production microphone stream at the package boundary", () => {
+    expect(microphoneStreamCommand({ device: "hw:0,6" })).toEqual({
       command: "arecord",
-      args: ["--quiet", "--device", "hw:0,6", "--format", "S16_LE", "--channels", "1", "--rate", "16000", "--duration", "2", "--file-type", "raw"],
+      args: ["--quiet", "--device", "hw:0,6", "--format", "S16_LE", "--channels", "1", "--rate", "16000", "--file-type", "raw"],
     });
+  });
+
+  it("freezes the utterance timing contract", () => {
+    expect(UTTERANCE_FRAME_SAMPLES).toBe(320);
+    expect(UTTERANCE_TRAILING_SILENCE_SAMPLES).toBe(9_600);
+    expect(UTTERANCE_MAX_SAMPLES).toBe(192_000);
+  });
+
+  it("ends after speech followed by frozen trailing silence", () => {
+    let state = createUtteranceEndState();
+    state = advanceUtteranceEnd(state, Int16Array.from({ length: 320 }, () => 8_000));
+    expect(state.speechBegan).toBe(true);
+    for (let index = 0; index < 29; index += 1) {
+      state = advanceUtteranceEnd(state, new Int16Array(320));
+      expect(state.ended).toBe(false);
+    }
+    state = advanceUtteranceEnd(state, new Int16Array(320));
+    expect(state).toMatchObject({ ended: true, reason: "trailing-silence" });
+  });
+
+  it("fails closed at the hard utterance maximum even before speech", () => {
+    let state = createUtteranceEndState();
+    for (let index = 0; index < UTTERANCE_MAX_SAMPLES / UTTERANCE_FRAME_SAMPLES; index += 1) {
+      state = advanceUtteranceEnd(state, new Int16Array(UTTERANCE_FRAME_SAMPLES));
+    }
+    expect(state).toMatchObject({ ended: true, reason: "maximum-duration" });
   });
 });

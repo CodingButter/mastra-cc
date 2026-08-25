@@ -4,12 +4,12 @@ import { collect, fail, rootFromArgs, stripComments } from "./lib.mjs";
 
 // B4: a client process may have at most one microphone consumer
 // (docs/01-ARCHITECTURE.md:144). M5's widget calls the package-owned
-// `createMicrophoneCapture` boundary; naming that boundary here keeps the pin
+// `createMicrophoneStream` boundary; naming that boundary here keeps the pin
 // attached to the selected runtime even though capture mechanics live outside
 // the client source tree. The count is printed so zero cannot masquerade as a
 // permanently green assertion whose output never changes when its first
 // subject arrives.
-const MICROPHONE_CONSUMER = /\b(?:getUserMedia|MediaRecorder|AudioWorklet|createMediaStreamSource|createMicrophoneCapture|node-record-lpcm16|naudiodon|portaudio|arecord)\b/g;
+const MICROPHONE_CONSUMER = /\b(?:getUserMedia|MediaRecorder|AudioWorklet|createMediaStreamSource|createMicrophoneStream|createMicrophoneCapture|node-record-lpcm16|naudiodon|portaudio|arecord)\b/g;
 
 const root = rootFromArgs(process.argv);
 const files = collect(root, ["apps"], [".ts", ".js", ".mjs", ".cjs"])

@@ -6,9 +6,8 @@ import { loadWakeKeywordModel, packagedWakeModelPayload } from "@mastra-cc/voice
 
 import { connectToHub } from "./hub-connection.js";
 import { createLiveWakeDetector } from "./live-wake.js";
-import { captureWakeAudio } from "./wake-adapters.js";
+import { startWidgetMicrophone } from "./wake-adapters.js";
 import {
-  acceptWake,
   dismissFace,
   INITIAL_FACE_STATE,
   isSpokenDismissal,
@@ -134,37 +133,31 @@ app.whenReady().then(async () => {
 
   try {
     const model = await loadWakeKeywordModel(packagedWakeModelPayload());
-    let detector: ReturnType<typeof createLiveWakeDetector> | undefined;
-    const hub = await connectToHub({
-      socketPath: defaultLaneSocketPath(),
-      onState: (next) => {
-        render(next);
-        detector?.sessionStateChanged();
-      },
-    });
-    detector = createLiveWakeDetector({
-      capture: captureWakeAudio,
+    await connectToHub({ socketPath: defaultLaneSocketPath(), onState: render });
+    const detector = createLiveWakeDetector({
       model,
       state: () => state,
       onDecision: (result) => console.log(JSON.stringify({ type: "wake-decision", pid: process.pid, at: new Date().toISOString(), ...result })),
-      onAccept: () => {
-        render(acceptWake(state));
-        hub.said();
+      onMetadata: (metadata) => {
+        console.log(JSON.stringify({ type: "provisional-listening", pid: process.pid, at: new Date().toISOString(), ...metadata }));
+        if (metadata.state === "capturing-opening") render({ ...state, visible: true, caption: "Listening — speak naturally" });
+        else if (metadata.state === "awaiting-directedness") render({ ...state, visible: true, caption: "Captured — deciding if you meant Mastra" });
+      },
+      onOpening: () => undefined,
+    });
+    const controller = new AbortController();
+    const microphone = startWidgetMicrophone({
+      signal: controller.signal,
+      onSamples: detector.acceptSamples,
+      onError: (error) => {
+        detector.captureFailed();
+        console.warn(error.message);
       },
     });
-    let wakeTimer: NodeJS.Timeout | undefined;
-    let quitting = false;
-    const pumpWake = async () => {
-      await detector?.runOnce();
-      if (quitting) return;
-      wakeTimer = setTimeout(() => void pumpWake(), 250);
-      wakeTimer.unref();
-    };
-    void pumpWake();
     app.once("before-quit", () => {
-      quitting = true;
-      if (wakeTimer !== undefined) clearTimeout(wakeTimer);
-      detector?.stop();
+      controller.abort();
+      microphone.close();
+      detector.stop();
     });
   } catch (error) {
     console.warn(error instanceof Error ? error.message : String(error));

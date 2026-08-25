@@ -18,6 +18,41 @@ export const VOICE_CAPTURE_OPTIONS: VoiceCaptureOptions = Object.freeze({
   silenceFloor: 0.05,
 });
 
+export const UTTERANCE_FRAME_SAMPLES = 320;
+export const UTTERANCE_TRAILING_SILENCE_SAMPLES = 9_600;
+export const UTTERANCE_MAX_SAMPLES = 192_000;
+const UTTERANCE_SPEECH_RMS = 600;
+
+export type UtteranceEndState = Readonly<{
+  totalSamples: number;
+  trailingSilenceSamples: number;
+  speechBegan: boolean;
+  ended: boolean;
+  reason?: "trailing-silence" | "maximum-duration";
+}>;
+
+export function createUtteranceEndState(): UtteranceEndState {
+  return { totalSamples: 0, trailingSilenceSamples: 0, speechBegan: false, ended: false };
+}
+
+export function advanceUtteranceEnd(state: UtteranceEndState, frame: Int16Array): UtteranceEndState {
+  if (state.ended) return state;
+  const totalSamples = state.totalSamples + frame.length;
+  if (totalSamples >= UTTERANCE_MAX_SAMPLES) {
+    return { ...state, totalSamples, ended: true, reason: "maximum-duration" };
+  }
+  const rms = frame.length === 0 ? 0 : Math.sqrt(frame.reduce((sum, sample) => sum + sample * sample, 0) / frame.length);
+  const speechBegan = state.speechBegan || rms >= UTTERANCE_SPEECH_RMS;
+  const trailingSilenceSamples = !speechBegan || rms >= UTTERANCE_SPEECH_RMS ? 0 : state.trailingSilenceSamples + frame.length;
+  return {
+    totalSamples,
+    trailingSilenceSamples,
+    speechBegan,
+    ended: speechBegan && trailingSilenceSamples >= UTTERANCE_TRAILING_SILENCE_SAMPLES,
+    reason: speechBegan && trailingSilenceSamples >= UTTERANCE_TRAILING_SILENCE_SAMPLES ? "trailing-silence" : undefined,
+  };
+}
+
 export type ProcessedCapture = Readonly<{
   normalized: Int16Array;
   parameters: Readonly<{

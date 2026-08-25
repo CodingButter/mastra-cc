@@ -44,18 +44,22 @@ export async function loadWakeKeywordModel(payload: WakeModelPayload): Promise<W
   };
 }
 
-export type MicrophoneCaptureRequest = Readonly<{
+export type MicrophoneStreamRequest = Readonly<{
   device: string;
-  seconds: number;
+  onSamples(samples: Int16Array): void;
+  onError?(error: Error): void;
+  signal?: AbortSignal;
 }>;
 
-export function microphoneCaptureCommand(request: MicrophoneCaptureRequest): Readonly<{
+export type MicrophoneStream = Readonly<{
+  close(): void;
+}>;
+
+export function microphoneStreamCommand(request: Pick<MicrophoneStreamRequest, "device">): Readonly<{
   command: "arecord";
   args: readonly string[];
 }> {
-  if (request.device.length === 0 || !Number.isInteger(request.seconds) || request.seconds <= 0) {
-    throw new Error("microphone capture requires a device and positive whole-second duration");
-  }
+  if (request.device.length === 0) throw new Error("microphone stream requires a device");
   return {
     command: "arecord",
     args: [
@@ -68,34 +72,42 @@ export function microphoneCaptureCommand(request: MicrophoneCaptureRequest): Rea
       "1",
       "--rate",
       "16000",
-      "--duration",
-      String(request.seconds),
       "--file-type",
       "raw",
     ],
   };
 }
 
-export async function createMicrophoneCapture(
-  request: MicrophoneCaptureRequest,
-  signal?: AbortSignal,
-): Promise<Buffer> {
-  const invocation = microphoneCaptureCommand(request);
-  return await new Promise((resolve, reject) => {
-    const child = spawn(invocation.command, invocation.args, {
-      signal,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const chunks: Buffer[] = [];
-    let errorText = "";
-    child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => {
-      errorText += chunk.toString("utf8");
-    });
-    child.once("error", reject);
-    child.once("close", (code) => {
-      if (code === 0) resolve(Buffer.concat(chunks));
-      else reject(new Error(`microphone capture failed (${code ?? "signal"}): ${errorText.trim()}`));
-    });
+export function createMicrophoneStream(request: MicrophoneStreamRequest): MicrophoneStream {
+  const invocation = microphoneStreamCommand(request);
+  const child = spawn(invocation.command, invocation.args, {
+    signal: request.signal,
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  let remainder: Buffer<ArrayBufferLike> = Buffer.alloc(0);
+  let errorText = "";
+  let closed = false;
+  child.stdout.on("data", (chunk: Buffer) => {
+    const bytes = remainder.length === 0 ? chunk : Buffer.concat([remainder, chunk]);
+    const completeBytes = bytes.length - (bytes.length % 2);
+    if (completeBytes > 0) {
+      const samples = new Int16Array(completeBytes / 2);
+      for (let index = 0; index < samples.length; index += 1) samples[index] = bytes.readInt16LE(index * 2);
+      request.onSamples(samples);
+    }
+    remainder = bytes.subarray(completeBytes);
+  });
+  child.stderr.on("data", (chunk: Buffer) => {
+    errorText += chunk.toString("utf8");
+  });
+  child.once("error", (error) => request.onError?.(error));
+  child.once("close", (code) => {
+    if (!closed && code !== 0) request.onError?.(new Error(`microphone stream failed (${code ?? "signal"}): ${errorText.trim()}`));
+  });
+  return {
+    close() {
+      closed = true;
+      child.kill();
+    },
+  };
 }

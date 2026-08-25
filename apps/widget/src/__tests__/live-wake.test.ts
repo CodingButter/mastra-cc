@@ -2,119 +2,135 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 import { INITIAL_FACE_STATE } from "../hiding-model.js";
-import { createLiveWakeDetector, decideWakeWindows } from "../live-wake.js";
+import { createLiveWakeDetector, decideWakeWindow } from "../live-wake.js";
 
 const acceptedModel = { score: async () => 1 };
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-function setup() {
+function setup(model = acceptedModel) {
   let state = INITIAL_FACE_STATE;
   const decisions: unknown[] = [];
-  const onAccept = vi.fn();
-  const capture = vi.fn(async () => Buffer.alloc(64, 1));
+  const openings: unknown[] = [];
+  const metadata: unknown[] = [];
   const detector = createLiveWakeDetector({
-    capture,
-    model: acceptedModel,
+    model,
     state: () => state,
     onDecision: (decision) => decisions.push(decision),
-    onAccept,
+    onOpening: (opening) => openings.push(opening),
+    onMetadata: (value) => metadata.push(value),
     threshold: 0.9,
   });
-  return {
-    detector,
-    capture,
-    decisions,
-    onAccept,
-    setState: (next: typeof state) => (state = next),
-  };
+  return { detector, decisions, openings, metadata, setState: (next: typeof state) => (state = next) };
 }
 
 describe("live wake detector", () => {
-  it("wakes on a passing phrase without speaker identity", async () => {
+  it("opens provisional listening on a passing phrase without opening conversation", async () => {
     const subject = setup();
-    const result = await subject.detector.runOnce();
-    expect(result).toMatchObject({ accepted: true, confidence: 1, modelState: "ready" });
-    expect(subject.onAccept).toHaveBeenCalledOnce();
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(subject.decisions).toContainEqual(expect.objectContaining({ accepted: true, confidence: 1 }));
+    expect(subject.detector.provisionalState()).toBe("capturing-opening");
+    expect(subject.metadata).toContainEqual(expect.objectContaining({ state: "capturing-opening" }));
   });
 
   it("does not wake for a non-matching phrase", async () => {
-    const subject = createLiveWakeDetector({
-      capture: async () => Buffer.alloc(64, 1),
-      model: { score: async () => 0.1 },
-      state: () => INITIAL_FACE_STATE,
-      onDecision: vi.fn(),
-      onAccept: vi.fn(),
-      threshold: 0.9,
-    });
-    await expect(subject.runOnce()).resolves.toMatchObject({ accepted: false, confidence: 0.1 });
+    const subject = setup({ score: async () => 0.1 });
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(subject.decisions).toContainEqual(expect.objectContaining({ accepted: false, confidence: 0.1 }));
+    expect(subject.detector.provisionalState()).toBe("idle");
   });
 
   it("fails closed when the keyword model is unavailable or malformed", async () => {
-    await expect(decideWakeWindows(undefined, new Int16Array(64), 0.9))
+    await expect(decideWakeWindow(undefined, new Int16Array(32_000), 0.9))
       .resolves.toMatchObject({ accepted: false, modelState: "missing" });
-    await expect(decideWakeWindows({ score: async () => Number.NaN }, new Int16Array(64), 0.9))
+    await expect(decideWakeWindow({ score: async () => Number.NaN }, new Int16Array(32_000), 0.9))
       .resolves.toMatchObject({ accepted: false, modelState: "corrupt" });
   });
 
-  it("does not capture while a voice session owns the gate", async () => {
-    const subject = setup();
+  it("does not inspect microphone samples while a voice session owns the gate", async () => {
+    const model = { score: vi.fn(async () => 1) };
+    const subject = setup(model);
     subject.setState({ ...INITIAL_FACE_STATE, voiceOpen: true, microphoneGateOpen: true });
-    await expect(subject.detector.runOnce()).resolves.toBeUndefined();
-    expect(subject.capture).not.toHaveBeenCalled();
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(model.score).not.toHaveBeenCalled();
   });
 
-  it("dismissal leaves armed wake capture available", async () => {
+  it("dismissal leaves armed wake listening available", async () => {
     const subject = setup();
     subject.setState({ ...INITIAL_FACE_STATE, visible: false });
-    expect((await subject.detector.runOnce())?.accepted).toBe(true);
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(subject.detector.provisionalState()).toBe("capturing-opening");
   });
 
   it("stays closed after device loss until an availability event", async () => {
-    const subject = setup();
-    subject.capture.mockRejectedValueOnce(new Error("microphone lost"));
-    await expect(subject.detector.runOnce()).resolves.toBeUndefined();
-    await expect(subject.detector.runOnce()).resolves.toBeUndefined();
-    expect(subject.capture).toHaveBeenCalledOnce();
-
+    const model = { score: vi.fn(async () => 1) };
+    const subject = setup(model);
+    subject.detector.captureFailed("microphone-lost");
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(model.score).not.toHaveBeenCalled();
     subject.detector.availabilityChanged();
-    expect((await subject.detector.runOnce())?.accepted).toBe(true);
-    expect(subject.capture).toHaveBeenCalledTimes(2);
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(model.score).toHaveBeenCalledOnce();
   });
 
-  it("gives a person four seconds to say the wake phrase", () => {
-    const adapters = readFileSync(new URL("../wake-adapters.ts", import.meta.url), "utf8");
-    expect(adapters).toContain("seconds: 4");
-    expect(adapters).not.toContain("seconds: 2");
+  it("retains the complete opening until utterance end", async () => {
+    const subject = setup();
+    subject.detector.acceptSamples(Int16Array.from({ length: 32_000 }, () => 1));
+    await flush();
+    subject.detector.acceptSamples(Int16Array.from({ length: 320 }, () => 8_000));
+    for (let index = 0; index < 30; index += 1) subject.detector.acceptSamples(new Int16Array(320));
+    expect(subject.openings).toHaveLength(1);
+    expect(subject.openings[0]).toMatchObject({ sampleRate: 16_000, channels: 1, sampleFormat: "s16le" });
+    expect((subject.openings[0] as { audio: Int16Array }).audio.length).toBe(32_000 + 320 + 9_600);
+    expect(subject.detector.provisionalState()).toBe("awaiting-directedness");
   });
 
-  it("scores every overlapping phrase window and accepts a later match", async () => {
-    const scores = [0.1, 0.4, 1, 0.3, 0.2];
-    let scoreIndex = 0;
-    const decision = await decideWakeWindows(
-      { score: async () => scores[scoreIndex++]! },
-      new Int16Array(64_000),
-      0.9,
-    );
-    expect(decision).toMatchObject({ accepted: true, confidence: 1 });
-    expect(scoreIndex).toBe(5);
+  it("suppresses duplicate wake evaluation during provisional capture", async () => {
+    const model = { score: vi.fn(async () => 1) };
+    const subject = setup(model);
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(model.score).toHaveBeenCalledOnce();
   });
 
-  it("never includes raw audio in the decision result", async () => {
-    const result = await setup().detector.runOnce();
-    expect(Object.keys(result ?? {})).toEqual(["accepted", "confidence", "threshold", "modelState"]);
-    expect(JSON.stringify(result)).not.toContain("audio");
+  it("never includes raw audio in wake or provisional telemetry", async () => {
+    const subject = setup();
+    subject.detector.acceptSamples(new Int16Array(32_000));
+    await flush();
+    expect(JSON.stringify(subject.decisions)).not.toMatch(/audio|base64|pcm/i);
+    expect(JSON.stringify(subject.metadata)).not.toMatch(/audio|base64|pcm/i);
   });
 
-  it("has no runtime dependency on speaker templates, thresholds, or WeSpeaker", () => {
+  it("has one continuous production microphone owner", () => {
+    const adapter = readFileSync(new URL("../wake-adapters.ts", import.meta.url), "utf8");
+    expect(adapter).toContain("startWidgetMicrophone");
+    expect(adapter).not.toContain(["createMicrophone", "Capture"].join(""));
+    expect(adapter).not.toContain("seconds:");
+  });
+
+  it("has no runtime dependency on speaker identity", () => {
     const main = readFileSync(new URL("../main.ts", import.meta.url), "utf8");
     const detector = readFileSync(new URL("../live-wake.ts", import.meta.url), "utf8");
     expect(`${main}\n${detector}`).not.toMatch(/speakerEmbedding|SpeakerTemplate|createTemplateStore|wespeaker/i);
   });
 
-  it("signals only the wake event to the hub and never serializes audio", () => {
+  it("visibly distinguishes active capture from completed capture", () => {
     const main = readFileSync(new URL("../main.ts", import.meta.url), "utf8");
-    const detector = readFileSync(new URL("../live-wake.ts", import.meta.url), "utf8");
-    expect(main).toContain("hub.said();");
-    expect(main).not.toMatch(/hub\.said\([^)]/);
-    expect(detector).not.toContain("@mastra-cc/transport");
+    expect(main).toContain('caption: "Listening — speak naturally"');
+    expect(main).toContain('caption: "Captured — deciding if you meant Mastra"');
+  });
+
+  it("never serializes opening audio or directly admits conversation", () => {
+    const main = readFileSync(new URL("../main.ts", import.meta.url), "utf8");
+    expect(main).not.toContain("hub.said();");
+    expect(main).not.toContain("acceptWake(state)");
+    expect(main).not.toMatch(/JSON\.stringify\([^\n]*(audio|opening)/i);
   });
 });

@@ -1,5 +1,5 @@
-import { processLiveCapture, type CapturedAudioFormat, type ProcessedCapture } from "@mastra-cc/voice";
-import { createMicrophoneCapture } from "@mastra-cc/voice/node";
+import type { CapturedAudioFormat } from "@mastra-cc/voice";
+import { createMicrophoneStream, type MicrophoneStream } from "@mastra-cc/voice/node";
 
 export const WIDGET_CAPTURE_FORMAT: CapturedAudioFormat = Object.freeze({
   sampleRate: 16_000,
@@ -7,13 +7,15 @@ export const WIDGET_CAPTURE_FORMAT: CapturedAudioFormat = Object.freeze({
   sampleFormat: "s16le",
 });
 
-export async function captureWakeAudio(signal?: AbortSignal): Promise<Buffer> {
-  return await createMicrophoneCapture(
-    { device: process.env.MASTRA_CC_MICROPHONE_DEVICE ?? "plughw:0,6", seconds: 4 },
-    signal,
-  );
-}
-
-export function adaptLiveCapture(raw: Buffer): ProcessedCapture {
-  return processLiveCapture(raw, WIDGET_CAPTURE_FORMAT);
+export function startWidgetMicrophone(options: Readonly<{
+  onSamples(samples: Int16Array): void;
+  onError(error: Error): void;
+  signal?: AbortSignal;
+}>): MicrophoneStream {
+  return createMicrophoneStream({
+    device: process.env.MASTRA_CC_MICROPHONE_DEVICE ?? "plughw:0,6",
+    onSamples: options.onSamples,
+    onError: options.onError,
+    signal: options.signal,
+  });
 }
