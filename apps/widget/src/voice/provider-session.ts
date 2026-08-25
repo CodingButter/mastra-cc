@@ -43,6 +43,7 @@ function audioFrame(samples: Int16Array): string {
 export function createProviderSession(options: Readonly<{
   socketFactory?: (url: string) => ProviderSocket;
   setupTimeoutMs?: number;
+  onInputTranscript?: (text: string) => void;
 }> = {}) {
   const socketFactory = options.socketFactory ?? ((url: string) => new WebSocket(url) as unknown as ProviderSocket);
   let socket: ProviderSocket | undefined;
@@ -88,6 +89,17 @@ export function createProviderSession(options: Readonly<{
         next.addEventListener("message", onMessage);
         next.addEventListener("close", onClose);
         next.addEventListener("error", onError);
+      });
+      next.addEventListener("message", (event: unknown) => {
+        try {
+          const message = JSON.parse(String((event as { data?: unknown }).data)) as {
+            serverContent?: { inputTranscription?: { text?: unknown } };
+          };
+          const text = message.serverContent?.inputTranscription?.text;
+          if (typeof text === "string" && text.trim() !== "") options.onInputTranscript?.(text);
+        } catch {
+          // A malformed provider frame is a frame we never heard.
+        }
       });
     },
 

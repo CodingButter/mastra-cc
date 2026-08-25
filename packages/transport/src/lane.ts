@@ -154,6 +154,8 @@ export interface LaneSource {
     said(): void;
     classifyDirectedness?(request: DirectednessRequest): Promise<DirectednessResult>;
     mintVoiceDial?(request: VoiceDialRequest): Promise<VoiceDialResult>;
+    openVoiceSession?(): void;
+    closeVoiceSession?(): void;
     readonly open: boolean;
   };
 }
@@ -180,6 +182,8 @@ export interface LaneClient {
   classifyDirectedness(opening: DirectednessOpening, signal?: AbortSignal): Promise<DirectednessResult>;
   /** Ask the hub to mint one provider ticket for this client to dial directly. */
   mintVoiceDial(signal?: AbortSignal): Promise<VoiceDialResult>;
+  openVoiceSession(): void;
+  closeVoiceSession(): void;
   readonly connected: boolean;
   close(): Promise<void>;
 }
@@ -242,6 +246,10 @@ export async function serveLane(options: {
             continue;
           }
           void connection.mintVoiceDial(request).then((result) => socket.write(`${JSON.stringify(result)}\n`));
+        } else if (message.type === "voice_session_open") {
+          connection.openVoiceSession?.();
+        } else if (message.type === "voice_session_close") {
+          connection.closeVoiceSession?.();
         }
       }
     });
@@ -380,6 +388,12 @@ export async function dialLane(options: {
   return {
     said() {
       socket.write(`${JSON.stringify({ type: "said" })}\n`);
+    },
+    openVoiceSession() {
+      socket.write(`${JSON.stringify({ type: "voice_session_open" })}\n`);
+    },
+    closeVoiceSession() {
+      socket.write(`${JSON.stringify({ type: "voice_session_close" })}\n`);
     },
     classifyDirectedness(opening, signal) {
       const audio = Buffer.from(opening.audio.buffer, opening.audio.byteOffset, opening.audio.byteLength);

@@ -70,8 +70,8 @@ describe("the face hides when told", () => {
     expect(applyFrame(open, { event: "voice_closed" }).microphoneGateOpen).toBe(false);
   });
 
-  it("recognises only the three spoken dismissal gestures", () => {
-    expect(["no", "Never mind", " SHUT UP "].every(isSpokenDismissal)).toBe(true);
+  it("recognises the established dismissal gestures plus stop", () => {
+    expect(["no", "Never mind", " SHUT UP ", " STOP "].every(isSpokenDismissal)).toBe(true);
     expect(isSpokenDismissal("stop the work")).toBe(false);
   });
 

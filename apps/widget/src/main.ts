@@ -8,6 +8,7 @@ import { connectToHub } from "./hub-connection.js";
 import { createLiveWakeDetector } from "./live-wake.js";
 import { startWidgetMicrophone } from "./wake-adapters.js";
 import { admitOpening } from "./voice/admission.js";
+import { createActiveVoiceSession } from "./voice/active-session.js";
 import { createMicrophoneSource, createProviderSession } from "./voice/provider-session.js";
 import {
   dismissFace,
@@ -35,6 +36,7 @@ function displayBounds(): Rectangle[] {
 let state: FaceState = INITIAL_FACE_STATE;
 let faceWindow: BrowserWindow | undefined;
 let tray: Tray | undefined;
+let closeVoiceSession = () => {};
 
 function render(next: FaceState): void {
   state = next;
@@ -47,7 +49,8 @@ ipcMain.on("face:ready", () => render(state));
 
 // THE ONE DISMISSAL PATH. The tray and M5's spoken seam both enter here.
 export function dismiss(): void {
-  render(dismissFace(state));
+  closeVoiceSession();
+  render(dismissFace({ ...state, voiceOpen: false, microphoneGateOpen: false }));
 }
 
 export function spoken(utterance: string): boolean {
@@ -137,9 +140,24 @@ app.whenReady().then(async () => {
     const model = await loadWakeKeywordModel(packagedWakeModelPayload());
     const hub = await connectToHub({ socketPath: defaultLaneSocketPath(), onState: render });
     const microphoneSource = createMicrophoneSource();
-    const provider = createProviderSession();
+    let detector: ReturnType<typeof createLiveWakeDetector>;
+    let provider: ReturnType<typeof createProviderSession>;
+    const conversation = createActiveVoiceSession({
+      said: hub.said,
+      openHubSession: hub.openVoiceSession,
+      closeHubSession: hub.closeVoiceSession,
+      closeProvider: () => provider.close(),
+      discardProvisional: () => detector?.discard("dismissed"),
+    });
+    provider = createProviderSession({
+      onInputTranscript: (text) => {
+        if (isSpokenDismissal(text)) spoken(text);
+        else conversation.heard(text);
+      },
+    });
+    closeVoiceSession = () => conversation.close(conversation.state() === "active" ? "active" : "provisional");
     const controller = new AbortController();
-    const detector = createLiveWakeDetector({
+    detector = createLiveWakeDetector({
       model,
       state: () => state,
       onDecision: (result) => console.log(JSON.stringify({ type: "wake-decision", pid: process.pid, at: new Date().toISOString(), ...result })),
@@ -157,6 +175,11 @@ app.whenReady().then(async () => {
           provider,
           microphone: microphoneSource,
           signal: controller.signal,
+        }).then((admitted) => {
+          if (admitted) {
+            conversation.admit();
+            hub.said();
+          }
         }).catch((error) => {
           detector.discard("admission-failed");
           console.warn(error instanceof Error ? error.message : String(error));

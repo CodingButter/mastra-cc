@@ -28,6 +28,8 @@ export interface HubConnection {
   said(): void;
   classifyDirectedness(opening: DirectednessOpening, signal?: AbortSignal): Promise<DirectednessResult>;
   mintVoiceDial(signal?: AbortSignal): Promise<VoiceDialResult>;
+  openVoiceSession(): void;
+  closeVoiceSession(): void;
   close(): Promise<void>;
 }
 
@@ -64,6 +66,8 @@ export async function connectToHub(options: {
     said: () => client.said(),
     classifyDirectedness: (opening, signal) => client.classifyDirectedness(opening, signal),
     mintVoiceDial: (signal) => client.mintVoiceDial(signal),
+    openVoiceSession: () => client.openVoiceSession(),
+    closeVoiceSession: () => client.closeVoiceSession(),
     close: () => client.close(),
   };
 }

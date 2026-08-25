@@ -127,10 +127,10 @@ describe("live wake detector", () => {
     expect(main).toContain('caption: "Captured — deciding if you meant Mastra"');
   });
 
-  it("never serializes opening audio or directly admits conversation", () => {
+  it("never serializes opening audio or bypasses the admission boundary", () => {
     const main = readFileSync(new URL("../main.ts", import.meta.url), "utf8");
-    expect(main).not.toContain("hub.said();");
     expect(main).not.toContain("acceptWake(state)");
+    expect(main).toContain("admitOpening({");
     expect(main).not.toMatch(/JSON\.stringify\([^\n]*(audio|opening)/i);
   });
 });

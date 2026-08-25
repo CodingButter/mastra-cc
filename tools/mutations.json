@@ -660,7 +660,7 @@
   {
     "name": "the-voice-closed-that-is-not-the-last",
     "file": "apps/hub/src/lanes/lanes.ts",
-    "find": "      if (sessions.size === 0) broadcast({ event: \"voice_closed\" });\n",
+    "find": "    if (sessions.size === 0) broadcast({ event: \"voice_closed\" });\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
   },

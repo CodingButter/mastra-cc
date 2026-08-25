@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createMicrophoneSource, createProviderSession, type ProviderSocket } from "../voice/provider-session.js";
 
@@ -55,6 +55,26 @@ describe("the constrained provider session", () => {
       { realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: "AQD+/wMA" } } },
       { realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: "BAD7/w==" } } },
     ]);
+  });
+
+  it("routes admitted follow-up transcripts without another wake or directedness request", async () => {
+    const socket = new FakeSocket();
+    const onInputTranscript = vi.fn();
+    const session = createProviderSession({
+      onInputTranscript,
+      socketFactory: () => {
+        queueMicrotask(() => socket.emit("open"));
+        queueMicrotask(() => socket.emit("message", { data: JSON.stringify({ setupComplete: {} }) }));
+        return socket;
+      },
+    });
+
+    await session.open({ token: "one-use", model: "gemini-live-test" });
+    socket.emit("message", {
+      data: JSON.stringify({ serverContent: { inputTranscription: { text: "what about tomorrow?" } } }),
+    });
+
+    expect(onInputTranscript).toHaveBeenCalledExactlyOnceWith("what about tomorrow?");
   });
 
   it("refuses early continuation and duplicate opening handoffs", async () => {
