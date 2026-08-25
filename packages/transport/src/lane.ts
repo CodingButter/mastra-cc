@@ -39,12 +39,108 @@ export interface LaneFrame {
   readonly detail?: string;
 }
 
+export const DIRECTEDNESS_MAX_AUDIO_BYTES = 384_000;
+export const DIRECTEDNESS_TIMEOUT_MS = 10_000;
+export type DirectednessVerdict = "directed" | "incidental" | "uncertain";
+export type DirectednessReason =
+  | "addressed-mastra"
+  | "addressed-elsewhere"
+  | "unconfigured"
+  | "unsupported-provider"
+  | "provider-refused"
+  | "malformed-answer"
+  | "timeout"
+  | "invalid-request";
+
+export interface DirectednessRequest {
+  readonly type: "directedness_request";
+  readonly id: string;
+  readonly format: { readonly sampleRate: 16_000; readonly channels: 1; readonly sampleFormat: "s16le" };
+  readonly audioBase64: string;
+}
+
+export interface DirectednessResult {
+  readonly type: "directedness_result";
+  readonly id: string;
+  readonly verdict: DirectednessVerdict;
+  readonly reason: DirectednessReason;
+}
+
+export interface DirectednessOpening {
+  readonly audio: Int16Array;
+  readonly sampleRate: 16_000;
+  readonly channels: 1;
+  readonly sampleFormat: "s16le";
+}
+
+export interface VoiceDialRequest {
+  readonly type: "voice_dial_request";
+  readonly id: string;
+}
+
+export type VoiceDialResult =
+  | { readonly type: "voice_dial_result"; readonly id: string; readonly ok: true; readonly token: string; readonly model: string }
+  | {
+      readonly type: "voice_dial_result";
+      readonly id: string;
+      readonly ok: false;
+      readonly status: number;
+      readonly code: string;
+      readonly refusal: string;
+    };
+
 /** True when a parsed line is a frame this wire is allowed to deliver. */
 export function isLaneFrame(value: unknown): value is LaneFrame {
   if (typeof value !== "object" || value === null) return false;
   const frame = value as { event?: unknown; detail?: unknown };
   if (!LANE_EVENTS.includes(frame.event as LaneEvent)) return false;
   return frame.detail === undefined || typeof frame.detail === "string";
+}
+
+function validRequest(value: unknown): value is DirectednessRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const request = value as Partial<DirectednessRequest>;
+  if (request.type !== "directedness_request" || typeof request.id !== "string" || request.id.length === 0) return false;
+  if (typeof request.audioBase64 !== "string" || request.audioBase64.length > Math.ceil(DIRECTEDNESS_MAX_AUDIO_BYTES / 3) * 4) return false;
+  const format = request.format;
+  if (format?.sampleRate !== 16_000 || format.channels !== 1 || format.sampleFormat !== "s16le") return false;
+  const decoded = Buffer.from(request.audioBase64, "base64");
+  return decoded.byteLength > 0 && decoded.byteLength <= DIRECTEDNESS_MAX_AUDIO_BYTES && decoded.byteLength % 2 === 0;
+}
+
+function validResult(value: unknown): value is DirectednessResult {
+  if (typeof value !== "object" || value === null) return false;
+  const result = value as Partial<DirectednessResult>;
+  return (
+    result.type === "directedness_result" &&
+    typeof result.id === "string" &&
+    (["directed", "incidental", "uncertain"] as const).includes(result.verdict as DirectednessVerdict) &&
+    ([
+      "addressed-mastra",
+      "addressed-elsewhere",
+      "unconfigured",
+      "unsupported-provider",
+      "provider-refused",
+      "malformed-answer",
+      "timeout",
+      "invalid-request",
+    ] as const).includes(result.reason as DirectednessReason)
+  );
+}
+
+function validVoiceDialRequest(value: unknown): value is VoiceDialRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const request = value as Partial<VoiceDialRequest>;
+  return request.type === "voice_dial_request" && typeof request.id === "string" && request.id.length > 0;
+}
+
+function validVoiceDialResult(value: unknown): value is VoiceDialResult {
+  if (typeof value !== "object" || value === null) return false;
+  const result = value as Partial<VoiceDialResult>;
+  if (result.type !== "voice_dial_result" || typeof result.id !== "string" || typeof result.ok !== "boolean") return false;
+  if (result.ok) return typeof result.token === "string" && result.token.length > 0 && typeof result.model === "string" && result.model.length > 0;
+  const refusal = result as Partial<Extract<VoiceDialResult, { ok: false }>>;
+  return typeof refusal.status === "number" && typeof refusal.code === "string" && typeof refusal.refusal === "string";
 }
 
 /**
@@ -56,6 +152,8 @@ export interface LaneSource {
   join(deliver: (frame: LaneFrame) => void, ping?: () => void): {
     pong(): void;
     said(): void;
+    classifyDirectedness?(request: DirectednessRequest): Promise<DirectednessResult>;
+    mintVoiceDial?(request: VoiceDialRequest): Promise<VoiceDialResult>;
     readonly open: boolean;
   };
 }
@@ -79,6 +177,9 @@ export function defaultLaneSocketPath(): string {
 export interface LaneClient {
   /** The peer said something a person caused. Not a pong - the hub's clock only moves for this. */
   said(): void;
+  classifyDirectedness(opening: DirectednessOpening, signal?: AbortSignal): Promise<DirectednessResult>;
+  /** Ask the hub to mint one provider ticket for this client to dial directly. */
+  mintVoiceDial(signal?: AbortSignal): Promise<VoiceDialResult>;
   readonly connected: boolean;
   close(): Promise<void>;
 }
@@ -98,6 +199,7 @@ export async function serveLane(options: {
       () => socket.write(`${JSON.stringify({ type: "ping" })}\n`),
     );
     let buffer = "";
+    const directednessIds = new Set<string>();
     socket.on("data", (chunk) => {
       buffer += chunk.toString("utf8");
       let newline = buffer.indexOf("\n");
@@ -116,6 +218,31 @@ export async function serveLane(options: {
         // is where the two arrive on the same socket.
         if (message.type === "pong") connection.pong();
         else if (message.type === "said") connection.said();
+        else if (message.type === "directedness_request") {
+          const request = message as unknown;
+          const id = typeof (request as { id?: unknown }).id === "string" ? (request as { id: string }).id : "invalid";
+          if (!validRequest(request) || directednessIds.has(id) || !connection.classifyDirectedness) {
+            socket.write(`${JSON.stringify({ type: "directedness_result", id, verdict: "uncertain", reason: "invalid-request" })}\n`);
+            continue;
+          }
+          directednessIds.add(id);
+          void connection
+            .classifyDirectedness(request)
+            .then((result) => socket.write(`${JSON.stringify(result)}\n`))
+            .catch(() =>
+              socket.write(
+                `${JSON.stringify({ type: "directedness_result", id, verdict: "uncertain", reason: "provider-refused" })}\n`,
+              ),
+            );
+        } else if (message.type === "voice_dial_request") {
+          const request = message as unknown;
+          const id = typeof (request as { id?: unknown }).id === "string" ? (request as { id: string }).id : "invalid";
+          if (!validVoiceDialRequest(request) || !connection.mintVoiceDial) {
+            socket.write(`${JSON.stringify({ type: "voice_dial_result", id, ok: false, status: 409, code: "UNCONFIGURED", refusal: "voice: this carrier has no dial capability" })}\n`);
+            continue;
+          }
+          void connection.mintVoiceDial(request).then((result) => socket.write(`${JSON.stringify(result)}\n`));
+        }
       }
     });
     socket.on("close", () => sockets.delete(socket));
@@ -162,6 +289,15 @@ export async function dialLane(options: {
 
   let buffer = "";
   let connected = true;
+  let nextRequestId = 1;
+  const pending = new Map<
+    string,
+    { resolve: (result: DirectednessResult) => void; timer: ReturnType<typeof setTimeout>; abort?: () => void }
+  >();
+  const pendingVoiceDials = new Map<
+    string,
+    { resolve: (result: VoiceDialResult) => void; timer: ReturnType<typeof setTimeout>; abort?: () => void }
+  >();
   socket.on("data", (chunk) => {
     buffer += chunk.toString("utf8");
     let newline = buffer.indexOf("\n");
@@ -175,6 +311,30 @@ export async function dialLane(options: {
         message = JSON.parse(line);
       } catch {
         options.onRefusal?.(`lane: peer sent a line that is not JSON - refusing to deliver it`);
+        continue;
+      }
+      if (validResult(message)) {
+        const request = pending.get(message.id);
+        if (!request) {
+          options.onRefusal?.(`lane: refusing a directedness result for unknown id "${message.id}"`);
+          continue;
+        }
+        clearTimeout(request.timer);
+        request.abort?.();
+        pending.delete(message.id);
+        request.resolve(message);
+        continue;
+      }
+      if (validVoiceDialResult(message)) {
+        const request = pendingVoiceDials.get(message.id);
+        if (!request) {
+          options.onRefusal?.(`lane: refusing a voice dial result for unknown id "${message.id}"`);
+          continue;
+        }
+        clearTimeout(request.timer);
+        request.abort?.();
+        pendingVoiceDials.delete(message.id);
+        request.resolve(message);
         continue;
       }
       if ((message as { type?: unknown }).type === "ping") {
@@ -196,11 +356,130 @@ export async function dialLane(options: {
   });
   socket.on("close", () => {
     connected = false;
+    for (const [id, request] of pending) {
+      clearTimeout(request.timer);
+      request.abort?.();
+      request.resolve({ type: "directedness_result", id, verdict: "uncertain", reason: "provider-refused" });
+    }
+    pending.clear();
+    for (const [id, request] of pendingVoiceDials) {
+      clearTimeout(request.timer);
+      request.abort?.();
+      request.resolve({
+        type: "voice_dial_result",
+        id,
+        ok: false,
+        status: 503,
+        code: "HUB_UNAVAILABLE",
+        refusal: "voice: the hub connection closed before a dial ticket arrived",
+      });
+    }
+    pendingVoiceDials.clear();
   });
 
   return {
     said() {
       socket.write(`${JSON.stringify({ type: "said" })}\n`);
+    },
+    classifyDirectedness(opening, signal) {
+      const audio = Buffer.from(opening.audio.buffer, opening.audio.byteOffset, opening.audio.byteLength);
+      if (signal?.aborted) {
+        return Promise.resolve({
+          type: "directedness_result",
+          id: "aborted",
+          verdict: "uncertain",
+          reason: "timeout",
+        });
+      }
+      if (audio.byteLength === 0 || audio.byteLength > DIRECTEDNESS_MAX_AUDIO_BYTES) {
+        return Promise.resolve({
+          type: "directedness_result",
+          id: "invalid",
+          verdict: "uncertain",
+          reason: "invalid-request",
+        });
+      }
+      const id = `${process.pid}-${nextRequestId++}`;
+      return new Promise<DirectednessResult>((resolve) => {
+        const finish = (result: DirectednessResult) => {
+          const request = pending.get(id);
+          if (!request) return;
+          clearTimeout(request.timer);
+          request.abort?.();
+          pending.delete(id);
+          resolve(result);
+        };
+        const timer = setTimeout(
+          () => finish({ type: "directedness_result", id, verdict: "uncertain", reason: "timeout" }),
+          DIRECTEDNESS_TIMEOUT_MS,
+        );
+        const abort = signal
+          ? () => signal.removeEventListener("abort", onAbort)
+          : undefined;
+        const onAbort = () =>
+          finish({ type: "directedness_result", id, verdict: "uncertain", reason: "timeout" });
+        pending.set(id, { resolve, timer, abort });
+        signal?.addEventListener("abort", onAbort, { once: true });
+        const request: DirectednessRequest = {
+          type: "directedness_request",
+          id,
+          format: {
+            sampleRate: opening.sampleRate,
+            channels: opening.channels,
+            sampleFormat: opening.sampleFormat,
+          },
+          audioBase64: audio.toString("base64"),
+        };
+        socket.write(`${JSON.stringify(request)}\n`);
+      });
+    },
+    mintVoiceDial(signal) {
+      const id = `${process.pid}-voice-${nextRequestId++}`;
+      if (signal?.aborted) {
+        return Promise.resolve({
+          type: "voice_dial_result",
+          id,
+          ok: false,
+          status: 408,
+          code: "ABORTED",
+          refusal: "voice: the dial request was cancelled before it was sent",
+        });
+      }
+      return new Promise<VoiceDialResult>((resolve) => {
+        const finish = (result: VoiceDialResult) => {
+          const request = pendingVoiceDials.get(id);
+          if (!request) return;
+          clearTimeout(request.timer);
+          request.abort?.();
+          pendingVoiceDials.delete(id);
+          resolve(result);
+        };
+        const timer = setTimeout(
+          () =>
+            finish({
+              type: "voice_dial_result",
+              id,
+              ok: false,
+              status: 504,
+              code: "TIMEOUT",
+              refusal: "voice: the hub did not answer the dial request before its deadline",
+            }),
+          DIRECTEDNESS_TIMEOUT_MS,
+        );
+        const abort = signal ? () => signal.removeEventListener("abort", onAbort) : undefined;
+        const onAbort = () =>
+          finish({
+            type: "voice_dial_result",
+            id,
+            ok: false,
+            status: 408,
+            code: "ABORTED",
+            refusal: "voice: the dial request was cancelled",
+          });
+        pendingVoiceDials.set(id, { resolve, timer, abort });
+        signal?.addEventListener("abort", onAbort, { once: true });
+        socket.write(`${JSON.stringify({ type: "voice_dial_request", id } satisfies VoiceDialRequest)}\n`);
+      });
     },
     get connected() {
       return connected;

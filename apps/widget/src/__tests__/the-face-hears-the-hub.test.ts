@@ -118,6 +118,40 @@ describe("the face hears the hub", () => {
     expect(() => hub.publish("progress", "anyone there?")).not.toThrow();
   });
 
+  it("carries directedness and one-dial capabilities over the same carrier without inventing lane events", async () => {
+    const hub = createLaneHub({
+      classifyDirectedness: async (request) => ({
+        type: "directedness_result",
+        id: request.id,
+        verdict: "directed",
+        reason: "addressed-mastra",
+      }),
+      mintVoiceDial: async (request) => ({
+        type: "voice_dial_result",
+        id: request.id,
+        ok: true,
+        token: "auth_tokens/one-use",
+        model: "gemini-live-test",
+      }),
+    });
+    const { connection, states } = await face(hub);
+
+    await expect(
+      connection.classifyDirectedness({
+        audio: new Int16Array([1, 2]),
+        sampleRate: 16_000,
+        channels: 1,
+        sampleFormat: "s16le",
+      }),
+    ).resolves.toMatchObject({ verdict: "directed", reason: "addressed-mastra" });
+    await expect(connection.mintVoiceDial()).resolves.toMatchObject({
+      ok: true,
+      token: "auth_tokens/one-use",
+      model: "gemini-live-test",
+    });
+    expect(states).toEqual([]);
+  });
+
   it("says the hub is absent rather than blaming the face", async () => {
     const path = socketPath();
     await expect(connectToHub({ socketPath: path, onState: () => {} })).rejects.toThrow(

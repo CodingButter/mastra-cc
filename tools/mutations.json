@@ -951,22 +951,22 @@
   {
     "name": "wake-gate-bypasses-keyword-validation",
     "file": "packages/voice/src/gate.ts",
-    "find": "valid && confidence >= threshold",
-    "replace": "confidence >= threshold",
+    "find": "    modelState === \"ready\" &&\n",
+    "replace": "",
     "cwd": "packages/voice",
     "testFile": "src/__tests__/wake-gate.test.ts"
   },
   {
     "name": "live-wake-ignores-session-exclusivity",
     "file": "apps/widget/src/live-wake.ts",
-    "find": " || state.microphoneGateOpen",
+    "find": " || options.state().microphoneGateOpen",
     "cwd": "apps/widget",
     "testFile": "src/__tests__/live-wake.test.ts"
   },
   {
     "name": "live-wake-retries-device-loss-forever",
     "file": "apps/widget/src/live-wake.ts",
-    "find": "        unavailable = true;\n",
+    "find": "      unavailable = true;\n",
     "cwd": "apps/widget",
     "testFile": "src/__tests__/live-wake.test.ts"
   }

@@ -99,6 +99,10 @@ export function createLiveWakeDetector(options: Readonly<{
       provisional.captureFailed(reason);
       options.onMetadata(provisional.metadata());
     },
+    admit(id: string): void {
+      provisional.admit(id);
+      options.onMetadata(provisional.metadata());
+    },
     discard(reason: string): void {
       provisional.discard(reason);
       pendingSamples.fill(0);

@@ -1,4 +1,10 @@
-import { dialLane, type LaneClient } from "@mastra-cc/transport";
+import {
+  dialLane,
+  type DirectednessOpening,
+  type DirectednessResult,
+  type LaneClient,
+  type VoiceDialResult,
+} from "@mastra-cc/transport";
 
 import { applyFrame, INITIAL_FACE_STATE, type FaceState } from "./hiding-model.js";
 
@@ -20,6 +26,8 @@ export { applyFrame, INITIAL_FACE_STATE, type FaceState } from "./hiding-model.j
 export interface HubConnection {
   readonly connected: boolean;
   said(): void;
+  classifyDirectedness(opening: DirectednessOpening, signal?: AbortSignal): Promise<DirectednessResult>;
+  mintVoiceDial(signal?: AbortSignal): Promise<VoiceDialResult>;
   close(): Promise<void>;
 }
 
@@ -54,6 +62,8 @@ export async function connectToHub(options: {
       return client.connected;
     },
     said: () => client.said(),
+    classifyDirectedness: (opening, signal) => client.classifyDirectedness(opening, signal),
+    mintVoiceDial: (signal) => client.mintVoiceDial(signal),
     close: () => client.close(),
   };
 }

@@ -7,6 +7,8 @@ import { loadWakeKeywordModel, packagedWakeModelPayload } from "@mastra-cc/voice
 import { connectToHub } from "./hub-connection.js";
 import { createLiveWakeDetector } from "./live-wake.js";
 import { startWidgetMicrophone } from "./wake-adapters.js";
+import { admitOpening } from "./voice/admission.js";
+import { createMicrophoneSource, createProviderSession } from "./voice/provider-session.js";
 import {
   dismissFace,
   INITIAL_FACE_STATE,
@@ -133,7 +135,10 @@ app.whenReady().then(async () => {
 
   try {
     const model = await loadWakeKeywordModel(packagedWakeModelPayload());
-    await connectToHub({ socketPath: defaultLaneSocketPath(), onState: render });
+    const hub = await connectToHub({ socketPath: defaultLaneSocketPath(), onState: render });
+    const microphoneSource = createMicrophoneSource();
+    const provider = createProviderSession();
+    const controller = new AbortController();
     const detector = createLiveWakeDetector({
       model,
       state: () => state,
@@ -142,13 +147,28 @@ app.whenReady().then(async () => {
         console.log(JSON.stringify({ type: "provisional-listening", pid: process.pid, at: new Date().toISOString(), ...metadata }));
         if (metadata.state === "capturing-opening") render({ ...state, visible: true, caption: "Listening — speak naturally" });
         else if (metadata.state === "awaiting-directedness") render({ ...state, visible: true, caption: "Captured — deciding if you meant Mastra" });
+        else if (metadata.state === "admitted") render({ ...state, visible: true, voiceOpen: true, microphoneGateOpen: true, caption: undefined });
       },
-      onOpening: () => undefined,
+      onOpening: (opening) => {
+        void admitOpening({
+          opening,
+          hub,
+          detector,
+          provider,
+          microphone: microphoneSource,
+          signal: controller.signal,
+        }).catch((error) => {
+          detector.discard("admission-failed");
+          console.warn(error instanceof Error ? error.message : String(error));
+        });
+      },
     });
-    const controller = new AbortController();
     const microphone = startWidgetMicrophone({
       signal: controller.signal,
-      onSamples: detector.acceptSamples,
+      onSamples: (samples) => {
+        detector.acceptSamples(samples);
+        microphoneSource.push(samples);
+      },
       onError: (error) => {
         detector.captureFailed();
         console.warn(error.message);
@@ -158,6 +178,8 @@ app.whenReady().then(async () => {
       controller.abort();
       microphone.close();
       detector.stop();
+      provider.close();
+      void hub.close();
     });
   } catch (error) {
     console.warn(error instanceof Error ? error.message : String(error));
