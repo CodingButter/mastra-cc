@@ -274,6 +274,8 @@ M5 shipped phrase-only wake gating a client-owned voice session, on the terms re
 
 **Goal:** *"Tell me my most recent email."* Spoken, from across the room, answered aloud.
 
+**Contract:** Stage 1 froze what the sentence means in [10-NORTH-STAR-CONTRACT.md](10-NORTH-STAR-CONTRACT.md). Later stages implement it; they do not redefine it.
+
 **Deliverables:** the end-to-end trace in [01-ARCHITECTURE.md §6](01-ARCHITECTURE.md), all nine steps. Voice session dial with a minted token; one semantic action against a real mail client; spoken answer; turn ends on silence or on a decline.
 
 **Exit gate:**

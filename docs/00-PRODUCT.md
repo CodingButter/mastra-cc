@@ -26,6 +26,8 @@ This sentence has been the acceptance test for the whole system since the first 
 | the machine to answer aloud | a voice lane, with the audio staying near the person |
 | you to trust the answer | an audit trail of what was answered and why |
 
+What that sentence means precisely — the mailbox, the ordering evidence, the minimum spoken fields, the honest refusals, and the audit — is frozen in [10-NORTH-STAR-CONTRACT.md](10-NORTH-STAR-CONTRACT.md).
+
 If a change does not move that sentence closer to working reliably on a stranger's machine, it is not a priority. In the prototype this discipline slipped: seven days produced an orb with volumetric smoke and a glowing reflection (`08-04`, four consecutive visual commits in one night — see [03-LESSONS.md §3](03-LESSONS.md)) before the north star sentence worked end to end.
 
 ## 3. What "semantic desktop control" means
