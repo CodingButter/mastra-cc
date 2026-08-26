@@ -235,29 +235,38 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 ## M5 — Wake
 
-**Goal:** the wake gate works on Jamie's actual microphone, and the number that says so was measured on the path that ships.
+> **Superseded by [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md) (accepted 2026-08-25).** The enrolment-first design described below was abandoned: speaker-specific template matching did not generalize, and identity turned out to be the wrong question. M5 shipped instead as phrase-only wake gating a client-owned voice session. Everything from here to the replacement exit gate is kept as the historical record of what was attempted and why it was dropped — it is not a description of what runs today.
 
-**This is the milestone with a known unsolved problem.** See [ADR-0005 §5](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md).
+**Goal (superseded):** the wake gate works on Jamie's actual microphone, and the number that says so was measured on the path that ships.
+
+**This was the milestone with a known unsolved problem.** See [ADR-0005 §5](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md).
 
 **M0.5 left this milestone two things and no code, by design** (Q14–Q16 in [09-QUESTIONS.md](09-QUESTIONS.md)):
 
 - **A structural suspect for the unexplained offset.** Every published system stages wake detection and speaker identification as separate mechanisms with separate thresholds; ours does both at once. That is exactly what would produce an offset between live captures and their own templates. It is a named suspect, not a diagnosis — but it is the first thing to test, before touching a threshold.
 - **A licence blocker on the obvious dependency.** openWakeWord's *code* is Apache-2.0 while its shipped *pre-trained models* are CC BY-NC-SA — non-commercial, and therefore disqualified. A licence gate reading manifests would have passed it. Training a custom "hey mastra" model may resolve the licence and the custom-phrase requirement in one move, since the restriction lives in the weights rather than the framework. A second candidate's licence is genuinely disputed between two of its own sources; that is unresolved on purpose and closes by reading the LICENSE file at a pinned commit.
 
-**Deliverables:**
+**Deliverables (superseded):**
 - One capture path in `packages/voice`, consumed identically by the enrolment page and the live gate.
 - Fingerprint matcher; window-invariant enrolment; live template re-fetch.
 - Guided enrolment walkthrough with cue, countdown, auto-advance, per-take re-record, and a reset control.
 - Factory bank for cold start.
 
-**Exit gate:**
+### Superseded exit gate (never met, by decision)
+
+These boxes are deliberately left unticked. They measure the enrolment-first design ADR-0053 abandoned, so the ADR-0005 fingerprint measurements they demand will never be produced. They stay here as evidence of the gate that was set, not as outstanding work.
+
 - [ ] The full measurement table from [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md) **re-derived on the shipping capture path**, committed as `docs/proofs/what-the-wake-gate-admits.md`.
 - [ ] Live scores against own templates sit **clearly inside** the threshold, with a stated margin. Not 0.4 outside it, and not fixed by moving the threshold.
 - [ ] A fresh enrolment reaches the live detector **without restarting the widget** — demonstrated in the artifact.
 - [ ] A second speaker is rejected.
 - [ ] Boundary pin B9 passes and **fails** when a transcriber import is added — including one added only to a manifest.
 
-**If the offset survives a single shared capture path, stop and investigate before tuning anything.** Raising the threshold is how the prototype stopped noticing.
+**If the offset survives a single shared capture path, stop and investigate before tuning anything.** Raising the threshold is how the prototype stopped noticing. That instruction is what ended this design: the offset survived, and the investigation produced [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md) instead of a tuned threshold.
+
+### Exit gate as shipped (ADR-0053)
+
+M5 shipped phrase-only wake gating a client-owned voice session, on the terms recorded in [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md): no transcription or speaker identity participates in wake; one bounded complete opening is buffered on the client and handed once to a constrained realtime session; the model is fenced to exactly `admit_conversation` and `stop_listening` with no desktop tools or execution authority; the client owns the microphone and the capture/playback graph, so no audio crosses the hub; only actual user speech refreshes the inactivity clock; dismissal closes the session exactly once, leaves phrase wake armed and cancels no unrelated work; re-wake starts a new conversation; and the lane vocabulary remains exactly `progress`, `answer`, `voice_opened`, `voice_closed`. The evidence for each of those is cited in ADR-0053 §Evidence and in the voice-session tests it names.
 
 ---
 
