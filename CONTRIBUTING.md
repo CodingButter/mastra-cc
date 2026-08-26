@@ -26,7 +26,7 @@ node protocol/generate.mjs          # generated bindings are build output, never
 pnpm turbo run build lint typecheck test
 ```
 
-On a fresh checkout, run the generator **before** the first install if install complains about `@mastra-cc/protocol-types` — CI does it in that order for the same reason. The wider gate set (freeze gate, determinism, mutations, boundary pins, licences, docs check) is what CI runs; each is a single `node tools/...` or `node scripts/...` invocation you can run locally, and [tools/pins/README.md](tools/pins/README.md) explains which boundary pins are wired and which are deliberately absent. Machine setup beyond the toolchain lives in `infra/apply.sh`, per §2.
+On a fresh checkout, run the generator **before** the first install if install complains about `@mastra-cc/protocol-types` — CI does it in that order for the same reason. The wider gate set (freeze gate, determinism, mutations, boundary pins, licences, docs check, contract check) is what CI runs; each is a single `node tools/...` or `node scripts/...` invocation you can run locally, and [tools/pins/README.md](tools/pins/README.md) explains which boundary pins are wired and which are deliberately absent. Machine setup beyond the toolchain lives in `infra/apply.sh`, per §2.
 
 Tests that need a display and a live accessibility bus are gated behind `MASTRA_CC_LIVE=1` and skip loudly otherwise; the default lane must stay green with no desktop at all, because the replay backend answers from recorded fixtures under `daemon/fixtures/`.
 

@@ -181,9 +181,13 @@ Full rationale in [ADR-0012](02-DECISIONS/0012-claims-needing-a-desktop-are-prov
 9. integration dry-run against the destination monorepo (04-INTEGRATION-PLAN §7)
 ```
 
-Two further jobs run beside that sequence, not inside it: `licences` (B12, one
-pass over every manifest) and `live` (§5.1, which builds an accessibility bus
-and runs `infra/demo.sh` on it).
+Three further jobs run beside that sequence, not inside it: `licences` (B12, one
+pass over every manifest), `contract-check` (`node tools/contract-check.mjs`, one
+pass over `docs/10-NORTH-STAR-CONTRACT.md` — it fails when a required acceptance
+row, a frozen column value, the audit grammar or a rule identifier is removed,
+and it is deliberately not a boundary pin, because the contract is a product
+decision rather than a thirteenth architectural boundary) and `live` (§5.1, which
+builds an accessibility bus and runs `infra/demo.sh` on it).
 
 **Three details that are not obvious and each cost the prototype something:**
 

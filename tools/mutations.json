@@ -969,5 +969,40 @@
     "find": "      unavailable = true;\n",
     "cwd": "apps/widget",
     "testFile": "src/__tests__/live-wake.test.ts"
+  },
+  {
+    "name": "contract-row-deleted",
+    "file": "docs/10-NORTH-STAR-CONTRACT.md",
+    "find": "| S-EMPTY-INBOX | The selected visible mailbox is explicitly empty | Gmail publishes an explicit empty-state element for the selected view (R7d) | R7d refusal: the selected visible mailbox has no messages | open; awaiting follow-up, wake armed | completed — spoken | 0 | select another mailbox or category, then ask again | yes |\n",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "contract-zero-audit-cell-deleted",
+    "file": "docs/10-NORTH-STAR-CONTRACT.md",
+    "find": "| 0 | sign in, then ask again |",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "contract-required-cell-emptied",
+    "file": "docs/10-NORTH-STAR-CONTRACT.md",
+    "find": "select another mailbox or category, then ask again",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "contract-denylist-paragraph-deleted",
+    "file": "docs/10-NORTH-STAR-CONTRACT.md",
+    "find": "DOM/tree traversal order; ",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "contract-check-vacuous-guard-removed",
+    "file": "tools/contract-check.mjs",
+    "find": "if (!existsSync(path)) {\n  console.error(`contract-check: ${DOC} not found under ${root} - the check would pass vacuously`);\n  process.exit(1);\n}\n",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
   }
 ]
