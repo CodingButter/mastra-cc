@@ -2,7 +2,7 @@
 
 A voice-first agent that operates your Linux desktop the way a person does — by asking the desktop what is on it, and acting on the things it names.
 
-You say *"Hey Mastra."* A small face appears in the corner. You say *"tell me my most recent email."* It finds the mail window, reads the top of the list, and tells you. It never took a screenshot to do that, and it never typed anything you did not ask for.
+You say *"Hey Mastra."* A small face appears in the corner. You say *"tell me my most recent email."* It finds the mail window, works out which message is newest from what Gmail itself publishes — never from where a row happens to sit — and tells you, or says plainly that it could not tell. It never took a screenshot to do that, and it never typed anything you did not ask for.
 
 **Status: M5 delivered, M6 in contract freeze.** M0 (documents), M0.5 (research), M1 (skeleton), M2 through M4, and M5 (wake) are built; the plan still came first, and the reason it did is written down in [`docs/03-LESSONS.md`](docs/03-LESSONS.md). The current work is M6 Stage 1 — freezing what *"tell me my most recent email"* means before any of it is implemented.
 

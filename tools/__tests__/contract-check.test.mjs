@@ -164,5 +164,71 @@ test("a refusal outcome that cites no R7 class is rejected", () => {
   });
   const { status, output } = run(["--root", root]);
   expect(status).toBe(1);
-  expect(output).toContain("refuses without citing an R7a-R7g class");
+  expect(output).toContain("must cite its frozen refusal class R7d");
+});
+
+// R7g never says the word "refusal", so a word-match check would have left these
+// rows free to drift. The frozen per-row class is what closes that.
+test("a failure row that drops its R7g citation is rejected", () => {
+  const root = plant((t) => {
+    const row = rowOf(t, "S-PROVIDER-FAIL-BEFORE-DISPATCH");
+    return t.replace(row, row.replace("R7g failure:", "failure:"));
+  });
+  const { status, output } = run(["--root", root]);
+  expect(status).toBe(1);
+  expect(output).toContain("S-PROVIDER-FAIL-BEFORE-DISPATCH spoken outcome must cite its frozen refusal class R7g");
+});
+
+test("a refusal row citing the wrong R7 class is rejected", () => {
+  const root = plant((t) => {
+    const row = rowOf(t, "S-EMPTY-INBOX");
+    return t.replace(row, row.replace("R7d refusal:", "R7e refusal:"));
+  });
+  const { status, output } = run(["--root", root]);
+  expect(status).toBe(1);
+  expect(output).toContain("cites R7e but its frozen class is R7d");
+});
+
+test("a non-refusal row that claims an R7 class is rejected", () => {
+  const root = plant((t) => {
+    const row = rowOf(t, "S-DISMISS-DURING-WORK");
+    return t.replace(row, row.replace("| Nothing from the dismissed request", "| R7e refusal: nothing from the dismissed request"));
+  });
+  const { status, output } = run(["--root", root]);
+  expect(status).toBe(1);
+  expect(output).toContain("S-DISMISS-DURING-WORK is not a refusal row but its spoken outcome cites R7e");
+});
+
+test("a duplicated matrix column is rejected", () => {
+  const root = plant((t) =>
+    t
+      .split("\n")
+      .map((l) => (l.startsWith("| id |") ? `${l} answer audit |` : l))
+      .join("\n"),
+  );
+  const { status, output } = run(["--root", root]);
+  expect(status).toBe(1);
+  expect(output).toContain('matrix header repeats the "answer audit" column');
+});
+
+test("an extra column in the header is rejected", () => {
+  const root = plant((t) =>
+    t
+      .split("\n")
+      .map((l) => (l.startsWith("| id |") ? `${l} notes |` : l))
+      .join("\n"),
+  );
+  const { status, output } = run(["--root", root]);
+  expect(status).toBe(1);
+  expect(output).toContain("matrix header has 10 columns, expected exactly 9");
+});
+
+test("a row with an extra cell is rejected", () => {
+  const root = plant((t) => {
+    const row = rowOf(t, "S-EMPTY-INBOX");
+    return t.replace(row, `${row} spare |`);
+  });
+  const { status, output } = run(["--root", root]);
+  expect(status).toBe(1);
+  expect(output).toContain("S-EMPTY-INBOX has 10 cells, expected exactly 9");
 });

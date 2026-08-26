@@ -78,8 +78,49 @@ const DISPOSITIONS = new Set([
   "completed — withheld, disclosure requires fresh correlation",
 ]);
 
+// Every row's outcome class is frozen here rather than inferred from the prose.
+// "Refusal" is not a word-match: a row whose class is R7a-R7g must cite exactly
+// that class, and a row that is not a refusal must cite none of them - which is
+// what keeps R7g (a failure that never says "refusal") from drifting unguarded.
+const OUTCOME_CLASS = {
+  "S-SUCCESS-R2A": "success",
+  "S-SUCCESS-R2B": "success",
+  "S-CATEGORY-ONE-SELECTED": "success",
+  "S-SUBJECT-EMPTY-PUBLISHED": "success",
+  "S-SENDER-ADDRESS-ONLY": "success",
+  "S-SIGNED-OUT": "R7c",
+  "S-NO-INBOX-VIEW": "R7c",
+  "S-MAILBOX-AMBIGUOUS-WINDOWS": "R7c",
+  "S-CATEGORY-NONE-SELECTED": "R7c",
+  "S-EMPTY-INBOX": "R7d",
+  "S-ZERO-ROWS-NO-EMPTY-STATE": "R7e",
+  "S-ORDERING-ABSENT": "R7e",
+  "S-ORDERING-INADMISSIBLE-POSINSET": "R7e",
+  "S-ORDERING-LABEL-NOT-ABSOLUTE": "R7e",
+  "S-ORDERING-TIE": "R7e",
+  "S-CANDIDATE-AMBIGUOUS": "R7e",
+  "S-CANDIDATE-STALE": "R7e",
+  "S-FIELD-ASSOCIATION-FAILURE": "R7e",
+  "S-SUBJECT-UNREADABLE": "R7e",
+  "S-SENDER-ABSENT": "R7e",
+  "S-TRAVERSAL-EXHAUSTED": "R7e",
+  "S-GMAIL-UNPERMITTED": "R7a",
+  "S-GMAIL-NOT-RUNNING": "R7b",
+  "S-GMAIL-UNREADABLE": "R7b",
+  "S-DAEMON-REFUSAL-BEFORE-READ": "R7f",
+  "S-DAEMON-REFUSAL-PARTIAL": "R7f",
+  "S-PROVIDER-FAIL-BEFORE-DISPATCH": "R7g",
+  "S-PROVIDER-FAIL-AFTER-DISPATCH": "R7g",
+  "S-DISMISS-BEFORE-DISPATCH": "not-a-refusal",
+  "S-DISMISS-DURING-WORK": "not-a-refusal",
+  "S-DISMISS-DURING-SPEECH": "not-a-refusal",
+  "S-LATE-RESULT-AFTER-DISMISSAL": "not-a-refusal",
+  "S-INACTIVITY-CLOSE": "not-a-refusal",
+  "S-DECLINE-FOLLOW-UP": "not-a-refusal",
+};
+
 const AUDIT = /^(0|exactly \d+ \(.+\))$/;
-const REFUSAL_CLASS = /R7[a-g]/;
+const R7_CLASS = /R7[a-g]/g;
 const FENCE = /```[\s\S]*?```/g;
 const HTML_COMMENT = /<!--[\s\S]*?-->/g;
 
@@ -118,6 +159,12 @@ if (prose.includes("\\|")) {
 }
 
 const header = cells(lines[headerIndex]);
+if (header.length !== COLUMNS.length) {
+  fail(`contract-check: matrix header has ${header.length} columns, expected exactly ${COLUMNS.length}`);
+}
+for (const [i, name] of header.entries()) {
+  if (header.indexOf(name) !== i) fail(`contract-check: matrix header repeats the "${name}" column`);
+}
 const columnOf = {};
 for (const name of COLUMNS) {
   const i = header.indexOf(name);
@@ -136,6 +183,7 @@ for (let i = headerIndex + 2; i < lines.length; i++) {
   const c = cells(line);
   const row = {};
   for (const name of COLUMNS) row[name] = c[columnOf[name]] ?? "";
+  row._width = c.length;
   rows.push(row);
 }
 
@@ -162,8 +210,21 @@ for (const row of rows) {
       `contract-check: ${id} background-request disposition "${row["background-request disposition"]}" is not one of the four frozen values`,
     );
   }
-  if (/refus/i.test(row["spoken outcome"]) && !REFUSAL_CLASS.test(row["spoken outcome"])) {
-    fail(`contract-check: ${id} spoken outcome refuses without citing an R7a-R7g class`);
+  if (row._width !== COLUMNS.length) {
+    fail(`contract-check: ${id} has ${row._width} cells, expected exactly ${COLUMNS.length}`);
+  }
+
+  const expected = OUTCOME_CLASS[id];
+  const cited = [...new Set(row["spoken outcome"].match(R7_CLASS) ?? [])];
+  if (expected && expected.startsWith("R7")) {
+    if (!cited.includes(expected)) {
+      fail(`contract-check: ${id} spoken outcome must cite its frozen refusal class ${expected}`);
+    }
+    if (cited.some((c) => c !== expected)) {
+      fail(`contract-check: ${id} spoken outcome cites ${cited.join(", ")} but its frozen class is ${expected}`);
+    }
+  } else if (expected && cited.length > 0) {
+    fail(`contract-check: ${id} is not a refusal row but its spoken outcome cites ${cited.join(", ")}`);
   }
 }
 
@@ -184,6 +245,10 @@ for (const [id, count] of [
   if (!cell.startsWith(`exactly ${count} (`)) {
     fail(`contract-check: ${id} answer audit must be "exactly ${count} (<roles>)" per R6, found "${cell}"`);
   }
+}
+
+for (const id of REQUIRED_IDS) {
+  if (!OUTCOME_CLASS[id]) fail(`contract-check: ${id} has no frozen outcome class in this checker`);
 }
 
 for (let n = 1; n <= 12; n++) {
@@ -207,5 +272,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(JSON.stringify({ doc: DOC, rows }, null, 2));
+const emitted = rows.map(({ _width, ...row }) => row);
+console.log(JSON.stringify({ doc: DOC, rows: emitted }, null, 2));
 console.error(`contract-check: ok - ${rows.length} rows, ${COLUMNS.length} columns, R1-R12 present`);

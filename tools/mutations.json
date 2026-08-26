@@ -1004,5 +1004,26 @@
     "find": "if (!existsSync(path)) {\n  console.error(`contract-check: ${DOC} not found under ${root} - the check would pass vacuously`);\n  process.exit(1);\n}\n",
     "cwd": "tools",
     "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "contract-header-uniqueness-check-removed",
+    "file": "tools/contract-check.mjs",
+    "find": "if (header.length !== COLUMNS.length) {\n  fail(`contract-check: matrix header has ${header.length} columns, expected exactly ${COLUMNS.length}`);\n}\nfor (const [i, name] of header.entries()) {\n  if (header.indexOf(name) !== i) fail(`contract-check: matrix header repeats the \"${name}\" column`);\n}\n",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "contract-row-width-check-removed",
+    "file": "tools/contract-check.mjs",
+    "find": "  if (row._width !== COLUMNS.length) {\n    fail(`contract-check: ${id} has ${row._width} cells, expected exactly ${COLUMNS.length}`);\n  }\n\n",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "contract-r7g-citation-deleted",
+    "file": "docs/10-NORTH-STAR-CONTRACT.md",
+    "find": "R7g failure: the voice session failed; no desktop",
+    "cwd": "tools",
+    "testFile": "__tests__/contract-check.test.mjs"
   }
 ]
