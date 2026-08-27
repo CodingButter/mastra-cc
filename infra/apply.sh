@@ -146,13 +146,16 @@ ensure_directory() {
 install_tree() {
   src="$1"
   dst="$2"
-  if [ "$DRY" -eq 1 ]; then
-    echo "apply: would install tree $src -> $dst"
-    CHANGES=$((CHANGES + 1))
-    return 0
+  if [ ! -f "$src/main.mjs" ]; then
+    if [ "$DRY" -eq 1 ]; then
+      echo "apply: would install tree $src -> $dst"
+      CHANGES=$((CHANGES + 1))
+      return 0
+    fi
+    echo "apply: daemon is not built - run pnpm --filter @mastra-cc/daemon build first" >&2
+    exit 1
   fi
 
-  [ -f "$src/main.mjs" ] || { echo "apply: daemon is not built - run pnpm --filter @mastra-cc/daemon build first" >&2; exit 1; }
   node --input-type=module - "$src/main.mjs" <<'NODE'
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -189,6 +192,12 @@ NODE
 
   echo "apply: would install tree $src -> $dst"
   CHANGES=$((CHANGES + 1))
+  if [ "$DRY" -eq 1 ]; then
+    rm -rf "$stage"
+    stage=""
+    trap - RETURN
+    return 0
+  fi
   rm -rf "$dst"
   mv "$stage" "$dst"
   stage=""
@@ -211,4 +220,4 @@ elif [ "$DRY" -eq 1 ]; then
 else
   echo "apply: $CHANGES change(s) applied"
 fi
-echo "apply: the daemon unit is installed but not enabled - enabling is not part of M1"
+echo "apply: the daemon unit is installed but not enabled - startup remains an operator decision"

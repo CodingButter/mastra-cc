@@ -232,6 +232,9 @@ importers:
 
   tools:
     devDependencies:
+      '@mastra-cc/daemon':
+        specifier: workspace:*
+        version: link:../daemon
       oxlint:
         specifier: ^1.77.0
         version: 1.77.0

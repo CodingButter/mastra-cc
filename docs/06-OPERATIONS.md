@@ -191,7 +191,7 @@ These are Jamie's standing directions and the practices that follow from them. T
 
 ### Install and inspect
 
-Build the daemon before a real install, then apply the repository-owned machine configuration:
+Build the daemon before a real install or the focused installer test, then apply the repository-owned machine configuration. The startup-composition test reads checked-in unit and seed files directly, so authority mutations do not depend on build output:
 
 ```sh
 pnpm --filter @mastra-cc/daemon build
@@ -211,7 +211,7 @@ stat -c '%a %n' \
 systemctl --user cat mastra-desktop-daemon.service
 ```
 
-Expected modes are `700` for the config and state directories and `600` for both operator files. The installed daemon is the complete tree at `$HOME/.local/lib/mastra-cc/daemon/`; the audit receipt destination is `$HOME/.local/state/mastra-cc/audit.jsonl`. The installer creates the protected parent but writes no synthetic audit record.
+Expected modes are `700` for the config and state directories and `600` for both operator files. The installed daemon is the complete tree at `$HOME/.local/lib/mastra-cc/daemon/`; it includes the repository's accessibility deny-list at `tools/pins/deny-list.json` because the backend resolves that single source of truth upward from its installed module. The audit receipt destination is `$HOME/.local/state/mastra-cc/audit.jsonl`. The installer creates the protected parent but writes no synthetic audit record.
 
 ### Ownership and effective authority
 

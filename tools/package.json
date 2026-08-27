@@ -8,6 +8,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@mastra-cc/daemon": "workspace:*",
     "oxlint": "^1.77.0",
     "vitest": "catalog:"
   }

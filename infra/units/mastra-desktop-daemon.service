@@ -1,7 +1,6 @@
-# The daemon's user unit. Installed by infra/apply.sh; NOT enabled by default in
-# M1 - the daemon it points at ships in Phase 3, and enabling is a later
-# milestone's decision. Installed early because ADR-0001 requires machine
-# configuration to live in the repository from commit one.
+# The daemon's user unit. Installed by infra/apply.sh; NOT enabled by default.
+# Installation composes operator-owned authority but does not decide when the
+# daemon runs. Machine configuration lives in the repository per ADR-0001.
 [Unit]
 Description=Mastra CC desktop daemon
 

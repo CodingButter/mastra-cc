@@ -114,6 +114,11 @@ describe("M6 Gmail operator configuration installation", () => {
     const third = runApply(prefix);
     expect(third.status, `${third.stdout}${third.stderr}`).toBe(0);
     expect(third.stdout).toContain("apply: no changes");
+
+    const dry = runApply(prefix, ["--dry-run"]);
+    expect(dry.status, `${dry.stdout}${dry.stderr}`).toBe(0);
+    expect(dry.stdout).toContain("apply: no changes");
+    expect(dry.stdout).not.toContain("change(s) pending");
     expect(readFileSync(grants, "utf8")).toBe(editedGrants);
     expect(readFileSync(capabilities, "utf8")).toBe(editedCapabilities);
   });

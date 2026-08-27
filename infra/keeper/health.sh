@@ -19,7 +19,7 @@ SOCK="${XDG_RUNTIME_DIR:-/nonexistent}/mastra-cc/daemon.sock"
 if [ -S "$SOCK" ]; then
   echo "health: daemon socket present at $SOCK"
 else
-  echo "health: daemon socket not present at $SOCK (no daemon ships until Phase 3)"
+  echo "health: daemon socket not present at $SOCK (the installed unit is not enabled by default)"
 fi
 
 if command -v gdbus >/dev/null 2>&1 &&

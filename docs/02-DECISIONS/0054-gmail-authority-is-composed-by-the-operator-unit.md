@@ -47,7 +47,7 @@ The operator must restart the daemon after edits; there is no live reload. Manua
 ## Evidence
 
 - `infra/config/gmail-grants.json` and `infra/config/gmail-capabilities.json` are the restrictive seeds.
-- `infra/apply.sh` seeds missing operator files, preserves edits, protects config/state paths, and installs the complete daemon module tree.
+- `infra/apply.sh` seeds missing operator files, preserves edits, protects config/state paths, and installs the complete daemon module tree plus the repository's `tools/pins/deny-list.json`; the backend's upward lookup therefore uses the same pinned vocabulary in the repository and installed layout.
 - `infra/units/mastra-desktop-daemon.service` contains the exact startup composition and remains unenabled by the installer.
 - `daemon/src/__tests__/m6-gmail-startup-composition.test.ts` loads the real unit and templates and proves the exact launch, observe, capability, audit, and model-tool sets.
 - `tools/__tests__/m6-gmail-config-install.test.mjs` proves installation, modes, idempotence, edit preservation, tree replacement, import resolution, and dry-run non-mutation.
