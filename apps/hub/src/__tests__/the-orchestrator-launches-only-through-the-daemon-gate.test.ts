@@ -1,7 +1,6 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Server } from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OwnershipTable, registry, startServer, type Backend, type LaunchContext } from "@mastra-cc/daemon";
 import { connect, type TransportClient } from "@mastra-cc/transport";
@@ -15,7 +14,7 @@ const CAPABILITY_REFUSAL =
   'refused by the capability configuration: "openApplication" is launch-class and this machine\'s owner turned it off - the setting defaults.launch withholds it, and changing that setting is what would allow it';
 const liveTables: OwnershipTable[] = [];
 const clients: TransportClient[] = [];
-const servers: Server[] = [];
+const servers: Awaited<ReturnType<typeof startServer>>[] = [];
 
 async function daemonClient(launch: LaunchContext, backend: Backend = registry.replay({ visibility: "all" })): Promise<TransportClient> {
   const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-orchestrator-launch-")), "daemon.sock");

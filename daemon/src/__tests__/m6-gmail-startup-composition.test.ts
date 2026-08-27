@@ -82,7 +82,9 @@ describe("M6 Gmail startup composition", () => {
 
   it("keeps the model mint at the three-tool observe floor with no launch tool", () => {
     const source = readFileSync(MINT, "utf8");
-    expect(source).toMatch(/const OBSERVE_TOOLS[^=]*= \["queryElements", "attestElement", "listApplications"\];/u);
+    expect(source).toMatch(
+      /const OBSERVE_TOOLS[^=]*= \[\s*"queryElements",\s*"attestElement",\s*"listApplications",?\s*\];/u,
+    );
     expect(source).not.toMatch(/DaemonMethod\)\[\][^;]*openApplication/su);
   });
 });
