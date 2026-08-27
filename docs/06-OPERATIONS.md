@@ -225,7 +225,20 @@ Expected modes are `700` for the config and state directories and `600` for both
 
 The built-in Gmail recipe publishes its tree as `chrome`. Effective observe visibility is therefore exactly `{gmail, chrome}`: a separately running built-in Chrome tree is observable. Launch authority does **not** follow that join and remains exactly `{gmail}`. Every non-Gmail inventory entry reports `defaults.launch` as the setting withholding launch.
 
-The hub and model cannot enumerate or change the permit list, and the model receives no launch tool. The existing `hub --open` command is a human-invoked daemon client; an already-authorized operator can exercise the configured permit, but Stage 2 adds no orchestrator seam and no automatic launch.
+The hub and model cannot enumerate or change the permit list, and the model receives no launch tool. The existing `hub --open` command remains a human-invoked diagnostic. Stage 3 adds a separate trusted orchestration seam that delegates one named request to the same daemon gate; it neither lists nor changes authority.
+
+### Re-run the Stage 3 launch proof
+
+Prerequisites are `pnpm`, Xvfb, a session D-Bus, the AT-SPI bus launcher, and `yad`. Run the branch proof with:
+
+```sh
+pnpm turbo run build
+bash .mastracode/plans/m6-stage3-orchestrator-launch-seam.proof/demo.sh
+```
+
+The expected final line is `PROOF: GREEN`. The proof launches only its non-personal `yad` dialog on an isolated desktop, then requests `gmail` from a daemon without that permit and requires the daemon's byte-exact launch-gate refusal. Gmail and Chrome must not start. The script terminates only PIDs it owns and removes its temporary socket, audit, bus, and display resources; if it fails, inspect the private temporary log without printing desktop content or process command lines.
+
+A launch-gate refusal is the daemon's authority answer, not evidence that the application is uninstalled. Granting or revoking still means editing the Stage 2 unit/operator files described below and restarting the daemon. The seam has no grant, profile, permit-list, or capability-setting API.
 
 ### Edit, revoke, restart, and roll back
 
