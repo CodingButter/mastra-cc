@@ -86,9 +86,9 @@ mastra-cc/
 ├── docs/                     # these documents; normative
 │   └── 02-DECISIONS/         # ADRs
 ├── infra/                    # every machine-side fact, in the repo (ADR-0001)
-│   ├── systemd/              # unit files
-│   ├── sandbox/              # the setup command, as a script
-│   └── apply.sh              # the one entry point that installs the above
+│   ├── config/, keeper/      # restrictive seeds and installed health check
+│   ├── units/                # systemd user units; boot composition lives here
+│   └── apply.sh              # installs repo artifacts and seeds missing operator files
 ├── protocol/
 │   ├── schema.json           # the wire contract, one source of truth
 │   ├── golden/               # frozen request/response fixtures
@@ -226,6 +226,12 @@ Real, unresolved, and each one needs a decision before the code that depends on 
 2. **Episode storage.** Episodes-as-git was right; whether the graph lives beside the audit log or inside it was never settled. Whichever way it goes decides whether redaction happens at write time or at read time — see [ADR-0013](02-DECISIONS/0013-episodes-are-a-git-graph.md).
 
 **Superseded, 2026-08-25 — biometric wake admission.** The enrolment-first measurements remain useful evidence, including their failure to generalize reliably to live speakers. M5 replaced speaker-specific admission with local phrase wake, bounded provisional capture, and a constrained client-owned realtime admission session. The old measurements and rationale remain in [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md); the current ownership and privacy boundaries are [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md).
+
+---
+
+## M6 boot composition
+
+For M6, `infra/units/mastra-desktop-daemon.service` is the boot-composition owner ([ADR-0054](02-DECISIONS/0054-gmail-authority-is-composed-by-the-operator-unit.md)). It joins four authorities without merging their ownership: unit `--permit` supplies session launch authority; the operator grants file records explicit observe intent; the operator capabilities file subtracts durable per-application launch capability; and the unit supplies the audit destination because the daemon deliberately has no default. `infra/apply.sh` installs the complete repository-owned daemon module tree, but only seeds missing operator files under `%h/.config/mastra-cc/`; later edits remain the operator's bytes. The hub and model own none of this composition.
 
 ---
 

@@ -185,6 +185,69 @@ These are Jamie's standing directions and the practices that follow from them. T
 
 ---
 
+## 9. M6 Gmail authority
+
+[ADR-0054](02-DECISIONS/0054-gmail-authority-is-composed-by-the-operator-unit.md) freezes the ownership boundary. This procedure configures authority only: it does not launch Gmail, automate sign-in, traverse an inbox, or enable the unit.
+
+### Install and inspect
+
+Build the daemon before a real install, then apply the repository-owned machine configuration:
+
+```sh
+pnpm --filter @mastra-cc/daemon build
+XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}" bash infra/apply.sh
+```
+
+The default prefix is `$HOME`. The systemd unit's `%h` resolves to that same home directory. Tests set `MASTRA_CC_PREFIX` to an empty temporary directory and resolve `%h` to that prefix before asserting composition; a production operator normally leaves `MASTRA_CC_PREFIX` unset.
+
+Inspect only the authority files and their modes:
+
+```sh
+stat -c '%a %n' \
+  "$HOME/.config/mastra-cc" \
+  "$HOME/.config/mastra-cc/gmail-grants.json" \
+  "$HOME/.config/mastra-cc/gmail-capabilities.json" \
+  "$HOME/.local/state/mastra-cc"
+systemctl --user cat mastra-desktop-daemon.service
+```
+
+Expected modes are `700` for the config and state directories and `600` for both operator files. The installed daemon is the complete tree at `$HOME/.local/lib/mastra-cc/daemon/`; the audit receipt destination is `$HOME/.local/state/mastra-cc/audit.jsonl`. The installer creates the protected parent but writes no synthetic audit record.
+
+### Ownership and effective authority
+
+| Setting | Owner | M6 value |
+|---|---|---|
+| launch authority | unit `--permit` | exactly `gmail` |
+| explicit observe intent | `gmail-grants.json` | exactly `gmail`; defense in depth because the permit also implies observe |
+| durable launch setting | `gmail-capabilities.json` | default false; `gmail` true |
+| audit destination | unit `--audit` | explicit `audit.jsonl` path |
+| browser profiles | absent | built-in `gmail` identity only |
+
+The built-in Gmail recipe publishes its tree as `chrome`. Effective observe visibility is therefore exactly `{gmail, chrome}`: a separately running built-in Chrome tree is observable. Launch authority does **not** follow that join and remains exactly `{gmail}`. Every non-Gmail inventory entry reports `defaults.launch` as the setting withholding launch.
+
+The hub and model cannot enumerate or change the permit list, and the model receives no launch tool. The existing `hub --open` command is a human-invoked daemon client; an already-authorized operator can exercise the configured permit, but Stage 2 adds no orchestrator seam and no automatic launch.
+
+### Edit, revoke, restart, and roll back
+
+The grants and capabilities files are operator-owned after their first seed. Re-running `infra/apply.sh` preserves their bytes. They are loaded at daemon boot; there is no live reload.
+
+To revoke Gmail launch authority durably, set `applications.gmail.launch` to `false` or remove that application override while retaining `defaults.launch: false`, then restart the daemon. To remove explicit observe intent, remove `gmail` from the grants file and restart. The unit's `--permit gmail` remains the session launch-authority source until the repository-owned unit is deliberately changed and re-applied.
+
+```sh
+systemctl --user daemon-reload
+systemctl --user restart mastra-desktop-daemon.service
+```
+
+A restart is the revocation boundary. If the unit is not running, no restart is needed. For complete rollback, stop and disable it if an operator enabled it, remove the two operator files only after preserving any desired local policy, and re-apply a previously approved repository revision. Do not edit the installed unit or daemon tree in place; `infra/apply.sh` replaces repository-owned artifacts on the next apply.
+
+A refusal before daemon dispatch is the hub's not-permitted result. A refusal returned by the daemon remains the daemon's byte-owned refusal and must not be re-derived into a prettier cause. Unavailable or unreachable Gmail must not be called *uninstalled* without inventory evidence. These are references to the frozen R7 ordering in [the north-star contract](10-NORTH-STAR-CONTRACT.md), not new refusal semantics.
+
+### Manual Gmail sign-in
+
+The M6 identity is the built-in `gmail` recipe using the persistent profile at the documented generic application-data location. Sign in manually in the browser as the operator. Do not use commands that print, copy, inspect, archive, or transmit profile contents, credentials, tokens, or cookies. The daemon does not read, list, or stat the profile directory; Chrome creates or uses it when a human-authorized launch eventually occurs. Stage 2 itself does not perform that launch.
+
+---
+
 ## Receipts
 
 | Claim | Source |
