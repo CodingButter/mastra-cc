@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.5.0
+// Mastra CC protocol v1.6.1
 
-export const PROTOCOL_VERSION = "1.5.0";
-export const SCHEMA_DIGEST = "8835157bb15745da696bd4e7a58e5851ca6574cd52712f2fd5bf0c2b6239a797";
+export const PROTOCOL_VERSION = "1.6.1";
+export const SCHEMA_DIGEST = "f890c929eadeb682c52eb9c6953f4d3dd0d6498de3cc91d609b9eae55203a101";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -20,7 +20,7 @@ export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","attestElement","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications"] as const;
+export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -37,8 +37,72 @@ export interface SemanticElement {
   actions: Action[];
   /** The argument-carrying operations this element can serve. When a route reports them it reports all of them, so an operation the element does not publish is present and not-exposed rather than missing - within this field, absence of an entry would be a silence and the entry is a reading. The field itself is absent only where a route does not answer the question at all, which is a fact about the route and is visible as one. */
   operations?: Operation[];
+  /** The current content observation for this element. A permitted ordinary control carries exact text, a bounded text window, or numeric content; a protected control carries only a redaction reason; and an element whose readable content is not published carries an unavailable reason. Callers re-query after a mutation to obtain a fresh observation and use readElementContent to traverse additional text windows. */
+  content: ObservableContent;
   /** Debug-only carrier and the only exemption from the neutral-vocabulary rule: native identifiers may appear here for a human reading a log, and are never load-bearing. */
   diagnostic?: Diagnostic;
+}
+
+/** One provider-neutral content observation. The discriminant makes exact text, bounded text windows, numeric content, protected redaction, and unavailable observation mutually exclusive on the wire. */
+export interface ObservableContentText {
+  /** This element publishes ordinary textual content. */
+  kind: "text";
+  /** The text currently published by the element. */
+  value: string;
+}
+
+export interface ObservableContentTextWindow {
+  /** This element publishes ordinary textual content larger than the inline observation bound. */
+  kind: "text-window";
+  /** The exact bounded window currently observed; never an unmarked truncation. */
+  value: string;
+  /** Zero-based Unicode-scalar offset of the first character in value. */
+  offset: number;
+  /** Number of Unicode scalar values carried in value. */
+  length: number;
+  /** Total number of Unicode scalar values in the element's current text. */
+  totalLength: number;
+  /** One-based line number containing the first character in value. */
+  startLine: number;
+  /** One-based line number containing the final character in value, or startLine for an empty window. */
+  endLine: number;
+  /** Total number of lines in the element's current text. */
+  totalLines: number;
+}
+
+export interface ObservableContentNumber {
+  /** This element publishes an ordinary numeric magnitude. */
+  kind: "number";
+  /** The numeric value currently published by the element. */
+  value: number;
+  /** Bounds published with the numeric observation, when the element publishes them. */
+  range?: ObservableRange;
+}
+
+export interface ObservableContentRedacted {
+  /** The element publishes content that the protocol must not reveal. */
+  kind: "redacted";
+  /** The control is marked as protected; no content value is carried. */
+  reason: "protected";
+}
+
+export interface ObservableContentUnavailable {
+  /** No readable content observation is available. */
+  kind: "unavailable";
+  /** not-exposed means the element publishes no readable content; unknown means the route cannot determine whether readable content exists. */
+  reason: "not-exposed" | "unknown";
+}
+
+export type ObservableContent = ObservableContentText | ObservableContentTextWindow | ObservableContentNumber | ObservableContentRedacted | ObservableContentUnavailable;
+
+/** Bounds published with an observed numeric magnitude, in the element's own units. */
+export interface ObservableRange {
+  /** The smallest published value. */
+  minimum: number;
+  /** The largest published value. */
+  maximum: number;
+  /** The smallest published meaningful change, when one is declared. */
+  step?: number;
 }
 
 /** One verb an element publishes, carried whole: the platform's own name for it, the platform's own words about it, and whether it can be performed right now. The name is open text because a closed list of verbs is a list somebody invented; the availability beside it is a closed vocabulary because there are exactly three ways an action can fail to be performable and they must never be collapsed into one. */
@@ -164,6 +228,23 @@ export interface AttestElementResult {
   /** Present when the id still resolves. */
   element?: SemanticElement;
   /** Present when it does not; names the reason. */
+  refusal?: string;
+}
+
+/** Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value. */
+export interface ReadElementContentParams {
+  /** The element whose current textual content is being read. */
+  id: string;
+  /** Zero-based Unicode-scalar offset at which the requested window begins. */
+  offset: number;
+  /** Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary. */
+  limit: number;
+}
+
+export interface ReadElementContentResult {
+  /** Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value. */
+  content?: ObservableContent;
+  /** Present when scope, identity, or request bounds refuse the observation. */
   refusal?: string;
 }
 
@@ -324,46 +405,109 @@ export interface ListApplicationsResult {
   refusal?: string;
 }
 
-const FIELD_SPECS = {"semanticElement":{"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"name":{"type":"string","required":true,"pattern":null},"states":{"type":"state[]","required":true,"pattern":null},"actions":{"type":"action[]","required":true,"pattern":null},"operations":{"type":"operation[]","required":false,"pattern":null},"diagnostic":{"type":"diagnostic","required":false,"pattern":null}},"action":{"name":{"type":"string","required":true,"pattern":null},"description":{"type":"string","required":false,"pattern":null},"localizedName":{"type":"string","required":false,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null}},"range":{"minimum":{"type":"number","required":true,"pattern":null},"maximum":{"type":"number","required":true,"pattern":null},"current":{"type":"number","required":true,"pattern":null},"step":{"type":"number","required":false,"pattern":null}},"operation":{"operation":{"type":"operationName","required":true,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null},"range":{"type":"range","required":false,"pattern":null}},"installedApplication":{"name":{"type":"string","required":true,"pattern":null},"capabilities":{"type":"capability[]","required":true,"pattern":null},"launchable":{"type":"boolean","required":true,"pattern":null},"diagnostic":{"type":"diagnostic","required":false,"pattern":null}},"capability":{"capability":{"type":"capabilityName","required":true,"pattern":null},"availability":{"type":"availabilityState","required":true,"pattern":null},"disabledBy":{"type":"string","required":false,"pattern":null}},"subscription":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"priority":{"type":"priority","required":true,"pattern":null}},"changeEvent":{"subscriptionId":{"type":"string","required":true,"pattern":null},"id":{"type":"string","required":true,"pattern":"idPattern"},"role":{"type":"role","required":true,"pattern":null},"kind":{"type":"changeKind","required":true,"pattern":null},"attribution":{"type":"attribution","required":true,"pattern":null},"causeId":{"type":"string","required":false,"pattern":null},"priority":{"type":"priority","required":true,"pattern":null},"at":{"type":"number","required":true,"pattern":null}},"diagnostic":{"nativeRole":{"type":"string","required":false,"pattern":null},"nativeId":{"type":"string","required":false,"pattern":null}}} as const;
+const TYPE_SPECS = {"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null}} as const;
 const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
 
-type FieldSpec = { type: string; required: boolean; pattern: string | null };
+type FieldSpec = {
+  type: string | null;
+  literal: string | null;
+  literals: readonly string[] | null;
+  required: boolean;
+  pattern: string | null;
+};
+type TypeName = keyof typeof TYPE_SPECS;
 
-function problemsFor(typeName: keyof typeof FIELD_SPECS, value: unknown): string[] {
-  const problems: string[] = [];
+function problemsFor(typeName: TypeName, value: unknown): string[] {
   if (typeof value !== "object" || value === null) {
     return [`${String(typeName)}: not an object`];
   }
   const record = value as Record<string, unknown>;
-  const specs = FIELD_SPECS[typeName] as Record<string, FieldSpec>;
+  const typeSpec = TYPE_SPECS[typeName];
+  if (typeSpec.variants) {
+    const variant = typeSpec.variants.find(({ fields }) =>
+      Object.values(fields).some((field) => field.literal !== null && record.kind === field.literal),
+    );
+    if (!variant) return [`${String(typeName)}.kind: ${JSON.stringify(record.kind)} does not select a variant`];
+    const problems = fieldProblems(String(typeName), variant.fields as Record<string, FieldSpec>, record, true);
+    if (typeName === "observableContent") problems.push(...observableContentProblems(record));
+    return problems;
+  }
+  return fieldProblems(String(typeName), typeSpec.fields as Record<string, FieldSpec>, record, false);
+}
+
+function observableContentProblems(record: Record<string, unknown>): string[] {
+  if (record.kind !== "text-window") return [];
+  const problems: string[] = [];
+  const integerFields = ["offset", "length", "totalLength", "startLine", "endLine", "totalLines"] as const;
+  for (const field of integerFields) {
+    const value = record[field];
+    if (typeof value === "number" && !Number.isSafeInteger(value)) {
+      problems.push(`observableContent.${field}: expected a safe integer`);
+    }
+  }
+  const offset = record.offset;
+  const length = record.length;
+  const totalLength = record.totalLength;
+  const startLine = record.startLine;
+  const endLine = record.endLine;
+  const totalLines = record.totalLines;
+  if (typeof offset === "number" && offset < 0) problems.push("observableContent.offset: must not be negative");
+  if (typeof length === "number" && length < 0) problems.push("observableContent.length: must not be negative");
+  if (typeof totalLength === "number" && totalLength < 0) problems.push("observableContent.totalLength: must not be negative");
+  if (typeof record.value === "string" && typeof length === "number" && Array.from(record.value).length !== length) {
+    problems.push("observableContent.length: must equal the Unicode-scalar length of value");
+  }
+  if (typeof offset === "number" && typeof length === "number" && typeof totalLength === "number" && offset + length > totalLength) {
+    problems.push("observableContent: offset plus length exceeds totalLength");
+  }
+  if (typeof startLine === "number" && startLine < 1) problems.push("observableContent.startLine: must be at least one");
+  if (typeof endLine === "number" && typeof startLine === "number" && endLine < startLine) problems.push("observableContent.endLine: must not precede startLine");
+  if (typeof totalLines === "number" && typeof endLine === "number" && totalLines < endLine) problems.push("observableContent.totalLines: must not precede endLine");
+  return problems;
+}
+
+function fieldProblems(typeName: string, specs: Record<string, FieldSpec>, record: Record<string, unknown>, exact: boolean): string[] {
+  const problems: string[] = [];
+  if (exact) {
+    for (const field of Object.keys(record)) {
+      if (!(field in specs)) problems.push(`${typeName}.${field}: field is not valid for this variant`);
+    }
+  }
   for (const [field, spec] of Object.entries(specs)) {
     const present = field in record && record[field] !== undefined;
     if (!present) {
-      if (spec.required) problems.push(`${String(typeName)}.${field}: required field is missing`);
+      if (spec.required) problems.push(`${typeName}.${field}: required field is missing`);
       continue;
     }
     const v = record[field];
+    if (spec.literal !== null && v !== spec.literal) {
+      problems.push(`${typeName}.${field}: expected ${JSON.stringify(spec.literal)}`);
+      continue;
+    }
+    if (spec.literals !== null && !spec.literals.includes(v as string)) {
+      problems.push(`${typeName}.${field}: ${JSON.stringify(v)} is not an allowed value`);
+      continue;
+    }
+    if (spec.type === null) continue;
     const base = spec.type.replace("[]", "");
     const isArray = spec.type.endsWith("[]");
     const values = isArray ? (Array.isArray(v) ? v : null) : [v];
     if (values === null) {
-      problems.push(`${String(typeName)}.${field}: expected an array`);
+      problems.push(`${typeName}.${field}: expected an array`);
       continue;
     }
     for (const item of values) {
-      if (base === "string" && typeof item !== "string") problems.push(`${String(typeName)}.${field}: expected a string`);
-      else if (base === "number" && typeof item !== "number") problems.push(`${String(typeName)}.${field}: expected a number`);
-      else if (base === "boolean" && typeof item !== "boolean") problems.push(`${String(typeName)}.${field}: expected a boolean`);
-      else if (base in VOCABULARY_VALUES && !VOCABULARY_VALUES[base].includes(item as string)) problems.push(`${String(typeName)}.${field}: ${JSON.stringify(item)} is not one of the ${base} values`);
-      else if (base in FIELD_SPECS) problems.push(...problemsFor(base as keyof typeof FIELD_SPECS, item));
+      if (base === "string" && typeof item !== "string") problems.push(`${typeName}.${field}: expected a string`);
+      else if (base === "number" && typeof item !== "number") problems.push(`${typeName}.${field}: expected a number`);
+      else if (base === "boolean" && typeof item !== "boolean") problems.push(`${typeName}.${field}: expected a boolean`);
+      else if (base in VOCABULARY_VALUES && !VOCABULARY_VALUES[base].includes(item as string)) problems.push(`${typeName}.${field}: ${JSON.stringify(item)} is not one of the ${base} values`);
+      else if (base in TYPE_SPECS) problems.push(...problemsFor(base as TypeName, item));
     }
-    // A pattern named in the schema is enforced wherever it is named, not only
-    // on the one type that happened to need it first.
     if (spec.pattern === "idPattern" && typeof v === "string" && !ID_PATTERN.test(v)) {
-      problems.push(`${String(typeName)}.${field}: ${JSON.stringify(v)} does not match the id pattern`);
+      problems.push(`${typeName}.${field}: ${JSON.stringify(v)} does not match the id pattern`);
     }
   }
-  problems.push(...availabilityProblems(String(typeName), specs, record));
+  problems.push(...availabilityProblems(typeName, specs, record));
   return problems;
 }
 

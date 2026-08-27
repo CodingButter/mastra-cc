@@ -1053,5 +1053,33 @@
     "find": "  \"queryElements\",\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-orchestrator-launches-only-through-the-daemon-gate.test.ts"
+  },
+  {
+    "name": "semantic-observable-content-field-removed",
+    "file": "protocol/schema.json",
+    "find": "        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": true,\n          \"description\": \"The current content observation for this element. A permitted ordinary control carries exact text, a bounded text window, or numeric content; a protected control carries only a redaction reason; and an element whose readable content is not published carries an unavailable reason. Callers re-query after a mutation to obtain a fresh observation and use readElementContent to traverse additional text windows.\"\n        },\n",
+    "cwd": "tools",
+    "testFile": "__tests__/schema.test.mjs"
+  },
+  {
+    "name": "semantic-protected-redaction-variant-removed",
+    "file": "protocol/schema.json",
+    "find": "        {\n          \"name\": \"redacted\",\n          \"fields\": {\n            \"kind\": {\n              \"literal\": \"redacted\",\n              \"required\": true,\n              \"description\": \"The element publishes content that the protocol must not reveal.\"\n            },\n            \"reason\": {\n              \"literal\": \"protected\",\n              \"required\": true,\n              \"description\": \"The control is marked as protected; no content value is carried.\"\n            }\n          }\n        },\n",
+    "cwd": "tools",
+    "testFile": "__tests__/schema.test.mjs"
+  },
+  {
+    "name": "semantic-text-window-variant-removed",
+    "file": "protocol/schema.json",
+    "find": "        {\n          \"name\": \"text-window\",\n          \"fields\": {\n            \"kind\": {\n              \"literal\": \"text-window\",\n              \"required\": true,\n              \"description\": \"This element publishes ordinary textual content larger than the inline observation bound.\"\n            },\n            \"value\": {\n              \"type\": \"string\",\n              \"required\": true,\n              \"description\": \"The exact bounded window currently observed; never an unmarked truncation.\"\n            },\n            \"offset\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Zero-based Unicode-scalar offset of the first character in value.\"\n            },\n            \"length\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Number of Unicode scalar values carried in value.\"\n            },\n            \"totalLength\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Total number of Unicode scalar values in the element's current text.\"\n            },\n            \"startLine\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"One-based line number containing the first character in value.\"\n            },\n            \"endLine\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"One-based line number containing the final character in value, or startLine for an empty window.\"\n            },\n            \"totalLines\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Total number of lines in the element's current text.\"\n            }\n          }\n        },\n",
+    "cwd": "tools",
+    "testFile": "__tests__/schema.test.mjs"
+  },
+  {
+    "name": "semantic-content-reader-method-removed",
+    "file": "protocol/schema.json",
+    "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"string\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
+    "cwd": "tools",
+    "testFile": "__tests__/schema.test.mjs"
   }
 ]

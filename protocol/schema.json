@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.5.0",
+  "version": "1.6.1",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -65,10 +65,150 @@
           "required": false,
           "description": "The argument-carrying operations this element can serve. When a route reports them it reports all of them, so an operation the element does not publish is present and not-exposed rather than missing - within this field, absence of an entry would be a silence and the entry is a reading. The field itself is absent only where a route does not answer the question at all, which is a fact about the route and is visible as one."
         },
+        "content": {
+          "type": "observableContent",
+          "required": true,
+          "description": "The current content observation for this element. A permitted ordinary control carries exact text, a bounded text window, or numeric content; a protected control carries only a redaction reason; and an element whose readable content is not published carries an unavailable reason. Callers re-query after a mutation to obtain a fresh observation and use readElementContent to traverse additional text windows."
+        },
         "diagnostic": {
           "type": "diagnostic",
           "required": false,
           "description": "Debug-only carrier and the only exemption from the neutral-vocabulary rule: native identifiers may appear here for a human reading a log, and are never load-bearing."
+        }
+      }
+    },
+    "observableContent": {
+      "description": "One provider-neutral content observation. The discriminant makes exact text, bounded text windows, numeric content, protected redaction, and unavailable observation mutually exclusive on the wire.",
+      "variants": [
+        {
+          "name": "text",
+          "fields": {
+            "kind": {
+              "literal": "text",
+              "required": true,
+              "description": "This element publishes ordinary textual content."
+            },
+            "value": {
+              "type": "string",
+              "required": true,
+              "description": "The text currently published by the element."
+            }
+          }
+        },
+        {
+          "name": "text-window",
+          "fields": {
+            "kind": {
+              "literal": "text-window",
+              "required": true,
+              "description": "This element publishes ordinary textual content larger than the inline observation bound."
+            },
+            "value": {
+              "type": "string",
+              "required": true,
+              "description": "The exact bounded window currently observed; never an unmarked truncation."
+            },
+            "offset": {
+              "type": "number",
+              "required": true,
+              "description": "Zero-based Unicode-scalar offset of the first character in value."
+            },
+            "length": {
+              "type": "number",
+              "required": true,
+              "description": "Number of Unicode scalar values carried in value."
+            },
+            "totalLength": {
+              "type": "number",
+              "required": true,
+              "description": "Total number of Unicode scalar values in the element's current text."
+            },
+            "startLine": {
+              "type": "number",
+              "required": true,
+              "description": "One-based line number containing the first character in value."
+            },
+            "endLine": {
+              "type": "number",
+              "required": true,
+              "description": "One-based line number containing the final character in value, or startLine for an empty window."
+            },
+            "totalLines": {
+              "type": "number",
+              "required": true,
+              "description": "Total number of lines in the element's current text."
+            }
+          }
+        },
+        {
+          "name": "number",
+          "fields": {
+            "kind": {
+              "literal": "number",
+              "required": true,
+              "description": "This element publishes an ordinary numeric magnitude."
+            },
+            "value": {
+              "type": "number",
+              "required": true,
+              "description": "The numeric value currently published by the element."
+            },
+            "range": {
+              "type": "observableRange",
+              "required": false,
+              "description": "Bounds published with the numeric observation, when the element publishes them."
+            }
+          }
+        },
+        {
+          "name": "redacted",
+          "fields": {
+            "kind": {
+              "literal": "redacted",
+              "required": true,
+              "description": "The element publishes content that the protocol must not reveal."
+            },
+            "reason": {
+              "literal": "protected",
+              "required": true,
+              "description": "The control is marked as protected; no content value is carried."
+            }
+          }
+        },
+        {
+          "name": "unavailable",
+          "fields": {
+            "kind": {
+              "literal": "unavailable",
+              "required": true,
+              "description": "No readable content observation is available."
+            },
+            "reason": {
+              "literals": ["not-exposed", "unknown"],
+              "required": true,
+              "description": "not-exposed means the element publishes no readable content; unknown means the route cannot determine whether readable content exists."
+            }
+          }
+        }
+      ]
+    },
+    "observableRange": {
+      "description": "Bounds published with an observed numeric magnitude, in the element's own units.",
+      "fields": {
+        "minimum": {
+          "type": "number",
+          "required": true,
+          "description": "The smallest published value."
+        },
+        "maximum": {
+          "type": "number",
+          "required": true,
+          "description": "The largest published value."
+        },
+        "step": {
+          "type": "number",
+          "required": false,
+          "description": "The smallest published meaningful change, when one is declared."
         }
       }
     },
@@ -328,6 +468,39 @@
           "type": "string",
           "required": false,
           "description": "Present when it does not; names the reason."
+        }
+      }
+    },
+    "readElementContent": {
+      "description": "Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element whose current textual content is being read."
+        },
+        "offset": {
+          "type": "number",
+          "required": true,
+          "description": "Zero-based Unicode-scalar offset at which the requested window begins."
+        },
+        "limit": {
+          "type": "number",
+          "required": true,
+          "description": "Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary."
+        }
+      },
+      "returns": {
+        "content": {
+          "type": "observableContent",
+          "required": false,
+          "description": "Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present when scope, identity, or request bounds refuse the observation."
         }
       }
     },
