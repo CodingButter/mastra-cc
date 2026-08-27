@@ -123,7 +123,13 @@ describe("M6 Gmail operator configuration installation", () => {
     expect(readFileSync(capabilities, "utf8")).toBe(editedCapabilities);
   });
 
-  it("reports a dry run without writing or requiring a built daemon tree", () => {
+  it("reports a dry run without writing, with or without a built daemon tree", () => {
+    const builtPrefix = join(scratch(), "built-prefix");
+    const built = runApply(builtPrefix, ["--dry-run"]);
+    expect(built.status, `${built.stdout}${built.stderr}`).toBe(0);
+    expect(built.stdout).toContain("would install tree");
+    expect(existsSync(builtPrefix)).toBe(false);
+
     const root = scratch();
     const isolatedApply = join(root, "repo", "infra", "apply.sh");
     const prefix = join(root, "fresh-prefix");

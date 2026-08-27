@@ -174,8 +174,12 @@ for (const [, specifier] of imports) {
 NODE
 
   parent="$(dirname "$dst")"
-  mkdir -p "$parent"
-  stage="$(mktemp -d "$parent/.daemon.XXXXXX")"
+  if [ "$DRY" -eq 1 ]; then
+    stage="$(mktemp -d "${TMPDIR:-/tmp}/mastra-cc-daemon.XXXXXX")"
+  else
+    mkdir -p "$parent"
+    stage="$(mktemp -d "$parent/.daemon.XXXXXX")"
+  fi
   trap 'rm -rf "${stage:-}"' RETURN
   cp -a "$src/." "$stage/"
   mkdir -p "$stage/tools/pins"
