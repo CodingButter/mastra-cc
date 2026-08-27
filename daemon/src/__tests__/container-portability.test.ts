@@ -1,0 +1,40 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { CATALOG } from "../launch/recipes.js";
+import { composeBootNames } from "../launch/profiles.js";
+
+const root = join(import.meta.dirname, "..", "..", "..");
+
+describe("the built daemon remains location-transparent", () => {
+  it("ships the action vocabulary data beside the built bundle", () => {
+    const packageJson = JSON.parse(readFileSync(join(root, "daemon", "package.json"), "utf8"));
+    expect(packageJson.scripts.build).toContain("dist/tools/pins/deny-list.json");
+  });
+
+  it("uses the same explicit default socket shape as the transport", () => {
+    const daemon = readFileSync(join(root, "daemon", "src", "main.ts"), "utf8");
+    const transport = readFileSync(join(root, "packages", "transport", "src", "index.ts"), "utf8");
+    expect(daemon).toContain('join(process.env.XDG_RUNTIME_DIR ?? "/tmp", "mastra-cc", "daemon.sock")');
+    expect(transport).toContain('const runtimeDir = process.env.XDG_RUNTIME_DIR ?? "/tmp"');
+    expect(transport).toContain('join(runtimeDir, "mastra-cc", "daemon.sock")');
+  });
+
+  it("keeps launch identity mapping provider-neutral", () => {
+    const names = composeBootNames({
+      permits: new Set(["gmail"]),
+      grants: new Set(),
+      flags: new Set(),
+      catalog: CATALOG,
+    });
+    expect(names.launchPermits).toEqual(new Set(["gmail"]));
+    expect(names.visibility).not.toBe("all");
+    expect(names.visibility === "all" ? false : names.visibility.has(CATALOG.gmail.appearsAs!)).toBe(true);
+  });
+
+  it("keeps launch readiness bounded and refuses to pretend spawn means readable", () => {
+    const server = readFileSync(join(root, "daemon", "src", "server.ts"), "utf8");
+    expect(server).toContain("POLL_BUDGET_MS = 10_000");
+    expect(server).toContain("was opened but did not become readable within");
+  });
+});

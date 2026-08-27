@@ -6,7 +6,7 @@
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && mkdir -p dist/tools/pins && cp ../tools/pins/deny-list.json dist/tools/pins/deny-list.json",
     "lint": "oxlint src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
