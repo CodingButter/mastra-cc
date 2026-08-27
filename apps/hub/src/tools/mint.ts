@@ -56,7 +56,11 @@ export interface Tool {
 // that made it, and nothing in this milestone gives an agent anywhere to put a
 // change event; a tool that established a subscription nobody drained would
 // leave the daemon narrating to no one. They arrive with the lane events.
-const OBSERVE_TOOLS: readonly (DaemonMethod)[] = ["queryElements", "attestElement", "listApplications"];
+const OBSERVE_TOOLS: readonly (DaemonMethod)[] = [
+  "queryElements",
+  "attestElement",
+  "listApplications",
+];
 
 // Each effect verb, and the ONE capability that puts it in the surface. The
 // mapping is the daemon's own effect-class split (ADR-0019) read from this

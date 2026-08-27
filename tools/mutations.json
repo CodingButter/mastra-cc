@@ -527,7 +527,7 @@
   {
     "name": "the-tool-that-was-never-enumerated",
     "file": "apps/hub/src/tools/mint.ts",
-    "find": "\"attestElement\", ",
+    "find": "  \"attestElement\",\n",
     "cwd": "apps/hub",
     "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
   },
@@ -1039,5 +1039,19 @@
     "find": " --grants %h/.config/mastra-cc/gmail-grants.json",
     "cwd": "daemon",
     "testFile": "src/__tests__/m6-gmail-startup-composition.test.ts"
+  },
+  {
+    "name": "m6-stage3-daemon-launch-delegation-removed",
+    "file": "apps/hub/src/orchestrator/launch.ts",
+    "find": "  return await client.openApplication({ name });\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-orchestrator-launches-only-through-the-daemon-gate.test.ts"
+  },
+  {
+    "name": "m6-stage3-observe-floor-entry-removed",
+    "file": "apps/hub/src/tools/mint.ts",
+    "find": "  \"queryElements\",\n",
+    "cwd": "apps/hub",
+    "testFile": "src/__tests__/the-orchestrator-launches-only-through-the-daemon-gate.test.ts"
   }
 ]
