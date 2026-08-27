@@ -7,6 +7,8 @@ import type {
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  ReadElementContentParams,
+  ReadElementContentResult,
   RevealElementResult,
   SemanticElement,
   SetElementCaretResult,
@@ -91,6 +93,10 @@ export class ReplayBackend implements Backend {
 
   attestElement(params: AttestElementParams): Promise<AttestElementResult> {
     return this.inner.attestElement(params);
+  }
+
+  readElementContent(params: ReadElementContentParams): Promise<ReadElementContentResult> {
+    return this.inner.readElementContent(params);
   }
 
   subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {

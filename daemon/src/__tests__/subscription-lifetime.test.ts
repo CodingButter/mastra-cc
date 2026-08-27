@@ -32,6 +32,7 @@ function watchableBackend() {
     name: "watchable",
     queryElements: async () => ({ elements: [] }),
     attestElement: async () => ({}),
+    readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
     subscribeElement: async (id, sink) => {
       if (id !== WATCHED) throw new UnwatchableElementError(id);
       const subscriptionId = mintSubscriptionId();

@@ -7,6 +7,8 @@ import type {
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  ReadElementContentParams,
+  ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
   SemanticElement,
@@ -47,6 +49,7 @@ import { deriveId } from "./identity.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
 import { readPublishedActions } from "./actions.js";
+import { readObservableContent } from "./content.js";
 import { readPublishedOperations } from "./magnitudes.js";
 import { claimsKeyboardActivation, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 import type { Classified } from "../../audit.js";
@@ -171,6 +174,7 @@ export class AtspiBackend implements Backend {
     // way, off the element, in the element's own units. An element that
     // publishes no range gets none here, and nothing downstream computes one.
     const magnitudes = await readPublishedOperations(this.channel, ref);
+    const content = await readObservableContent(this.channel, ref, nativeRole);
     const id = deriveId(role, ref.busName, ref.objectPath);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
@@ -180,6 +184,7 @@ export class AtspiBackend implements Backend {
       role,
       name,
       states: toNeutralStates(lower, upper),
+      content,
       actions: published.actions,
       operations: magnitudes.operations,
       // ADR-0040: every answer names its instrument; the unmapped-role
@@ -261,6 +266,22 @@ export class AtspiBackend implements Backend {
       // still-present element attests under the id it was answered with.
       const element = await this.readElement(ref);
       return { element };
+    } catch (error) {
+      if (error instanceof UnrecordedExchangeError) throw error;
+      return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again`, refusalClass: "ElementGone" };
+    }
+  }
+
+  async readElementContent(params: ReadElementContentParams): Promise<Classified<ReadElementContentResult>> {
+    if (!Number.isSafeInteger(params.offset) || params.offset < 0 || !Number.isSafeInteger(params.limit) || params.limit <= 0) {
+      return { refusal: "content window offset must be a non-negative integer and limit must be a positive integer", refusalClass: "MalformedParameter" };
+    }
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to read`, refusalClass: "UnknownElement" };
+    }
+    try {
+      return { content: await readObservableContent(this.channel, ref, await this.nativeRoleOf(ref), params.offset, params.limit) };
     } catch (error) {
       if (error instanceof UnrecordedExchangeError) throw error;
       return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again`, refusalClass: "ElementGone" };

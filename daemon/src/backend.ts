@@ -11,6 +11,8 @@ import type {
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  ReadElementContentParams,
+  ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
   Role,
@@ -265,6 +267,7 @@ export interface Backend {
   // recovered by reading the sentence back: the record names categories, and a
   // category parsed out of prose is a guess dressed as a fact.
   attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>>;
+  readElementContent(params: ReadElementContentParams): Promise<Classified<ReadElementContentResult>>;
   subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription>;
   unsubscribeElement(subscriptionId: string): Promise<void>;
 

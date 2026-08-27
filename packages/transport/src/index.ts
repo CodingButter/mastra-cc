@@ -15,6 +15,8 @@ import {
   type OpenApplicationResult,
   type QueryElementsParams,
   type QueryElementsResult,
+  type ReadElementContentParams,
+  type ReadElementContentResult,
   type RevealElementParams,
   type RevealElementResult,
   type SetElementCaretParams,
@@ -80,6 +82,7 @@ interface EventMessage {
 export interface TransportClient {
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult>;
   attestElement(params: AttestElementParams): Promise<AttestElementResult>;
+  readElementContent(params: ReadElementContentParams): Promise<ReadElementContentResult>;
   subscribeElement(params: SubscribeElementParams): Promise<SubscribeElementResult>;
   unsubscribeElement(params: UnsubscribeElementParams): Promise<UnsubscribeElementResult>;
   openApplication(params: OpenApplicationParams): Promise<OpenApplicationResult>;
@@ -205,6 +208,7 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
   return {
     queryElements: (params) => call("queryElements", params) as Promise<QueryElementsResult>,
     attestElement: (params) => call("attestElement", params) as Promise<AttestElementResult>,
+    readElementContent: (params) => call("readElementContent", params) as Promise<ReadElementContentResult>,
     subscribeElement: (params) => call("subscribeElement", params) as Promise<SubscribeElementResult>,
     unsubscribeElement: (params) => call("unsubscribeElement", params) as Promise<UnsubscribeElementResult>,
     openApplication: (params) => call("openApplication", params) as Promise<OpenApplicationResult>,

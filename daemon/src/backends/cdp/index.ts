@@ -7,6 +7,8 @@ import type {
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  ReadElementContentParams,
+  ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
   Role,
@@ -43,6 +45,7 @@ import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
+import { readObservableContent } from "./content.js";
 import {
   contentLength,
   contentOf,
@@ -86,6 +89,7 @@ interface AxNode {
   readonly ignored?: boolean;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
+  readonly value?: { readonly value?: unknown };
   readonly properties?: ReadonlyArray<{ readonly name?: string; readonly value?: { readonly value?: unknown } }>;
   readonly backendDOMNodeId?: number;
 }
@@ -226,6 +230,7 @@ export class CdpBackend implements Backend {
       role: "application",
       name: productName(version),
       states: ["enabled", "visible"],
+      content: { kind: "unavailable", reason: "not-exposed" },
       // The browser itself is not a node in any page's tree, so there is no
       // node to derive from and nothing publishes a verb for it. That is a
       // measured absence, and it says so - the empty list this replaced was
@@ -266,6 +271,7 @@ export class CdpBackend implements Backend {
       role,
       name: String(node.name?.value ?? ""),
       states: toNeutralStates(node.properties ?? []),
+      content: readObservableContent(node),
       actions: derived.actions,
       // ADR-0045 clause 4: the bounds come from what this node published, in
       // its own units. Read from properties here where the desktop route reads
@@ -350,6 +356,28 @@ export class CdpBackend implements Backend {
             ? node.backendDOMNodeId === ref.backendDOMNodeId
             : node.nodeId === ref.nodeId;
         if (hit) return { element: this.nodeElement(targetId, node) };
+      }
+    }
+    return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again`, refusalClass: "ElementGone" };
+  }
+
+  async readElementContent(params: ReadElementContentParams): Promise<Classified<ReadElementContentResult>> {
+    if (!Number.isSafeInteger(params.offset) || params.offset < 0 || !Number.isSafeInteger(params.limit) || params.limit <= 0) {
+      return { refusal: "content window offset must be a non-negative integer and limit must be a positive integer", refusalClass: "MalformedParameter" };
+    }
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to read`, refusalClass: "UnknownElement" };
+    }
+    if (ref.kind === "browser") return { content: { kind: "unavailable", reason: "not-exposed" } };
+    for (const targetId of await this.pageTargets()) {
+      if (targetId !== ref.targetId) continue;
+      for (const node of await this.axTree(targetId)) {
+        if (node.ignored === true) continue;
+        const hit = ref.backendDOMNodeId !== undefined
+          ? node.backendDOMNodeId === ref.backendDOMNodeId
+          : node.nodeId === ref.nodeId;
+        if (hit) return { content: readObservableContent(node, params.offset, params.limit) };
       }
     }
     return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again`, refusalClass: "ElementGone" };

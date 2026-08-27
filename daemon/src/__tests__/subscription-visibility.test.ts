@@ -39,6 +39,7 @@ function twoApplications() {
     name: "two-apps",
     queryElements: async () => ({ elements: [] }),
     attestElement: async () => ({}),
+    readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
     subscribeElement: async (id, sink) => {
       const application = id === VISIBLE ? "seen-app" : id === INVISIBLE ? "unseen-app" : undefined;
       if (application === undefined) {

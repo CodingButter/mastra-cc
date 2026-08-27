@@ -146,6 +146,7 @@ describe("the daemon enforces the configuration", () => {
     role: "text",
     name: "message",
     states: ["enabled", "visible"],
+    content: { kind: "unavailable", reason: "not-exposed" },
     actions: [],
     operations: [],
   };

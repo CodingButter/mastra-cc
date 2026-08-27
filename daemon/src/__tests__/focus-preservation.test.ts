@@ -27,7 +27,7 @@ const DESK = element("el-00000000dea1", "text", "the message being typed");
 const LAUNCHED = element("el-00000000a991", "window", "the launched window");
 
 function element(id: string, role: SemanticElement["role"], name: string): SemanticElement {
-  return { id, role, name, states: ["visible"], actions: [] };
+  return { id, role, name, states: ["visible"], content: { kind: "unavailable", reason: "not-exposed" }, actions: [] };
 }
 
 const APPLICATION: SemanticElement = {
@@ -35,6 +35,7 @@ const APPLICATION: SemanticElement = {
   role: "application",
   name: "test-app",
   states: ["enabled", "visible"],
+  content: { kind: "unavailable", reason: "not-exposed" },
   actions: [],
 };
 
@@ -80,6 +81,9 @@ function launchable(world: Desktop): Backend {
     },
     async attestElement() {
       return {};
+    },
+    async readElementContent() {
+      return { content: { kind: "unavailable", reason: "not-exposed" } };
     },
     applicationOfElement: () => APPLICATION.name,
     async subscribeElement() {
