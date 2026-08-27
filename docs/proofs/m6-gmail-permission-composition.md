@@ -19,7 +19,7 @@ It builds the real daemon, runs the real installer against a temporary prefix, r
 | Checkout | SHA | Verdict |
 |---|---|---|
 | Stage 1 base | `b4aa35f41da7fc90282e34fbd411aa7cbff7a5b8` | RED — `gmail-grants.json` is absent from the fresh installation |
-| M6 Stage 2 composition | `470859d4b78c8e36a18e63c4fc71774aa400cb9f` | GREEN — restrictive authority installed and composed |
+| M6 Stage 2 composition | `d02d7e69787ee64dc72e913e1c6d39c3be9c9aa8` | GREEN — restrictive authority installed and composed |
 
 The branch transcript records:
 
