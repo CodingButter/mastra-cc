@@ -7,7 +7,7 @@ Description=Mastra CC desktop daemon
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env node %h/.local/lib/mastra-cc/daemon.js
+ExecStart=/usr/bin/env node %h/.local/lib/mastra-cc/daemon/main.mjs --backend cdp --permit gmail --grants %h/.config/mastra-cc/gmail-grants.json --capabilities %h/.config/mastra-cc/gmail-capabilities.json --audit %h/.local/state/mastra-cc/audit.jsonl
 Restart=on-failure
 
 [Install]

@@ -1025,5 +1025,19 @@
     "find": "R7g failure: the voice session failed; no desktop",
     "cwd": "tools",
     "testFile": "__tests__/contract-check.test.mjs"
+  },
+  {
+    "name": "m6-gmail-permit-removed",
+    "file": "infra/units/mastra-desktop-daemon.service",
+    "find": " --permit gmail",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/m6-gmail-startup-composition.test.ts"
+  },
+  {
+    "name": "m6-gmail-grants-removed",
+    "file": "infra/units/mastra-desktop-daemon.service",
+    "find": " --grants %h/.config/mastra-cc/gmail-grants.json",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/m6-gmail-startup-composition.test.ts"
   }
 ]
