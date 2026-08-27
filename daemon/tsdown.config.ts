@@ -3,8 +3,8 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
   entry: ["src/index.ts", "src/main.ts"],
   dts: { eager: true },
-  // @mastra-cc/protocol-types is generated build output whose main points at
-  // TypeScript source (ADR-0009); it must be inlined, not left as a runtime
-  // import Node cannot resolve.
-  noExternal: ["@mastra-cc/protocol-types"],
+  // The installed daemon is a self-contained module tree. Protocol types point
+  // at generated TypeScript source (ADR-0009), and dbus-native otherwise remains
+  // a package import unavailable under ~/.local/lib/mastra-cc/daemon/.
+  deps: { alwaysBundle: ["@mastra-cc/protocol-types", "dbus-native"] },
 });

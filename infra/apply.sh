@@ -6,12 +6,10 @@ set -euo pipefail
 # never by hand). Idempotent: prints what it would change before changing it,
 # reports "no changes" when there is nothing to do.
 #
-# M1 installs two things:
-# - the daemon's user systemd unit, NOT enabled by default (docs/07-ROADMAP.md M1);
-# - the keeper-style health script, installed to <prefix>/.local/libexec/mastra-cc/,
-#   because docs/07-ROADMAP.md:79 requires the INSTALLED copy to execute from its
-#   installed path - running the repository copy proves nothing about what was
-#   installed.
+# Installs repository-owned runtime artifacts and seeds missing operator-owned
+# configuration. Repository artifacts are replaced when the checked-in version
+# changes; operator files are never overwritten after their first installation.
+# The daemon user unit is installed but NOT enabled by default.
 #
 # MASTRA_CC_PREFIX overrides the install prefix (default: $HOME) so a fresh empty
 # directory can stand in for a machine that has never run this.
@@ -77,10 +75,18 @@ command -v node >/dev/null 2>&1 || { echo "apply: node is not on PATH" >&2; exit
 [ -n "${XDG_RUNTIME_DIR:-}" ] || { echo "apply: XDG_RUNTIME_DIR is not set" >&2; exit 1; }
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$HERE/.." && pwd)"
 UNIT_SRC="$HERE/units/mastra-desktop-daemon.service"
 KEEPER_SRC="$HERE/keeper/health.sh"
+GRANTS_SRC="$HERE/config/gmail-grants.json"
+CAPABILITIES_SRC="$HERE/config/gmail-capabilities.json"
+DAEMON_SRC="$REPO/daemon/dist"
 UNIT_DST="$PREFIX/.config/systemd/user/mastra-desktop-daemon.service"
 KEEPER_DST="$PREFIX/.local/libexec/mastra-cc/health.sh"
+GRANTS_DST="$PREFIX/.config/mastra-cc/gmail-grants.json"
+CAPABILITIES_DST="$PREFIX/.config/mastra-cc/gmail-capabilities.json"
+DAEMON_DST="$PREFIX/.local/lib/mastra-cc/daemon"
+STATE_DST="$PREFIX/.local/state/mastra-cc"
 
 CHANGES=0
 
@@ -101,8 +107,102 @@ install_file() {
   fi
 }
 
+seed_file() {
+  src="$1"
+  dst="$2"
+  mode="$3"
+  if [ -e "$dst" ]; then
+    echo "apply: preserving operator-owned $dst"
+    return 0
+  fi
+  echo "apply: would seed $src -> $dst (mode $mode)"
+  CHANGES=$((CHANGES + 1))
+  if [ "$DRY" -eq 0 ]; then
+    mkdir -p "$(dirname "$dst")"
+    chmod 700 "$(dirname "$dst")"
+    install -m "$mode" "$src" "$dst"
+    echo "apply: seeded $dst"
+  fi
+}
+
+ensure_directory() {
+  dst="$1"
+  mode="$2"
+  current_mode=""
+  if [ -d "$dst" ]; then current_mode="$(stat -c %a "$dst")"; fi
+  if [ "$current_mode" = "$mode" ]; then
+    echo "apply: $dst is current"
+    return 0
+  fi
+  echo "apply: would ensure directory $dst (mode $mode)"
+  CHANGES=$((CHANGES + 1))
+  if [ "$DRY" -eq 0 ]; then
+    mkdir -p "$dst"
+    chmod "$mode" "$dst"
+    echo "apply: ensured $dst"
+  fi
+}
+
+install_tree() {
+  src="$1"
+  dst="$2"
+  if [ "$DRY" -eq 1 ]; then
+    echo "apply: would install tree $src -> $dst"
+    CHANGES=$((CHANGES + 1))
+    return 0
+  fi
+
+  [ -f "$src/main.mjs" ] || { echo "apply: daemon is not built - run pnpm --filter @mastra-cc/daemon build first" >&2; exit 1; }
+  node --input-type=module - "$src/main.mjs" <<'NODE'
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const entry = process.argv[2];
+const source = readFileSync(entry, "utf8");
+const imports = [...source.matchAll(/(?:from\s*|import\s*)["'](\.\.?\/[^"']+)["']/g)];
+for (const [, specifier] of imports) {
+  const target = fileURLToPath(new URL(specifier, pathToFileURL(entry)));
+  if (!existsSync(target)) {
+    console.error(`apply: daemon build is incomplete - ${resolve(dirname(entry), specifier)} is missing; rebuild the daemon`);
+    process.exit(1);
+  }
+}
+NODE
+
+  parent="$(dirname "$dst")"
+  mkdir -p "$parent"
+  stage="$(mktemp -d "$parent/.daemon.XXXXXX")"
+  trap 'rm -rf "${stage:-}"' RETURN
+  cp -a "$src/." "$stage/"
+  mkdir -p "$stage/tools/pins"
+  install -m 644 "$REPO/tools/pins/deny-list.json" "$stage/tools/pins/deny-list.json"
+  chmod -R u=rwX,go=rX "$stage"
+
+  if [ -d "$dst" ] && diff -qr "$stage" "$dst" >/dev/null 2>&1; then
+    echo "apply: $dst is current"
+    rm -rf "$stage"
+    stage=""
+    trap - RETURN
+    return 0
+  fi
+
+  echo "apply: would install tree $src -> $dst"
+  CHANGES=$((CHANGES + 1))
+  rm -rf "$dst"
+  mv "$stage" "$dst"
+  stage=""
+  trap - RETURN
+  echo "apply: installed $dst"
+}
+
 install_file "$UNIT_SRC" "$UNIT_DST" 644
 install_file "$KEEPER_SRC" "$KEEPER_DST" 755
+ensure_directory "$PREFIX/.config/mastra-cc" 700
+seed_file "$GRANTS_SRC" "$GRANTS_DST" 600
+seed_file "$CAPABILITIES_SRC" "$CAPABILITIES_DST" 600
+ensure_directory "$STATE_DST" 700
+install_tree "$DAEMON_SRC" "$DAEMON_DST"
 
 if [ "$CHANGES" -eq 0 ]; then
   echo "apply: no changes"
