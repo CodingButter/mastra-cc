@@ -69,19 +69,30 @@ const ROOT_PATH = "/org/a11y/atspi/accessible/root";
 // on this machine listed one), and method calls on them fail. Not an element.
 const NULL_PATH = "/org/a11y/atspi/null";
 
-// Walk budgets: a live desktop hands over ~20 applications, some with very
-// large trees. Per-application and global caps keep one query finite; both
-// are policy of this backend, recorded here, not part of the wire contract.
+// Walk budgets are policy of this backend, recorded here, not part of the wire
+// contract. A live desktop hands over ~20 applications, and a shared total
+// makes the first large application starve every application after it. Divide
+// the target before reading starts instead: every visible application gets an
+// attributable allowance independent of registry order.
 //
 // The numbers are sized from a measured desktop rather than guessed: a KDE
 // editor's whole application tree is 1030 nodes and 17 levels deep, and its
-// visible document sits at depth 11, node 195 - outside the caps this backend
-// first shipped with. Exhausting a budget now raises IncompleteObservationError
-// instead of breaking quietly, so a truncated walk can never be mistaken for a
-// desktop that does not contain the element.
+// visible document sits at depth 11, node 195. The 1200-node floor preserves
+// that measured application on a crowded desktop; the 4000-node ceiling keeps
+// one application finite. A crowded desktop may exceed the target in total —
+// guaranteeing each application enough room to be readable is the stronger
+// property. Exhaustion raises IncompleteObservationError rather than returning
+// a partial tree.
 const MAX_DEPTH = 24;
+const MIN_NODES_PER_APP = 1200;
 const MAX_NODES_PER_APP = 4000;
-const MAX_NODES_TOTAL = 20000;
+const NODE_BUDGET_TARGET = 20000;
+
+function nodeAllowance(visibleApplications: number): number {
+  if (visibleApplications <= 0) return MAX_NODES_PER_APP;
+  const share = Math.floor(NODE_BUDGET_TARGET / visibleApplications);
+  return Math.min(MAX_NODES_PER_APP, Math.max(MIN_NODES_PER_APP, share));
+}
 
 interface NativeRef {
   busName: string;
@@ -260,26 +271,29 @@ export class AtspiBackend implements Backend {
 
   async queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {
     const elements: SemanticElement[] = [];
-    let total = 0;
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
+    const visible: Array<{ app: NativeRef; applicationName: string }> = [];
     for (const app of apps) {
       // The visibility gate (ADR-0036). The application's NAME is the one
       // permitted read of an ungranted application - you cannot decide
-      // visibility without it - and it is read BEFORE readElement, so an
-      // ungranted application's subtree is never walked, its states never
-      // read, its element never answered.
-      let applicationName: string;
+      // visibility without it - and it is read before any subtree. Count only
+      // visible applications, so an ungranted application cannot shrink a
+      // granted application's observation allowance.
       try {
-        applicationName = await this.nameOf(app);
-        if (!isVisible(this.visibility, applicationName)) continue;
+        const applicationName = await this.nameOf(app);
+        if (isVisible(this.visibility, applicationName)) visible.push({ app, applicationName });
       } catch (error) {
         // an off-tape read under replay is ignorance, and ignorance surfaces
         // as a refusal - never a skip; a dying app that cannot state its name
         // cannot be granted, so it is skipped like any dying node
         if (error instanceof UnrecordedExchangeError) throw error;
-        continue;
       }
+    }
+
+    const allowance = nodeAllowance(visible.length);
+    for (const { app, applicationName } of visible) {
+      let inThisApp = 0;
       // The fast instrument, when the application advertises it and the
       // question is one the bus's own role vocabulary can carry. One exchange
       // replaces the walk; the answer goes through the SAME readElement and
@@ -295,12 +309,12 @@ export class AtspiBackend implements Backend {
       let fastAnswerTrusted = collected !== undefined;
       if (collected !== undefined && fastAnswerTrusted) {
         for (const ref of collected) {
-          if (total >= MAX_NODES_TOTAL) {
+          if (inThisApp >= allowance) {
             throw new IncompleteObservationError(
-              `observation budget exhausted inside "${applicationName}" with matches still unread - this observation would be partial`,
+              `observation budget exhausted inside "${applicationName}" after its share of ${allowance} nodes with matches still unread - this observation would be partial`,
             );
           }
-          total += 1;
+          inThisApp += 1;
           try {
             const element = await this.readElement(ref, applicationName);
             if (params.role !== undefined && element.role !== params.role) {
@@ -324,19 +338,17 @@ export class AtspiBackend implements Backend {
       }
       // depth-first per application, in the order the bus lists them
       const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: app, depth: 0 }];
-      let inThisApp = 0;
       while (stack.length > 0) {
         // Budget exhausted with tree still unwalked. Answering here would hand
         // back a short list that reads exactly like "the desktop does not
         // contain that element", so the walk refuses instead (ADR-0042).
-        if (inThisApp >= MAX_NODES_PER_APP || total >= MAX_NODES_TOTAL) {
+        if (inThisApp >= allowance) {
           throw new IncompleteObservationError(
-            `walk budget exhausted inside "${applicationName}" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
+            `walk budget exhausted inside "${applicationName}" after its share of ${allowance} nodes with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
           );
         }
         const { ref, depth } = stack.shift() as { ref: NativeRef; depth: number };
         inThisApp += 1;
-        total += 1;
 
         // A node that stops answering mid-walk is skipped, not fatal: live
         // trees contain dying processes and dead references, and one of them
