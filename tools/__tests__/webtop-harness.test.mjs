@@ -40,8 +40,9 @@ describe("Webtop semantic desktop harness", () => {
     ]);
     expect(client).toContain('element.content.kind === "redacted"');
     expect(client).toContain('if ("value" in protectedElement.content)');
-    expect(demo).toContain('grep -F "$PROTECTED_VALUE"');
-    expect(diagnostics).toContain('grep -R -F "$PROTECTED_VALUE"');
+    expect(demo).toContain('grep -Fq "$PROTECTED_VALUE"');
+    expect(diagnostics).toContain('grep -R -Fq "$PROTECTED_VALUE"');
+    expect(demo).not.toContain('diagnostics.sh" >/dev/null 2>&1 || true');
   });
 
   it("locks successful transcript lines last", async () => {

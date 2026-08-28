@@ -32,7 +32,25 @@ import { deriveId } from "./identity.js";
 
 const EVENT_OBJECT_IFACE = "org.a11y.atspi.Event.Object";
 const STATE_CHANGED = "StateChanged";
-const MATCH_RULE = `type='signal',interface='${EVENT_OBJECT_IFACE}',member='${STATE_CHANGED}'`;
+const TEXT_CHANGED = "TextChanged";
+
+// The two signal classes this repo has watched fire on a live bus. StateChanged
+// came from the M0.5 spike; TextChanged came from a live Kate observation on
+// 2026-08-28, where an edit through the daemon produced text-changed:delete and
+// text-changed:insert about 4ms later and produced NO state-changed at all - so
+// a watch registered only for state changes was deaf to exactly the mutation
+// this milestone is about. Nothing here registers for a class never seen fire.
+//
+// TextChanged bodies carry the inserted/deleted text. THE PAYLOAD IS NEVER READ.
+// A change event is a pointer: it says which element changed, and the client
+// learns what it now says by making a fresh authorized observation. Reading the
+// body here would put observed content on the event path, which the contract
+// forbids outright - so the body is not parsed, not logged, not forwarded.
+const WATCHED_MEMBERS = [STATE_CHANGED, TEXT_CHANGED] as const;
+const REGISTRATIONS: ReadonlyArray<{ member: string; event: string }> = [
+  { member: STATE_CHANGED, event: "object:state-changed" },
+  { member: TEXT_CHANGED, event: "object:text-changed" },
+];
 
 // The probe signal's object path. Ours, not AT-SPI's: no accessible object
 // lives here, so a probe can never be mistaken for a change in any subtree.
@@ -91,25 +109,31 @@ export async function openSignalStream(
   // what makes signals reach this connection; the registry-side registration
   // is what makes applications emit them at all. Missing either is the silent
   // failure the probe below exists to catch.
-  await ops.call({
-    destination: "org.freedesktop.DBus",
-    path: "/org/freedesktop/DBus",
-    iface: "org.freedesktop.DBus",
-    member: "AddMatch",
-    signature: "s",
-    body: [MATCH_RULE],
-  });
-  await ops.call({
-    destination: REGISTRY_DEST,
-    path: REGISTRY_PATH,
-    iface: "org.a11y.atspi.Registry",
-    member: "RegisterEvent",
-    signature: "s",
-    body: ["object:state-changed"],
-  });
+  for (const registration of REGISTRATIONS) {
+    await ops.call({
+      destination: "org.freedesktop.DBus",
+      path: "/org/freedesktop/DBus",
+      iface: "org.freedesktop.DBus",
+      member: "AddMatch",
+      signature: "s",
+      body: [`type='signal',interface='${EVENT_OBJECT_IFACE}',member='${registration.member}'`],
+    });
+    await ops.call({
+      destination: REGISTRY_DEST,
+      path: REGISTRY_PATH,
+      iface: "org.a11y.atspi.Registry",
+      member: "RegisterEvent",
+      signature: "s",
+      body: [registration.event],
+    });
+  }
 
   const nonce = randomBytes(8).toString("hex");
-  let probeHeard = false;
+  // Each registered signal class proves itself separately. A watch that hears
+  // state changes but is deaf to text changes is exactly the silent half-failure
+  // this probe exists to catch, so every member must echo before the watch is
+  // handed back.
+  const unheard = new Set<string>(REGISTRATIONS.map((registration) => registration.member));
   let resolveProbe: () => void = () => undefined;
   const probeArrived = new Promise<void>((resolve) => {
     resolveProbe = resolve;
@@ -140,13 +164,14 @@ export async function openSignalStream(
   };
 
   const detach = ops.onSignal((signal) => {
-    if (signal.iface !== EVENT_OBJECT_IFACE || signal.member !== STATE_CHANGED) return;
+    if (signal.iface !== EVENT_OBJECT_IFACE) return;
+    if (!(WATCHED_MEMBERS as readonly string[]).includes(signal.member)) return;
     if (signal.path === PROBE_PATH) {
       // Only this subscribe's own nonce is evidence. Anything else on the
       // probe path - another subscription's probe, a coincidence - is not.
       if (String(signal.body[0] ?? "") === nonce) {
-        probeHeard = true;
-        resolveProbe();
+        unheard.delete(signal.member);
+        if (unheard.size === 0) resolveProbe();
       }
       return;
     }
@@ -166,7 +191,9 @@ export async function openSignalStream(
     deliver({ id, role, kind: "changed" });
   });
 
-  ops.emit({ path: PROBE_PATH, iface: EVENT_OBJECT_IFACE, member: STATE_CHANGED, signature: "s", body: [nonce] });
+  for (const registration of REGISTRATIONS) {
+    ops.emit({ path: PROBE_PATH, iface: EVENT_OBJECT_IFACE, member: registration.member, signature: "s", body: [nonce] });
+  }
 
   let timer: NodeJS.Timeout | undefined;
   await Promise.race([
@@ -177,11 +204,11 @@ export async function openSignalStream(
   ]);
   clearTimeout(timer);
 
-  if (!probeHeard) {
+  if (unheard.size > 0) {
     detach();
     pending = null;
     throw new DeafWatchError(
-      `the accessibility route registered for its signals, caused one of its own, and never heard it within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element "${subscribedTo}")`,
+      `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(", ")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element "${subscribedTo}")`,
     );
   }
 

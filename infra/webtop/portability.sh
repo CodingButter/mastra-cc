@@ -2,6 +2,7 @@
 set -euo pipefail
 
 IMAGE='lscr.io/linuxserver/webtop:ubuntu-kde@sha256:d91fb284794d554d89b4b210ebe56a538c755dfb2054a3741ed7471363cd5369'
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONTAINER="${MASTRA_CC_WEBTOP_CONTAINER:-mcc-webtop-portability}"
 if test -n "${DOCKER_HOST:-}" && test ! -S "${DOCKER_HOST#unix://}" && test -S /var/run/docker.sock; then
   DOCKER_HOST='unix:///var/run/docker.sock'
@@ -14,6 +15,7 @@ DAEMON_LOG='/tmp/mastra-cc-portability.log'
 PID_FILE='/tmp/mastra-cc-portability.pid'
 CONFIG_VOLUME='mcc-webtop-portability-config'
 OWN_CONTAINER=0
+OWN_VOLUME=0
 export DOCKER_HOST
 
 fail() {
@@ -38,10 +40,14 @@ cleanup() {
   if test "$OWN_CONTAINER" = 1; then
     docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
   fi
+  if test "$OWN_VOLUME" = 1; then
+    docker volume rm "$CONFIG_VOLUME" >/dev/null 2>&1 || true
+  fi
 }
 trap cleanup EXIT INT TERM
 
 expected_image="$(docker image inspect --format '{{.Id}}' "$IMAGE")"
+if ! docker volume inspect "$CONFIG_VOLUME" >/dev/null 2>&1; then OWN_VOLUME=1; fi
 if ! docker inspect "$CONTAINER" >/dev/null 2>&1; then
   docker run -d --name "$CONTAINER" --shm-size=1g --security-opt seccomp=unconfined \
     -e PUID=1000 -e PGID=1000 -e TZ=Etc/UTC \
@@ -62,7 +68,7 @@ if ! container_exec "test -x /usr/local/bin/node"; then
   docker cp "$(command -v node)" "$CONTAINER:/usr/local/bin/node"
 fi
 container_exec "/usr/local/bin/node --version >/dev/null" || fail 'the deployed Node runtime cannot execute'
-container_exec "printf '#!/bin/sh\\necho \\\$\\\$ > /tmp/mastra-cc-owned.pid\\nexec sleep 300\\n' > /usr/local/bin/qt6ct && chmod +x /usr/local/bin/qt6ct"
+container_exec "mkdir -p /tmp/mastra-cc-bin; printf '#!/bin/sh\\necho \\\$\\\$ > /tmp/mastra-cc-owned.pid\\nexec sleep 300\\n' > /tmp/mastra-cc-bin/qt6ct && chmod +x /tmp/mastra-cc-bin/qt6ct"
 session_exec "pgrep -x kate >/dev/null || (nohup kate >/tmp/mastra-cc-kate.log 2>&1 &)"
 
 kate_ready=0
@@ -73,9 +79,9 @@ done
 test "$kate_ready" = 1 || fail 'the unrelated Kate process did not start'
 
 docker exec "$CONTAINER" mkdir -p "$DEPLOY/daemon/dist" "$DEPLOY/transport/dist"
-docker cp daemon/dist/. "$CONTAINER:$DEPLOY/daemon/dist/"
-docker cp packages/transport/dist/. "$CONTAINER:$DEPLOY/transport/dist/"
-docker cp infra/webtop/portability-client.mjs "$CONTAINER:$DEPLOY/portability-client.mjs"
+docker cp "$ROOT/daemon/dist/." "$CONTAINER:$DEPLOY/daemon/dist/"
+docker cp "$ROOT/packages/transport/dist/." "$CONTAINER:$DEPLOY/transport/dist/"
+docker cp "$ROOT/infra/webtop/portability-client.mjs" "$CONTAINER:$DEPLOY/portability-client.mjs"
 
 stop_daemon
 session_exec "cd /tmp && /usr/local/bin/node '$DEPLOY/daemon/dist/main.mjs' --backend atspi --socket '$SOCKET' --grant kate >'$DAEMON_LOG' 2>&1 & echo \$! >'$PID_FILE'"
@@ -99,11 +105,12 @@ for _ in $(seq 1 10); do
   container_exec "! kill -0 \$(cat '$PID_FILE') 2>/dev/null" && break
   sleep 1
 done
+container_exec "! kill -0 \$(cat '$PID_FILE') 2>/dev/null" || fail 'daemon did not exit after SIGTERM'
 container_exec "kill -0 '$unrelated_kate_pid'" || fail 'daemon shutdown killed an unrelated desktop application'
 
 stop_daemon
 container_exec "rm -f /tmp/mastra-cc-owned.pid"
-session_exec "cd /tmp && /usr/local/bin/node '$DEPLOY/daemon/dist/main.mjs' --backend atspi --socket '$SOCKET' --permit qt6ct --grant qt6ct >'$DAEMON_LOG' 2>&1 & echo \$! >'$PID_FILE'"
+session_exec "cd /tmp && PATH=/tmp/mastra-cc-bin:\$PATH /usr/local/bin/node '$DEPLOY/daemon/dist/main.mjs' --backend atspi --socket '$SOCKET' --permit qt6ct --grant qt6ct >'$DAEMON_LOG' 2>&1 & echo \$! >'$PID_FILE'"
 ready=0
 for _ in $(seq 1 30); do
   if container_exec "test -S '$SOCKET'"; then ready=1; break; fi

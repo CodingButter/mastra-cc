@@ -48,6 +48,19 @@ describe("AT-SPI observable content", () => {
     expect(channel.asked).toEqual([]);
   });
 
+  it("returns unavailable when numeric values are not finite", async () => {
+    const channel = channelWith((exchange) => {
+      if (exchange.member === "GetInterfaces") return [[VALUE]];
+      if (exchange.member === "Get") return [undefined];
+      throw new Error(`unexpected ${exchange.member}`);
+    });
+
+    await expect(readObservableContent(channel, REF, "slider")).resolves.toEqual({
+      kind: "unavailable",
+      reason: "unknown",
+    });
+  });
+
   it("reads ordinary numeric content and its published range", async () => {
     const values: Record<string, number> = {
       CurrentValue: 73,

@@ -98,6 +98,17 @@ describe("a replayed browser node", () => {
     }
   });
 
+  it("replays captured protected-control classification without exposing a value", async () => {
+    const backend = new CdpReplayBackend("chrome-page", "all");
+    const { elements } = await backend.queryElements({});
+    await backend.close();
+
+    const protectedControl = elements.find((element) => element.content.kind === "redacted");
+    expect(protectedControl?.name).toContain("Account password");
+    expect(protectedControl?.content).toEqual({ kind: "redacted", reason: "protected" });
+    expect(protectedControl?.content).not.toHaveProperty("value");
+  });
+
   it("does not publish the words the deleted table invented", async () => {
     const backend = new CdpReplayBackend("chrome-page", "all");
     const { elements } = await backend.queryElements({});

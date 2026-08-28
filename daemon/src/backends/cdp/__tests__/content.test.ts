@@ -24,21 +24,17 @@ describe("browser accessibility observable content", () => {
     ).toEqual({ kind: "redacted", reason: "protected" });
   });
 
-  it("classifies only masked accessibility values through the backing node", () => {
-    expect(
-      needsProtectedClassification({
-        role: { value: "textbox" },
-        value: { value: "ordinary content" },
-        properties: [property("editable", "plaintext")],
-      }),
-    ).toBe(false);
-    expect(
-      needsProtectedClassification({
-        role: { value: "textbox" },
-        value: { value: "••••••" },
-        properties: [property("editable", "plaintext")],
-      }),
-    ).toBe(true);
+  it("classifies every editable text field through its backing node", () => {
+    for (const value of ["ordinary content", "••••••", ""]) {
+      expect(
+        needsProtectedClassification({
+          role: { value: "textbox" },
+          value: { value },
+          properties: [property("editable", "plaintext")],
+        }),
+      ).toBe(true);
+    }
+    expect(needsProtectedClassification({ role: { value: "button" } })).toBe(false);
   });
 
   it("redacts a masked field confirmed protected by its backing node", () => {
@@ -59,6 +55,28 @@ describe("browser accessibility observable content", () => {
         properties: [property("valuemin", 0), property("valuemax", 100)],
       }),
     ).toEqual({ kind: "number", value: 42, range: { minimum: 0, maximum: 100 } });
+  });
+
+  it("clamps out-of-range offsets and bounds every returned text response", () => {
+    const node = {
+      role: { value: "textbox" },
+      value: { value: "abcdef" },
+      properties: [property("editable", "plaintext")],
+    };
+    expect(readObservableContent(node, 100, 10)).toEqual({
+      kind: "text-window",
+      value: "",
+      offset: 6,
+      length: 0,
+      totalLength: 6,
+      startLine: 1,
+      endLine: 1,
+      totalLines: 1,
+    });
+    const long = { ...node, value: { value: "x".repeat(5000) } };
+    const content = readObservableContent(long, 0, 1_000_000);
+    expect(content.kind).toBe("text-window");
+    if (content.kind === "text-window") expect(content.length).toBe(4096);
   });
 
   it("does not mistake accessible names for element content", () => {

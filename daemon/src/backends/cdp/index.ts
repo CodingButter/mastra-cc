@@ -96,7 +96,7 @@ interface AxNode {
 
 type NativeRef =
   | { readonly kind: "browser" }
-  | { readonly kind: "node"; readonly targetId: string; readonly backendDOMNodeId?: number; readonly nodeId?: string };
+  | { readonly kind: "node"; readonly targetId: string; readonly backendDOMNodeId?: number; readonly nodeId?: string; readonly protectedByBackingNode: boolean };
 
 // The application element's name is DERIVED from the version reply's Browser
 // product token: the part before "/", lowercased ("Chrome/150..." -> "chrome").
@@ -264,8 +264,8 @@ export class CdpBackend implements Backend {
     return false;
   }
 
-  private async nodeElement(targetId: string, node: AxNode): Promise<SemanticElement> {
-    const protectedByBackingNode = await this.protectedByBackingNode(targetId, node);
+  private async nodeElement(targetId: string, node: AxNode, knownProtectedByBackingNode?: boolean): Promise<SemanticElement> {
+    const protectedByBackingNode = knownProtectedByBackingNode ?? await this.protectedByBackingNode(targetId, node);
     const nativeRole = String(node.role?.value ?? "");
     const { role, diagnostic } = toNeutralRole(nativeRole);
     const id = deriveId(role, targetId, String(node.backendDOMNodeId ?? node.nodeId));
@@ -274,6 +274,7 @@ export class CdpBackend implements Backend {
       targetId,
       backendDOMNodeId: node.backendDOMNodeId,
       nodeId: node.nodeId,
+      protectedByBackingNode,
     });
     this.roleOf.set(id, role);
     this.recordApplication(id);
@@ -373,7 +374,7 @@ export class CdpBackend implements Backend {
           ref.backendDOMNodeId !== undefined
             ? node.backendDOMNodeId === ref.backendDOMNodeId
             : node.nodeId === ref.nodeId;
-        if (hit) return { element: await this.nodeElement(targetId, node) };
+        if (hit) return { element: await this.nodeElement(targetId, node, ref.protectedByBackingNode) };
       }
     }
     return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again`, refusalClass: "ElementGone" };
@@ -396,8 +397,7 @@ export class CdpBackend implements Backend {
           ? node.backendDOMNodeId === ref.backendDOMNodeId
           : node.nodeId === ref.nodeId;
         if (hit) {
-          const protectedByBackingNode = await this.protectedByBackingNode(targetId, node);
-          return { content: readObservableContent(node, params.offset, params.limit, protectedByBackingNode) };
+          return { content: readObservableContent(node, params.offset, params.limit, ref.protectedByBackingNode) };
         }
       }
     }

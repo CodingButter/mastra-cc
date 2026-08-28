@@ -331,7 +331,14 @@
   {
     "name": "a-deaf-subscription-is-returned-anyway",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
-    "find": "  if (!probeHeard) {\n    detach();\n    pending = null;\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard it within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
+    "find": "  if (unheard.size > 0) {\n    detach();\n    pending = null;\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(\", \")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "the-watch-that-never-registered-for-text",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "  { member: TEXT_CHANGED, event: \"object:text-changed\" },\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },

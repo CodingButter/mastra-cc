@@ -32,7 +32,7 @@ const anchor: AtspiWatchAnchor = {
 // A fake bus. `healthy` routes emitted signals back to the connection's own
 // listeners - what a real bus does when the match rule took. `deaf` swallows
 // them - what a real bus does when it silently did not.
-function fakeBus({ deaf = false } = {}) {
+function fakeBus({ deaf = false, deafTo = [] as string[] } = {}) {
   const listeners: Array<(signal: IncomingSignal) => void> = [];
   const calls: Array<{ member: string; body?: unknown[] }> = [];
   const ops: SignalBusOps = {
@@ -41,7 +41,7 @@ function fakeBus({ deaf = false } = {}) {
       return [];
     },
     emit(msg) {
-      if (deaf) return;
+      if (deaf || deafTo.includes(msg.member)) return;
       queueMicrotask(() => {
         for (const listener of [...listeners]) {
           listener({ sender: ":9.99", path: msg.path, iface: msg.iface, member: msg.member, body: msg.body });
@@ -72,15 +72,44 @@ function stateChanged(sender: string, path: string): IncomingSignal {
   return { sender, path, iface: EVENT_OBJECT, member: "StateChanged", body: ["showing", 1, 0] };
 }
 
+// Shaped like the real thing: an AT-SPI TextChanged body carries the operation
+// detail and THE INSERTED OR DELETED TEXT. Nothing below may read it - the
+// event is a pointer, and the client learns the new value by observing again.
+function textChanged(sender: string, path: string): IncomingSignal {
+  return { sender, path, iface: EVENT_OBJECT, member: "TextChanged", body: ["insert", 0, 22, "SIGNAL TEST 2026-08-28"] };
+}
+
 describe("the accessibility stream", () => {
-  it("registers both ways on the call seam: the bus match rule and the registry event", async () => {
+  it("registers both ways on the call seam, for every signal class it claims to watch", async () => {
     const bus = fakeBus();
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, () => undefined, 50);
-    expect(bus.calls.map((c) => c.member)).toEqual(["AddMatch", "RegisterEvent"]);
+    expect(bus.calls.map((c) => c.member)).toEqual(["AddMatch", "RegisterEvent", "AddMatch", "RegisterEvent"]);
     expect(String(bus.calls[0].body?.[0])).toContain("Object");
     expect(String(bus.calls[0].body?.[0])).toContain("StateChanged");
     expect(bus.calls[1].body).toEqual(["object:state-changed"]);
+    expect(String(bus.calls[2].body?.[0])).toContain("TextChanged");
+    expect(bus.calls[3].body).toEqual(["object:text-changed"]);
     await watch.close();
+  });
+
+  it("turns a TextChanged into the same content-free pointer, carrying none of the text the signal shipped", async () => {
+    // The live gap this closes: editing a document emits text-changed and no
+    // state-changed at all, so a watch registered only for state changes was
+    // deaf to the one mutation this milestone is about.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
+    bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+    expect(changes).toEqual([{ id: KNOWN.id, role: "checkbox", kind: "changed" }]);
+    expect(JSON.stringify(changes)).not.toContain("SIGNAL TEST");
+    await watch.close();
+  });
+
+  it("refuses a watch that hears state changes but is deaf to text changes", async () => {
+    // Half a registration is the silent failure that looks exactly like a calm
+    // desktop. Every class proves itself or no watch is handed back.
+    const bus = fakeBus({ deafTo: ["TextChanged"] });
+    await expect(openSignalStream(bus.ops, KNOWN.id, anchor, () => undefined, 25)).rejects.toBeInstanceOf(DeafWatchError);
   });
 
   it("turns a StateChanged from the watched application into a changed event under the id the walk answered", async () => {

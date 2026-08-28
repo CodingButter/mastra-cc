@@ -1,4 +1,5 @@
 import type { ObservableContent, ObservableRange } from "@mastra-cc/protocol-types";
+import { observableText } from "../observable-content.js";
 
 interface AxValue {
   readonly value?: unknown;
@@ -21,8 +22,8 @@ function numericProperty(node: ContentAxNode, name: string): number | undefined 
 
 export function needsProtectedClassification(node: ContentAxNode): boolean {
   if (property(node, "protected") === true) return false;
-  const value = node.value?.value;
-  return typeof value === "string" && value.length > 0 && /^[•●◦·*]+$/u.test(value);
+  const role = String(node.role?.value ?? "");
+  return role === "textField" || role === "textbox" || property(node, "editable") === true || property(node, "editable") === "plaintext";
 }
 
 export function readObservableContent(
@@ -47,22 +48,8 @@ export function readObservableContent(
     return { kind: "number", value, range };
   }
 
-  if (rawValue !== undefined && (role === "textField" || property(node, "editable") === true)) {
-    const value = String(rawValue);
-    const scalars = [...value];
-    if (offset === 0 && scalars.length <= limit) return { kind: "text", value };
-    const window = scalars.slice(offset, offset + Math.min(limit, 4096)).join("");
-    const startLine = scalars.slice(0, offset).join("").split("\n").length;
-    return {
-      kind: "text-window",
-      value: window,
-      offset,
-      length: [...window].length,
-      totalLength: scalars.length,
-      startLine,
-      endLine: startLine + window.split("\n").length - 1,
-      totalLines: value.split("\n").length,
-    };
+  if (rawValue !== undefined && (role === "textField" || role === "textbox" || property(node, "editable") === true || property(node, "editable") === "plaintext")) {
+    return observableText(String(rawValue), offset, limit);
   }
 
   return { kind: "unavailable", reason: "not-exposed" };
