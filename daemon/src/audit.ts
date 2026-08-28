@@ -105,6 +105,15 @@ export interface AuditEntry {
 // constant of its own - a seam error the server translates is recorded under
 // the server's name for it, because the server's constant is what the caller
 // was actually handed.
+//
+// IncompleteObservation is that translation applied to a tenth seam class. A
+// tree walk that exhausts its own budget throws IncompleteObservationError
+// (backend.ts) rather than passing off a partial tree as a whole one; the
+// server catches it, answers with its backstop sentence, and so records it
+// under the server's name for it - IncompleteObservation, not the seam's
+// class - because the server's constant is what the caller was handed. It is
+// not in the nine above because performEffect never translates it: every throw
+// site is inside a read (ADR-0057).
 export const REFUSAL_CLASSES = [
   // the seam's classes (daemon/src/backend.ts), by constructor name
   "AttestationFailedError",
@@ -118,12 +127,12 @@ export const REFUSAL_CLASSES = [
   "WriteNotObservedError",
   // the server's own refusals, which are sentences and not classes
   "AlreadyRunning",
-  "BackendUnreadable",
   "CouldNotStart",
   "DisabledByConfiguration",
   "EffectClassGate",
   "ElementGone",
   "EnforcementUnrepresentable",
+  "IncompleteObservation",
   "InventoryUnsupported",
   "LaunchUnavailable",
   "MalformedParameter",

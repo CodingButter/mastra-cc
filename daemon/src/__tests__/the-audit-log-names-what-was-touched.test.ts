@@ -7,6 +7,7 @@ import {
   type Backend,
   type BackendChange,
   EffectUnsupportedError,
+  IncompleteObservationError,
   MagnitudeOutOfRangeError,
   OperationNotExposedError,
   RecordingNotPerformableError,
@@ -29,7 +30,7 @@ import {
 import type { Channel, Exchange } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
 import { registry } from "../backends/registry.js";
-import { handleRequest, SubscriptionBook, type LaunchContext } from "../server.js";
+import { BACKEND_UNREADABLE_REFUSAL, handleRequest, SubscriptionBook, type LaunchContext } from "../server.js";
 import { OwnershipTable } from "../launch/table.js";
 import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
@@ -438,6 +439,26 @@ describe("the launch and the read keep receipts of their own", () => {
     expect(readFileSync(path, "utf8")).not.toContain("went away mid-launch");
   });
 
+  it("7c: a launch whose observation ran out of budget records the named refusal", async () => {
+    const path = auditing();
+    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    vi.spyOn(backend, "queryElements").mockRejectedValue(
+      new IncompleteObservationError("the walk stopped at 20000 nodes"),
+    );
+
+    const answer = await call("openApplication", { name: "yad" }, backend, context({ permits: new Set(["yad"]) }));
+    await backend.close();
+
+    expect(answer.refusal).toBe(BACKEND_UNREADABLE_REFUSAL);
+    const written = entries(path);
+    expect(written).toHaveLength(1);
+    expect(written[0]!.scope).toBe("launch");
+    expect(written[0]!.outcome).toBe("refused:IncompleteObservation");
+    expect(written[0]!.application).toBe("yad");
+    expect(written[0]!.element).toEqual([]);
+    expect(readFileSync(path, "utf8")).not.toContain("20000 nodes");
+  });
+
   it("8: a read writes exactly one entry naming every element it answered", async () => {
     const path = auditing();
     const backend = registry.replay({ visibility: new Set(["yad"]) });
@@ -529,6 +550,43 @@ describe("the launch and the read keep receipts of their own", () => {
     expect(written[1]!.scope).toBe("observe");
     expect(written[1]!.outcome).toBe("read");
   });
+
+  it("8d: a read whose observation ran out of budget records the named refusal", async () => {
+    const path = auditing();
+    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    vi.spyOn(backend, "queryElements").mockRejectedValue(
+      new IncompleteObservationError("the walk stopped at 20000 nodes"),
+    );
+
+    const answer = await call("queryElements", { name: "OK" }, backend);
+    await backend.close();
+
+    expect(answer.refusal).toBe(BACKEND_UNREADABLE_REFUSAL);
+    const written = entries(path);
+    expect(written).toHaveLength(1);
+    expect(written[0]!.scope).toBe("observe");
+    expect(written[0]!.outcome).toBe("refused:IncompleteObservation");
+    expect(written[0]!.application).toBeNull();
+    expect(written[0]!.element).toEqual([]);
+    expect(readFileSync(path, "utf8")).not.toContain("20000 nodes");
+  });
+
+  it("8e: a read that throws something unclassified is still recorded as failed", async () => {
+    const path = auditing();
+    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    vi.spyOn(backend, "queryElements").mockRejectedValue(new Error("the socket went away mid-read"));
+
+    const answer = await call("queryElements", { name: "OK" }, backend);
+    await backend.close();
+
+    expect(answer.refusal).toBe(BACKEND_UNREADABLE_REFUSAL);
+    const written = entries(path);
+    expect(written).toHaveLength(1);
+    expect(written[0]!.scope).toBe("observe");
+    expect(written[0]!.outcome).toBe("failed");
+    expect(written[0]!.element).toEqual([]);
+    expect(readFileSync(path, "utf8")).not.toContain("went away mid-read");
+  });
 });
 
 describe("the refusal vocabulary is closed", () => {
@@ -539,13 +597,13 @@ describe("the refusal vocabulary is closed", () => {
       [
         "AlreadyRunning",
         "AttestationFailedError",
-        "BackendUnreadable",
         "CouldNotStart",
         "DisabledByConfiguration",
         "EffectClassGate",
         "EffectUnsupportedError",
         "ElementGone",
         "EnforcementUnrepresentable",
+        "IncompleteObservation",
         "InventoryUnsupported",
         "LaunchUnavailable",
         "MagnitudeOutOfRangeError",
