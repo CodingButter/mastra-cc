@@ -248,6 +248,44 @@ describe("the accessibility stream", () => {
     await watch.close();
   });
 
+  it("keeps delivering as a busy subtree turns over element after element", async () => {
+    // The end-to-end half of #52. A document that appears and disappears nodes
+    // - an editor, a virtualised list, a log view - sends a signal from a node
+    // the walk never answered, so each arrives under a freshly derived id. The
+    // backstop must not be holding all of them, and bounding it must not cost
+    // a single delivery: every distinct element is still reported exactly once.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    // Every path in this run hangs directly off the watched root, so the climb
+    // is one edge and the subtree verdict is true for all of them.
+    const busyAnchor: AtspiWatchAnchor = {
+      ...anchor,
+      known: () => undefined,
+      parentOf: async (busName) => ({ busName, objectPath: ROOT_PATH }),
+    };
+    const watch = await openSignalStream(bus.ops, KNOWN.id, busyAnchor, (c) => changes.push(c), 50);
+
+    const turnover = 2000;
+    for (let element = 0; element < turnover; element += 1) {
+      bus.inject(stateChanged(APP_SENDER, `/org/a11y/atspi/accessible/${100000 + element}`));
+    }
+    // One climb per signal and the decisions are chained, so the queue is
+    // deeper than settle()'s microtask turns. Drain on real ticks until it
+    // stops moving.
+    for (let attempt = 0; attempt < 500; attempt += 1) {
+      const before = changes.length;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (changes.length === before) break;
+    }
+
+    expect(changes.length).toBe(turnover);
+    expect(new Set(changes.map((c) => c.id)).size).toBe(turnover);
+    // The walk never answered any of these, so each is the honest derived id
+    // with the generic role - never a guess.
+    expect(changes.every((c) => c.role === "generic" && c.kind === "changed")).toBe(true);
+    await watch.close();
+  });
+
   it("delivers nothing after close", async () => {
     const bus = fakeBus();
     const changes: BackendChange[] = [];
