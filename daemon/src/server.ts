@@ -1058,9 +1058,11 @@ async function openApplication(
     // Symmetric with performEffect's FAILED path, and for the same reason: a
     // throw nobody classified reaches the caller as the opaque backstop, and a
     // launch that left no entry at all would be the one route where an
-    // unexplained failure is also an unrecorded one. The name is the caller's
-    // own word - past no gate, nothing has been resolved.
-    recordAudit({ application: normalise(name), element: [], scope: "launch", cause: causeOf(undefined), outcome: FAILED });
+    // unexplained failure is also an unrecorded one. A tree walk that exhausted
+    // its budget is different: the daemon can name that refusal (ADR-0057).
+    // The name is the caller's own word - past no gate, nothing was resolved.
+    const outcome = error instanceof IncompleteObservationError ? refused("IncompleteObservation") : FAILED;
+    recordAudit({ application: normalise(name), element: [], scope: "launch", cause: causeOf(undefined), outcome });
     throw error;
   }
   const application = answer.auditApplication ?? normalise(name);
@@ -1275,14 +1277,16 @@ export async function handleRequest(
       recordAudit({ application: undefined, element: answeredElements(result), scope: "observe", cause: causeOf(undefined), outcome: observeOutcome(result) });
     }
     return { type: "response", id: request.id, result: withoutInternals(result) };
-  } catch {
+  } catch (error) {
     // Whatever the backend threw stays on this side of the wire; the client
     // gets one honest constant, never the raw error (98ac7fd's lesson). The
     // attempt is still recorded: an access the daemon could not complete is a
     // fact about access, and a record that keeps only the tidy cases is a
-    // record of the tidy cases.
+    // record of the tidy cases. A walk that exhausted its budget is a refusal
+    // the daemon can name; every other throw remains a failed attempt.
     if (entry.effectClass === "observe") {
-      recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
+      const outcome = error instanceof IncompleteObservationError ? refused("IncompleteObservation") : FAILED;
+      recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome });
     }
     return { type: "response", id: request.id, refusal: BACKEND_UNREADABLE_REFUSAL };
   }
