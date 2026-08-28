@@ -255,7 +255,14 @@ export class AtspiBackend implements Backend {
       // the SAME response shape, so a caller cannot tell which instrument
       // answered - only that the answer is complete.
       const collected = await this.collectByRole(app, params.role);
-      if (collected !== undefined) {
+      // The fast instrument answers over the wire, and a wire question the bus
+      // accepts but MEANS differently would answer confidently with the wrong
+      // nodes - a failure no fallback-on-error can catch. So every match is
+      // checked against the role that was asked for, and one disagreement
+      // retires the fast answer entirely in favour of the walk.
+      const fastAnswer: SemanticElement[] = [];
+      let fastAnswerTrusted = collected !== undefined;
+      if (collected !== undefined && fastAnswerTrusted) {
         for (const ref of collected) {
           if (total >= MAX_NODES_TOTAL) {
             throw new IncompleteObservationError(
@@ -265,13 +272,22 @@ export class AtspiBackend implements Backend {
           total += 1;
           try {
             const element = await this.readElement(ref, applicationName);
+            if (params.role !== undefined && element.role !== params.role) {
+              fastAnswerTrusted = false;
+              break;
+            }
             if (params.name !== undefined && !nameMatches(element.name, params.name)) continue;
-            elements.push(element);
-            if (params.limit !== undefined && elements.length >= params.limit) return { elements };
+            fastAnswer.push(element);
           } catch (error) {
             if (error instanceof UnrecordedExchangeError) throw error;
             continue;
           }
+        }
+      }
+      if (fastAnswerTrusted && collected !== undefined) {
+        for (const element of fastAnswer) {
+          elements.push(element);
+          if (params.limit !== undefined && elements.length >= params.limit) return { elements };
         }
         continue;
       }

@@ -24,6 +24,7 @@ import {
   type BackendChange,
   type BackendSubscription,
   AttestationFailedError,
+  IncompleteObservationError,
   InventoryUnsupportedError,
   DeafWatchError,
   EffectUnsupportedError,
@@ -932,7 +933,13 @@ async function findApplication(backend: Backend, name: string): Promise<Semantic
   try {
     const { elements } = await backend.queryElements({ role: "application", name });
     return elements.find((el) => el.role === "application" && normalise(el.name) === normalise(name));
-  } catch {
+  } catch (error) {
+    // An observation that ran out of budget did not establish that the
+    // application is absent - it established that the daemon does not know.
+    // Swallowing it here would turn "I could not see the whole desktop" into
+    // "that application is not running", which is the exact false absence the
+    // walk was taught to refuse (ADR-0042).
+    if (error instanceof IncompleteObservationError) throw error;
     return undefined;
   }
 }

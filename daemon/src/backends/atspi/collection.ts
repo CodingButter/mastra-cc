@@ -23,7 +23,10 @@ export interface CollectionRef {
 // role names are (B10). Read off the platform's own Atspi.Role enum on a live
 // bus; platform vocabulary stops at this file.
 const NATIVE_ROLE_IDS: Readonly<Record<Role, readonly number[]>> = {
-  application: [75],
+  // The application root is the node Collection searches FROM, and GetMatches
+  // answers with descendants only - so asking Collection for "application"
+  // would omit the very node the walk returns. No fast path; take the walk.
+  application: [],
   window: [23, 69],
   dialog: [16, 2, 19],
   button: [43, 62],
@@ -63,12 +66,30 @@ export async function advertisesCollection(channel: CollectionChannel, ref: Coll
   return Array.isArray(interfaces) && interfaces.map(String).includes(COLLECTION);
 }
 
-// One exchange, every descendant of this application carrying one of the
-// role's native ids. MATCH_ALL(1) over the role list, every other clause left
-// empty and unmatched (0), sorted in canonical tree order, uncapped, and
-// traversing into embedded documents.
+// The bus does not carry a match rule's roles as a LIST of role ids; it
+// carries them as a bitfield, one bit per role id, packed into 32-bit words -
+// the same shape the platform's own match-rule constructor builds. Sending the
+// ids themselves would silently ask for whatever roles those NUMBERS select as
+// bit positions, which is a different question that still answers successfully.
+export function roleBitfield(ids: readonly number[]): number[] {
+  const words: number[] = [];
+  for (const id of ids) {
+    const word = Math.floor(id / 32);
+    while (words.length <= word) words.push(0);
+    // eslint-disable-next-line no-bitwise
+    words[word] = (words[word] as number) | (1 << id % 32);
+  }
+  while (words.length < 4) words.push(0);
+  return words;
+}
+
+// One exchange, every descendant of this application carrying ANY of the
+// role's native ids (MATCH_ANY=2; MATCH_ALL would demand one node hold every
+// id at once and answer nothing). Every other clause is left empty and
+// unmatched (0), sorted in canonical tree order, uncapped, traversing into
+// embedded documents.
 export async function matchByRole(channel: CollectionChannel, ref: CollectionRef, role: Role): Promise<CollectionRef[]> {
-  const rule = [[0, 0], 0, [], 0, [...NATIVE_ROLE_IDS[role]], 1, [], 0, false];
+  const rule = [[0, 0], 0, [], 0, roleBitfield(NATIVE_ROLE_IDS[role]), 2, [], 0, false];
   const [matches] = await channel.call({
     destination: ref.busName,
     path: ref.objectPath,

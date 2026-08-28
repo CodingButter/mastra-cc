@@ -89,6 +89,51 @@ describe("backend-selected AT-SPI search", () => {
     expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(false);
   });
 
+  // The bus accepts a malformed rule and answers it - just not the question
+  // that was meant. So the wire body itself is pinned, not only the reply.
+  it("asks the bus for roles as a bitfield matched by ANY, not as a list of ids", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    await backend.queryElements({ role: "textbox" });
+
+    const matches = channel.asked.find((exchange) => exchange.member === "GetMatches");
+    const rule = (matches?.body?.[0] ?? []) as unknown[];
+    // native ids 40 and 79 as set bits: word 1 bit 8, word 2 bit 15
+    expect(rule[4]).toEqual([0, 1 << 8, 1 << 15, 0]);
+    expect(rule[5]).toBe(2);
+  });
+
+  it("walks for the application role, which Collection would answer without its own root", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    const { elements } = await backend.queryElements({ role: "application" });
+
+    expect(elements.map((element) => element.role)).toEqual(["application"]);
+    expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(false);
+  });
+
+  it("retires a fast answer that disagrees with the role it was asked for", async () => {
+    const scripted = desktop({ collection: true });
+    const channel: Channel & { asked: Exchange[] } = {
+      asked: scripted.asked,
+      async call(exchange) {
+        // a rule the bus accepts but reads differently: it answers, wrongly
+        if (exchange.member === "GetMatches") return [[[APP.busName, BUTTON]]];
+        return scripted.call(exchange);
+      },
+      watch: scripted.watch,
+      close: scripted.close,
+    };
+    const backend = new AtspiBackend(channel, "all");
+
+    const { elements } = await backend.queryElements({ role: "textbox" });
+
+    expect(elements.map((element) => element.role)).toEqual(["textbox"]);
+    expect(channel.asked.filter((exchange) => exchange.member === "GetChildren").length).toBeGreaterThan(1);
+  });
+
   it("walks rather than refusing when a tape never recorded the fast instrument", async () => {
     const recorded = desktop({ collection: true });
     const channel: Channel & { asked: Exchange[] } = {
