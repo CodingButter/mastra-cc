@@ -16,6 +16,7 @@ function element(overrides: Record<string, unknown> = {}) {
     states: ["enabled", "visible"],
     actions: [{ name: "click", availability: "available" }],
     operations: [{ operation: "reveal", availability: "available" }],
+    content: { kind: "unavailable", reason: "not-exposed" },
     ...overrides,
   };
 }

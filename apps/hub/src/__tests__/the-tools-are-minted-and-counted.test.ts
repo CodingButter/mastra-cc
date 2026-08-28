@@ -115,7 +115,7 @@ describe("the tool surface is minted for a session and its list is asserted", ()
       const entry = /^\s{2}(\w+): \{ effectClass: "(\w+)"/.exec(line);
       if (entry !== null) classified.set(entry[1]!, entry[2]!);
     }
-    expect(classified.size, "the daemon's dispatch table did not parse - this check would pass forever").toBe(13);
+    expect(classified.size, "the daemon's dispatch table did not parse - this check would pass forever").toBe(14);
 
     const surface = mintToolSurface({
       client: await connected(),

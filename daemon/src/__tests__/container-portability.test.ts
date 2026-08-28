@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CATALOG } from "../launch/recipes.js";
 import { composeBootNames } from "../launch/profiles.js";
+import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 
 const root = join(import.meta.dirname, "..", "..", "..");
 
@@ -25,11 +25,11 @@ describe("the built daemon remains location-transparent", () => {
       permits: new Set(["gmail"]),
       grants: new Set(),
       flags: new Set(),
-      catalog: CATALOG,
+      catalog: DEFANGED_CATALOG,
     });
     expect(names.launchPermits).toEqual(new Set(["gmail"]));
     expect(names.visibility).not.toBe("all");
-    expect(names.visibility === "all" ? false : names.visibility.has(CATALOG.gmail.appearsAs!)).toBe(true);
+    expect(names.visibility === "all" ? false : names.visibility.has(DEFANGED_CATALOG.gmail.appearsAs!)).toBe(true);
   });
 
   it("keeps launch readiness bounded and refuses to pretend spawn means readable", () => {
