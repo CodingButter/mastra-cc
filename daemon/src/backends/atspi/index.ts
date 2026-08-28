@@ -149,6 +149,37 @@ export class AtspiBackend implements Backend {
     return String(raw ?? "");
   }
 
+  // The one edge a subtree-scoped watch needs and the walk does not record:
+  // a node's parent. The walk descends, so it never has to ask - but a signal
+  // arrives naming a node the walk may never have visited, and the only honest
+  // way to decide whether that node lies under the watched root is to climb
+  // from it. Returns undefined at the top of the tree (AT-SPI parks the root's
+  // parent on the null path) and on any element that will not answer.
+  private async parentOf(ref: NativeRef): Promise<NativeRef | undefined> {
+    let raw: unknown;
+    try {
+      [raw] = await this.channel.call({
+        destination: ref.busName,
+        path: ref.objectPath,
+        iface: "org.freedesktop.DBus.Properties",
+        member: "Get",
+        signature: "ss",
+        body: [ACCESSIBLE, "Parent"],
+      });
+    } catch (error) {
+      if (error instanceof UnrecordedExchangeError) throw error;
+      return undefined;
+    }
+    // dbus-native hands the variant back unwrapped or as a [signature, [value]]
+    // pair, and the value itself is an AT-SPI (bus name, object path) pair.
+    const unwrapped = Array.isArray(raw) && typeof raw[0] === "string" && Array.isArray(raw[1]) ? raw[1][0] : raw;
+    if (!Array.isArray(unwrapped)) return undefined;
+    const busName = String(unwrapped[0] ?? "");
+    const objectPath = String(unwrapped[1] ?? "");
+    if (busName === "" || objectPath === "" || objectPath === NULL_PATH) return undefined;
+    return { busName, objectPath };
+  }
+
   private async nativeRoleOf(ref: NativeRef): Promise<string> {
     const [role] = await this.channel.call({
       destination: ref.busName,
@@ -383,7 +414,9 @@ export class AtspiBackend implements Backend {
     // reported under the id the client already holds).
     const anchor: AtspiWatchAnchor = {
       busName: ref.busName,
+      rootPath: ref.objectPath,
       known: (busName, objectPath) => this.byNative.get(`${busName}\0${objectPath}`),
+      parentOf: (busName, objectPath) => this.parentOf({ busName, objectPath }),
     };
     const watch = await this.channel.watch(id, sink, anchor);
     const subscriptionId = mintSubscriptionId();

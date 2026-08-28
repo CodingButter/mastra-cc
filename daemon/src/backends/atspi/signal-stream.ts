@@ -68,6 +68,11 @@ const PROBE_BUDGET_MS = 2000;
 // the daemon's own log - never on the wire, which has no field for it.
 const BACKSTOP_WINDOW_MS = 100;
 
+// How far a signal may be from the watched root before this route stops
+// trying to place it. The same ceiling the walk descends to, read from the
+// other direction.
+const MAX_CLIMB = 24;
+
 export interface IncomingSignal {
   sender: string;
   path: string;
@@ -92,7 +97,13 @@ export interface SignalBusOps {
 // has actually seen is reported under the SAME id the walk gave it.
 export interface AtspiWatchAnchor {
   busName: string;
+  // The watched root's own object path - the top of the only subtree this
+  // watch speaks for.
+  rootPath: string;
   known(busName: string, objectPath: string): { id: string; role: Role } | undefined;
+  // One step up the tree. Undefined at the top, or on an element that will
+  // not answer; either way the climb ends and the signal is not delivered.
+  parentOf(busName: string, objectPath: string): Promise<{ busName: string; objectPath: string } | undefined>;
 }
 
 const REGISTRY_DEST = "org.a11y.atspi.Registry";
@@ -146,6 +157,55 @@ export async function openSignalStream(
   let pending: BackendChange[] | null = [];
   const lastEmitted = new Map<string, number>();
 
+  // SUBTREE SCOPE (Jamie, 2026-08-28): "you subscribe to state changes on an
+  // element that means you get a signal when ever its content or properties or
+  // any of its children their properites or content changes. anything outside
+  // of that element does not trigger a signal."
+  //
+  // AT-SPI object paths are opaque handles, not hierarchical names, so there is
+  // nothing to prefix-match: `/org/a11y/atspi/accessible/42` says nothing about
+  // what contains it. Descent is what the walk does, so it never needs to ask
+  // for a parent - but a signal names a node the walk may never have visited,
+  // and the only way to place it is to climb from it and see whether the
+  // watched root is on the way up.
+  //
+  // A climb that ends anywhere else - the application root, an element that
+  // will not answer, the depth ceiling - is not proof of being outside so much
+  // as an absence of proof of being inside, and this route does not deliver on
+  // an absence of proof. Silence is the honest answer.
+  const ancestry = new Map<string, boolean>();
+  const withinSubtree = async (path: string): Promise<boolean> => {
+    const memo = ancestry.get(path);
+    if (memo !== undefined) return memo;
+    const climbed: string[] = [];
+    let here = path;
+    let verdict = false;
+    // The same ceiling the walk uses. A tree deeper than this is not a tree
+    // this daemon claims to have understood.
+    for (let step = 0; step <= MAX_CLIMB; step += 1) {
+      const seen = ancestry.get(here);
+      if (seen !== undefined) {
+        verdict = seen;
+        break;
+      }
+      if (here === anchor.rootPath) {
+        verdict = true;
+        break;
+      }
+      climbed.push(here);
+      const parent = await anchor.parentOf(anchor.busName, here);
+      if (parent === undefined || parent.busName !== anchor.busName) break;
+      here = parent.objectPath;
+    }
+    // Every node on the path just climbed shares the verdict: they are all
+    // inside the subtree, or none of them is.
+    for (const step of climbed) ancestry.set(step, verdict);
+    ancestry.set(path, verdict);
+    return verdict;
+  };
+
+  let queue: Promise<void> = Promise.resolve();
+
   const deliver = (change: BackendChange) => {
     // The backstop: one change per element per window. Scope is the design;
     // this only catches what scope let through.
@@ -182,13 +242,20 @@ export async function openSignalStream(
     // never answered, so no watch can anchor inside it - and the server
     // re-checks visibility at emission besides.
     if (signal.sender !== anchor.busName) return;
-    const known = anchor.known(signal.sender, signal.path);
-    // An element the walk never answered still changed; it is reported under
-    // a derived id with the generic role - the same answer the walk gives a
-    // role it cannot map (ADR-0018 clause 3) - never invented, never guessed.
-    const id = known?.id ?? deriveId("generic", signal.sender, signal.path);
-    const role = known?.role ?? "generic";
-    deliver({ id, role, kind: "changed" });
+    // Subtree scope. Deciding it means climbing the bus, which is async, so
+    // the decisions are chained: signals are scoped and delivered in the order
+    // they arrived rather than in whichever order the bus answers.
+    queue = queue.then(async () => {
+      if (!open) return;
+      if (!(await withinSubtree(signal.path))) return;
+      const known = anchor.known(signal.sender, signal.path);
+      // An element the walk never answered still changed; it is reported under
+      // a derived id with the generic role - the same answer the walk gives a
+      // role it cannot map (ADR-0018 clause 3) - never invented, never guessed.
+      const id = known?.id ?? deriveId("generic", signal.sender, signal.path);
+      const role = known?.role ?? "generic";
+      deliver({ id, role, kind: "changed" });
+    });
   });
 
   for (const registration of REGISTRATIONS) {

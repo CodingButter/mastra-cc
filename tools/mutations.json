@@ -336,6 +336,21 @@
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
   {
+    "name": "a-watch-that-speaks-for-the-whole-application",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "      if (!(await withinSubtree(signal.path))) return;\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "an-ancestry-climb-that-stops-at-the-first-step",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "      climbed.push(here);\n      const parent = await anchor.parentOf(anchor.busName, here);\n",
+    "replace": "      climbed.push(here);\n      const parent = undefined as { busName: string; objectPath: string } | undefined;\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
     "name": "the-watch-that-never-registered-for-text",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
     "find": "  { member: TEXT_CHANGED, event: \"object:text-changed\" },\n",

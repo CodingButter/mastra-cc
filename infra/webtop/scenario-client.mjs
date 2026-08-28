@@ -85,8 +85,24 @@ try {
     if (!((read.content.kind === "text" || read.content.kind === "text-window") && read.content.value === sentence)) {
       throw new Error("re-read after the change event did not equal the exact sentence");
     }
+    // The half of the rule that costs something: another editable control in
+    // THE SAME application, outside the watched document's subtree, is
+    // mutated and must produce nothing. Without this the "subscription" is
+    // just an application-wide firehose wearing an element's name.
+    const outside = withinApplication(await elements(), "kate").find(
+      (element) => element.role === "text" && element.id !== editable.id && element.operations.some((operation) => operation?.operation === "setText" && operation.availability === "available"),
+    );
+    if (!outside) throw new Error("no second editable control in the application to prove the subtree boundary with");
+    const strays = [];
+    const stopStrays = client.onChangeEvent((event) => {
+      if (event.subscriptionId === watch.subscription.subscriptionId) strays.push(event);
+    });
+    await client.setElementText({ id: outside.id, text: `OUTSIDE THE WATCHED SUBTREE ${Date.now()}` });
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    stopStrays();
+    if (strays.length > 0) throw new Error(`a change outside the watched subtree produced ${strays.length} event(s)`);
     await client.unsubscribeElement({ subscriptionId: watch.subscription.subscriptionId });
-    console.log(JSON.stringify({ subscription: "green", elementId: editable.id, events: heard.length, kinds: [...new Set(heard.map((event) => event.kind))], attribution: [...new Set(heard.map((event) => event.attribution))] }));
+    console.log(JSON.stringify({ subscription: "green", elementId: editable.id, outsideElementId: outside.id, outsideEvents: strays.length, events: heard.length, kinds: [...new Set(heard.map((event) => event.kind))], attribution: [...new Set(heard.map((event) => event.attribution))] }));
   } else if (mode === "persistence") {
     if (!sentence) throw new Error("MASTRA_CC_PROOF_SENTENCE is required");
     const control = (await elements()).find((element) => element.name === "Persistence proof control");
