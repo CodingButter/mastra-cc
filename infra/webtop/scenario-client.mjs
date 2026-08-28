@@ -43,7 +43,7 @@ try {
         element.operations?.some((operation) => operation.operation === "setText" && operation.availability === "available") &&
         element.content?.kind !== "redacted",
     );
-    if (!editable) throw new Error(`the visible editor document was not semantically observable: ${documentName}`);
+    if (!editable) throw new Error(`observable content absent: no visible writable editor document named ${documentName}`);
     const attested = await client.attestElement({ id: editable.id });
     if (!attested.element) throw new Error(attested.refusal ?? "attestElement returned no element");
     const written = await client.setElementText({ id: editable.id, text: sentence });

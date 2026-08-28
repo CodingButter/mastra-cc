@@ -28,6 +28,10 @@ describe("Webtop semantic desktop harness", () => {
     expect(start).toMatch(/wait_for 'container health' \d+ \d+/);
     expect(start).toMatch(/wait_for 'AT-SPI accessibility bus' \d+ \d+/);
     expect(start).toMatch(/wait_for 'CDP daemon socket' \d+ \d+/);
+    // A fresh named volume is root-owned, so every directory the session user
+    // writes into must be handed to it before anything is launched. Chromium
+    // aborts outright when it cannot create a lock in its profile directory.
+    expect(start).toMatch(/chown -R 1000:1000 .*\/config\/\.chromium-proof/);
     expect(cleanup).toContain('"${COMPOSE[@]}" down --remove-orphans');
     expect(cleanup).not.toMatch(/docker\s+(system\s+prune|rm\s+-f\s+\$\()/);
   });

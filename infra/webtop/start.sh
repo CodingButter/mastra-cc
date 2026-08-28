@@ -9,9 +9,9 @@ wait_for 'desktop display' 45 2 container_exec test -S /tmp/.X11-unix/X1
 wait_for 'AT-SPI accessibility bus' 45 2 container_exec test -S /config/.XDG/at-spi/bus_1
 copy_node_if_needed
 copy_built_artifacts
-container_exec mkdir -p /config/workspace /config/.XDG/mastra-cc
+container_exec mkdir -p /config/workspace /config/.XDG/mastra-cc /config/.chromium-proof
 container_exec touch /config/workspace/proof.txt
-container_exec chown -R 1000:1000 /config/workspace /config/.XDG/mastra-cc
+container_exec chown -R 1000:1000 /config/workspace /config/.XDG/mastra-cc /config/.chromium-proof
 docker cp "$WEBTOP_DIR/persistence-control.py" "$MASTRA_CC_WEBTOP_CONTAINER:/tmp/persistence-control.py"
 container_exec bash -lc "cat > /config/workspace/protected.html <<'HTML'
 <!doctype html><html><body><label>Password <input type=password value='$PROTECTED_VALUE' autofocus></label></body></html>
