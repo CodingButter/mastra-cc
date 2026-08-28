@@ -41,7 +41,7 @@ const BASE: LaunchCatalog = {
 const composed = composeCatalog(BASE, PROFILES);
 
 function application(name: string): SemanticElement {
-  return { id: `app-${name}`, role: "application", name, actions: [], states: [] };
+  return { id: `app-${name}`, role: "application", name, content: { kind: "unavailable", reason: "not-exposed" }, actions: [], states: [] };
 }
 
 /** A backend that answers with the given application elements and records what it was asked. */
@@ -55,6 +55,7 @@ function spyBackend(elements: SemanticElement[]) {
       return { elements: elements.filter((el) => query.name === undefined || el.name === query.name) };
     },
     attestElement: async () => ({}),
+    readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
     subscribeElement: async () => {
       throw new Error("this test never watches");
     },
@@ -113,6 +114,7 @@ describe("a launched profile is readable", () => {
       name: "spy",
       queryElements: async () => ((treeTouched = true), { elements: [] }),
       attestElement: async () => ((treeTouched = true), {}),
+      readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
       subscribeElement: async () => {
         treeTouched = true;
         throw new Error("the authority gate touched the backend");

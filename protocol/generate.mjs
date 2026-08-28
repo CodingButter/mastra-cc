@@ -25,7 +25,12 @@ const schemaText = readFileSync(schemaPath, "utf8");
 const schema = JSON.parse(schemaText);
 const digest = createHash("sha256").update(schemaText).digest("hex");
 
-const pascal = (s) => s[0].toUpperCase() + s.slice(1);
+const pascal = (s) =>
+  s
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join("");
 
 // The closed vocabularies: a field typed with one of these may hold nothing
 // outside the list, and the list lives in the schema so that adding a value is
@@ -55,6 +60,8 @@ const VOCABULARIES = [
 const vocabularyFor = (base) => VOCABULARIES.find((v) => v.base === base);
 
 function tsType(spec) {
+  if ("literal" in spec) return JSON.stringify(spec.literal);
+  if ("literals" in spec) return spec.literals.map((value) => JSON.stringify(value)).join(" | ");
   const base = spec.type.replace("[]", "");
   const array = spec.type.endsWith("[]") ? "[]" : "";
   if (base === "string" || base === "number" || base === "boolean") return base + array;
@@ -71,6 +78,15 @@ function emitInterface(name, fields) {
   }
   lines.push("}");
   return lines.join("\n");
+}
+
+function emitType(name, spec) {
+  if (spec.fields) return emitInterface(name, spec.fields);
+  const variants = spec.variants.map((variant) => {
+    const variantName = `${pascal(name)}${pascal(variant.name)}`;
+    return { variantName, source: emitInterface(variantName, variant.fields) };
+  });
+  return `${variants.map(({ source }) => source).join("\n\n")}\n\nexport type ${pascal(name)} = ${variants.map(({ variantName }) => variantName).join(" | ")};`;
 }
 
 const parts = [];
@@ -92,7 +108,7 @@ parts.push("export type MethodName = (typeof METHOD_NAMES)[number];");
 parts.push("");
 for (const [name, type] of Object.entries(schema.types)) {
   parts.push(`/** ${type.description} */`);
-  parts.push(emitInterface(name, type.fields));
+  parts.push(emitType(name, type));
   parts.push("");
 }
 for (const [method, spec] of Object.entries(schema.methods)) {
@@ -102,16 +118,32 @@ for (const [method, spec] of Object.entries(schema.methods)) {
   parts.push(emitInterface(`${method}Result`, spec.returns));
   parts.push("");
 }
-parts.push(`const FIELD_SPECS = ${JSON.stringify(
+const runtimeFieldSpecs = (fields) =>
+  Object.fromEntries(
+    Object.entries(fields).map(([field, spec]) => [
+      field,
+      {
+        type: spec.type ?? null,
+        literal: spec.literal ?? null,
+        literals: spec.literals ?? null,
+        required: spec.required === true,
+        pattern: spec.pattern ?? null,
+      },
+    ]),
+  );
+parts.push(`const TYPE_SPECS = ${JSON.stringify(
   Object.fromEntries(
     Object.entries(schema.types).map(([name, type]) => [
       name,
-      Object.fromEntries(
-        Object.entries(type.fields).map(([f, s]) => [
-          f,
-          { type: s.type, required: s.required === true, pattern: s.pattern ?? null },
-        ]),
-      ),
+      type.fields
+        ? { fields: runtimeFieldSpecs(type.fields), variants: null }
+        : {
+            fields: null,
+            variants: type.variants.map((variant) => ({
+              name: variant.name,
+              fields: runtimeFieldSpecs(variant.fields),
+            })),
+          },
     ]),
   ),
 )} as const;`);
@@ -119,43 +151,106 @@ parts.push(`const VOCABULARY_VALUES: Record<string, readonly string[]> = ${JSON.
   Object.fromEntries(VOCABULARIES.map(({ base, key }) => [base, schema[key]])),
 )};`);
 parts.push(`
-type FieldSpec = { type: string; required: boolean; pattern: string | null };
+type FieldSpec = {
+  type: string | null;
+  literal: string | null;
+  literals: readonly string[] | null;
+  required: boolean;
+  pattern: string | null;
+};
+type TypeName = keyof typeof TYPE_SPECS;
 
-function problemsFor(typeName: keyof typeof FIELD_SPECS, value: unknown): string[] {
-  const problems: string[] = [];
+function problemsFor(typeName: TypeName, value: unknown): string[] {
   if (typeof value !== "object" || value === null) {
     return [\`\${String(typeName)}: not an object\`];
   }
   const record = value as Record<string, unknown>;
-  const specs = FIELD_SPECS[typeName] as Record<string, FieldSpec>;
+  const typeSpec = TYPE_SPECS[typeName];
+  if (typeSpec.variants) {
+    const variant = typeSpec.variants.find(({ fields }) =>
+      Object.values(fields).some((field) => field.literal !== null && record.kind === field.literal),
+    );
+    if (!variant) return [\`\${String(typeName)}.kind: \${JSON.stringify(record.kind)} does not select a variant\`];
+    const problems = fieldProblems(String(typeName), variant.fields as Record<string, FieldSpec>, record, true);
+    if (typeName === "observableContent") problems.push(...observableContentProblems(record));
+    return problems;
+  }
+  return fieldProblems(String(typeName), typeSpec.fields as Record<string, FieldSpec>, record, false);
+}
+
+function observableContentProblems(record: Record<string, unknown>): string[] {
+  if (record.kind !== "text-window") return [];
+  const problems: string[] = [];
+  const integerFields = ["offset", "length", "totalLength", "startLine", "endLine", "totalLines"] as const;
+  for (const field of integerFields) {
+    const value = record[field];
+    if (typeof value === "number" && !Number.isSafeInteger(value)) {
+      problems.push(\`observableContent.\${field}: expected a safe integer\`);
+    }
+  }
+  const offset = record.offset;
+  const length = record.length;
+  const totalLength = record.totalLength;
+  const startLine = record.startLine;
+  const endLine = record.endLine;
+  const totalLines = record.totalLines;
+  if (typeof offset === "number" && offset < 0) problems.push("observableContent.offset: must not be negative");
+  if (typeof length === "number" && length < 0) problems.push("observableContent.length: must not be negative");
+  if (typeof totalLength === "number" && totalLength < 0) problems.push("observableContent.totalLength: must not be negative");
+  if (typeof record.value === "string" && typeof length === "number" && Array.from(record.value).length !== length) {
+    problems.push("observableContent.length: must equal the Unicode-scalar length of value");
+  }
+  if (typeof offset === "number" && typeof length === "number" && typeof totalLength === "number" && offset + length > totalLength) {
+    problems.push("observableContent: offset plus length exceeds totalLength");
+  }
+  if (typeof startLine === "number" && startLine < 1) problems.push("observableContent.startLine: must be at least one");
+  if (typeof endLine === "number" && typeof startLine === "number" && endLine < startLine) problems.push("observableContent.endLine: must not precede startLine");
+  if (typeof totalLines === "number" && typeof endLine === "number" && totalLines < endLine) problems.push("observableContent.totalLines: must not precede endLine");
+  return problems;
+}
+
+function fieldProblems(typeName: string, specs: Record<string, FieldSpec>, record: Record<string, unknown>, exact: boolean): string[] {
+  const problems: string[] = [];
+  if (exact) {
+    for (const field of Object.keys(record)) {
+      if (!(field in specs)) problems.push(\`\${typeName}.\${field}: field is not valid for this variant\`);
+    }
+  }
   for (const [field, spec] of Object.entries(specs)) {
     const present = field in record && record[field] !== undefined;
     if (!present) {
-      if (spec.required) problems.push(\`\${String(typeName)}.\${field}: required field is missing\`);
+      if (spec.required) problems.push(\`\${typeName}.\${field}: required field is missing\`);
       continue;
     }
     const v = record[field];
+    if (spec.literal !== null && v !== spec.literal) {
+      problems.push(\`\${typeName}.\${field}: expected \${JSON.stringify(spec.literal)}\`);
+      continue;
+    }
+    if (spec.literals !== null && !spec.literals.includes(v as string)) {
+      problems.push(\`\${typeName}.\${field}: \${JSON.stringify(v)} is not an allowed value\`);
+      continue;
+    }
+    if (spec.type === null) continue;
     const base = spec.type.replace("[]", "");
     const isArray = spec.type.endsWith("[]");
     const values = isArray ? (Array.isArray(v) ? v : null) : [v];
     if (values === null) {
-      problems.push(\`\${String(typeName)}.\${field}: expected an array\`);
+      problems.push(\`\${typeName}.\${field}: expected an array\`);
       continue;
     }
     for (const item of values) {
-      if (base === "string" && typeof item !== "string") problems.push(\`\${String(typeName)}.\${field}: expected a string\`);
-      else if (base === "number" && typeof item !== "number") problems.push(\`\${String(typeName)}.\${field}: expected a number\`);
-      else if (base === "boolean" && typeof item !== "boolean") problems.push(\`\${String(typeName)}.\${field}: expected a boolean\`);
-      else if (base in VOCABULARY_VALUES && !VOCABULARY_VALUES[base].includes(item as string)) problems.push(\`\${String(typeName)}.\${field}: \${JSON.stringify(item)} is not one of the \${base} values\`);
-      else if (base in FIELD_SPECS) problems.push(...problemsFor(base as keyof typeof FIELD_SPECS, item));
+      if (base === "string" && typeof item !== "string") problems.push(\`\${typeName}.\${field}: expected a string\`);
+      else if (base === "number" && typeof item !== "number") problems.push(\`\${typeName}.\${field}: expected a number\`);
+      else if (base === "boolean" && typeof item !== "boolean") problems.push(\`\${typeName}.\${field}: expected a boolean\`);
+      else if (base in VOCABULARY_VALUES && !VOCABULARY_VALUES[base].includes(item as string)) problems.push(\`\${typeName}.\${field}: \${JSON.stringify(item)} is not one of the \${base} values\`);
+      else if (base in TYPE_SPECS) problems.push(...problemsFor(base as TypeName, item));
     }
-    // A pattern named in the schema is enforced wherever it is named, not only
-    // on the one type that happened to need it first.
     if (spec.pattern === "idPattern" && typeof v === "string" && !ID_PATTERN.test(v)) {
-      problems.push(\`\${String(typeName)}.\${field}: \${JSON.stringify(v)} does not match the id pattern\`);
+      problems.push(\`\${typeName}.\${field}: \${JSON.stringify(v)} does not match the id pattern\`);
     }
   }
-  problems.push(...availabilityProblems(String(typeName), specs, record));
+  problems.push(...availabilityProblems(typeName, specs, record));
   return problems;
 }
 

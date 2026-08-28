@@ -7,6 +7,8 @@ import type {
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  ReadElementContentParams,
+  ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
   Role,
@@ -43,6 +45,7 @@ import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { nameMatches } from "../atspi/names.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
+import { needsProtectedClassification, readObservableContent } from "./content.js";
 import {
   contentLength,
   contentOf,
@@ -86,13 +89,14 @@ interface AxNode {
   readonly ignored?: boolean;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
+  readonly value?: { readonly value?: unknown };
   readonly properties?: ReadonlyArray<{ readonly name?: string; readonly value?: { readonly value?: unknown } }>;
   readonly backendDOMNodeId?: number;
 }
 
 type NativeRef =
   | { readonly kind: "browser" }
-  | { readonly kind: "node"; readonly targetId: string; readonly backendDOMNodeId?: number; readonly nodeId?: string };
+  | { readonly kind: "node"; readonly targetId: string; readonly backendDOMNodeId?: number; readonly nodeId?: string; readonly protectedByBackingNode: boolean };
 
 // The application element's name is DERIVED from the version reply's Browser
 // product token: the part before "/", lowercased ("Chrome/150..." -> "chrome").
@@ -226,6 +230,7 @@ export class CdpBackend implements Backend {
       role: "application",
       name: productName(version),
       states: ["enabled", "visible"],
+      content: { kind: "unavailable", reason: "not-exposed" },
       // The browser itself is not a node in any page's tree, so there is no
       // node to derive from and nothing publishes a verb for it. That is a
       // measured absence, and it says so - the empty list this replaced was
@@ -242,7 +247,25 @@ export class CdpBackend implements Backend {
     };
   }
 
-  private nodeElement(targetId: string, node: AxNode): SemanticElement {
+  private async protectedByBackingNode(targetId: string, node: AxNode): Promise<boolean> {
+    if (!needsProtectedClassification(node) || node.backendDOMNodeId === undefined) return false;
+    const reply = (await this.channel.exchange({
+      kind: "call",
+      targetId,
+      method: "DOM.describeNode",
+      params: { backendNodeId: node.backendDOMNodeId, depth: 0 },
+    })) as { result?: { node?: { attributes?: string[] } } };
+    const attributes = reply.result?.node?.attributes ?? [];
+    for (let index = 0; index < attributes.length; index += 2) {
+      if (attributes[index]?.toLowerCase() === "type") {
+        return attributes[index + 1]?.toLowerCase() === "password";
+      }
+    }
+    return false;
+  }
+
+  private async nodeElement(targetId: string, node: AxNode, knownProtectedByBackingNode?: boolean): Promise<SemanticElement> {
+    const protectedByBackingNode = knownProtectedByBackingNode ?? await this.protectedByBackingNode(targetId, node);
     const nativeRole = String(node.role?.value ?? "");
     const { role, diagnostic } = toNeutralRole(nativeRole);
     const id = deriveId(role, targetId, String(node.backendDOMNodeId ?? node.nodeId));
@@ -251,6 +274,7 @@ export class CdpBackend implements Backend {
       targetId,
       backendDOMNodeId: node.backendDOMNodeId,
       nodeId: node.nodeId,
+      protectedByBackingNode,
     });
     this.roleOf.set(id, role);
     this.recordApplication(id);
@@ -266,6 +290,7 @@ export class CdpBackend implements Backend {
       role,
       name: String(node.name?.value ?? ""),
       states: toNeutralStates(node.properties ?? []),
+      content: readObservableContent(node, 0, 4096, protectedByBackingNode),
       actions: derived.actions,
       // ADR-0045 clause 4: the bounds come from what this node published, in
       // its own units. Read from properties here where the desktop route reads
@@ -315,7 +340,7 @@ export class CdpBackend implements Backend {
         if (node.ignored === true) continue;
         inThisTarget += 1;
         total += 1;
-        const element = this.nodeElement(targetId, node);
+        const element = await this.nodeElement(targetId, node);
         if (matches(element)) {
           elements.push(element);
           if (params.limit !== undefined && elements.length >= params.limit) return { elements };
@@ -349,7 +374,31 @@ export class CdpBackend implements Backend {
           ref.backendDOMNodeId !== undefined
             ? node.backendDOMNodeId === ref.backendDOMNodeId
             : node.nodeId === ref.nodeId;
-        if (hit) return { element: this.nodeElement(targetId, node) };
+        if (hit) return { element: await this.nodeElement(targetId, node, ref.protectedByBackingNode) };
+      }
+    }
+    return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again`, refusalClass: "ElementGone" };
+  }
+
+  async readElementContent(params: ReadElementContentParams): Promise<Classified<ReadElementContentResult>> {
+    if (!Number.isSafeInteger(params.offset) || params.offset < 0 || !Number.isSafeInteger(params.limit) || params.limit <= 0) {
+      return { refusal: "content window offset must be a non-negative integer and limit must be a positive integer", refusalClass: "MalformedParameter" };
+    }
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to read`, refusalClass: "UnknownElement" };
+    }
+    if (ref.kind === "browser") return { content: { kind: "unavailable", reason: "not-exposed" } };
+    for (const targetId of await this.pageTargets()) {
+      if (targetId !== ref.targetId) continue;
+      for (const node of await this.axTree(targetId)) {
+        if (node.ignored === true) continue;
+        const hit = ref.backendDOMNodeId !== undefined
+          ? node.backendDOMNodeId === ref.backendDOMNodeId
+          : node.nodeId === ref.nodeId;
+        if (hit) {
+          return { content: readObservableContent(node, params.offset, params.limit, ref.protectedByBackingNode) };
+        }
       }
     }
     return { refusal: `element "${params.id}" no longer answers at the browser's debugging endpoint - it is gone; look again`, refusalClass: "ElementGone" };

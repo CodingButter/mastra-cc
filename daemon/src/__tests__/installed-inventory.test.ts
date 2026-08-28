@@ -387,6 +387,7 @@ describe("the listing and the enforcement do not disagree", () => {
       role: "text",
       name: "message",
       states: ["enabled", "visible"],
+      content: { kind: "unavailable", reason: "not-exposed" },
       actions: [{ name: "click", availability: "available" }],
       operations: [],
     };

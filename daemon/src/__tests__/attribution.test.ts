@@ -88,6 +88,7 @@ describe("a change inside the application our launch is opening is attributed to
     role: "application",
     name: "test-app",
     states: ["enabled", "visible"],
+    content: { kind: "unavailable", reason: "not-exposed" },
     actions: [],
   };
   const WATCHED = "el-0123456789ab";
@@ -108,6 +109,7 @@ describe("a change inside the application our launch is opening is attributed to
       },
       name: "launching",
       attestElement: async () => ({}),
+      readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
       subscribeElement: async (_id, s) => {
         sink = s;
         return { subscriptionId: mintSubscriptionId(), application: "test-app", close: async () => undefined };
@@ -169,6 +171,7 @@ describe("a change caused by an element verb is attributed to that verb", () => 
     role: "textbox",
     name: "Recipient",
     states: ["enabled", "visible"],
+    content: { kind: "unavailable", reason: "not-exposed" },
     actions: [],
   };
 
@@ -182,6 +185,7 @@ describe("a change caused by an element verb is attributed to that verb", () => 
       name: "editing",
       queryElements: async () => ({ elements: [EDITED] }),
       attestElement: async () => ({ element: EDITED }),
+      readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
       subscribeElement: async (_id, s) => {
         sink = s;
         return { subscriptionId: mintSubscriptionId(), application: "test-app", close: async () => undefined };

@@ -9,7 +9,7 @@ function element(id: string, name: string): SemanticElement {
   // "click" rather than the old invented "press": this is what a real button
   // published on a live session, and after schema version 1.4.0 an action is a
   // record carrying the element's own word plus whether it can be done now.
-  return { id, role: "button", name, states: ["enabled", "visible"], actions: [{ name: "click", availability: "available" }] };
+  return { id, role: "button", name, states: ["enabled", "visible"], content: { kind: "unavailable", reason: "not-exposed" }, actions: [{ name: "click", availability: "available" }] };
 }
 
 describe("single-target resolution", () => {

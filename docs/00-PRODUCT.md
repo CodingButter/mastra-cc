@@ -37,9 +37,9 @@ The desktop exposes an accessibility tree — the same structure a screen reader
 **Concretely, the system:**
 
 - resolves *"the compose button"* to an element with role `push button`, name `Compose`, inside the window whose application is the mail client
-- reads a text field's value by asking the element for its value
-- types by delivering text to a focused element, and can prove afterwards that the text arrived
-- reports what changed after an action, attributed to whoever caused it
+- reads ordinary text and numeric content from a permitted element; a platform-protected control reports a structured redaction instead of a value
+- types by delivering text to a focused element, verifies the platform read-back internally, and lets the caller prove the result by freshly observing the element afterwards
+- reports that something changed after an action, attributed to whoever caused it; the change event remains a content-free pointer that triggers re-observation
 
 **Concretely, the system does not:**
 

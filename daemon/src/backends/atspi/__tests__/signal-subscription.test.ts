@@ -21,18 +21,42 @@ import {
 
 const EVENT_OBJECT = "org.a11y.atspi.Event.Object";
 const APP_SENDER = ":1.42";
+const APP_ROOT_PATH = "/org/a11y/atspi/accessible/root";
+const ROOT_PATH = "/org/a11y/atspi/accessible/2000";
 const KNOWN_PATH = "/org/a11y/atspi/accessible/2001";
+const DEEP_PATH = "/org/a11y/atspi/accessible/9999";
+const OUTSIDE_PATH = "/org/a11y/atspi/accessible/7000";
 const KNOWN = { id: "el-aaaaaaaaaaaa", role: "checkbox" as const };
+
+// A tiny tree, because the subtree rule cannot be tested without one. The
+// watch anchors on ROOT_PATH. KNOWN_PATH is its child and DEEP_PATH its
+// grandchild; OUTSIDE_PATH hangs off the application root beside it. Paths are
+// opaque handles on the real bus - none of these strings imply the shape, the
+// parent edges below do, exactly as on the wire.
+const PARENTS: Record<string, string> = {
+  [KNOWN_PATH]: ROOT_PATH,
+  [DEEP_PATH]: KNOWN_PATH,
+  [ROOT_PATH]: APP_ROOT_PATH,
+  [OUTSIDE_PATH]: APP_ROOT_PATH,
+};
+
+let parentCalls = 0;
 
 const anchor: AtspiWatchAnchor = {
   busName: APP_SENDER,
+  rootPath: ROOT_PATH,
   known: (busName, objectPath) => (busName === APP_SENDER && objectPath === KNOWN_PATH ? KNOWN : undefined),
+  parentOf: async (busName, objectPath) => {
+    parentCalls += 1;
+    const parent = PARENTS[objectPath];
+    return parent === undefined ? undefined : { busName, objectPath: parent };
+  },
 };
 
 // A fake bus. `healthy` routes emitted signals back to the connection's own
 // listeners - what a real bus does when the match rule took. `deaf` swallows
 // them - what a real bus does when it silently did not.
-function fakeBus({ deaf = false } = {}) {
+function fakeBus({ deaf = false, deafTo = [] as string[] } = {}) {
   const listeners: Array<(signal: IncomingSignal) => void> = [];
   const calls: Array<{ member: string; body?: unknown[] }> = [];
   const ops: SignalBusOps = {
@@ -41,7 +65,7 @@ function fakeBus({ deaf = false } = {}) {
       return [];
     },
     emit(msg) {
-      if (deaf) return;
+      if (deaf || deafTo.includes(msg.member)) return;
       queueMicrotask(() => {
         for (const listener of [...listeners]) {
           listener({ sender: ":9.99", path: msg.path, iface: msg.iface, member: msg.member, body: msg.body });
@@ -72,15 +96,51 @@ function stateChanged(sender: string, path: string): IncomingSignal {
   return { sender, path, iface: EVENT_OBJECT, member: "StateChanged", body: ["showing", 1, 0] };
 }
 
+// Shaped like the real thing: an AT-SPI TextChanged body carries the operation
+// detail and THE INSERTED OR DELETED TEXT. Nothing below may read it - the
+// event is a pointer, and the client learns the new value by observing again.
+function textChanged(sender: string, path: string): IncomingSignal {
+  return { sender, path, iface: EVENT_OBJECT, member: "TextChanged", body: ["insert", 0, 22, "SIGNAL TEST 2026-08-28"] };
+}
+
+// Scoping a signal means climbing the bus, which is asynchronous. Let the
+// chained decisions drain before asking what was delivered.
+async function settle() {
+  for (let turn = 0; turn < 16; turn += 1) await Promise.resolve();
+}
+
 describe("the accessibility stream", () => {
-  it("registers both ways on the call seam: the bus match rule and the registry event", async () => {
+  it("registers both ways on the call seam, for every signal class it claims to watch", async () => {
     const bus = fakeBus();
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, () => undefined, 50);
-    expect(bus.calls.map((c) => c.member)).toEqual(["AddMatch", "RegisterEvent"]);
+    expect(bus.calls.map((c) => c.member)).toEqual(["AddMatch", "RegisterEvent", "AddMatch", "RegisterEvent"]);
     expect(String(bus.calls[0].body?.[0])).toContain("Object");
     expect(String(bus.calls[0].body?.[0])).toContain("StateChanged");
     expect(bus.calls[1].body).toEqual(["object:state-changed"]);
+    expect(String(bus.calls[2].body?.[0])).toContain("TextChanged");
+    expect(bus.calls[3].body).toEqual(["object:text-changed"]);
     await watch.close();
+  });
+
+  it("turns a TextChanged into the same content-free pointer, carrying none of the text the signal shipped", async () => {
+    // The live gap this closes: editing a document emits text-changed and no
+    // state-changed at all, so a watch registered only for state changes was
+    // deaf to the one mutation this milestone is about.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
+    bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(changes).toEqual([{ id: KNOWN.id, role: "checkbox", kind: "changed" }]);
+    expect(JSON.stringify(changes)).not.toContain("SIGNAL TEST");
+    await watch.close();
+  });
+
+  it("refuses a watch that hears state changes but is deaf to text changes", async () => {
+    // Half a registration is the silent failure that looks exactly like a calm
+    // desktop. Every class proves itself or no watch is handed back.
+    const bus = fakeBus({ deafTo: ["TextChanged"] });
+    await expect(openSignalStream(bus.ops, KNOWN.id, anchor, () => undefined, 25)).rejects.toBeInstanceOf(DeafWatchError);
   });
 
   it("turns a StateChanged from the watched application into a changed event under the id the walk answered", async () => {
@@ -88,6 +148,7 @@ describe("the accessibility stream", () => {
     const changes: BackendChange[] = [];
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
     bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
     expect(changes).toEqual([{ id: KNOWN.id, role: "checkbox", kind: "changed" }]);
     await watch.close();
   });
@@ -97,6 +158,7 @@ describe("the accessibility stream", () => {
     const changes: BackendChange[] = [];
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
     bus.inject(stateChanged(APP_SENDER, "/org/a11y/atspi/accessible/9999"));
+    await settle();
     expect(changes).toHaveLength(1);
     expect(changes[0].role).toBe("generic");
     expect(changes[0].id).toMatch(/^el-[0-9a-f]{12}$/);
@@ -109,6 +171,7 @@ describe("the accessibility stream", () => {
     const changes: BackendChange[] = [];
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
     bus.inject(stateChanged(":1.77", KNOWN_PATH));
+    await settle();
     expect(changes).toEqual([]);
     await watch.close();
   });
@@ -123,7 +186,65 @@ describe("the accessibility stream", () => {
     const changes: BackendChange[] = [];
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
     bus.inject(stateChanged(":1.200", "/org/a11y/atspi/accessible/1"));
+    await settle();
     expect(changes).toEqual([]);
+    await watch.close();
+  });
+
+  it("delivers a descendant's change: the subscription speaks for the whole subtree", async () => {
+    // Jamie's rule: a watch on an element covers that element and everything
+    // under it. A document's text lives in children; a watch that heard only
+    // the exact node subscribed would be deaf to the edit it was opened for.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
+    bus.inject(textChanged(APP_SENDER, DEEP_PATH));
+    await settle();
+    expect(changes).toHaveLength(1);
+    expect(changes[0].kind).toBe("changed");
+    await watch.close();
+  });
+
+  it("delivers a change on the watched root itself", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
+    bus.inject(stateChanged(APP_SENDER, ROOT_PATH));
+    await settle();
+    expect(changes).toHaveLength(1);
+    await watch.close();
+  });
+
+  it("produces nothing for a sibling in the same application but outside the watched subtree", async () => {
+    // The half of the rule that costs something: same process, same bus
+    // connection, granted application - and still silent, because it is not
+    // under the element the caller asked about.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
+    bus.inject(stateChanged(APP_SENDER, OUTSIDE_PATH));
+    await settle();
+    expect(changes).toEqual([]);
+    await watch.close();
+  });
+
+  it("asks the bus for a node's ancestry once, then remembers the verdict", async () => {
+    // A busy document emits a signal per keystroke. Climbing the tree afresh
+    // every time would put the watch's cost on the typist.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    parentCalls = 0;
+    for (let beat = 0; beat < 4; beat += 1) {
+      bus.inject(textChanged(APP_SENDER, DEEP_PATH));
+      await settle();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    // The 100ms backstop collapses the burst into one pointer, which is the
+    // point of the backstop; the ancestry cost is what this test watches.
+    expect(changes.length).toBeGreaterThanOrEqual(1);
+    // Two edges: DEEP_PATH -> KNOWN_PATH -> ROOT_PATH. Never re-walked.
+    expect(parentCalls).toBe(2);
     await watch.close();
   });
 
@@ -133,6 +254,7 @@ describe("the accessibility stream", () => {
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 50);
     await watch.close();
     bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
     expect(changes).toEqual([]);
   });
 

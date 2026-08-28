@@ -24,6 +24,7 @@ import {
   type BackendChange,
   type BackendSubscription,
   AttestationFailedError,
+  IncompleteObservationError,
   InventoryUnsupportedError,
   DeafWatchError,
   EffectUnsupportedError,
@@ -894,6 +895,7 @@ type Handler = (params: unknown, backend: Backend, launch: LaunchContext, book?:
 const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
   queryElements: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.queryElements((p ?? {}) as never), b, l) },
   attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.attestElement((p ?? {}) as never), b, l) },
+  readElementContent: { effectClass: "observe", enforcement: "at-result", handler: async (p, b) => b.readElementContent((p ?? {}) as never) },
   subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b, _l, k) => subscribeElement((p ?? {}) as never, b, k) },
   unsubscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, _b, _l, k) => unsubscribeElement((p ?? {}) as never, k) },
   openApplication: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => openApplication((p ?? {}) as { name?: string }, b, l) },
@@ -931,7 +933,13 @@ async function findApplication(backend: Backend, name: string): Promise<Semantic
   try {
     const { elements } = await backend.queryElements({ role: "application", name });
     return elements.find((el) => el.role === "application" && normalise(el.name) === normalise(name));
-  } catch {
+  } catch (error) {
+    // An observation that ran out of budget did not establish that the
+    // application is absent - it established that the daemon does not know.
+    // Swallowing it here would turn "I could not see the whole desktop" into
+    // "that application is not running", which is the exact false absence the
+    // walk was taught to refuse (ADR-0042).
+    if (error instanceof IncompleteObservationError) throw error;
     return undefined;
   }
 }

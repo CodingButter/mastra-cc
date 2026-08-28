@@ -79,11 +79,15 @@ daemon reports which capabilities are enabled and which are refused —
 open, close, view, act — together with the configuration that would change the
 answer. The agent learns *permission*, never *absence*.
 
-**3. Content is not readable.** Everything inside an application — its
-elements, their names, their values, its windows, its state — remains behind the
-grant, enforced inside the walk exactly as
-[ADR-0036](0036-grants-live-in-a-file-the-daemon-owns.md) specifies. Reading the
-label on a door is not opening it.
+**3. Content remains behind the application grant.** Everything inside an
+application — its elements, their names, their values, its windows, its state —
+remains behind the grant, enforced inside the walk exactly as
+[ADR-0036](0036-grants-live-in-a-file-the-daemon-owns.md) specifies. Once that
+grant admits the walk, [ADR-0056](0056-permitted-content-is-observable-protected-content-is-redacted.md)
+allows ordinary text and numeric content to be observed while controls marked
+protected by the platform remain redacted without a value. Reading the label on
+a door is not opening it; opening the permitted door is not permission to read a
+locked drawer inside it.
 
 **4. A refused capability is refused in fact, not merely in the listing.** The
 enforcement point does not move. An agent that reads *"close: refused"* and

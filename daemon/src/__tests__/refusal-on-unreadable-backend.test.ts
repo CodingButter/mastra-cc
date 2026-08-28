@@ -85,6 +85,7 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
       role: "application",
       name: "test-app",
       states: ["enabled", "visible"],
+      content: { kind: "unavailable", reason: "not-exposed" },
       actions: [],
     };
     let calls = 0;
@@ -98,6 +99,7 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
         return { elements: [application] };
       },
       attestElement: async () => ({}),
+      readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
       subscribeElement: async () => {
         throw new Error("this test never watches");
       },

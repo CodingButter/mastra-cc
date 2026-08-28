@@ -7,6 +7,8 @@ import type {
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  ReadElementContentParams,
+  ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
   SemanticElement,
@@ -27,6 +29,7 @@ import {
   commitDescription,
   mintSubscriptionId,
   UnknownSubscriptionError,
+  IncompleteObservationError,
   UnperformableElementError,
   UnwatchableElementError,
   WriteNotObservedError,
@@ -47,6 +50,8 @@ import { deriveId } from "./identity.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches } from "./names.js";
 import { readPublishedActions } from "./actions.js";
+import { readObservableContent } from "./content.js";
+import { advertisesCollection, matchByRole, roleIsCollectable } from "./collection.js";
 import { readPublishedOperations } from "./magnitudes.js";
 import { claimsKeyboardActivation, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 import type { Classified } from "../../audit.js";
@@ -67,9 +72,16 @@ const NULL_PATH = "/org/a11y/atspi/null";
 // Walk budgets: a live desktop hands over ~20 applications, some with very
 // large trees. Per-application and global caps keep one query finite; both
 // are policy of this backend, recorded here, not part of the wire contract.
-const MAX_DEPTH = 10;
-const MAX_NODES_PER_APP = 150;
-const MAX_NODES_TOTAL = 2500;
+//
+// The numbers are sized from a measured desktop rather than guessed: a KDE
+// editor's whole application tree is 1030 nodes and 17 levels deep, and its
+// visible document sits at depth 11, node 195 - outside the caps this backend
+// first shipped with. Exhausting a budget now raises IncompleteObservationError
+// instead of breaking quietly, so a truncated walk can never be mistaken for a
+// desktop that does not contain the element.
+const MAX_DEPTH = 24;
+const MAX_NODES_PER_APP = 4000;
+const MAX_NODES_TOTAL = 20000;
 
 interface NativeRef {
   busName: string;
@@ -137,6 +149,37 @@ export class AtspiBackend implements Backend {
     return String(raw ?? "");
   }
 
+  // The one edge a subtree-scoped watch needs and the walk does not record:
+  // a node's parent. The walk descends, so it never has to ask - but a signal
+  // arrives naming a node the walk may never have visited, and the only honest
+  // way to decide whether that node lies under the watched root is to climb
+  // from it. Returns undefined at the top of the tree (AT-SPI parks the root's
+  // parent on the null path) and on any element that will not answer.
+  private async parentOf(ref: NativeRef): Promise<NativeRef | undefined> {
+    let raw: unknown;
+    try {
+      [raw] = await this.channel.call({
+        destination: ref.busName,
+        path: ref.objectPath,
+        iface: "org.freedesktop.DBus.Properties",
+        member: "Get",
+        signature: "ss",
+        body: [ACCESSIBLE, "Parent"],
+      });
+    } catch (error) {
+      if (error instanceof UnrecordedExchangeError) throw error;
+      return undefined;
+    }
+    // dbus-native hands the variant back unwrapped or as a [signature, [value]]
+    // pair, and the value itself is an AT-SPI (bus name, object path) pair.
+    const unwrapped = Array.isArray(raw) && typeof raw[0] === "string" && Array.isArray(raw[1]) ? raw[1][0] : raw;
+    if (!Array.isArray(unwrapped)) return undefined;
+    const busName = String(unwrapped[0] ?? "");
+    const objectPath = String(unwrapped[1] ?? "");
+    if (busName === "" || objectPath === "" || objectPath === NULL_PATH) return undefined;
+    return { busName, objectPath };
+  }
+
   private async nativeRoleOf(ref: NativeRef): Promise<string> {
     const [role] = await this.channel.call({
       destination: ref.busName,
@@ -171,6 +214,7 @@ export class AtspiBackend implements Backend {
     // way, off the element, in the element's own units. An element that
     // publishes no range gets none here, and nothing downstream computes one.
     const magnitudes = await readPublishedOperations(this.channel, ref);
+    const content = await readObservableContent(this.channel, ref, nativeRole);
     const id = deriveId(role, ref.busName, ref.objectPath);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
@@ -180,6 +224,7 @@ export class AtspiBackend implements Backend {
       role,
       name,
       states: toNeutralStates(lower, upper),
+      content,
       actions: published.actions,
       operations: magnitudes.operations,
       // ADR-0040: every answer names its instrument; the unmapped-role
@@ -192,6 +237,25 @@ export class AtspiBackend implements Backend {
         ...(diagnostic !== undefined ? { nativeId: `${ref.busName}${ref.objectPath}` } : {}),
       }),
     };
+  }
+
+  // Returns the application's matching descendants when the fast instrument
+  // can answer this question, and undefined when the walk must. A tape that
+  // never recorded the fast instrument is not ignorance about the desktop -
+  // the walk's own exchanges still answer it completely - so an off-tape
+  // Collection read falls back rather than refusing.
+  private async collectByRole(app: NativeRef, role: QueryElementsParams["role"]): Promise<NativeRef[] | undefined> {
+    if (role === undefined || !roleIsCollectable(role)) return undefined;
+    try {
+      if (!(await advertisesCollection(this.channel, app))) return undefined;
+      return await matchByRole(this.channel, app, role);
+    } catch {
+      // The fast instrument declining - off tape, or a toolkit that advertises
+      // Collection and then refuses the rule - is not ignorance about the
+      // desktop. The walk answers the same question completely, so the query
+      // falls back to it rather than failing.
+      return undefined;
+    }
   }
 
   async queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {
@@ -216,11 +280,60 @@ export class AtspiBackend implements Backend {
         if (error instanceof UnrecordedExchangeError) throw error;
         continue;
       }
+      // The fast instrument, when the application advertises it and the
+      // question is one the bus's own role vocabulary can carry. One exchange
+      // replaces the walk; the answer goes through the SAME readElement and
+      // the SAME response shape, so a caller cannot tell which instrument
+      // answered - only that the answer is complete.
+      const collected = await this.collectByRole(app, params.role);
+      // The fast instrument answers over the wire, and a wire question the bus
+      // accepts but MEANS differently would answer confidently with the wrong
+      // nodes - a failure no fallback-on-error can catch. So every match is
+      // checked against the role that was asked for, and one disagreement
+      // retires the fast answer entirely in favour of the walk.
+      const fastAnswer: SemanticElement[] = [];
+      let fastAnswerTrusted = collected !== undefined;
+      if (collected !== undefined && fastAnswerTrusted) {
+        for (const ref of collected) {
+          if (total >= MAX_NODES_TOTAL) {
+            throw new IncompleteObservationError(
+              `observation budget exhausted inside "${applicationName}" with matches still unread - this observation would be partial`,
+            );
+          }
+          total += 1;
+          try {
+            const element = await this.readElement(ref, applicationName);
+            if (params.role !== undefined && element.role !== params.role) {
+              fastAnswerTrusted = false;
+              break;
+            }
+            if (params.name !== undefined && !nameMatches(element.name, params.name)) continue;
+            fastAnswer.push(element);
+          } catch (error) {
+            if (error instanceof UnrecordedExchangeError) throw error;
+            continue;
+          }
+        }
+      }
+      if (fastAnswerTrusted && collected !== undefined) {
+        for (const element of fastAnswer) {
+          elements.push(element);
+          if (params.limit !== undefined && elements.length >= params.limit) return { elements };
+        }
+        continue;
+      }
       // depth-first per application, in the order the bus lists them
       const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: app, depth: 0 }];
       let inThisApp = 0;
       while (stack.length > 0) {
-        if (inThisApp >= MAX_NODES_PER_APP || total >= MAX_NODES_TOTAL) break;
+        // Budget exhausted with tree still unwalked. Answering here would hand
+        // back a short list that reads exactly like "the desktop does not
+        // contain that element", so the walk refuses instead (ADR-0042).
+        if (inThisApp >= MAX_NODES_PER_APP || total >= MAX_NODES_TOTAL) {
+          throw new IncompleteObservationError(
+            `walk budget exhausted inside "${applicationName}" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
+          );
+        }
         const { ref, depth } = stack.shift() as { ref: NativeRef; depth: number };
         inThisApp += 1;
         total += 1;
@@ -236,14 +349,18 @@ export class AtspiBackend implements Backend {
             elements.push(element);
             if (params.limit !== undefined && elements.length >= params.limit) return { elements };
           }
-          if (depth < MAX_DEPTH) {
-            const kids = await this.children(ref);
-            stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1 })));
+          const kids = await this.children(ref);
+          if (depth >= MAX_DEPTH && kids.length > 0) {
+            throw new IncompleteObservationError(
+              `depth budget reached inside "${applicationName}" above a node that still has children - the subtree below it was never observed`,
+            );
           }
+          stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1 })));
         } catch (error) {
           // ...but an off-tape read under replay is not a dying process, it is
           // ignorance, and ignorance surfaces as a refusal - never a skip.
           if (error instanceof UnrecordedExchangeError) throw error;
+          if (error instanceof IncompleteObservationError) throw error;
           continue;
         }
       }
@@ -267,6 +384,22 @@ export class AtspiBackend implements Backend {
     }
   }
 
+  async readElementContent(params: ReadElementContentParams): Promise<Classified<ReadElementContentResult>> {
+    if (!Number.isSafeInteger(params.offset) || params.offset < 0 || !Number.isSafeInteger(params.limit) || params.limit <= 0) {
+      return { refusal: "content window offset must be a non-negative integer and limit must be a positive integer", refusalClass: "MalformedParameter" };
+    }
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to read`, refusalClass: "UnknownElement" };
+    }
+    try {
+      return { content: await readObservableContent(this.channel, ref, await this.nativeRoleOf(ref), params.offset, params.limit) };
+    } catch (error) {
+      if (error instanceof UnrecordedExchangeError) throw error;
+      return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again`, refusalClass: "ElementGone" };
+    }
+  }
+
   // A watch is only ever established on an element this backend has already
   // answered. An id it never answered may name an element that does not exist
   // or one inside an application this session cannot see - the same refusal
@@ -281,7 +414,9 @@ export class AtspiBackend implements Backend {
     // reported under the id the client already holds).
     const anchor: AtspiWatchAnchor = {
       busName: ref.busName,
+      rootPath: ref.objectPath,
       known: (busName, objectPath) => this.byNative.get(`${busName}\0${objectPath}`),
+      parentOf: (busName, objectPath) => this.parentOf({ busName, objectPath }),
     };
     const watch = await this.channel.watch(id, sink, anchor);
     const subscriptionId = mintSubscriptionId();
@@ -367,7 +502,13 @@ export class AtspiBackend implements Backend {
       ];
       let inThisApp = 0;
       while (stack.length > 0) {
-        if (inThisApp >= MAX_NODES_PER_APP) break;
+        // Same honesty as the query walk: "nothing here holds focus" and "I
+        // ran out of budget before I got there" are different answers.
+        if (inThisApp >= MAX_NODES_PER_APP) {
+          throw new IncompleteObservationError(
+            `walk budget exhausted inside "${applicationName}" before the focus question was answered - an unfinished walk cannot report that nothing holds focus`,
+          );
+        }
         const { ref, depth, activated } = stack.shift() as { ref: NativeRef; depth: number; activated: boolean };
         inThisApp += 1;
         try {
@@ -379,12 +520,16 @@ export class AtspiBackend implements Backend {
             // answer it - restoreFocus resolves that same id afterwards.
             return await this.readElement(ref, applicationName);
           }
-          if (depth < MAX_DEPTH) {
-            const kids = await this.children(ref);
-            stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1, activated: underActivation })));
+          const kids = await this.children(ref);
+          if (depth >= MAX_DEPTH && kids.length > 0) {
+            throw new IncompleteObservationError(
+              `depth budget reached inside "${applicationName}" above a node that still has children - the focus question was never asked of that subtree`,
+            );
           }
+          stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1, activated: underActivation })));
         } catch (error) {
           if (error instanceof UnrecordedExchangeError) throw error;
+          if (error instanceof IncompleteObservationError) throw error;
           continue;
         }
       }

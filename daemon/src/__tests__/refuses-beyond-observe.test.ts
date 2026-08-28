@@ -210,6 +210,9 @@ describe("the scope gate: a session holding no effect authority is refused by na
       attestElement: async () => {
         throw new Error("the scope gate touched the backend");
       },
+      readElementContent: async () => {
+        throw new Error("the scope gate touched the backend");
+      },
       subscribeElement: async () => {
         throw new Error("the scope gate touched the backend");
       },

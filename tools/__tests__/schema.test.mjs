@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// The schema's own invariants: exactly thirteen methods, the id pattern, and a
+// The schema's own invariants: exactly fourteen methods, the id pattern, and a
 // golden fixture cut from exactly these schema bytes. The planted-vocabulary
 // cases for the B10 pin live in tools/pins/__tests__/b10.test.mjs, where the
 // planted platform terms sit inside the one directory every pin excludes.
@@ -15,10 +15,11 @@ const schemaText = readFileSync(join(repoRoot, "protocol", "schema.json"), "utf8
 const schema = JSON.parse(schemaText);
 
 describe("protocol/schema.json v1", () => {
-  it("declares exactly thirteen methods - the 1.0.0 pair, 1.3.0's subscription pair (ADR-0039), 1.1.0's openApplication (ADR-0034), 1.2.0's defined-and-refused trio (ADR-0037), and 1.4.0's four operations and application listing (ADR-0047) - and no fourteenth", () => {
+  it("declares exactly fourteen methods, including the bounded content reader introduced by ADR-0056", () => {
     expect(Object.keys(schema.methods)).toEqual([
       "queryElements",
       "attestElement",
+      "readElementContent",
       "subscribeElement",
       "unsubscribeElement",
       "openApplication",
@@ -56,11 +57,40 @@ describe("protocol/schema.json v1", () => {
     expect(schema.types.capability.fields.disabledBy).toBeDefined();
   });
 
+  it("requires one provider-neutral observable-content state, including value-free protected redaction (ADR-0056)", () => {
+    expect(schema.version).toBe("1.6.1");
+    expect(schema.types.semanticElement.fields.content).toMatchObject({
+      type: "observableContent",
+      required: true,
+    });
+
+    const variants = Object.fromEntries(schema.types.observableContent.variants.map((variant) => [variant.name, variant]));
+    expect(Object.keys(variants)).toEqual(["text", "text-window", "number", "redacted", "unavailable"]);
+    expect(variants.text.fields.value.type).toBe("string");
+    expect(Object.keys(variants["text-window"].fields)).toEqual([
+      "kind",
+      "value",
+      "offset",
+      "length",
+      "totalLength",
+      "startLine",
+      "endLine",
+      "totalLines",
+    ]);
+    expect(variants.number.fields.value.type).toBe("number");
+    expect(variants.number.fields.range.type).toBe("observableRange");
+    expect(variants.redacted.fields.reason.literal).toBe("protected");
+    expect(variants.redacted.fields.value).toBeUndefined();
+    expect(variants.unavailable.fields.reason.literals).toEqual(["not-exposed", "unknown"]);
+    expect(variants.unavailable.fields.value).toBeUndefined();
+  });
+
   it("gives changeEvent no field that could carry content - a pointer, never a payload (ADR-0032 clause 2)", () => {
     const fields = Object.keys(schema.types.changeEvent.fields);
     expect(fields).not.toContain("name");
     expect(fields).not.toContain("value");
     expect(fields).not.toContain("text");
+    expect(fields).not.toContain("content");
     expect(fields).toEqual([
       "subscriptionId",
       "id",

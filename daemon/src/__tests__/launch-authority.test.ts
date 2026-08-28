@@ -119,6 +119,7 @@ describe("launch authority", () => {
       name: "spy",
       queryElements: async () => ((treeTouched = true), { elements: [] }),
       attestElement: async () => ((treeTouched = true), {}),
+      readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
       subscribeElement: async () => {
         treeTouched = true;
         throw new Error("the authority gate touched the backend");
@@ -257,6 +258,9 @@ describe("effect authority: every element method is refused before the backend i
       throw new Error("the effect authority gate touched the backend");
     },
     attestElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    readElementContent: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
     subscribeElement: async () => {

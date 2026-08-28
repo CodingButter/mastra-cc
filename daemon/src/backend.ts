@@ -11,6 +11,8 @@ import type {
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
+  ReadElementContentParams,
+  ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
   Role,
@@ -142,6 +144,14 @@ export class UnpublishedActionError extends Error {}
 // server reports the refusal rather than a clean launch.
 export class FocusUnsupportedError extends Error {}
 
+// The walk hit its own budget before it finished the tree. A partial tree
+// returned as if it were the whole one is the false-belief failure ADR-0042
+// exists to kill, measured: KDE's editor sits at depth 11 and node 195 of a
+// 1030-node application, so a 150-node cap answered "no editor here" about a
+// desktop that plainly had one. The bounds stay - a walk must be finite - but
+// exhausting them is reported rather than smoothed into a short answer.
+export class IncompleteObservationError extends Error {}
+
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
 // can review"). This is not a judgement of the caller's attestation - the
@@ -265,6 +275,7 @@ export interface Backend {
   // recovered by reading the sentence back: the record names categories, and a
   // category parsed out of prose is a guess dressed as a fact.
   attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>>;
+  readElementContent(params: ReadElementContentParams): Promise<Classified<ReadElementContentResult>>;
   subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription>;
   unsubscribeElement(subscriptionId: string): Promise<void>;
 
