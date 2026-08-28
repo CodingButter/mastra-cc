@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readObservableContent } from "../content.js";
+import { needsProtectedClassification, readObservableContent } from "../content.js";
 
 const property = (name: string, value: unknown) => ({ name, value: { value } });
 
@@ -22,6 +22,33 @@ describe("browser accessibility observable content", () => {
         properties: [property("protected", true), property("editable", true)],
       }),
     ).toEqual({ kind: "redacted", reason: "protected" });
+  });
+
+  it("classifies only masked accessibility values through the backing node", () => {
+    expect(
+      needsProtectedClassification({
+        role: { value: "textbox" },
+        value: { value: "ordinary content" },
+        properties: [property("editable", "plaintext")],
+      }),
+    ).toBe(false);
+    expect(
+      needsProtectedClassification({
+        role: { value: "textbox" },
+        value: { value: "••••••" },
+        properties: [property("editable", "plaintext")],
+      }),
+    ).toBe(true);
+  });
+
+  it("redacts a masked field confirmed protected by its backing node", () => {
+    const node = {
+      role: { value: "textField" },
+      value: { value: "••••••" },
+      properties: [property("editable", "plaintext")],
+    };
+    expect(readObservableContent(node, 0, 4096, true)).toEqual({ kind: "redacted", reason: "protected" });
+    expect(readObservableContent(node, 0, 4096, false)).toEqual({ kind: "text", value: "••••••" });
   });
 
   it("maps a published numeric value and range", () => {

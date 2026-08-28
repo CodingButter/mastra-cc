@@ -19,8 +19,21 @@ function numericProperty(node: ContentAxNode, name: string): number | undefined 
   return Number.isFinite(value) ? value : undefined;
 }
 
-export function readObservableContent(node: ContentAxNode, offset = 0, limit = 4096): ObservableContent {
-  if (property(node, "protected") === true) return { kind: "redacted", reason: "protected" };
+export function needsProtectedClassification(node: ContentAxNode): boolean {
+  if (property(node, "protected") === true) return false;
+  const value = node.value?.value;
+  return typeof value === "string" && value.length > 0 && /^[•●◦·*]+$/u.test(value);
+}
+
+export function readObservableContent(
+  node: ContentAxNode,
+  offset = 0,
+  limit = 4096,
+  protectedByBackingNode = false,
+): ObservableContent {
+  if (protectedByBackingNode || property(node, "protected") === true) {
+    return { kind: "redacted", reason: "protected" };
+  }
 
   const role = String(node.role?.value ?? "");
   const rawValue = node.value?.value;
