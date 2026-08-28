@@ -995,7 +995,7 @@
   {
     "name": "contract-row-deleted",
     "file": "docs/10-NORTH-STAR-CONTRACT.md",
-    "find": "| S-EMPTY-INBOX | The selected visible mailbox is explicitly empty | Gmail publishes an explicit empty-state element for the selected view (R7d) | R7d refusal: the selected visible mailbox has no messages | open; awaiting follow-up, wake armed | completed — spoken | 0 | select another mailbox or category, then ask again | yes |\n",
+    "find": "| S-EMPTY-INBOX | The selected visible mailbox is explicitly empty | Gmail publishes an explicit empty-state element for the selected view (R7d) | R7d refusal: the selected visible mailbox has no messages | open; awaiting follow-up, wake armed | completed \u2014 spoken | 0 | select another mailbox or category, then ask again | yes |\n",
     "cwd": "tools",
     "testFile": "__tests__/contract-check.test.mjs"
   },
@@ -1103,5 +1103,26 @@
     "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"string\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
     "cwd": "tools",
     "testFile": "__tests__/schema.test.mjs"
+  },
+  {
+    "name": "the-walk-budget-goes-back-to-first-come-first-served",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "        if (inThisApp >= allocation) {\n          throw new IncompleteObservationError(\n            `walk budget exhausted inside \"${applicationName}\" after its full allocation of ${allocation} nodes, with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,\n          );\n        }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/traversal-budget.test.ts"
+  },
+  {
+    "name": "the-fast-instrument-stops-spending-its-allocation",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "          if (inThisApp >= allocation) {\n            throw new IncompleteObservationError(\n              `observation budget exhausted inside \"${applicationName}\" after its full allocation of ${allocation} nodes, with matches still unread - this observation would be partial`,\n            );\n          }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/traversal-budget.test.ts"
+  },
+  {
+    "name": "the-per-application-share-is-never-computed",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    const allocation = allocationPerApplication(apps.length);",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/traversal-budget.test.ts"
   }
 ]

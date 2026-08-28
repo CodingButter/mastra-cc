@@ -70,18 +70,47 @@ const ROOT_PATH = "/org/a11y/atspi/accessible/root";
 const NULL_PATH = "/org/a11y/atspi/null";
 
 // Walk budgets: a live desktop hands over ~20 applications, some with very
-// large trees. Per-application and global caps keep one query finite; both
-// are policy of this backend, recorded here, not part of the wire contract.
+// large trees. These are policy of this backend, recorded here, not part of
+// the wire contract.
 //
 // The numbers are sized from a measured desktop rather than guessed: a KDE
 // editor's whole application tree is 1030 nodes and 17 levels deep, and its
 // visible document sits at depth 11, node 195 - outside the caps this backend
-// first shipped with. Exhausting a budget now raises IncompleteObservationError
+// first shipped with. Exhausting a budget raises IncompleteObservationError
 // instead of breaking quietly, so a truncated walk can never be mistaken for a
 // desktop that does not contain the element.
+//
+// A query divides NODE_BUDGET among the applications the registry lists and
+// bounds each one by its own share, rather than spending a single pool in walk
+// order. Order is what makes the difference: the bus promises no ordering over
+// its children, so a shared pool lets whichever application happens to walk
+// first consume the budget and leaves the refusal naming whichever application
+// was unlucky enough to be walking when it ran out - an application that read
+// three nodes blamed for another's spending, and a different name each run.
+// A share computed up front from the application COUNT depends on the set of
+// applications, never their order, so the same desktop refuses the same way
+// twice and always about the application that actually spent its allocation.
+//
+// Every application is guaranteed MIN_NODES_PER_APP whatever the count, because
+// an even split across ~20 applications is 1000 nodes - under the 1030-node
+// editor measured above, which would refuse on a real application that fits
+// comfortably today. The floor is worth more than an exactly-bounded sum, so
+// the worst case deliberately exceeds NODE_BUDGET on a crowded desktop (24000
+// at 20 applications) and NODE_BUDGET is the number shares are derived from,
+// not a ceiling anything enforces. MAX_OBSERVABLE_WORK bounds that overshoot:
+// past it the desktop is refused up front, before a single node is read.
 const MAX_DEPTH = 24;
 const MAX_NODES_PER_APP = 4000;
-const MAX_NODES_TOTAL = 20000;
+const MIN_NODES_PER_APP = 1200;
+const NODE_BUDGET = 20000;
+const MAX_OBSERVABLE_WORK = 40000;
+
+// The share one application gets when `appCount` of them are listed. Pure and
+// exported so the policy can be read off directly in a test without driving a
+// channel: it is the whole of what makes exhaustion order-independent.
+export function allocationPerApplication(appCount: number): number {
+  return Math.min(MAX_NODES_PER_APP, Math.max(MIN_NODES_PER_APP, Math.floor(NODE_BUDGET / appCount)));
+}
 
 interface NativeRef {
   busName: string;
@@ -260,9 +289,21 @@ export class AtspiBackend implements Backend {
 
   async queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {
     const elements: SemanticElement[] = [];
-    let total = 0;
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
+    // No applications is a complete answer, not an exhausted one - and there is
+    // no allocation to divide.
+    if (apps.length === 0) return { elements };
+    // Refused before a single node is read: past this many applications even the
+    // guaranteed floor cannot be honoured within a bounded observation, so any
+    // answer would be partial. Costs nothing and names the real cause.
+    if (apps.length * MIN_NODES_PER_APP > MAX_OBSERVABLE_WORK) {
+      throw new IncompleteObservationError(
+        `this desktop lists ${apps.length} applications - more than one bounded observation can cover, so any answer would be partial`,
+      );
+    }
+    const allocation = allocationPerApplication(apps.length);
+
     for (const app of apps) {
       // The visibility gate (ADR-0036). The application's NAME is the one
       // permitted read of an ungranted application - you cannot decide
@@ -293,14 +334,19 @@ export class AtspiBackend implements Backend {
       // retires the fast answer entirely in favour of the walk.
       const fastAnswer: SemanticElement[] = [];
       let fastAnswerTrusted = collected !== undefined;
+      // One counter for both instruments. The fast path reads nodes over the
+      // bus exactly as the walk does, so it spends the same allocation; a
+      // counter it did not touch would make the per-application share a fiction
+      // for every application that advertises Collection.
+      let inThisApp = 0;
       if (collected !== undefined && fastAnswerTrusted) {
         for (const ref of collected) {
-          if (total >= MAX_NODES_TOTAL) {
+          if (inThisApp >= allocation) {
             throw new IncompleteObservationError(
-              `observation budget exhausted inside "${applicationName}" with matches still unread - this observation would be partial`,
+              `observation budget exhausted inside "${applicationName}" after its full allocation of ${allocation} nodes, with matches still unread - this observation would be partial`,
             );
           }
-          total += 1;
+          inThisApp += 1;
           try {
             const element = await this.readElement(ref, applicationName);
             if (params.role !== undefined && element.role !== params.role) {
@@ -322,21 +368,22 @@ export class AtspiBackend implements Backend {
         }
         continue;
       }
-      // depth-first per application, in the order the bus lists them
+      // depth-first per application, in the order the bus lists them. Note
+      // inThisApp is NOT reset here: a fast answer that was distrusted above
+      // still read its nodes over the bus, and forgetting them would let a
+      // distrusted application read up to twice its allocation.
       const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: app, depth: 0 }];
-      let inThisApp = 0;
       while (stack.length > 0) {
         // Budget exhausted with tree still unwalked. Answering here would hand
         // back a short list that reads exactly like "the desktop does not
         // contain that element", so the walk refuses instead (ADR-0042).
-        if (inThisApp >= MAX_NODES_PER_APP || total >= MAX_NODES_TOTAL) {
+        if (inThisApp >= allocation) {
           throw new IncompleteObservationError(
-            `walk budget exhausted inside "${applicationName}" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
+            `walk budget exhausted inside "${applicationName}" after its full allocation of ${allocation} nodes, with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
           );
         }
         const { ref, depth } = stack.shift() as { ref: NativeRef; depth: number };
         inThisApp += 1;
-        total += 1;
 
         // A node that stops answering mid-walk is skipped, not fatal: live
         // trees contain dying processes and dead references, and one of them
