@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
+import type { Duplex } from "node:stream";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { fixturesDir } from "../../atspi/channel.js";
@@ -92,6 +93,141 @@ describe("capture then replay", () => {
     await expect(replay.exchange(offTape)).rejects.toBeInstanceOf(UnrecordedCdpExchangeError);
     await expect(replay.exchange(offTape)).rejects.toThrow("refusing to invent a reply");
     await replay.close();
+  });
+});
+
+function websocketTextFrame(text: string): Buffer {
+  const payload = Buffer.from(text);
+  if (payload.length >= 126) throw new Error("test frame is too large");
+  return Buffer.concat([Buffer.from([0x81, payload.length]), payload]);
+}
+
+function readClientFrames(socket: Duplex, onMessage: (message: Record<string, unknown>) => void): void {
+  let buffered = Buffer.alloc(0);
+  socket.on("data", (chunk: Buffer) => {
+    buffered = Buffer.concat([buffered, chunk]);
+    while (buffered.length >= 2) {
+      const opcode = buffered[0] & 0x0f;
+      const masked = (buffered[1] & 0x80) !== 0;
+      const length = buffered[1] & 0x7f;
+      if (!masked || length >= 126) throw new Error("unexpected test WebSocket frame");
+      const frameLength = 2 + 4 + length;
+      if (buffered.length < frameLength) return;
+      const mask = buffered.subarray(2, 6);
+      const payload = Buffer.from(buffered.subarray(6, frameLength));
+      for (let i = 0; i < payload.length; i++) payload[i] ^= mask[i % 4];
+      buffered = buffered.subarray(frameLength);
+      if (opcode === 0x8) return;
+      if (opcode !== 0x1) continue;
+      onMessage(JSON.parse(payload.toString()) as Record<string, unknown>);
+    }
+  });
+}
+
+async function loopbackChannel(onSocket: (socket: Duplex) => void): Promise<{
+  channel: CdpChannel;
+  close(): Promise<void>;
+}> {
+  const connections = new Set<Duplex>();
+  const server = createServer((req, res) => {
+    if (req.url === "/json/list") {
+      const port = (server.address() as { port: number }).port;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify([{ id: "t1", webSocketDebuggerUrl: `ws://127.0.0.1:${port}/devtools/page/t1` }]));
+      return;
+    }
+    res.statusCode = 404;
+    res.end();
+  });
+  server.on("upgrade", (req, socket, head) => {
+    const key = req.headers["sec-websocket-key"];
+    const accept = createHash("sha1").update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest("base64");
+    socket.write(
+      "HTTP/1.1 101 Switching Protocols\r\n" +
+        "Upgrade: websocket\r\nConnection: Upgrade\r\n" +
+        `Sec-WebSocket-Accept: ${accept}\r\n\r\n`,
+    );
+    connections.add(socket);
+    socket.on("close", () => connections.delete(socket));
+    onSocket(socket);
+    if (head.length > 0) socket.unshift(head);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = (server.address() as { port: number }).port;
+  const channel = liveCdpChannel(`http://127.0.0.1:${port}`);
+  await channel.exchange({ kind: "list" });
+  return {
+    channel,
+    async close() {
+      await channel.close();
+      for (const socket of connections) socket.destroy();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    },
+  };
+}
+
+describe("concurrent calls on one socket", () => {
+  it("correlates out-of-order replies without exceeding the listener limit", async () => {
+    const warnings: Error[] = [];
+    const onWarning = (warning: Error) => {
+      if (warning.name === "MaxListenersExceededWarning") warnings.push(warning);
+    };
+    process.on("warning", onWarning);
+    const endpoint = await loopbackChannel((socket) => {
+      const requests: Array<Record<string, unknown>> = [];
+      readClientFrames(socket, (message) => {
+        requests.push(message);
+        if (requests.length !== 12) return;
+        const replies = requests.reverse().map((request) =>
+          websocketTextFrame(JSON.stringify({ id: request.id, result: { method: request.method } })),
+        );
+        setImmediate(() => socket.write(Buffer.concat(replies)));
+      });
+    });
+    try {
+      const replies = await Promise.all(
+        Array.from({ length: 12 }, (_, index) => endpoint.channel.exchange({
+          kind: "call",
+          targetId: "t1",
+          method: `Test.method${index}`,
+          params: {},
+        })),
+      );
+      expect(replies).toEqual(
+        Array.from({ length: 12 }, (_, index) => ({ result: { method: `Test.method${index}` } })),
+      );
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      expect(warnings).toEqual([]);
+    } finally {
+      process.off("warning", onWarning);
+      await endpoint.close();
+    }
+  });
+
+  it("rejects every pending call when a frame is not usable JSON", async () => {
+    const endpoint = await loopbackChannel((socket) => {
+      let received = 0;
+      readClientFrames(socket, () => {
+        received++;
+        if (received === 2) setImmediate(() => socket.write(websocketTextFrame("not json")));
+      });
+    });
+    try {
+      const calls = ["Test.first", "Test.second"].map((method) => endpoint.channel.exchange({
+        kind: "call",
+        targetId: "t1",
+        method,
+        params: {},
+      }));
+      const settled = await Promise.allSettled(calls);
+      expect(settled).toHaveLength(2);
+      for (const result of settled) {
+        expect(result.status).toBe("rejected");
+        if (result.status === "rejected") expect(result.reason).toBeInstanceOf(CdpUnreachableError);
+      }
+    } finally {
+      await endpoint.close();
+    }
   });
 });
 
