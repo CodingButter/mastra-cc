@@ -191,7 +191,8 @@
   {
     "name": "visibility-filter-never-consulted",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "      try {\n        applicationName = await this.nameOf(app);\n        if (!isVisible(this.visibility, applicationName)) continue;\n      } catch (error) {\n        // an off-tape read under replay is ignorance, and ignorance surfaces\n        // as a refusal - never a skip; a dying app that cannot state its name\n        // cannot be granted, so it is skipped like any dying node\n        if (error instanceof UnrecordedExchangeError) throw error;\n        continue;\n      }\n",
+    "find": "        if (isVisible(this.visibility, applicationName)) visible.push({ app, applicationName });",
+    "replace": "        visible.push({ app, applicationName });",
     "cwd": "daemon",
     "testFile": "src/backends/__tests__/invisibility.test.ts"
   },
@@ -1103,5 +1104,28 @@
     "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"string\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
     "cwd": "tools",
     "testFile": "__tests__/schema.test.mjs"
+  },
+  {
+    "name": "the-fast-instrument-spends-no-application-budget",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "          inThisApp += 1;\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/traversal-budget.test.ts"
+  },
+  {
+    "name": "every-application-gets-the-whole-desktops-budget",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "  return Math.min(MAX_NODES_PER_APP, Math.max(MIN_NODES_PER_APP, share));",
+    "replace": "  return MAX_NODES_PER_APP;",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/traversal-budget.test.ts"
+  },
+  {
+    "name": "the-floor-under-a-crowded-desktop-is-gone",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "Math.max(MIN_NODES_PER_APP, share)",
+    "replace": "share",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/traversal-budget.test.ts"
   }
 ]
