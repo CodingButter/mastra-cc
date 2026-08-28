@@ -36,6 +36,7 @@ Every document here exists to make one of those families structurally impossible
 | [07-ROADMAP.md](docs/07-ROADMAP.md) | Milestones, each with a gate that can fail |
 | [08-GLOSSARY.md](docs/08-GLOSSARY.md) | Exact vocabulary. Several prototype bugs were vocabulary bugs |
 | [09-QUESTIONS.md](docs/09-QUESTIONS.md) | What we still do not know, and what counts as finding out |
+| [11-AGENT-INSTRUCTIONS.md](docs/11-AGENT-INSTRUCTIONS.md) | What an agent must be told to drive the daemon, learned by dogfooding it |
 
 **If you are a fresh session with fifteen minutes:** read 00, then 01, then the [ADR index](docs/02-DECISIONS/README.md), then [CONTRIBUTING.md](CONTRIBUTING.md). That is enough to make a correct first change.
 
