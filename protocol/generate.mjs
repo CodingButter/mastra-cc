@@ -310,14 +310,49 @@ const packageJson = `${JSON.stringify(
     private: true,
     type: "module",
     main: "./src/index.ts",
-    types: "./src/index.ts",
+    // Declarations come from a real emit step: a consumer's dts bundler cannot reach into
+    // a source file that belongs to no project, and TypeScript 7's tsgo refuses to try.
+    types: "./dist/index.d.ts",
     description: "GENERATED from protocol/schema.json - do not edit (ADR-0009).",
+    scripts: {
+      build: "tsc -p tsconfig.json",
+    },
+    devDependencies: {
+      // Without this the compiler is absent from this package's .bin path under pnpm's
+      // isolated node_modules and the build script cannot run.
+      typescript: "catalog:",
+    },
+  },
+  null,
+  2,
+)}\n`;
+
+const tsconfigJson = `${JSON.stringify(
+  {
+    compilerOptions: {
+      rootDir: "src",
+      outDir: "dist",
+      declaration: true,
+      emitDeclarationOnly: true,
+      module: "NodeNext",
+      moduleResolution: "NodeNext",
+      target: "ES2022",
+      strict: true,
+      skipLibCheck: true,
+    },
+    include: ["src"],
   },
   null,
   2,
 )}\n`;
 
 mkdirSync(join(outDir, "src"), { recursive: true });
-writeFileSync(join(outDir, "package.json"), packageJson);
-writeFileSync(join(outDir, "src", "index.ts"), `${indexTs}\n`);
-console.log(`generate: 2 file(s) emitted to ${outDir} (schema v${schema.version}, digest ${digest.slice(0, 12)}...)`);
+const emitted = [
+  ["package.json", packageJson],
+  ["tsconfig.json", tsconfigJson],
+  [join("src", "index.ts"), `${indexTs}\n`],
+];
+for (const [relative, contents] of emitted) writeFileSync(join(outDir, relative), contents);
+console.log(
+  `generate: ${emitted.length} file(s) emitted to ${outDir} (schema v${schema.version}, digest ${digest.slice(0, 12)}...)`,
+);
