@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 
-// The determinism check's four cases, against a scratch copy. The check
+// The determinism check's five cases, against a scratch copy. The check
 // generates into a TEMP directory (never in place): regenerating in place
 // silently corrects a hand-edited generated file - the exact tampering
 // docs/07-ROADMAP.md:78 requires this check to go red on.
