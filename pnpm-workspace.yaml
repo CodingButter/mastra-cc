@@ -7,7 +7,7 @@ packages:
   - tools
 
 catalog:
-  typescript: ^6.0.3
+  typescript: ^7.0.2
   vitest: 4.1.10
   zod: ^4.4.3
   oxfmt: 0.59.0
