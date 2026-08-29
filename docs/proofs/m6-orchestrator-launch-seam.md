@@ -33,7 +33,15 @@ The green leg observed only structural and fixed proof metadata:
 
 ## Mechanical witness
 
-`tools/__tests__/m6-stage3-launch-proof.test.mjs` requires the opposing verdicts, the built-seam import and call, the `yad` success, the byte-exact Gmail refusal, and cleanup. It also forbids personal-data fields, profile inspection, browser launch commands, and ambient process-command-line dumps.
+`tools/__tests__/m6-stage3-launch-proof.test.mjs` asserted the opposing verdicts, the built-seam import and call, the `yad` success, the byte-exact Gmail refusal, and cleanup, and forbade personal-data fields, profile inspection, browser launch commands, and ambient process-command-line dumps.
+
+> **Removed 2026-08-29.** The witness read its four artifacts out of `.mastracode/`, which is
+> gitignored, so it passed on the author's machine and failed everywhere else — it was red in
+> CI from the day it landed. Its subject, `apps/hub/src/orchestrator/launch.ts`, was deleted
+> with the client surface ([ADR-0057](../02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)),
+> so there is nothing left for it to witness. The run recorded above stands as evidence of
+> what happened; the assertions no longer run. `tools/__tests__/no-ignored-fixtures.test.mjs`
+> now makes this class of mistake fail loudly instead of quietly.
 
 ## Privacy review
 
