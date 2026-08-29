@@ -1,5 +1,8 @@
 # Which credential the voice lane accepts, and what it does with the rest
 
+> **Retired 2026-08-28 — historical record.** This proof measured the client surface (face, widget, voice lane) removed by [ADR-0057](../02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md). The command that produced it no longer exists in the tree. It is kept because decisions still cite it as their evidence, and evidence deleted under a decision it justifies cannot be audited. Nothing here describes what ships today.
+
+
 M3's claim is "an agent that can drive the daemon, with credentials it never
 hands out." The credential half of that sentence is the one that can quietly be
 false: a hub that mints a token at boot and reuses it, or one that blames the

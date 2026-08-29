@@ -10,7 +10,7 @@ import { connect } from "../index.js";
 // server. The mock lives INSIDE packages/transport on purpose: B5 forbids
 // socket code anywhere else, and this package is the one place a socket
 // counterpart may exist. The daemon's side of the same handshake is exercised
-// end-to-end in apps/hub's test and in the Phase 3 verification gate.
+// end-to-end in the Phase 3 verification gate.
 
 const WRONG_DIGEST = "f".repeat(64);
 

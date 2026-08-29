@@ -181,13 +181,18 @@ Full rationale in [ADR-0012](02-DECISIONS/0012-claims-needing-a-desktop-are-prov
 9. integration dry-run against the destination monorepo (04-INTEGRATION-PLAN §7)
 ```
 
-Three further jobs run beside that sequence, not inside it: `licences` (B12, one
-pass over every manifest), `contract-check` (`node tools/contract-check.mjs`, one
-pass over `docs/10-NORTH-STAR-CONTRACT.md` — it fails when a required acceptance
-row, a frozen column value, the audit grammar or a rule identifier is removed,
-and it is deliberately not a boundary pin, because the contract is a product
-decision rather than a thirteenth architectural boundary) and `live` (§5.1, which
-builds an accessibility bus and runs `infra/demo.sh` on it).
+Two further jobs run beside that sequence, not inside it: `licences` (B12, one
+pass over every manifest) and `live` (§5.1, which builds an accessibility bus and
+runs `infra/demo.sh` on it).
+
+A third, `contract-check`, ran until 2026-08-28. It made one pass over
+`docs/10-NORTH-STAR-CONTRACT.md` and failed when a required acceptance row, a
+frozen column value, the audit grammar or a rule identifier was removed. It was
+deliberately not a boundary pin, because the contract was a product decision
+rather than a thirteenth architectural boundary — and that is exactly why it
+died with the product decision. [ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)
+removed the assistant the contract described; the gate and the tool are gone and
+the document survives only as a historical record.
 
 **Three details that are not obvious and each cost the prototype something:**
 

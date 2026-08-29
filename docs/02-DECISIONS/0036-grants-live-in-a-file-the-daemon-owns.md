@@ -13,7 +13,7 @@ Status: accepted, 2026-08-10 (M2.3); **amended 2026-08-16 by [ADR-0042](0042-exi
 Deny-by-default application visibility is doctrine: an application the
 operator has not granted "is *invisible* ... a visible-but-blocked app tells
 the agent something about the user's machine that the user did not agree to
-share" (`docs/00-PRODUCT.md:101`, ADR-0008). Until M2.3 nothing enforced it —
+share" (`docs/00-PRODUCT.md:102`, ADR-0008). Until M2.3 nothing enforced it —
 both backends read every application on their route
 (`daemon/src/backends/atspi/index.ts` walked every bus child;
 `daemon/src/backends/cdp/index.ts` synthesized the browser application
@@ -91,7 +91,7 @@ read once at daemon boot, union-composed with session flags
 
 ## Evidence
 
-- Invisibility doctrine: `docs/00-PRODUCT.md:101`; four per-app states never
+- Invisibility doctrine: `docs/00-PRODUCT.md:102`; four per-app states never
   collapsed: ADR-0008.
 - Both backends read everything before this change:
   `daemon/src/backends/atspi/index.ts` (walk over every root child),

@@ -42,7 +42,6 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "licences-"));
   mkdirSync(join(root, "tools"), { recursive: true });
   mkdirSync(join(root, "packages"), { recursive: true });
-  mkdirSync(join(root, "apps"), { recursive: true });
   cpSync(gate, join(root, "tools", "licences.mjs"));
   // The gate requires its own manifest to exist; keep it dependency-free so
   // every case is about the root manifest it is actually testing.
@@ -168,14 +167,14 @@ describe("the licence gate", () => {
     //
     // The order is the whole defect, so the fixture has to carry it: the dev
     // record must land while reading an EARLIER manifest than the runtime walk
-    // that later reaches the same package. Root declares it as dev; apps/hub
+    // that later reaches the same package. Root declares it as dev; daemon
     // reaches it as runtime. Written the other way round - both in one
     // manifest - the runtime walk runs first and a shared map looks harmless.
     manifest({}, { shared: "^1.0.0" });
-    mkdirSync(join(root, "apps", "hub"), { recursive: true });
+    mkdirSync(join(root, "daemon"), { recursive: true });
     writeFileSync(
-      join(root, "apps", "hub", "package.json"),
-      JSON.stringify({ name: "hub", dependencies: { alpha: "^1.0.0" } }),
+      join(root, "daemon", "package.json"),
+      JSON.stringify({ name: "daemon", dependencies: { alpha: "^1.0.0" } }),
     );
     install("alpha", "MIT", { shared: "^1.0.0" });
     install("shared", "MIT", { beneath: "^1.0.0" });
@@ -183,7 +182,7 @@ describe("the licence gate", () => {
     const r = run();
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('beneath is "GPL-3.0"');
-    expect(r.stderr).toContain("shipped via apps/hub/package.json > alpha > shared");
+    expect(r.stderr).toContain("shipped via daemon/package.json > alpha > shared");
   });
 
   it("checks a development dependency pinned through the workspace catalog", () => {
@@ -349,12 +348,12 @@ describe("the licence gate", () => {
       manifest({ alpha: "^1.0.0" });
       install("alpha", "MIT", { beta: "^1.0.0" });
       install("beta", "MIT");
-      mkdirSync(join(root, "packages", "voice", "models"), { recursive: true });
-      writeFileSync(join(root, "packages", "voice", "models", "wake.onnx"), "model bytes");
+      mkdirSync(join(root, "daemon", "models"), { recursive: true });
+      writeFileSync(join(root, "daemon", "models", "wake.onnx"), "model bytes");
       pins({
         packages: {},
         files: {
-          "packages/voice/models/wake.onnx": {
+          "daemon/models/wake.onnx": {
             digest: "0".repeat(64),
             license: "Apache-2.0",
             source: "https://example.invalid/pinned-source",
@@ -365,14 +364,14 @@ describe("the licence gate", () => {
       });
       const first = run();
       expect(first.status).toBe(1);
-      expect(first.stderr).toContain("repository payload packages/voice/models/wake.onnx has not been reviewed");
+      expect(first.stderr).toContain("repository payload daemon/models/wake.onnx has not been reviewed");
       const actual = /found ([0-9a-f]{64})/.exec(first.stderr)?.[1];
       expect(actual).toBeTruthy();
 
       pins({
         packages: {},
         files: {
-          "packages/voice/models/wake.onnx": {
+          "daemon/models/wake.onnx": {
             digest: actual,
             license: "Apache-2.0",
             source: "https://example.invalid/pinned-source",
@@ -393,7 +392,7 @@ describe("the licence gate", () => {
       pins({
         packages: {},
         files: {
-          "packages/voice/models/missing.onnx": {
+          "daemon/models/missing.onnx": {
             digest: "0".repeat(64),
             license: "Apache-2.0",
             source: "https://example.invalid/pinned-source",
@@ -404,19 +403,19 @@ describe("the licence gate", () => {
       });
       const r = run();
       expect(r.status).toBe(1);
-      expect(r.stderr).toContain("repository payload packages/voice/models/missing.onnx cannot be verified");
+      expect(r.stderr).toContain("repository payload daemon/models/missing.onnx cannot be verified");
     });
 
     it("refuses a forbidden openWakeWord model payload despite Apache-licensed wrapper code", () => {
       manifest({ alpha: "^1.0.0" });
       install("alpha", "Apache-2.0", { beta: "^1.0.0" });
       install("beta", "MIT");
-      mkdirSync(join(root, "packages", "voice", "models"), { recursive: true });
-      writeFileSync(join(root, "packages", "voice", "models", "openwakeword-feature.onnx"), "forbidden model bytes");
+      mkdirSync(join(root, "daemon", "models"), { recursive: true });
+      writeFileSync(join(root, "daemon", "models", "openwakeword-feature.onnx"), "forbidden model bytes");
       pins({
         packages: {},
         files: {
-          "packages/voice/models/openwakeword-feature.onnx": {
+          "daemon/models/openwakeword-feature.onnx": {
             digest: "0".repeat(64),
             license: "CC-BY-NC-SA-4.0",
             source: "https://github.com/dscripka/openWakeWord/tree/368c03716d1e92591906a84949bc477f3a834455",
@@ -427,7 +426,7 @@ describe("the licence gate", () => {
       });
       const r = run();
       expect(r.status).toBe(1);
-      expect(r.stderr).toContain("repository payload packages/voice/models/openwakeword-feature.onnx lacks permitted licence");
+      expect(r.stderr).toContain("repository payload daemon/models/openwakeword-feature.onnx lacks permitted licence");
     });
 
     it("refuses a runtime package that ships a payload nobody pinned", () => {

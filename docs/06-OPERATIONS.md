@@ -253,7 +253,7 @@ systemctl --user restart mastra-desktop-daemon.service
 
 A restart is the revocation boundary. If the unit is not running, no restart is needed. For complete rollback, stop and disable it if an operator enabled it, remove the two operator files only after preserving any desired local policy, and re-apply a previously approved repository revision. Do not edit the installed unit or daemon tree in place; `infra/apply.sh` replaces repository-owned artifacts on the next apply.
 
-A refusal before daemon dispatch is the hub's not-permitted result. A refusal returned by the daemon remains the daemon's byte-owned refusal and must not be re-derived into a prettier cause. Unavailable or unreachable Gmail must not be called *uninstalled* without inventory evidence. These are references to the frozen R7 ordering in [the north-star contract](10-NORTH-STAR-CONTRACT.md), not new refusal semantics.
+A refusal returned by the daemon is the daemon's byte-owned refusal and must not be re-derived into a prettier cause. Unavailable or unreachable Gmail must not be called *uninstalled* without inventory evidence. These restate the R7 ordering recorded in [the retired north-star contract](10-NORTH-STAR-CONTRACT.md); the caller-side half of that ordering left with the hub ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)), and what remains is the daemon's own refusal discipline, not new semantics.
 
 ### Manual Gmail sign-in
 

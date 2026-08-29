@@ -228,20 +228,3 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
   };
 }
 
-// THE SECOND WIRE (ADR-0052). Separate module, separate tests: the index
-// re-exports both wires rather than one module growing a second personality.
-export {
-  defaultLaneSocketPath,
-  dialLane,
-  isLaneFrame,
-  LANE_EVENTS,
-  serveLane,
-  VOICE_DIAL_TIMEOUT_MS,
-  type LaneClient,
-  type LaneEvent,
-  type LaneFrame,
-  type LaneServer,
-  type LaneSource,
-  type VoiceDialRequest,
-  type VoiceDialResult,
-} from "./lane.js";

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-// The catalog-divergence half of CI step 9 (docs/07-ROADMAP.md:75): the
+// The catalog-divergence half of CI step 9 (docs/07-ROADMAP.md:78): the
 // workspace's pinned toolchain must match the destination monorepo's catalog,
 // so the gap never becomes a migration (docs/04-INTEGRATION-PLAN.md §3).
 // Exit 0 aligned; exit 1 on divergence or a vacuous watched set; exit 2 when

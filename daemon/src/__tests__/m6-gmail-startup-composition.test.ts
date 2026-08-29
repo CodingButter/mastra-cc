@@ -11,7 +11,6 @@ const ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const UNIT = resolve(ROOT, "infra/units/mastra-desktop-daemon.service");
 const GRANTS = resolve(ROOT, "infra/config/gmail-grants.json");
 const CAPABILITIES = resolve(ROOT, "infra/config/gmail-capabilities.json");
-const MINT = resolve(ROOT, "apps/hub/src/tools/mint.ts");
 
 function execStartArguments(unit: string): string[] {
   const line = unit.split("\n").find((candidate) => candidate.startsWith("ExecStart="));
@@ -80,11 +79,9 @@ describe("M6 Gmail startup composition", () => {
     });
   });
 
-  it("keeps the model mint at the three-tool observe floor with no launch tool", () => {
-    const source = readFileSync(MINT, "utf8");
-    expect(source).toMatch(
-      /const OBSERVE_TOOLS[^=]*= \[\s*"queryElements",\s*"attestElement",\s*"listApplications",?\s*\];/u,
-    );
-    expect(source).not.toMatch(/DaemonMethod\)\[\][^;]*openApplication/su);
-  });
+  // A third case asserted the hub's model mint stayed at the three-tool observe
+  // floor. The hub is gone (ADR-0057) and the assertion went with it: the floor
+  // it guarded was a property of a caller this repository no longer ships. What
+  // remains here is the daemon's own half — the operator unit and the authority
+  // tuple it composes — which is what ADR-0054 froze and what still ships.
 });

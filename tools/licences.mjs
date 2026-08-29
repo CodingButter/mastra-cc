@@ -190,7 +190,7 @@ let checked = 0;
 // This was not theoretical, and the first version of this comment said it was.
 // Measured across the split: `@types/node` is a dev dependency of the root
 // manifest AND a hard runtime dependency of `protobufjs` (`@google/genai` pulls
-// it in under apps/hub), so the shared map recorded it as dev first and the
+// it in under daemon), so the shared map recorded it as dev first and the
 // runtime walk then stopped there - never reaching `undici-types`, which the
 // split now licences. One package, MIT either way, and it would have been any
 // package with that shape.
