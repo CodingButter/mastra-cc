@@ -15,7 +15,7 @@ enters, among the claims it proved, this one:
 > list, **survives a full-screen window**
 
 The M4 exit gate carried that phrase forward as an unconditional box: *a raised
-full-screen window does not bury the face* (`docs/07-ROADMAP.md:228`). Read
+full-screen window does not bury the face* (`docs/07-ROADMAP.md:234`). Read
 plainly, that says the face is on top of everything, always, and that is what
 this milestone set out to reproduce.
 
@@ -117,5 +117,5 @@ it.
 | the face keeps `_NET_WM_STATE_ABOVE` throughout | same artifact, box 2 |
 | the harness refuses to write an unconditional claim | `tools/proofs/window-model.mjs` overclaim guard; `tools/proofs/__tests__/window-model.test.mjs` |
 | the prototype's original unconditional claim | ADR-0016 Evidence table, "PR #228 live run on a 3840×1080 two-monitor X11 desk" |
-| the exit box's plain wording | `docs/07-ROADMAP.md:228` |
+| the exit box's plain wording | `docs/07-ROADMAP.md:234` |
 | split-tick rule for a diverging box | Jamie, 2026-08-21, M3 exit gate |

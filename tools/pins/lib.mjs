@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +21,14 @@ export function rootFromArgs(argv) {
 
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".turbo"]);
 const OWN_DIR = join("tools", "pins") + sep;
+
+// Every listed root must exist. A pin whose scan roots have been deleted out from
+// under it still finds files in whatever roots remain, so the non-empty guard goes
+// green over a population the pin was never written to defend. Missing root is red.
+export function assertRoots(root, dirs, pin) {
+  const missing = dirs.filter((dir) => !existsSync(join(root, dir)));
+  if (missing.length > 0) fail(`${pin}: scan root(s) missing - the pin would guard the wrong population: ${missing.join(", ")}`);
+}
 
 export function collect(root, dirs, exts) {
   const files = [];

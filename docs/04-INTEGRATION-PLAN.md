@@ -50,17 +50,13 @@ That is the single most important fact for this plan: **a new capability area ge
 
 Mastra CC becomes a **top-level directory named `desktop/`, a sibling of `mastracode/`** — a peer product, not a package domain beneath one.
 
-> **Corrected 2026-08-09, and the distinction is not cosmetic.** This section originally read `desktop/` as a domain directory in the `voice/` and `signals/` mould: a group of packages. It is a sibling of `mastracode/` instead, because Mastra CC is a *product* built on the same coding-agent runtime rather than a library family. The practical consequence is that everything `mastracode` can do is available to the hub — its tools coexist with the accessibility-tree surface rather than being replaced by it. Q12 in [09-QUESTIONS.md](09-QUESTIONS.md) records the choice and its cost: a sibling does not inherit a plugin host's lifecycle, so process supervision and configuration are ours.
+> **Corrected 2026-08-09, and the distinction is not cosmetic.** This section originally read `desktop/` as a domain directory in the `voice/` and `signals/` mould: a group of packages. It is a sibling of `mastracode/` instead, because Mastra CC is a *product* built on the same coding-agent runtime rather than a library family. The practical consequence is that everything `mastracode` can do is available to a consumer of the daemon — its tools coexist with the accessibility-tree surface rather than being replaced by it. Q12 in [09-QUESTIONS.md](09-QUESTIONS.md) records the choice and its cost: a sibling does not inherit a plugin host's lifecycle, so process supervision and configuration are ours.
 
 ```
 mastra/
 ├── desktop/
 │   ├── protocol/            # @mastra/desktop-protocol   — schema, generator, golden fixtures
 │   ├── transport/           # @mastra/desktop-transport  — the one daemon client
-│   ├── voice-gate/          # @mastra/desktop-voice-gate — wake fingerprinting, capture, session dial
-│   ├── hub/                 # @mastra/desktop-hub        — the brain
-│   ├── widget/              # @mastra/desktop-widget     — Electron tray face
-│   ├── dashboard/           # @mastra/desktop-dashboard  — Vite config surface
 │   └── daemon/              # @mastra/desktop-daemon      — Node; an ordinary workspace package (see §4)
 └── pnpm-workspace.yaml      # one added line: `- desktop/*`
 ```
@@ -70,17 +66,13 @@ Our development repository is laid out so this is a `git mv` of one directory:
 ```
 mastra-cc/                        →  mastra/desktop/
 ├── packages/transport/           →  desktop/transport/
-├── packages/voice/               →  desktop/voice-gate/
 ├── protocol/                     →  desktop/protocol/
-├── apps/hub/                     →  desktop/hub/
-├── apps/widget/                  →  desktop/widget/
-├── apps/dashboard/               →  desktop/dashboard/
 ├── daemon/                       →  desktop/daemon/
 ├── infra/                        →  desktop/infra/
 └── docs/                         →  desktop/docs/
 ```
 
-**Note the one honest wrinkle:** our development layout uses `apps/` and `packages/`, and the destination flattens those into `desktop/*`. That is a *move of six directories one level*, mechanically trivial and history-preserving with `git mv`, and it is a deliberate choice — `apps/` and `packages/` are the right shape for a standalone repository, and collapsing them at integration time is a five-minute operation. What matters is that no package is *renamed* and no import path inside a package changes, because every cross-package import already goes through a scoped package name rather than a relative path.
+**Note the one honest wrinkle:** our development layout nests the shipped packages under `packages/`, and the destination flattens that into `desktop/*`. That is a *move of two directories one level*, mechanically trivial and history-preserving with `git mv`, and it is a deliberate choice — `packages/` is the right shape for a standalone repository, and collapsing them at integration time is a five-minute operation. What matters is that no package is *renamed* and no import path inside a package changes, because every cross-package import already goes through a scoped package name rather than a relative path.
 
 **Package naming** is fixed now, at the start, so imports never change: `@mastra/desktop-*`. Chosen over `@mastra/cc-*` because the destination names things after what they do (`@mastra/voice-openai`, `@mastra/client-js`), and "cc" means nothing to a reader who was not in the room.
 
@@ -169,7 +161,7 @@ tools/dry-run-integration.sh
 **It must:**
 
 1. Clone or copy a pristine `mastra-ai/mastra` checkout to a scratch directory.
-2. Copy our tree into `desktop/`, flattening `apps/` and `packages/` one level.
+2. Copy our tree into `desktop/`, flattening `packages/` one level.
 3. Add `- desktop/*` to `pnpm-workspace.yaml`.
 4. Run `pnpm install`, then `turbo run build lint typecheck test --filter='./desktop/*'`.
 5. Diff our declared dependency versions against the destination's catalog and **fail on any divergence**, naming each one.

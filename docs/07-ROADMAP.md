@@ -4,7 +4,9 @@
 
 **Why gates:** the prototype closed issues on the strength of implementations that looked right, then discovered a keeper that had never been deployed and a setup command that could not run. A gate that cannot fail is a status update wearing a costume.
 
-**Sequencing principle:** one author until the north star sentence works, then parallelise. → [ADR-0015](02-DECISIONS/0015-one-vertical-slice-before-parallel-agents.md)
+**Sequencing principle:** one author until a vertical slice works end to end, then parallelise. → [ADR-0015](02-DECISIONS/0015-one-vertical-slice-before-parallel-agents.md)
+
+**Read this first:** milestones M3 through M6 are retired. They built a voice assistant on top of the daemon, and on 2026-08-28 that surface was removed ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). The live roadmap is **P1 through P5** below; M0 through M2.7 remain the record of how the daemon got built, and they still describe what ships.
 
 ---
 
@@ -198,6 +200,8 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 ## M3 — The hub thinks
 
+> **Retired 2026-08-28 with the client surface** ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). Kept as the record of what was built and what it taught; it is not a description of what ships. The daemon capabilities it exercised survive — the surface that consumed them does not.
+
 **Goal:** an agent that can drive the daemon, with credentials it never hands out.
 
 **Deliverables:**
@@ -218,6 +222,8 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 
 ## M4 — The face
 
+> **Retired 2026-08-28 with the client surface** ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). Kept as the record of what was built and what it taught; it is not a description of what ships. The daemon capabilities it exercised survive — the surface that consumed them does not.
+
 **Goal:** the tray widget, correct on a real multi-monitor desk.
 
 **Deliverables:** the window model and hiding model in [ADR-0016](02-DECISIONS/0016-the-face-is-a-managed-window-that-hides-when-told.md), in full.
@@ -234,6 +240,8 @@ The prototype's freeze was prose. The schema changed 23 times after being frozen
 ---
 
 ## M5 — Wake
+
+> **Retired 2026-08-28 with the client surface** ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). Kept as the record of what was built and what it taught; it is not a description of what ships. The daemon capabilities it exercised survive — the surface that consumed them does not.
 
 > **Superseded by [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md) (accepted 2026-08-25).** The enrolment-first design described below was abandoned: speaker-specific template matching did not generalize, and identity turned out to be the wrong question. M5 shipped instead as phrase-only wake gating a client-owned voice session. Everything from here to the replacement exit gate is kept as the historical record of what was attempted and why it was dropped — it is not a description of what runs today.
 
@@ -272,9 +280,11 @@ M5 shipped phrase-only wake gating a client-owned voice session, on the terms re
 
 ## M6 — The north star
 
+> **Retired 2026-08-28 with the client surface** ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). Kept as the record of what was built and what it taught; it is not a description of what ships. The daemon capabilities it exercised survive — the surface that consumed them does not.
+
 **Goal:** *"Tell me my most recent email."* Spoken, from across the room, answered aloud.
 
-**Contract:** Stage 1 froze what the sentence means in [10-NORTH-STAR-CONTRACT.md](10-NORTH-STAR-CONTRACT.md). Later stages implement it; they do not redefine it.
+**Contract:** Stage 1 froze what the sentence means in [10-NORTH-STAR-CONTRACT.md](10-NORTH-STAR-CONTRACT.md), now retired to a historical record along with its gate ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). Stages 2 and 3 shipped daemon-side work that outlives it; the sentence itself does not.
 
 **Stages 2 and 3 delivered — operator-owned authority and a daemon-gated orchestration seam.** [ADR-0054](02-DECISIONS/0054-gmail-authority-is-composed-by-the-operator-unit.md) freezes the built-in `gmail` authority composition: launch only `gmail`, observe `{gmail, chrome}` through the recipe's `appearsAs` join, durable launch only for Gmail, and receipts only at an explicit protected audit path. [ADR-0055](02-DECISIONS/0055-orchestration-requests-launch-the-daemon-decides-it.md) adds the trusted non-model caller: orchestration chooses when to request one identity, while the daemon alone decides authority, capability, catalog, process, ownership, audit, and refusal bytes. A private live proof launched only non-personal `yad` and returned the byte-exact daemon refusal for unpermitted Gmail; Gmail and Chrome were never launched. No voice request lifecycle, Gmail observation, resolver, or north-star completion has shipped.
 
@@ -291,29 +301,65 @@ M5 shipped phrase-only wake gating a client-owned voice session, on the terms re
 
 ---
 
-## M7 — Parallel
+## P1 — The package exists
 
-**Goal:** the factory rejoins, against a settled shape.
+**Goal:** an agent runtime installs one dependency and gets useful work done on a desktop without reading this repository.
 
-**Entry conditions, all required:**
-- M6 passed with its artifact on disk.
-- Agent platform pinned to a stable release, patches verified present. → [06-OPERATIONS.md §2](06-OPERATIONS.md)
-- Board clean before the first dispatch.
-- Every queued issue names its dependencies.
+The daemon's operations are proven. What is missing is the thing that *knows how to use them* — sequencing, recovery, and the instructions an agent needs when a desktop answers something surprising. `docs/11-AGENT-INSTRUCTIONS.md` is the seed; a published package is the milestone.
 
 **Exit gate:**
-- [ ] Ten agents complete work end to end with zero redundant dispatches.
-- [ ] Zero merge-repair commits during the first wave.
-- [ ] The keeper's live judgment shows requeues only for genuinely stalled rows.
+- [ ] A published package, versioned independently of the daemon, exposes the daemon's operations to an agent runtime.
+- [ ] An agent that has never seen this repository completes a multi-step task on a live desktop using only the package's own instructions — transcript committed as a proof artifact.
+- [ ] The package refuses clearly when the daemon it finds speaks a different schema digest, naming both.
+- [ ] A dogfood run reproduces the known rough edges as *documented behaviour* rather than surprises: nameless controls, write-then-read sequencing, and installed-versus-running application status (issue #53).
 
 ---
 
-## M8 — Ship one package
+## P2 — The daemon runs anywhere
 
-**Goal:** a stranger installs one `.deb` and reaches M6 in one sitting.
+**Goal:** the Linux accessibility backend is demonstrably one backend, not the architecture.
+
+The container harness in `infra/webtop/` already proves the daemon survives recreation, persistence and a foreign desktop. The next boundary is a second platform.
 
 **Exit gate:**
-- [ ] A clean Ubuntu VM installs the package and completes the six steps in [00-PRODUCT.md §10](00-PRODUCT.md).
+- [ ] A second platform backend answers the same frozen schema for observe, act and subscribe — no protocol change, no caller-visible branch.
+- [ ] The backend-selection seam is proved by a test that fails when a backend leaks platform vocabulary into the schema (pin B10 already guards the schema; this extends it to the new route).
+- [ ] The container harness runs green against both backends, and Docker-specific code stays inside `infra/webtop/`.
+
+---
+
+## P3 — Application identity and stale skills
+
+**Goal:** a desktop skill knows which application and which version it is a claim about, and knows when that claim went stale.
+
+This is the contribution Mastra structurally cannot make. A skill that says *"the compose button is inside the toolbar"* is a statement about one application's accessibility tree at one version. Detecting that the tree moved is desktop truth, and desktop truth is ours.
+
+**Exit gate:**
+- [ ] Every application the daemon reports carries a stable identity and a version fingerprint derived from what the platform publishes, not from a hard-coded table.
+- [ ] A skill pinned to an application reports itself stale when that fingerprint changes, proved by a live artifact that changes an application and observes the transition.
+- [ ] Staleness is offered to Mastra's skill system rather than reimplemented as a parallel one.
+
+---
+
+## P4 — The compounding loop
+
+**Goal:** one agent fumbles through an unfamiliar application; the next one does not.
+
+The knowledge is not *"here is how to do X in app Y"* — that rots the moment the app ships a release. It is general: how you understand an application, how you navigate a tree, where kinds of elements tend to live, which footguns recur. The curator observes what actually happened to get the work done, and the entities, connections and memories update when applications change.
+
+**Exit gate:**
+- [ ] A recorded struggle in an unfamiliar application produces durable, application-general knowledge — not a coordinate script and not a per-app recipe.
+- [ ] A second agent, cold, completes the same task measurably faster using only that knowledge, with both transcripts committed.
+- [ ] When the application changes underneath it, the affected knowledge is updated or marked stale rather than silently wrong.
+
+---
+
+## P5 — Ship it
+
+**Goal:** a stranger installs the daemon and the package and gets an agent working on their desk in one sitting.
+
+**Exit gate:**
+- [ ] A clean VM installs the daemon package and the runtime dependency, with no build step.
 - [ ] Performed by someone who did not build it.
 - [ ] Every proof artifact re-run on the packaged build, not on a development tree.
 
@@ -325,16 +371,11 @@ Named so they are not mistaken for oversights, and so nobody re-derives them as 
 
 | Item | When |
 |---|---|
-| Orb visual design beyond a legible face | after M6 |
-| Phone client, as a full client | after M6 |
-| Node-based skill editor (prototype issue #189) | after M7; needs the dashboard's React Flow surface |
-| Windows port (prototype issue #16) | after M8 |
+| A user-facing assistant of any kind, spoken or otherwise | a composition over this runtime, not this repository — [ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md) |
 | App-native integration, compositor access, vision, raw input | deferred tiers; [01-ARCHITECTURE.md §8](01-ARCHITECTURE.md) |
 | Launch-an-application tool (prototype issue #183) | **promoted, 2026-08-09** — no longer optional. [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md) makes launching *the* mechanism by which an application becomes readable, so this is a prerequisite for M2 rather than a convenience for later |
 
-**The orb line is deliberate.** Four consecutive commits refined the prototype's orb — glass, wisps, smoke, reflection — in a single night, before the north star sentence worked. Visual work is scheduled after M6, on purpose.
-
-**The phone line was corrected, 2026-08-08.** The phone *client* remains deferred. The **notification path is not**, and it has been promoted out of this table into M6. [ADR-0022](02-DECISIONS/0022-failure-to-act-is-harm-we-caused.md) makes reaching the user a safety mechanism rather than a convenience: if every protection must fail toward informing, then the thing that does the informing is load-bearing, and a milestone that can complete a task without being able to say so has not met the bar. M6 must therefore ship at least a stubbed notification path and a surface that shows a task is still running with its last checkpoint. Whether the person then answers from a phone, and how their answer is proven to come from them, is [ADR-0023](02-DECISIONS/0023-the-phone-is-a-consent-surface.md) and stays after M6.
+**The orb and phone lines are gone with the client surface.** They were scheduled after the north star; the north star is retired. Their lesson survives and is worth keeping: four consecutive commits refined the prototype's orb — glass, wisps, smoke, reflection — in a single night, before anything worked end to end. Visual work is what a project does when it is avoiding the hard part.
 
 ---
 

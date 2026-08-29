@@ -1,5 +1,8 @@
 # What the face does on a real desk
 
+> **Retired 2026-08-28 — historical record.** This proof measured the client surface (face, widget, voice lane) removed by [ADR-0057](../02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md). The command that produced it no longer exists in the tree. It is kept because decisions still cite it as their evidence, and evidence deleted under a decision it justifies cannot be audited. Nothing here describes what ships today.
+
+
 **Produced by:** `node tools/proofs/window-model.mjs --live --display <n>`
 **Date:** 2026-08-23
 **Host:** minibeast, kernel 7.0.0-28-generic

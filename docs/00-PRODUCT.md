@@ -7,28 +7,24 @@
 
 ## 1. The one sentence
 
-**Mastra CC lets a person talk to their own computer and have it act on their behalf, at the level of meaning rather than the level of pixels.**
+**Mastra CC gives an agent a truthful, actionable model of a live desktop — at the level of meaning rather than the level of pixels.**
 
-The user says *"tell me my most recent email."* The machine finds the mail application the way a person would — by what things *are*, not where they happen to sit on screen — reads the message, and says it out loud. No screenshot fed to a vision model. No synthetic mouse path. No shell command guessed at from a screengrab.
+An agent asks what applications are open, asks a window what is inside it, reads the value of a field, types into it and proves the text arrived, and is *told* when something under a watched element changes. No screenshot fed to a vision model. No synthetic mouse path. No shell command guessed at from a screengrab.
 
-## 2. The north star
+## 2. What we are and what we are not
 
-> **"Tell me my most recent email."**
+**Mastra CC is a peripheral, not an assistant.** It ships a daemon and an installable package, and no user interface. Until 2026-08-28 this document was organised around one spoken sentence — *"tell me my most recent email"* — and a hub, a widget, a dashboard and a voice package built to serve it. That framing built a real thing, and the real thing turned out to be underneath it. The client surface was a demo harness wearing product clothes; the daemon was the product. [ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md) records the amputation and its reasoning.
 
-This sentence has been the acceptance test for the whole system since the first week, and it stays. It is a good north star because it is small enough to demo and large enough to require nearly everything:
+**The dividing line with the agent runtime: if it is about thinking, it is Mastra's; if it is about the desk, it is ours.**
 
-| The sentence demands | Which forces |
+| Mastra core owns | Mastra CC owns |
 |---|---|
-| the machine to hear you across the room | wake detection running locally, on-device |
-| the machine to know it may act | a consent and scope model, not a blanket grant |
-| the machine to find "mail" | a semantic model of the desktop, not coordinates |
-| the machine to read a message | structured reads through the accessibility layer |
-| the machine to answer aloud | a voice lane, with the audio staying near the person |
-| you to trust the answer | an audit trail of what was answered and why |
+| the agentic loop, model routing | what exists on this machine right now |
+| memory, retrieval, the subconscious | what of it is actionable, and what refuses |
+| skills as a concept, workflows | what changed, when, and who caused it |
+| judgement about what to do next | application identity, receipts, attestation |
 
-What that sentence means precisely — the mailbox, the ordering evidence, the minimum spoken fields, the honest refusals, and the audit — is frozen in [10-NORTH-STAR-CONTRACT.md](10-NORTH-STAR-CONTRACT.md).
-
-If a change does not move that sentence closer to working reliably on a stranger's machine, it is not a priority. In the prototype this discipline slipped: seven days produced an orb with volumetric smoke and a glowing reflection (`08-04`, four consecutive visual commits in one night — see [03-LESSONS.md §3](03-LESSONS.md)) before the north star sentence worked end to end.
+A spoken assistant is still possible — as a *later composition over this runtime*, built above an interface that no longer assumes one.
 
 ## 3. What "semantic desktop control" means
 
@@ -39,7 +35,7 @@ The desktop exposes an accessibility tree — the same structure a screen reader
 - resolves *"the compose button"* to an element with role `push button`, name `Compose`, inside the window whose application is the mail client
 - reads ordinary text and numeric content from a permitted element; a platform-protected control reports a structured redaction instead of a value
 - types by delivering text to a focused element, verifies the platform read-back internally, and lets the caller prove the result by freshly observing the element afterwards
-- reports that something changed after an action, attributed to whoever caused it; the change event remains a content-free pointer that triggers re-observation
+- reports that something changed under a subscribed element, attributed to whoever caused it; the change event remains a content-free pointer that triggers re-observation
 
 **Concretely, the system does not:**
 
@@ -47,44 +43,45 @@ The desktop exposes an accessibility tree — the same structure a screen reader
 - synthesise raw input events at the X11 or `uinput` layer
 - run shell commands on the user's behalf as a substitute for interacting with an app
 
-The prototype banned `xdotool`, `wmctrl`, and `uinput` outright and never lifted the ban. This repository carried that ban until 2026-08-17, when [ADR-0046](02-DECISIONS/0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md) replaced it with containment: raw input is the most restricted operation class, off by default, never self-granted and never reachable as a fallback — and no such class has been built yet. Pixels exist as a **tier of last resort, addressed by window** (`08-01 12:22`, "pixels as the tier of last resort, addressed by window") — a photograph is something you take *of a named window you already resolved semantically*, not a way to find things.
+The prototype banned `xdotool`, `wmctrl`, and `uinput` outright and never lifted the ban. This repository carried that ban until 2026-08-17, when [ADR-0046](02-DECISIONS/0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md) replaced it with containment: raw input is the most restricted operation class, off by default, never self-granted and never reachable as a fallback — and no such class has been built yet. Pixels exist as a **tier of last resort, addressed by window** — a photograph is something you take *of a named window you already resolved semantically*, not a way to find things.
 
 ### Why this is the interesting bet
 
 A vision-model-driven clicker is easy to demo and structurally fragile: it re-derives the same UI from pixels on every turn, it cannot tell an enabled button from a disabled one that looks similar, it cannot attribute a change to a cause, and it has no idea whether it just clicked *Send* or *Save Draft*. A semantic driver knows the difference because it asked.
 
-There is also a physical argument the prototype's own pitch material made (`08-04`, "the row where the architectures diverge by physics: who gets the desk"): a remote vision agent needs a machine to look at. A semantic agent runs on the desk that is already there, next to the person, with their session, their credentials, and their applications already open.
+It is also **faster, in a way that compounds**. A pixel agent runs open-loop: act, screenshot, re-read, guess, act. A semantic agent runs closed-loop: act, be told what changed, confirm, act. Subscriptions are the speed feature, not only the safety one.
+
+There is a physical argument too (`08-04`, "the row where the architectures diverge by physics: who gets the desk"): a remote vision agent needs a machine to look at. A semantic agent runs on the desk that is already there, with the session, the credentials, and the applications already open.
 
 ## 4. Who it is for
 
-**Primary:** a person at their own Linux desktop who wants a hands-free, spoken assistant with real reach into their applications — not a chatbot in a browser tab.
+**Primary:** an agent runtime — today Mastra — that needs real reach into the applications on a machine, and needs to be able to trust what it is told about them.
 
-**Secondary, and load-bearing for the architecture:** *many clients, one brain.* The prototype's architecture note calls this out as a first-class requirement, not a stretch goal ("one server, many clients" — prototype `docs/02-architecture.md`). A phone on the couch, a tray widget on the desk, and a browser tab all talk to the same hub; the hub holds the state and the credentials.
+**Through that runtime:** the person whose desk it is. The consent model assumes a human is present and reachable; scopes, attestation and receipts exist because someone is accountable for what happens on that machine.
 
-**Not the target:** headless CI automation, screen-scraping bots, or anything whose value proposition is operating a machine nobody is sitting at. The consent model assumes a human is present and reachable.
+**Not the target:** screen-scraping bots, or anything whose value proposition is defeating the consent model on a machine nobody is sitting at.
 
 ## 5. The product shape
 
-Three layers, and the user only ever installs one thing.
+Two artifacts, versioned separately on purpose.
 
-| Layer | What it is | Where it runs |
+| Artifact | What it is | Where it runs |
 |---|---|---|
-| **Daemon** | speaks the accessibility layer, owns all desktop reads and writes, enforces scope | on the desktop, per user session |
-| **Hub** | the brain: agents, tools, memory, credentials, audit, the voice lane's control plane | one per person, typically the same machine, reachable by their other devices |
-| **Clients** | the tray face, the phone page, the dashboard | anywhere that can reach the hub |
+| **Daemon** | speaks the accessibility layer, owns all desktop reads and writes, enforces scope, writes the audit record | wherever the desk is — hardware, VM or container — per user session |
+| **Package** | an installable dependency that knows the daemon's operations, how to sequence them, and how to recover | inside the agent runtime |
 
-The prototype's shipping story was **"one deb, three layers, three depths"** (`08-04` pitch commits) and that holds: a single Debian package installs the daemon and the hub; clients attach.
+The daemon is engineering: it is testable, and it is done per release. The package is judgement, and judgement drifts with every model that reads it. One version number across both would force one of them to lie.
 
-**Three depths** refers to how far the system is allowed to reach, which is a consent question, not a capability question — see §7.
+The Linux backend is **one backend, not the architecture**. Portability across operating systems is a roadmap item ([07-ROADMAP.md](07-ROADMAP.md)), and the container harness in `infra/webtop/` exists to keep that honest — Docker-specific code lives there and nowhere else.
 
 ## 6. What the product refuses to be
 
 These are non-goals with teeth. Each one was a live temptation during the prototype and each one has an issue, a commit, or a ban behind it.
 
 1. **Not a remote shell.** The agent never gets arbitrary command execution as a desktop-control primitive. The prototype's minted-token tool surface was deliberately read-only — `READ_FILE`, `LIST_FILES`, `FILE_STAT`, `GREP` — and adding a launch capability was a *separate, tracked, still-open decision* (issue #183), not something that leaked in.
-2. **Not a screen recorder.** Screen capture is off by design at the client. The widget's capability report says `screenCapture: false` and its permission list is exactly one entry, `["media"]` — the microphone, for its own page (prototype `clients/widget/src/boundaries.test.ts`, `GRANTED_PERMISSIONS`).
+2. **Not a screen recorder.** Screen capture is off by design. Pixels are a tier of last resort addressed by an already-resolved window, never an ambient capture and never a way to find things.
 3. **Not a keylogger.** Watching a field the user is typing in is a *feature with an owner and an expiry*, not ambient logging. The prototype ruled that a human at the keyboard outranks the agent (issue #25) and that an element is *owned while it is being written*.
-4. **Not a cloud microphone.** Phrase wake runs on the device. After wake, the client dials one constrained realtime session with a short-lived token and sends one bounded opening directly to it. The hub receives no provisional or realtime audio; tools and memory receive none before admission. See [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md).
+4. **Not a microphone at all, any more.** Wake detection, audio capture and voice sessions were removed with the client surface on 2026-08-28 ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). This repository holds no audio path. If a consumer wants one it builds it above the transport, and the reasoning that kept audio off the server ([ADR-0006](02-DECISIONS/0006-hub-holds-no-audio.md)) is worth reading before it does.
 5. **Not a general RPA platform.** No record-and-replay macros, no coordinate scripts. If the accessibility layer cannot describe it, the honest answer is that we cannot do it — and the prototype's security doc has a whole section titled "What this model does NOT guarantee" for exactly this reason.
 6. **Not a thing that pretends.** When a browser's accessibility layer is unreadable, the system reports the browser as *running but unreadable*, not as *absent* (`6657915`, `08-04 10:31`). A refusal must explain itself from a check that actually ran (issue #194).
 

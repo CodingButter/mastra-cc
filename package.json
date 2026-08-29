@@ -7,15 +7,5 @@
   },
   "devDependencies": {
     "turbo": "^2.10.9"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "electron"
-    ],
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "react-day-picker>date-fns": "4.4.0"
-      }
-    }
   }
 }
