@@ -349,11 +349,11 @@ describe("the licence gate", () => {
       install("alpha", "MIT", { beta: "^1.0.0" });
       install("beta", "MIT");
       mkdirSync(join(root, "daemon", "models"), { recursive: true });
-      writeFileSync(join(root, "daemon", "models", "wake.onnx"), "model bytes");
+      writeFileSync(join(root, "daemon", "models", "payload.onnx"), "model bytes");
       pins({
         packages: {},
         files: {
-          "daemon/models/wake.onnx": {
+          "daemon/models/payload.onnx": {
             digest: "0".repeat(64),
             license: "Apache-2.0",
             source: "https://example.invalid/pinned-source",
@@ -364,14 +364,14 @@ describe("the licence gate", () => {
       });
       const first = run();
       expect(first.status).toBe(1);
-      expect(first.stderr).toContain("repository payload daemon/models/wake.onnx has not been reviewed");
+      expect(first.stderr).toContain("repository payload daemon/models/payload.onnx has not been reviewed");
       const actual = /found ([0-9a-f]{64})/.exec(first.stderr)?.[1];
       expect(actual).toBeTruthy();
 
       pins({
         packages: {},
         files: {
-          "daemon/models/wake.onnx": {
+          "daemon/models/payload.onnx": {
             digest: actual,
             license: "Apache-2.0",
             source: "https://example.invalid/pinned-source",
@@ -411,11 +411,11 @@ describe("the licence gate", () => {
       install("alpha", "Apache-2.0", { beta: "^1.0.0" });
       install("beta", "MIT");
       mkdirSync(join(root, "daemon", "models"), { recursive: true });
-      writeFileSync(join(root, "daemon", "models", "openwakeword-feature.onnx"), "forbidden model bytes");
+      writeFileSync(join(root, "daemon", "models", "noncommercial-payload.onnx"), "forbidden model bytes");
       pins({
         packages: {},
         files: {
-          "daemon/models/openwakeword-feature.onnx": {
+          "daemon/models/noncommercial-payload.onnx": {
             digest: "0".repeat(64),
             license: "CC-BY-NC-SA-4.0",
             source: "https://github.com/dscripka/openWakeWord/tree/368c03716d1e92591906a84949bc477f3a834455",
@@ -426,7 +426,7 @@ describe("the licence gate", () => {
       });
       const r = run();
       expect(r.status).toBe(1);
-      expect(r.stderr).toContain("repository payload daemon/models/openwakeword-feature.onnx lacks permitted licence");
+      expect(r.stderr).toContain("repository payload daemon/models/noncommercial-payload.onnx lacks permitted licence");
     });
 
     it("refuses a runtime package that ships a payload nobody pinned", () => {

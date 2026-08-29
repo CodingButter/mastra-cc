@@ -1,14 +1,17 @@
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
-import { collect, fail, rootFromArgs, stripComments } from "./lib.mjs";
+import { assertRoots, collect, fail, rootFromArgs, stripComments } from "./lib.mjs";
 
 // B1: only daemon/ may import a D-Bus or accessibility binding
 // (docs/01-ARCHITECTURE.md §5). Scans every source tree that is not the daemon.
 
 const BANNED = ["dbus-native", "@homebridge/dbus-native", "dbus-next", "node-atspi"];
 
+const SCAN_ROOTS = ["packages", "tools", "scripts"];
+
 const root = rootFromArgs(process.argv);
-const files = collect(root, ["packages", "apps", "tools", "scripts"], [".ts", ".js", ".mjs", ".cjs"]);
+assertRoots(root, SCAN_ROOTS, "pin-b1");
+const files = collect(root, SCAN_ROOTS, [".ts", ".js", ".mjs", ".cjs"]);
 
 if (files.length === 0) fail("pin-b1: no files matched - the pin would pass vacuously");
 

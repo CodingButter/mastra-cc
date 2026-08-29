@@ -75,8 +75,7 @@ const ALLOWED = new Set([
 const root = fileURLToPath(new URL("..", import.meta.url));
 
 const manifests = ["package.json", "daemon/package.json", "tools/package.json"];
-for (const group of ["packages", "apps"]) {
-  if (!existsSync(join(root, group))) continue;
+for (const group of ["packages"]) {
   for (const name of readdirSync(join(root, group))) {
     manifests.push(join(group, name, "package.json"));
   }

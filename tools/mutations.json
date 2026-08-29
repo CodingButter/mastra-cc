@@ -7,9 +7,23 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
+    "name": "b1-scan-roots-guard-removed",
+    "file": "tools/pins/b1.mjs",
+    "find": "assertRoots(root, SCAN_ROOTS, \"pin-b1\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
     "name": "b5-vacuous-guard-removed",
     "file": "tools/pins/b5.mjs",
     "find": "if (files.length === 0) fail(\"pin-b5: no files matched - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b5-scan-roots-guard-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "assertRoots(root, SCAN_ROOTS, \"pin-b5\");",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },

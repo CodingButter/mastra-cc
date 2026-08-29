@@ -39,12 +39,14 @@ const cases = [
     plantPath: "packages/leak/src/leak.ts",
     plantSource: 'import dbus from "dbus-native";\n',
     expectedMessage: 'D-Bus binding "dbus-native"',
+    scanRoots: ["packages", "tools", "scripts"],
   },
   {
     pin: "b5",
     plantPath: "packages/rogue/src/socket.ts",
     plantSource: 'import net from "node:net";\n',
     expectedMessage: "socket implementation outside packages/transport",
+    scanRoots: ["packages", "tools", "scripts"],
   },
   {
     pin: "b8",
@@ -77,7 +79,7 @@ const cases = [
   },
 ];
 
-for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = VACUOUS_FILE_SET } of cases) {
+for (const { pin, plantPath, plantSource, expectedMessage, alongside, scanRoots, vacuity = VACUOUS_FILE_SET } of cases) {
   test(`${pin}: the clean tree passes`, () => {
     const r = runPin(pin);
     expect(r.output).toContain(`pin-${pin}: ok`);
@@ -85,7 +87,9 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = 
   });
 
   test(`${pin}: a planted violation fails with the offending path named`, () => {
-    const r = runPin(pin, ["--root", plant(plantPath, plantSource, alongside)]);
+    const root = plant(plantPath, plantSource, alongside);
+    for (const dir of scanRoots ?? []) mkdirSync(join(root, dir), { recursive: true });
+    const r = runPin(pin, ["--root", root]);
     expect(r.status).toBe(1);
     expect(r.output).toContain(expectedMessage);
     expect(r.output).toContain(plantPath);
@@ -97,6 +101,9 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = 
     // would otherwise fail on the manifest when both are missing, hiding a
     // deleted source-half guard. An empty set is empty of one thing at a time.
     const root = mkdtempSync(join(tmpdir(), "pin-empty-"));
+    // A pin that asserts its scan roots exist needs them present-but-empty here,
+    // or the roots guard fires first and hides a deleted vacuity guard.
+    for (const dir of scanRoots ?? []) mkdirSync(join(root, dir), { recursive: true });
     for (const [path, body] of Object.entries(alongside ?? {})) {
       const file = join(root, path);
       mkdirSync(dirname(file), { recursive: true });
@@ -137,3 +144,17 @@ test("b11: an observe-only dispatch table fails rather than passing vacuously", 
   expect(r.status).toBe(1);
   expect(r.output).toContain("would pass vacuously");
 });
+
+for (const pin of ["b1", "b5"]) {
+  test(`${pin}: a missing scan root fails rather than guarding the wrong population`, () => {
+    // The amputation of apps/ (ADR-0057) is exactly this hazard: delete a root
+    // and the pin still finds files in the roots that remain, so the non-empty
+    // guard goes green over a population the pin was never written to defend.
+    const root = plant("packages/kept/src/a.ts", "export {};\n");
+    mkdirSync(join(root, "tools"), { recursive: true });
+    const r = runPin(pin, ["--root", root]);
+    expect(r.status).toBe(1);
+    expect(r.output).toContain("scan root(s) missing");
+    expect(r.output).toContain("scripts");
+  });
+}
