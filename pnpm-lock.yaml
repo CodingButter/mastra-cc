@@ -52,6 +52,34 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0))
 
+  packages/desktop:
+    dependencies:
+      '@mastra-cc/protocol-types':
+        specifier: workspace:*
+        version: link:../protocol-types
+      '@mastra-cc/transport':
+        specifier: workspace:*
+        version: link:../transport
+    devDependencies:
+      '@mastra-cc/daemon':
+        specifier: workspace:*
+        version: link:../../daemon
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      oxlint:
+        specifier: ^1.77.0
+        version: 1.77.0
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0))
+
   packages/protocol-types:
     devDependencies:
       typescript:

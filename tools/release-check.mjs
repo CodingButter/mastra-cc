@@ -18,13 +18,17 @@ import { join, resolve } from "node:path";
 //
 // Exit 0 all clear; exit 1 on any violation or a vacuous package set.
 
-const ROOT = resolve(import.meta.dirname, "..");
+// The repository by default; `--root <dir>` lets the check be pointed at a
+// fixture tree, which is how its own tests plant a red without editing the
+// packages this repository actually ships.
+const rootArg = process.argv.indexOf("--root");
+const ROOT = rootArg === -1 ? resolve(import.meta.dirname, "..") : resolve(process.argv[rootArg + 1]);
 
 // The publishable set, stated here rather than discovered, so ADDING a package
 // to the release surface is a deliberate edit and not a side effect of a glob.
 // The daemon and the root stay off this list on purpose: the daemon ships as a
 // systemd install (infra/apply.sh), not as a library.
-const PUBLISHABLE = ["packages/protocol-types", "packages/transport"];
+const PUBLISHABLE = ["packages/protocol-types", "packages/transport", "packages/desktop"];
 
 function manifest(dir) {
   return JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
@@ -120,6 +124,19 @@ for (const relative of PUBLISHABLE) {
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
+}
+
+// The list above is deliberate, which means it can also be FORGOTTEN. A package
+// that dropped `private` and never reached this file would be published by a
+// release run with none of the checks above ever having looked at it, so the
+// omission is a failure here rather than a surprise on the registry.
+for (const name of readdirSync(join(ROOT, "packages"), { withFileTypes: true })) {
+  if (!name.isDirectory()) continue;
+  const dir = join(ROOT, "packages", name.name);
+  if (!existsSync(join(dir, "package.json"))) continue;
+  if (manifest(dir).private) continue;
+  if (PUBLISHABLE.includes(`packages/${name.name}`)) continue;
+  problems.push(`packages/${name.name}: publishable but absent from the release check's list`);
 }
 
 // A release check that checked nothing is the failure it is meant to prevent.
