@@ -1,5 +1,19 @@
 [
   {
+    "name": "catalog-check-named-catalog-comparison-removed",
+    "file": "tools/catalog-check.mjs",
+    "find": "  for (const key of WATCHED.filter((k) => k in pins)) {\n    const there = destNamed[name][key];\n    if (there === undefined) {\n      divergences.push(`catalog-check: ${key} in catalog ${name} is ${pins[key]} here, absent in the destination`);\n    } else if (there !== pins[key]) {\n      divergences.push(`catalog-check: ${key} in catalog ${name} is ${pins[key]} here, ${there} in the destination`);\n    }\n  }",
+    "cwd": "tools",
+    "testFile": "__tests__/catalog-check.test.mjs"
+  },
+  {
+    "name": "catalog-check-local-only-named-catalog-check-removed",
+    "file": "tools/catalog-check.mjs",
+    "find": "    divergences.push(`catalog-check: catalog ${name} is defined here, absent in the destination`);",
+    "cwd": "tools",
+    "testFile": "__tests__/catalog-check.test.mjs"
+  },
+  {
     "name": "b1-vacuous-guard-removed",
     "file": "tools/pins/b1.mjs",
     "find": "if (files.length === 0) fail(\"pin-b1: no files matched - the pin would pass vacuously\");",

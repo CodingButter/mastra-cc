@@ -83,7 +83,8 @@ mastra-cc/
 │   └── tests/
 ├── packages/
 │   ├── transport/            # the daemon client every consumer speaks (ADR-0003)
-│   └── protocol-types/       # generated bindings; build output, not committed
+│   └── protocol-types/       # generated bindings incl. their own tsconfig; builds its
+│                             #   declarations into dist/; build output, not committed
 └── tools/                    # repo scripts: proofs, generators, gates
 ```
 

@@ -35,7 +35,7 @@ That is the single most important fact for this plan: **a new capability area ge
 
 | Dependency | Monorepo catalog | Prototype used |
 |---|---|---|
-| `typescript` | `^6.0.3` | `^7.0.2` |
+| `typescript` | `^6.0.3` (snapshot 2026-08-08; the destination's default catalog said `^7.0.2` when re-read 2026-08-29, and we followed — see the note on C5 below) | `^7.0.2` |
 | `vitest` | `4.1.10` | `4.1.10` ✅ |
 | `zod` | `^4.4.3` | `3.25.76` ❌ major-line gap |
 | `react` / `react-dom` | `^19.2.5` | `19.2.8` ✅ compatible |
@@ -88,7 +88,7 @@ Each rule below is a thing the destination requires. Adopting them now costs not
 | C2 | Every package exposes `build`, `test`, `lint`, `typecheck`, `clean` | the shared task graph |
 | C3 | `vitest` at the catalog version, `4.1.10` | already aligned |
 | C4 | **`zod` v4**, not v3 | catalog is `^4.4.3`; the prototype's v3 usage would be a migration |
-| C5 | TypeScript compatible with the catalog's `^6.0.3` line | the prototype's `^7.0.2` would need reconciling |
+| C5 | TypeScript compatible with the catalog's `^7.0.2` line | the destination's default catalog moved to TypeScript 7; we followed it (issue #67) |
 | C6 | `oxlint` + `eslint` clean, `oxfmt` + `prettier` formatted | matches the destination's lint tasks |
 | C7 | Apache-2.0 headers and license | the monorepo's default |
 | C8 | Changesets on every user-visible change | how the monorepo releases |
@@ -96,9 +96,11 @@ Each rule below is a thing the destination requires. Adopting them now costs not
 | C10 | No package depends on repository-root position | the keeper-shim class of bug ([03-LESSONS §1.4](03-LESSONS.md)) |
 | C11 | `react` / `react-dom` from the catalog line | dashboard and any UI package |
 
-**C4 and C5 are the two real pieces of work**, and they are the reason this document exists before the code. Writing the hub against zod v3 and TypeScript 7 and then discovering the destination is on zod v4 and TypeScript 6 is exactly the day-seven surprise this plan is designed to prevent. **Start on the catalog versions.**
+**C4 and C5 are the two real pieces of work**, and they are the reason this document exists before the code. Writing the hub against zod v3 and one TypeScript line and then discovering the destination is on zod v4 and another is exactly the day-seven surprise this plan is designed to prevent. **Start on the catalog versions.**
 
-**A note on C5.** The version lines here move; the catalog was read on 2026-08-08. The rule is not "use TypeScript 6 forever" — it is *pin to whatever the destination's catalog says, re-check before each milestone, and never let the gap become a migration.*
+**A note on C5.** The version lines here move, and they did: the catalog was read on 2026-08-08 at TypeScript `^6.0.3`, and by 2026-08-29 the destination's default catalog said `^7.0.2`. The rule was never "use TypeScript 6 forever" — it is *pin to whatever the destination's catalog says, re-check before each milestone, and never let the gap become a migration.* That is what `tools/catalog-check.mjs` automates, and following it is what issue #67 did.
+
+**A note on the destination's second catalog.** The destination now carries *two*: a default `catalog:` and a named `catalogs:` block whose `ts6` entry pins `typescript: ^6.0.3` for roughly a dozen of its own packages that cannot move yet. We follow the **default** — that is the honest end state, and reaching for the escape hatch would leave the default pin diverged while looking aligned. `tools/catalog-check.mjs` compares both blocks, asymmetrically: a named catalog *we* define and the destination dropped is a divergence, one *they* define and we lack is theirs to keep.
 
 ---
 
@@ -179,7 +181,7 @@ Point 5 is the one that earns its keep. It is how the zod-v3-versus-v4 gap gets 
 |---|---|
 | workspace globs incl. `voice/*`, `signals/*`, `mastracode/*` | `/home/codingbutter/mastra/pnpm-workspace.yaml`, read 2026-08-08 |
 | turbo tasks: build, lint, lint:fix, typecheck, clean, dev, validate:package (seven) | `/home/codingbutter/mastra/turbo.json` |
-| catalog: typescript `^6.0.3`, vitest `4.1.10`, zod `^4.4.3`, react `^19.2.5` | the destination's `/home/codingbutter/mastra/pnpm-workspace.yaml` catalog block — not this repository's, which pins no react (corrected 2026-08-21; the two rows above name their tree and this one did not) |
+| catalog: typescript `^7.0.2` (default) and `^6.0.3` (named `ts6`), vitest `4.1.10`, zod `^4.4.3`, react `^19.2.5` | the destination's `/home/codingbutter/mastra/pnpm-workspace.yaml` catalog block (typescript re-read 2026-08-29; it was `^6.0.3` on 2026-08-08) — not this repository's, which pins no react (corrected 2026-08-21; the two rows above name their tree and this one did not) |
 | tsdown builds, oxlint+eslint, oxfmt+prettier, changesets | root `package.json`; `voice/openai/package.json` |
 | Apache-2.0 with an `ee/` carve-out | `LICENSE.md` |
 | no Python / Rust / Go anywhere outside `node_modules` | `find` for `*.py`, `pyproject.toml`, `Cargo.toml`, `go.mod` |
