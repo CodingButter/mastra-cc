@@ -35,6 +35,13 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
+    "name": "b5-ws-matcher-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "  if (WS_IMPORT.test(source)) {\n    violations.push(`pin-b5: websocket client outside packages/transport at ${relative(root, file)}`);\n  }",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
     "name": "b5-scan-roots-guard-removed",
     "file": "tools/pins/b5.mjs",
     "find": "assertRoots(root, SCAN_ROOTS, \"pin-b5\");",
@@ -142,7 +149,7 @@
   {
     "name": "transport-dies-on-a-non-json-line",
     "file": "packages/transport/src/index.ts",
-    "find": "        failAll(new Error(`transport: peer at ${socketPath} sent a non-JSON line - refusing to continue`));\n        socket.destroy();\n        return;\n",
+    "find": "        failAll(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));\n        wire.drop();\n        return;\n",
     "cwd": "packages/transport",
     "testFile": "src/__tests__/digest-agreement.test.ts"
   },

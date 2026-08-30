@@ -105,9 +105,76 @@ export interface TransportClient {
   close(): void;
 }
 
-export async function connect(options: { socketPath?: string } = {}): Promise<TransportClient> {
-  const socketPath = options.socketPath ?? defaultSocketPath();
+/**
+ * The daemon can be reached two ways: a unix socket on this filesystem, or a
+ * websocket URL when it is somewhere else. The framing, handshake, digest
+ * check and close semantics below are written once against this interface, so
+ * the two dials cannot drift apart.
+ */
+interface Wire {
+  /** How the peer is named in errors - a path or a URL. */
+  readonly peer: string;
+  write(line: string): void;
+  /** The hard drop: socket.destroy()'s equivalent. */
+  drop(): void;
+  /** The polite close, what TransportClient.close() performs. */
+  end(): void;
+  onData(handler: (chunk: string) => void): void;
+  onError(handler: (error: Error) => void): void;
+  onClose(handler: () => void): void;
+}
+
+function socketWire(socketPath: string): Wire {
   const socket = createConnection(socketPath);
+  return {
+    peer: socketPath,
+    write: (line) => void socket.write(line),
+    drop: () => void socket.destroy(),
+    end: () => void (socket as Socket).end(),
+    onData: (handler) => void socket.on("data", (chunk) => handler(chunk.toString("utf8"))),
+    onError: (handler) => void socket.on("error", handler),
+    onClose: (handler) => void socket.on("close", handler),
+  };
+}
+
+/**
+ * Node's global WebSocket, not the `ws` library - the transport takes no new
+ * dependency for a second way to dial. Precedent: daemon/src/backends/cdp.
+ */
+async function websocketWire(url: string): Promise<Wire> {
+  const ws = new WebSocket(url);
+  await new Promise<void>((resolve, reject) => {
+    ws.addEventListener("open", () => resolve(), { once: true });
+    ws.addEventListener("error", () => reject(new Error(`transport: could not open a websocket to ${url}`)), {
+      once: true,
+    });
+  });
+  return {
+    peer: url,
+    write: (line) => void ws.send(line),
+    drop: () => void ws.close(),
+    end: () => void ws.close(),
+    onData: (handler) =>
+      void ws.addEventListener("message", (event) => {
+        const data = (event as MessageEvent).data;
+        handler(typeof data === "string" ? data : Buffer.from(data as ArrayBuffer).toString("utf8"));
+      }),
+    onError: (handler) =>
+      void ws.addEventListener("error", () => handler(new Error(`transport: websocket to ${url} failed`))),
+    onClose: (handler) => void ws.addEventListener("close", () => handler()),
+  };
+}
+
+export async function connect(options: { socketPath?: string; url?: string } = {}): Promise<TransportClient> {
+  if (options.socketPath !== undefined && options.url !== undefined) {
+    throw new Error(
+      "transport: refused at connect - a socket path and a websocket URL were both given; " +
+        "one connection has one address, so say which one",
+    );
+  }
+  const wire =
+    options.url !== undefined ? await websocketWire(options.url) : socketWire(options.socketPath ?? defaultSocketPath());
+  const peer = wire.peer;
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   const listeners = new Set<(event: ChangeEvent) => void>();
   let nextId = 1;
@@ -115,8 +182,8 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
   let helloResolve: ((h: Hello) => void) | null = null;
   let helloReject: ((e: Error) => void) | null = null;
 
-  socket.on("data", (chunk) => {
-    buffer += chunk.toString("utf8");
+  wire.onData((chunk) => {
+    buffer += chunk;
     let newline = buffer.indexOf("\n");
     while (newline >= 0) {
       const line = buffer.slice(0, newline);
@@ -130,8 +197,8 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
         // A peer that emits a non-JSON line is not the daemon this client was
         // built for. Refuse loudly and stop, mirroring the daemon's own
         // handling of the same case - never die in an event handler.
-        failAll(new Error(`transport: peer at ${socketPath} sent a non-JSON line - refusing to continue`));
-        socket.destroy();
+        failAll(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));
+        wire.drop();
         return;
       }
       if (message.type === "hello" && helloResolve) {
@@ -179,20 +246,20 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
     for (const p of pending.values()) p.reject(error);
     pending.clear();
   };
-  socket.on("error", failAll);
-  socket.on("close", () => failAll(new Error(`transport: connection to ${socketPath} closed`)));
+  wire.onError(failAll);
+  wire.onClose(() => failAll(new Error(`transport: connection to ${peer} closed`)));
 
   const serverHello = await new Promise<Hello>((resolve, reject) => {
     helloResolve = resolve;
     helloReject = reject;
-    socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+    wire.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
   });
 
   if (serverHello.digest !== SCHEMA_DIGEST) {
     const refusal =
       `transport: refused at connect - this transport was built against schema digest ${SCHEMA_DIGEST} ` +
       `but the daemon speaks schema digest ${serverHello.digest} (digest-agreement check)`;
-    socket.destroy();
+    wire.drop();
     throw new Error(refusal);
   }
 
@@ -201,7 +268,7 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
     nextId += 1;
     return new Promise((resolve, reject) => {
       pending.set(id, { resolve, reject });
-      socket.write(`${JSON.stringify({ type: "request", id, method, params })}\n`);
+      wire.write(`${JSON.stringify({ type: "request", id, method, params })}\n`);
     });
   }
 
@@ -224,7 +291,7 @@ export async function connect(options: { socketPath?: string } = {}): Promise<Tr
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
-    close: () => void (socket as Socket).end(),
+    close: () => wire.end(),
   };
 }
 
