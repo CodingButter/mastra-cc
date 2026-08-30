@@ -135,7 +135,7 @@
   {
     "name": "server-swallows-a-malformed-post-hello-line",
     "file": "daemon/src/server.ts",
-    "find": "              refusal: 'daemon: a message after hello must be {type:\"request\", id:number, method:string} - refusing a malformed line',\n",
+    "find": "            refusal: 'daemon: a message after hello must be {type:\"request\", id:number, method:string} - refusing a malformed line',\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-malformed-lines.test.ts"
   },
@@ -296,7 +296,7 @@
   {
     "name": "connection-close-leaks-subscriptions",
     "file": "daemon/src/server.ts",
-    "find": "    const teardown = () => {\n      void book.closeAll();\n    };\n    socket.on(\"close\", teardown);\n",
+    "find": "  const teardown = () => {\n    void book.closeAll();\n  };\n  pipe.onClose(teardown);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-lifetime.test.ts"
   },
