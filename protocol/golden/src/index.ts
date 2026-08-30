@@ -405,6 +405,316 @@ export interface ListApplicationsResult {
   refusal?: string;
 }
 
+/** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */
+export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = {
+  "queryElements": {
+    "description": "Find elements matching a semantic query. Observation only.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "description": "Restrict the answer to one role.",
+          "type": "string",
+          "enum": [
+            "application",
+            "window",
+            "dialog",
+            "button",
+            "checkbox",
+            "label",
+            "link",
+            "list",
+            "listitem",
+            "grid",
+            "row",
+            "gridcell",
+            "menu",
+            "menuitem",
+            "text",
+            "textbox",
+            "image",
+            "generic"
+          ]
+        },
+        "name": {
+          "description": "Restrict the answer to elements whose normalised name matches.",
+          "type": "string"
+        },
+        "limit": {
+          "description": "Upper bound on the number of returned elements.",
+          "type": "number"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  "attestElement": {
+    "description": "State what a later call would act on, without acting. Returns the element as currently resolvable, or an explicit refusal naming why.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to attest.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "readElementContent": {
+    "description": "Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element whose current textual content is being read.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "offset": {
+          "description": "Zero-based Unicode-scalar offset at which the requested window begins.",
+          "type": "number"
+        },
+        "limit": {
+          "description": "Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "offset",
+        "limit"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "subscribeElement": {
+    "description": "Watch one element and everything beneath it, and be told when any of it changes. Observation only: a subscription reads, and cannot cause anything to happen. Scope is the point - a watch on one subtree is the difference between being told what matters and being told everything. Defined on the wire before either route can serve it; until a route can, every call is refused by name.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to watch, together with its descendants.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "priority": {
+          "description": "How urgent this subscriber considers changes here. Carried on every resulting event and never interpreted by the daemon.",
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "priority"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "unsubscribeElement": {
+    "description": "End a watch. Observation only. Ending a watch that is already over is not an error: the answer says the watch is not running, which is the state the caller wanted either way.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "subscriptionId": {
+          "description": "The watch to end, as named when it was established.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subscriptionId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "openApplication": {
+    "description": "Open an application by name, with its readability applied at the moment it starts. The first effect-class method: visible to the person, trivially reversible. Authority is checked before anything else, and a refusal never reveals whether an application exists on this machine.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The human-facing application name. Neutral vocabulary; no platform identifiers. Comparisons normalise to NFKC first.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "editElement": {
+    "description": "Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element whose content would be replaced.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "value": {
+          "description": "The content the element would hold afterwards.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "activateElement": {
+    "description": "Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element the action would be performed on.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "action": {
+          "description": "One of the element's advertised actions, named exactly as the element published it. A name the element did not publish is refused by name rather than attempted.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "action"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "submitElement": {
+    "description": "Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element that would commit.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "attestation": {
+          "description": "The caller's own restatement of what this commit does. Never optional: a commit the caller cannot describe is refused.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "attestation"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "setElementValue": {
+    "description": "Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element whose magnitude would move.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "value": {
+          "description": "The value the element would hold afterwards, in the units of the range the element itself published.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "setElementText": {
+    "description": "Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element whose text would change.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "text": {
+          "description": "The text to place.",
+          "type": "string"
+        },
+        "offset": {
+          "description": "Where to insert, in the element's own offsets. Absent replaces the whole content. An offset beyond the element's text is refused rather than silently moved to the end, because a write that lands somewhere other than where it was aimed is a wrong write that returned success.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "setElementCaret": {
+    "description": "Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element whose insertion point would move.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "offset": {
+          "description": "Where to place it, in the element's own offsets. Absent places it at the end of the element's text.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "revealElement": {
+    "description": "Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to bring into view.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "listApplications": {
+    "description": "List the applications this machine has, each with what may be done with it and the setting behind every refusal. Observation only, and observation of the fence rather than of anything behind it: an application this session may not touch is present here with its capabilities off and their settings named. Withholding its existence would teach a reader it is absent, and a reader who believes that recommends installing what is already installed. How the inventory is discovered belongs to the platform underneath, which is why nothing in this result names a mechanism.",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    }
+  }
+};
+
 const TYPE_SPECS = {"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null}} as const;
 const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
 

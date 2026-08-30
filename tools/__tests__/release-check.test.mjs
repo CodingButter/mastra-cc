@@ -83,3 +83,23 @@ test("depending on the daemon is refused, whatever the version says", () => {
   expect(r.status).toBe(1);
   expect(r.output).toContain("depends on the daemon");
 });
+
+// A package whose entry point is TypeScript SOURCE works everywhere in this
+// workspace and nowhere in a consumer's node_modules, because node refuses to
+// strip types there. The fixture reproduces the real shape: one publishable
+// package whose main is a .ts file, and another whose shipped code imports it.
+test("shipped code importing a source-entry package is caught", () => {
+  const root = fixture({
+    ...publishable,
+    "protocol-types": { main: "./src/index.ts", files: ["dist", "src"] },
+  });
+  mkdirSync(join(root, "packages", "protocol-types", "src"), { recursive: true });
+  writeFileSync(join(root, "packages", "protocol-types", "src", "index.ts"), "export const ok = true;\n");
+  writeFileSync(
+    join(root, "packages", "desktop", "dist", "index.mjs"),
+    'import { ok } from "@fixture/protocol-types";\nexport const also = ok;\n',
+  );
+  const r = run(root);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("whose entry point is TypeScript source");
+});

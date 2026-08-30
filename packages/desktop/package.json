@@ -11,6 +11,10 @@
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
     },
+    "./mastra": {
+      "types": "./dist/mastra.d.mts",
+      "default": "./dist/mastra.mjs"
+    },
     "./instructions": "./instructions/AGENT-INSTRUCTIONS.md",
     "./package.json": "./package.json"
   },
@@ -33,10 +37,19 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/node": "^24.10.1",
-    "@mastra-cc/daemon": "workspace:*"
+    "@mastra-cc/daemon": "workspace:*",
+    "@mastra/core": "^1.63.2",
+    "@mastra-cc/protocol-types": "workspace:*"
   },
   "dependencies": {
-    "@mastra-cc/transport": "workspace:*",
-    "@mastra-cc/protocol-types": "workspace:*"
+    "@mastra-cc/transport": "workspace:*"
+  },
+  "peerDependencies": {
+    "@mastra/core": ">=1.60.0 <2"
+  },
+  "peerDependenciesMeta": {
+    "@mastra/core": {
+      "optional": true
+    }
   }
 }

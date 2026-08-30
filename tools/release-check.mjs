@@ -106,6 +106,41 @@ for (const relative of PUBLISHABLE) {
       }
     }
 
+    // (d) - a shipped file may not import a package whose entry point is
+    // TypeScript SOURCE. Inside this workspace such an import works, because
+    // every runner here strips types; on a consumer's machine node refuses to
+    // strip types under node_modules and the import dies. The failure is
+    // invisible until someone installs the tarball, which is exactly the class
+    // of bug a release check exists for.
+    const sourceEntryPackages = new Set(
+      PUBLISHABLE.map((p) => join(ROOT, p))
+        .map((p) => manifest(p))
+        .filter((m) => typeof m.main === "string" && m.main.endsWith(".ts"))
+        .map((m) => m.name),
+    );
+    const shippedFiles = [];
+    const collect = (dir) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) collect(full);
+        else if (/\.(mjs|cjs|js)$/.test(entry.name)) shippedFiles.push(full);
+      }
+    };
+    collect(unpacked);
+    for (const file of shippedFiles) {
+      const text = readFileSync(file, "utf8");
+      for (const match of text.matchAll(/from\s*"([^"]+)"|require\("([^"]+)"\)|import\("([^"]+)"\)/g)) {
+        const specifier = match[1] ?? match[2] ?? match[3];
+        for (const name of sourceEntryPackages) {
+          if (specifier === name || specifier.startsWith(`${name}/`)) {
+            problems.push(
+              `${relative}: ${file.slice(unpacked.length + 1)} imports ${specifier}, whose entry point is TypeScript source - it will not load from node_modules`,
+            );
+          }
+        }
+      }
+    }
+
     // Version independence (ADR-0057): the daemon is engineering, the package is
     // judgment, and they release on different clocks. A published package that
     // depended on the daemon would drag one clock onto the other - and the daemon

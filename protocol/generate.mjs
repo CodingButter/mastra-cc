@@ -118,6 +118,50 @@ for (const [method, spec] of Object.entries(schema.methods)) {
   parts.push(emitInterface(`${method}Result`, spec.returns));
   parts.push("");
 }
+function paramJsonSchema(spec) {
+  const property = { description: spec.description };
+  const vocabulary = vocabularyFor(spec.type);
+  if (vocabulary) {
+    property.type = "string";
+    property.enum = schema[vocabulary.key];
+  } else if (spec.type === "string" || spec.type === "number" || spec.type === "boolean") {
+    property.type = spec.type === "boolean" ? "boolean" : spec.type;
+  } else {
+    throw new Error(`generate: no JSON Schema mapping for param type "${spec.type}"`);
+  }
+  if (spec.pattern === "idPattern") property.pattern = schema.idPattern;
+  return property;
+}
+
+const methodDescriptors = Object.fromEntries(
+  Object.entries(schema.methods).map(([method, spec]) => [
+    method,
+    {
+      description: spec.description,
+      params: {
+        type: "object",
+        properties: Object.fromEntries(
+          Object.entries(spec.params).map(([field, field_spec]) => [field, paramJsonSchema(field_spec)]),
+        ),
+        required: Object.entries(spec.params)
+          .filter(([, field_spec]) => field_spec.required === true)
+          .map(([field]) => field),
+        additionalProperties: false,
+      },
+    },
+  ]),
+);
+parts.push(
+  "/** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */",
+);
+parts.push(
+  `export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = ${JSON.stringify(
+    methodDescriptors,
+    null,
+    2,
+  )};`,
+);
+parts.push("");
 const runtimeFieldSpecs = (fields) =>
   Object.fromEntries(
     Object.entries(fields).map(([field, spec]) => [
