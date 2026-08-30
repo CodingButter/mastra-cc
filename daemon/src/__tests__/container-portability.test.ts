@@ -26,13 +26,19 @@ describe("the built daemon remains location-transparent", () => {
   // the workspace node_modules, and died on a copied tree.
   it("leaves no package import the copied tree cannot resolve", () => {
     const dist = join(root, "daemon", "dist");
+    const bundles = readdirSync(dist).filter((name) => name.endsWith(".mjs"));
+    // Vacuity guard: an absent or empty dist would make the scan below pass while
+    // reading nothing at all.
+    expect(bundles.length).toBeGreaterThan(0);
     const specifiers = new Set<string>();
-    for (const file of readdirSync(dist).filter((name) => name.endsWith(".mjs"))) {
+    for (const file of bundles) {
       const source = readFileSync(join(dist, file), "utf8");
       for (const match of source.matchAll(/(?:^|[\s;}])(?:from|import\s*\()\s*["']([^"'.][^"']*)["']/gm)) {
         specifiers.add(match[1]!);
       }
     }
+    // The matcher must actually be finding imports; node: builtins are always there.
+    expect([...specifiers].some((specifier) => specifier.startsWith("node:"))).toBe(true);
     const unresolvable = [...specifiers].filter((specifier) => !specifier.startsWith("node:"));
     expect(unresolvable).toEqual([]);
   });
