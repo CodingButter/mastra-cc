@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { composeBootNames } from "../launch/profiles.js";
@@ -18,6 +18,23 @@ describe("the built daemon remains location-transparent", () => {
     expect(daemon).toContain('join(process.env.XDG_RUNTIME_DIR ?? "/tmp", "mastra-cc", "daemon.sock")');
     expect(transport).toContain('const runtimeDir = process.env.XDG_RUNTIME_DIR ?? "/tmp"');
     expect(transport).toContain('join(runtimeDir, "mastra-cc", "daemon.sock")');
+  });
+
+  // infra/apply.sh copies dist/ and nothing else, so any bare specifier left in
+  // the output is a package the installed daemon cannot resolve. Adding `ws`
+  // reached that trap: the flag worked in the repo, where resolution walks up to
+  // the workspace node_modules, and died on a copied tree.
+  it("leaves no package import the copied tree cannot resolve", () => {
+    const dist = join(root, "daemon", "dist");
+    const specifiers = new Set<string>();
+    for (const file of readdirSync(dist).filter((name) => name.endsWith(".mjs"))) {
+      const source = readFileSync(join(dist, file), "utf8");
+      for (const match of source.matchAll(/(?:^|[\s;}])(?:from|import\s*\()\s*["']([^"'.][^"']*)["']/gm)) {
+        specifiers.add(match[1]!);
+      }
+    }
+    const unresolvable = [...specifiers].filter((specifier) => !specifier.startsWith("node:"));
+    expect(unresolvable).toEqual([]);
   });
 
   it("keeps launch identity mapping provider-neutral", () => {

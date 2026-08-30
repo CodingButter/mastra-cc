@@ -2,11 +2,11 @@ import { mkdirSync, rmSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
-// Type-only: `ws` is reached through a dynamic import inside
-// startWebSocketServer so the entry chunk carries no bare `ws` specifier. The
-// installed daemon tree (infra/apply.sh) copies dist/ without node_modules, and
-// the same lazy shape is why dbus-native does not appear in dist/main.mjs
-// either. A daemon nobody asked for a port never loads the library.
+// Type-only here; the value is reached through a dynamic import inside
+// startWebSocketServer, so a daemon nobody asked for a port never pays to load
+// the library. Laziness is not what makes it resolvable, though: the installed
+// tree copies dist/ without node_modules, so `ws` is force-bundled by
+// daemon/tsdown.config.ts the way dbus-native is.
 import type { WebSocket } from "ws";
 import {
   CAPABILITY_NAMES,
@@ -1519,7 +1519,7 @@ export async function startWebSocketServer(options: {
         port: bound,
         host,
         close: () => wss.close(),
-        on: (_event, handler) => wss.on("close", handler),
+        on: (event, handler) => wss.on(event, handler),
       });
     });
   });
