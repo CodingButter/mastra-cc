@@ -1,7 +1,13 @@
 import { mkdirSync, rmSync } from "node:fs";
-import { createServer, type Server } from "node:net";
+import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
+// Type-only here; the value is reached through a dynamic import inside
+// startWebSocketServer, so a daemon nobody asked for a port never pays to load
+// the library. Laziness is not what makes it resolvable, though: the installed
+// tree copies dist/ without node_modules, so `ws` is force-bundled by
+// daemon/tsdown.config.ts the way dbus-native is.
+import type { WebSocket } from "ws";
 import {
   CAPABILITY_NAMES,
   SCHEMA_DIGEST,
@@ -1288,6 +1294,131 @@ export async function handleRequest(
   }
 }
 
+/**
+ * The narrow duplex the protocol front end actually needs. Exactly the members
+ * the connection handler used to reach for on a net.Socket and nothing more -
+ * a Unix socket and a WebSocket can both present this, so the handler below is
+ * written once and driven by either.
+ *
+ * `write` takes a whole line INCLUDING its trailing newline. The newline is
+ * part of the payload the protocol has always sent, not a socket-framing
+ * detail, so it stays part of it on every pipe.
+ */
+export interface Pipe {
+  write(line: string): void;
+  /** graceful: the peer is told we are done */
+  end(): void;
+  /** true once the pipe can no longer carry bytes */
+  readonly closed: boolean;
+  onData(handler: (chunk: string) => void): void;
+  onClose(handler: () => void): void;
+}
+
+function socketPipe(socket: Socket): Pipe {
+  return {
+    write: (line) => {
+      socket.write(line);
+    },
+    end: () => {
+      socket.end();
+    },
+    get closed() {
+      return socket.destroyed;
+    },
+    onData: (handler) => {
+      socket.on("data", (chunk: Buffer) => handler(chunk.toString("utf8")));
+    },
+    onClose: (handler) => {
+      socket.on("close", handler);
+    },
+  };
+}
+
+/**
+ * The whole protocol front end for ONE connection: the hello gate, the
+ * newline-delimited framing, request routing, the server-initiated event
+ * direction, and the teardown that closes watches at the backend.
+ *
+ * Lives here, once, and is called by every listener. A second copy of this
+ * logic - or a second framing rule for a pipe whose transport happens to have
+ * message boundaries of its own - is how two pipes stop being the same pipe.
+ */
+export function serveConnection(
+  pipe: Pipe,
+  options: { backend: Backend; launch?: LaunchContext; visibility: Visibility },
+): void {
+  const { backend, launch, visibility } = options;
+  let buffer = "";
+  let helloDone = false;
+  // The server-initiated direction (ADR-0039). An event answers nothing, so
+  // it carries no id - a client that is not listening ignores it, and a
+  // client that is gets it without having asked twice.
+  const book = new SubscriptionBook((event) => {
+    if (!pipe.closed) pipe.write(`${JSON.stringify({ type: "event", event })}\n`);
+  }, visibility);
+  // A watch belongs to the connection that asked for it. When the connection
+  // goes, the watches go with it - closed at the BACKEND, not merely
+  // forgotten here: a forgotten watch is still being fed.
+  const teardown = () => {
+    void book.closeAll();
+  };
+  pipe.onClose(teardown);
+  pipe.onData((chunk) => {
+    buffer += chunk;
+    let newline = buffer.indexOf("\n");
+    while (newline >= 0) {
+      const line = buffer.slice(0, newline);
+      buffer = buffer.slice(newline + 1);
+      newline = buffer.indexOf("\n");
+      if (!line.trim()) continue;
+      let message: { type: string; digest?: string; id?: number; method?: string; params?: unknown };
+      try {
+        message = JSON.parse(line);
+      } catch {
+        pipe.write(`${JSON.stringify({ type: "refusal", refusal: "daemon: not a JSON line" })}\n`);
+        continue;
+      }
+      if (!helloDone) {
+        if (message.type !== "hello" || typeof message.digest !== "string") {
+          pipe.write(`${JSON.stringify({ type: "refusal", refusal: "daemon: hello with a schema digest must come first" })}\n`);
+          pipe.end();
+          return;
+        }
+        if (message.digest !== SCHEMA_DIGEST) {
+          pipe.write(
+            `${JSON.stringify({
+              type: "refusal",
+              refusal:
+                `daemon: refused at connect - this daemon speaks schema digest ${SCHEMA_DIGEST} ` +
+                `but the transport was built against schema digest ${message.digest} (digest-agreement check)`,
+            })}\n`,
+          );
+          pipe.end();
+          return;
+        }
+        helloDone = true;
+        pipe.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST, version: PROTOCOL_VERSION })}\n`);
+        continue;
+      }
+      if (message.type === "request" && typeof message.id === "number" && typeof message.method === "string") {
+        void handleRequest(message as Request, backend, launch, book).then((response) => {
+          if (!pipe.closed) pipe.write(`${JSON.stringify(response)}\n`);
+        });
+      } else {
+        // Valid JSON that is not a well-formed request gets a named refusal,
+        // never silence - a swallowed line leaves the client's promise
+        // pending forever, which is a hang, not a refusal.
+        pipe.write(
+          `${JSON.stringify({
+            type: "refusal",
+            refusal: 'daemon: a message after hello must be {type:"request", id:number, method:string} - refusing a malformed line',
+          })}\n`,
+        );
+      }
+    }
+  });
+}
+
 export function startServer(options: {
   socketPath: string;
   backend: Backend;
@@ -1304,80 +1435,92 @@ export function startServer(options: {
   rmSync(socketPath, { force: true });
 
   const server = createServer((socket) => {
-    let buffer = "";
-    let helloDone = false;
-    // The server-initiated direction (ADR-0039). An event answers nothing, so
-    // it carries no id - a client that is not listening ignores it, and a
-    // client that is gets it without having asked twice.
-    const book = new SubscriptionBook((event) => {
-      if (!socket.destroyed) socket.write(`${JSON.stringify({ type: "event", event })}\n`);
-    }, visibility);
-    // A watch belongs to the connection that asked for it. When the socket
-    // goes, the watches go with it - closed at the BACKEND, not merely
-    // forgotten here: a forgotten watch is still being fed.
-    const teardown = () => {
-      void book.closeAll();
-    };
-    socket.on("close", teardown);
+    // The error -> hard drop behaviour stays in the adapter rather than in
+    // serveConnection: "a socket error means destroy it" is a property of this
+    // pipe, not of the protocol. The WebSocket adapter makes the same choice
+    // with the vocabulary its own transport has.
     socket.on("error", () => socket.destroy());
-    socket.on("data", (chunk) => {
-      buffer += chunk.toString("utf8");
-      let newline = buffer.indexOf("\n");
-      while (newline >= 0) {
-        const line = buffer.slice(0, newline);
-        buffer = buffer.slice(newline + 1);
-        newline = buffer.indexOf("\n");
-        if (!line.trim()) continue;
-        let message: { type: string; digest?: string; id?: number; method?: string; params?: unknown };
-        try {
-          message = JSON.parse(line);
-        } catch {
-          socket.write(`${JSON.stringify({ type: "refusal", refusal: "daemon: not a JSON line" })}\n`);
-          continue;
-        }
-        if (!helloDone) {
-          if (message.type !== "hello" || typeof message.digest !== "string") {
-            socket.write(`${JSON.stringify({ type: "refusal", refusal: "daemon: hello with a schema digest must come first" })}\n`);
-            socket.end();
-            return;
-          }
-          if (message.digest !== SCHEMA_DIGEST) {
-            socket.write(
-              `${JSON.stringify({
-                type: "refusal",
-                refusal:
-                  `daemon: refused at connect - this daemon speaks schema digest ${SCHEMA_DIGEST} ` +
-                  `but the transport was built against schema digest ${message.digest} (digest-agreement check)`,
-              })}\n`,
-            );
-            socket.end();
-            return;
-          }
-          helloDone = true;
-          socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST, version: PROTOCOL_VERSION })}\n`);
-          continue;
-        }
-        if (message.type === "request" && typeof message.id === "number" && typeof message.method === "string") {
-          void handleRequest(message as Request, backend, launch, book).then((response) => {
-            if (!socket.destroyed) socket.write(`${JSON.stringify(response)}\n`);
-          });
-        } else {
-          // Valid JSON that is not a well-formed request gets a named refusal,
-          // never silence - a swallowed line leaves the client's promise
-          // pending forever, which is a hang, not a refusal.
-          socket.write(
-            `${JSON.stringify({
-              type: "refusal",
-              refusal: 'daemon: a message after hello must be {type:"request", id:number, method:string} - refusing a malformed line',
-            })}\n`,
-          );
-        }
-      }
-    });
+    serveConnection(socketPipe(socket), { backend, launch, visibility });
   });
 
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(socketPath, () => resolve(server));
+  });
+}
+
+function webSocketPipe(socket: WebSocket): Pipe {
+  return {
+    write: (line) => {
+      socket.send(line);
+    },
+    end: () => {
+      socket.close();
+    },
+    get closed() {
+      // CLOSING (2) and CLOSED (3) both mean no more bytes will land
+      return socket.readyState > 1;
+    },
+    onData: (handler) => {
+      // Whole frames are fed into the SAME newline buffer the socket path
+      // uses. A WebSocket has message boundaries of its own; the protocol
+      // does not care about them, and pretending it does is how a peer that
+      // batches two lines into one frame starts behaving differently.
+      socket.on("message", (data: Buffer | ArrayBuffer | Buffer[]) => {
+        handler(Array.isArray(data) ? Buffer.concat(data).toString("utf8") : Buffer.from(data as Buffer).toString("utf8"));
+      });
+    },
+    onClose: (handler) => {
+      socket.on("close", handler);
+    },
+  };
+}
+
+/** the handle a second listener hands back - deliberately NOT a net.Server */
+export interface WebSocketListener {
+  /** the port actually bound, which matters when the caller asked for 0 */
+  readonly port: number;
+  readonly host: string;
+  close(): void;
+  on(event: "close", handler: () => void): void;
+}
+
+/**
+ * The same protocol, over a WebSocket, for a client that is not on this
+ * filesystem. Additive: startServer above is untouched, and a daemon nobody
+ * asked for a port never calls this.
+ */
+export async function startWebSocketServer(options: {
+  port: number;
+  host?: string;
+  backend: Backend;
+  launch?: LaunchContext;
+  visibility?: Visibility;
+}): Promise<WebSocketListener> {
+  const { port, host = "127.0.0.1", backend, visibility = "all" } = options;
+  const launch = options.launch === undefined ? undefined : { ...options.launch, visibility };
+
+  const { WebSocketServer } = await import("ws");
+  const wss = new WebSocketServer({ host, port });
+
+  wss.on("connection", (socket: WebSocket) => {
+    // Same choice the socket adapter makes: a transport-level error means drop
+    // this connection, and that is a property of the pipe, not the protocol.
+    socket.on("error", () => socket.terminate());
+    serveConnection(webSocketPipe(socket), { backend, launch, visibility });
+  });
+
+  return new Promise((resolve, reject) => {
+    wss.once("error", reject);
+    wss.once("listening", () => {
+      const address = wss.address();
+      const bound = address !== null && typeof address === "object" ? address.port : port;
+      resolve({
+        port: bound,
+        host,
+        close: () => wss.close(),
+        on: (event, handler) => wss.on(event, handler),
+      });
+    });
   });
 }

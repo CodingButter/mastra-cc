@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
+import { connect as netConnect } from "node:net";
+import { SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { afterAll, describe, expect, it } from "vitest";
@@ -34,9 +36,15 @@ const DIST = join(__dirname, "..", "..", "dist", "main.mjs");
 const scratch = mkdtempSync(join(tmpdir(), "daemon-dies-clean-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-async function deathBy(signal: NodeJS.Signals): Promise<{ code: number | null; signal: string | null }> {
-  const socket = join(scratch, `${signal}.sock`);
-  const child = spawn(process.execPath, [DIST, "--backend", "replay", "--fixture", "gtk-dialog", "--socket", socket], {
+async function deathBy(
+  signal: NodeJS.Signals,
+  extra: { argv?: string[]; tag?: string; beforeSignal?: (context: { socket: string; wsPort?: number }) => Promise<void> } = {},
+): Promise<{ code: number | null; signal: string | null }> {
+  const socket = join(scratch, `${extra.tag ?? ""}${signal}.sock`);
+  const argv = [DIST, "--backend", "replay", "--fixture", "gtk-dialog", "--socket", socket, ...(extra.argv ?? [])];
+  const wantsWebSocket = (extra.argv ?? []).includes("--ws-port");
+  let wsPort: number | undefined;
+  const child = spawn(process.execPath, argv, {
     stdio: ["ignore", "pipe", "pipe"],
   });
   try {
@@ -52,8 +60,17 @@ async function deathBy(signal: NodeJS.Signals): Promise<{ code: number | null; s
         child.off("exit", onExit);
         finish();
       };
+      // Accumulate rather than test each chunk: with two listeners there are
+      // two readiness lines, they can arrive in either order and in separate
+      // chunks, and the stdout listener is detached at settle - so a port line
+      // landing after the socket line would otherwise be lost forever.
+      let out = "";
       const onData = (chunk: Buffer) => {
-        if (chunk.toString().includes("listening")) settle(resolve);
+        out += chunk.toString();
+        const port = /daemon: websocket listening on \S+?:(\d+)/.exec(out);
+        if (port) wsPort = Number(port[1]);
+        const ready = /daemon: listening on \//.test(out);
+        if (ready && (!wantsWebSocket || wsPort !== undefined)) settle(resolve);
       };
       const onExit = () => settle(() => reject(new Error("the daemon died before it listened")));
       const timer = setTimeout(
@@ -69,6 +86,7 @@ async function deathBy(signal: NodeJS.Signals): Promise<{ code: number | null; s
     child.kill("SIGKILL");
     throw error;
   }
+  if (extra.beforeSignal) await extra.beforeSignal({ socket, wsPort });
   child.kill(signal);
   return new Promise((resolve) => {
     child.once("exit", (code, sig) => resolve({ code, signal: sig }));
@@ -102,4 +120,56 @@ describe("the daemon dies through its own handler", () => {
       expect(death.code).toBe(0);
     }, 15_000);
   }
+
+  // The second pipe does not get to weaken the guarantee. Same three signals,
+  // both listeners bound, a live connection on each - still death by code.
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+    it(`${signal} still runs the handler with a websocket listener bound and clients on both pipes`, async () => {
+      const death = await deathBy(signal, {
+        argv: ["--ws-port", "0"],
+        tag: "ws-",
+        beforeSignal: async ({ socket, wsPort }) => {
+          expect(wsPort).toBeGreaterThan(0);
+          const unix = netConnect(socket);
+          const ws = new WebSocket(`ws://127.0.0.1:${wsPort}`);
+          await Promise.all([
+            new Promise<void>((resolve) => unix.once("connect", () => resolve())),
+            new Promise<void>((resolve) => ws.addEventListener("open", () => resolve(), { once: true })),
+          ]);
+          unix.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+          ws.send(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+        },
+      });
+      expect(death.signal).toBeNull();
+      expect(death.code).toBe(0);
+    }, 15_000);
+  }
+
+  it("opens no port at all when nobody asked for one - read off the running process, not off a mock", async () => {
+    // A "the function was not called" assertion is a claim about our own code.
+    // This asks the kernel what the daemon actually holds open.
+    const socket = join(scratch, "no-port.sock");
+    const child = spawn(process.execPath, [DIST, "--backend", "replay", "--fixture", "gtk-dialog", "--socket", socket], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        let out = "";
+        const timer = setTimeout(() => reject(new Error("the daemon never said it was listening")), 10_000);
+        child.stdout.on("data", (chunk: Buffer) => {
+          out += chunk.toString();
+          if (/daemon: listening on \//.test(out)) {
+            clearTimeout(timer);
+            resolve();
+          }
+        });
+      });
+      const listeners = execFileSync("ss", ["-ltnpH"], { encoding: "utf8" })
+        .split("\n")
+        .filter((line) => line.includes(`pid=${child.pid},`));
+      expect(listeners, `the daemon is listening on a port nobody asked for: ${listeners.join(" | ")}`).toEqual([]);
+    } finally {
+      child.kill("SIGKILL");
+    }
+  }, 15_000);
 });

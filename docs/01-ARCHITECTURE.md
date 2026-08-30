@@ -16,8 +16,11 @@
                        └───────────────┬──────────────────┘
                                        │  one transport package
                                        │
-                                       │  JSON-RPC 2.0 over a unix socket,
-                                       │  keyed on the protocol schema digest
+                                       │  JSON-RPC 2.0, keyed on the protocol
+                                       │  schema digest, over EITHER
+                                       │    · a unix socket (default), or
+                                       │    · a websocket, when the daemon is
+                                       │      not on this filesystem
                                        ▼
                        ┌──────────────────────────────────┐
                        │  DAEMON  (the hands)             │
@@ -27,6 +30,12 @@
                                        ▼
                               the desktop session
 ```
+
+The two addresses are two front doors onto one protocol, not two protocols: a
+single per-connection handler serves both, and the bytes are identical down to
+the trailing newline. The websocket door is off unless `--ws-port` opens it, and
+binds loopback unless `--ws-host` widens it
+([ADR-0058](02-DECISIONS/0058-the-daemon-serves-one-protocol-through-two-front-doors.md)).
 
 There is no third process. A face, a voice, a phone page — any of those is a
 *consumer* built on top of this, in somebody else's repository, and none of them
@@ -43,6 +52,12 @@ is our concern ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-as
 - Writes the audit log ([ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md), M3). Every read and every effect it performs against the desktop leaves one append-only entry naming the application, the element's **identity**, the scope it was permitted under, the cause, the attestation where one was required, and the outcome. The entry never carries element content: permitted ordinary observations are returned only in semantic element results, protected observations are redacted, and audit remains a record of access rather than application data ([ADR-0056](02-DECISIONS/0056-permitted-content-is-observable-protected-content-is-redacted.md)).
 - Attributes every effect, with exactly three values. A change is `self` (this daemon's open verb caused it — carries that cause id), `external` (nothing was in flight; a human or another program did it), or `unattributed` (a verb was in flight but does not bind to the changed element's application — the daemon abstains instead of guessing, [ADR-0032](02-DECISIONS/0032-the-page-layer-is-an-instrument-not-a-gate.md) clause 5). An unmatched effect is recorded as news, never flagged as an alarm. This is what makes "the human outranks the agent" (issue #25) enforceable.
 - Knows nothing about models, credentials, users, or voice.
+- Owns where it can be reached from, and nothing about who reaches it. A unix socket always; a
+  websocket as well when `--ws-port` asks for one, bound to loopback unless `--ws-host` widens
+  it ([ADR-0058](02-DECISIONS/0058-the-daemon-serves-one-protocol-through-two-front-doors.md)).
+  Both doors run the same per-connection handler over the same bytes, so no capability, refusal
+  or scope check differs by address. Authentication is deliberately absent: the daemon states
+  its posture and leaves who-may-connect to whoever composes a product on top.
 
 **Runtime:** Node, single-threaded, one process ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md)). The **single-thread rule survives, and the reason it survives changed** — the prototype recorded it as a docstring claiming *silent corruption*; M0.5 measured a deterministic `SIGTRAP` abort at two or more concurrent threads, eight runs on the first machine and a control plus two repeats on a second ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md)). **That receipt was taken through `libatspi`, which this daemon does not load** — the raw D-Bus route is unmeasured under concurrency, and M1 owes the measurement ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3). The rule is kept on its own merits meanwhile: one owner for accessibility access is what makes an audit record attributable. The *language* did not survive: AT-SPI is plain D-Bus underneath, and Node reached read, write and events without a Python binding. There is no venv and no GLib main context, so `--system-site-packages` no longer applies.
 
@@ -115,7 +130,7 @@ Each boundary below is a rule, a reason, and a test. If it has no test, it is a 
 | # | Boundary | Enforced by |
 |---|---|---|
 | B1 | Only the daemon imports accessibility bindings | source-level test over every non-daemon package |
-| B5 | Every consumer reaches the daemon through `packages/transport` | source-level test: no second socket implementation anywhere |
+| B5 | Every consumer reaches the daemon through `packages/transport` | source-level test: no second client implementation anywhere, neither a `node:net` socket nor the `ws` server library (ADR-0058); import-scoped, so a global-`WebSocket` dial is outside its reach |
 | B6 | The protocol schema changes only through a reviewed gate | CI job (ADR-0002) |
 | B7 | Generated bindings are reproducible from the schema | CI regenerates and diffs |
 | B8 | `xdotool`, `wmctrl` and `uinput` only inside the raw-input operation class | source-level test over the whole tree (ADR-0046) |

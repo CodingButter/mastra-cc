@@ -12,4 +12,12 @@ export { DEFAULT_FIXTURE, registry } from "./backends/registry.js";
 export { loadTape, ReplayBackend, replayChannel } from "./backends/replay/index.js";
 export { type A11yProbeConnection, bindingIdentity, openA11yConnection } from "./probe.js";
 export { OwnershipTable } from "./launch/table.js";
-export { handleRequest, type LaunchContext, startServer } from "./server.js";
+export {
+  handleRequest,
+  type LaunchContext,
+  type Pipe,
+  serveConnection,
+  startServer,
+  startWebSocketServer,
+  type WebSocketListener,
+} from "./server.js";

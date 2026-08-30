@@ -12,8 +12,11 @@ declared list below, so a silently dropped pin is a red build.
 Wired: b1, b10, b11, b5, b8
 
 - **B1** — only `daemon/**` imports a D-Bus or accessibility binding.
-- **B5** — no second socket implementation outside `packages/transport` (the one
-  daemon client, ADR-0003). The daemon serves the socket, so it is not scanned.
+- **B5** — no second daemon client outside `packages/transport` (the one daemon
+  client, ADR-0003): neither a `node:net` socket nor the `ws` websocket server
+  library, now that the daemon has a second front door (ADR-0058). The daemon
+  serves both pipes, so it is not scanned. The matcher sees imports, so a dial
+  through the global `WebSocket` - which imports nothing - is invisible to it.
 - **B8** — `xdotool`, `wmctrl` and `uinput` appear only inside the raw-input
   operation class, and nowhere else (ADR-0046:46, which struck ADR-0004's
   outright ban at `0004:34` and replaced it with containment). The contained
