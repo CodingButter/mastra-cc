@@ -115,6 +115,30 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, scanRoots,
   });
 }
 
+// The daemon grew a second front door (ADR-0058), so the pin watches the
+// websocket server library the same way it watches node:net. Nothing under the
+// scanned roots imports `ws` today and nothing is meant to - the transport
+// dials with the global WebSocket - so these two plants are the only evidence
+// that half of the matcher does anything at all.
+test("b5: a ws import outside packages/transport fails with the offending path named", () => {
+  const root = plant("tools/rogue/dial.mjs", 'import WebSocket from "ws";\n');
+  for (const dir of ["packages", "tools", "scripts"]) mkdirSync(join(root, dir), { recursive: true });
+  const r = runPin("b5", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("websocket client outside packages/transport");
+  expect(r.output).toContain("tools/rogue/dial.mjs");
+});
+
+test("b5: the same ws import inside packages/transport passes", () => {
+  const root = plant("packages/transport/src/dial.ts", 'import WebSocket from "ws";\n', {
+    "tools/keep.mjs": "export {};\n",
+  });
+  for (const dir of ["packages", "tools", "scripts"]) mkdirSync(join(root, dir), { recursive: true });
+  const r = runPin("b5", ["--root", root]);
+  expect(r.output).toContain("pin-b5: ok");
+  expect(r.status).toBe(0);
+});
+
 test("b8: the raw-input class it contains is stated, not assumed", () => {
   // ADR-0046 struck the outright ban and re-specified this pin as containment:
   // the tool names appear ONLY inside the raw-input class implementation. The
