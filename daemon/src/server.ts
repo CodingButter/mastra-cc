@@ -2,6 +2,12 @@ import { mkdirSync, rmSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
+// Type-only: `ws` is reached through a dynamic import inside
+// startWebSocketServer so the entry chunk carries no bare `ws` specifier. The
+// installed daemon tree (infra/apply.sh) copies dist/ without node_modules, and
+// the same lazy shape is why dbus-native does not appear in dist/main.mjs
+// either. A daemon nobody asked for a port never loads the library.
+import type { WebSocket } from "ws";
 import {
   CAPABILITY_NAMES,
   SCHEMA_DIGEST,
@@ -1440,5 +1446,81 @@ export function startServer(options: {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(socketPath, () => resolve(server));
+  });
+}
+
+function webSocketPipe(socket: WebSocket): Pipe {
+  return {
+    write: (line) => {
+      socket.send(line);
+    },
+    end: () => {
+      socket.close();
+    },
+    get closed() {
+      // CLOSING (2) and CLOSED (3) both mean no more bytes will land
+      return socket.readyState > 1;
+    },
+    onData: (handler) => {
+      // Whole frames are fed into the SAME newline buffer the socket path
+      // uses. A WebSocket has message boundaries of its own; the protocol
+      // does not care about them, and pretending it does is how a peer that
+      // batches two lines into one frame starts behaving differently.
+      socket.on("message", (data: Buffer | ArrayBuffer | Buffer[]) => {
+        handler(Array.isArray(data) ? Buffer.concat(data).toString("utf8") : Buffer.from(data as Buffer).toString("utf8"));
+      });
+    },
+    onClose: (handler) => {
+      socket.on("close", handler);
+    },
+  };
+}
+
+/** the handle a second listener hands back - deliberately NOT a net.Server */
+export interface WebSocketListener {
+  /** the port actually bound, which matters when the caller asked for 0 */
+  readonly port: number;
+  readonly host: string;
+  close(): void;
+  on(event: "close", handler: () => void): void;
+}
+
+/**
+ * The same protocol, over a WebSocket, for a client that is not on this
+ * filesystem. Additive: startServer above is untouched, and a daemon nobody
+ * asked for a port never calls this.
+ */
+export async function startWebSocketServer(options: {
+  port: number;
+  host?: string;
+  backend: Backend;
+  launch?: LaunchContext;
+  visibility?: Visibility;
+}): Promise<WebSocketListener> {
+  const { port, host = "127.0.0.1", backend, visibility = "all" } = options;
+  const launch = options.launch === undefined ? undefined : { ...options.launch, visibility };
+
+  const { WebSocketServer } = await import("ws");
+  const wss = new WebSocketServer({ host, port });
+
+  wss.on("connection", (socket: WebSocket) => {
+    // Same choice the socket adapter makes: a transport-level error means drop
+    // this connection, and that is a property of the pipe, not the protocol.
+    socket.on("error", () => socket.terminate());
+    serveConnection(webSocketPipe(socket), { backend, launch, visibility });
+  });
+
+  return new Promise((resolve, reject) => {
+    wss.once("error", reject);
+    wss.once("listening", () => {
+      const address = wss.address();
+      const bound = address !== null && typeof address === "object" ? address.port : port;
+      resolve({
+        port: bound,
+        host,
+        close: () => wss.close(),
+        on: (_event, handler) => wss.on("close", handler),
+      });
+    });
   });
 }

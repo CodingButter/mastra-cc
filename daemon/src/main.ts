@@ -19,7 +19,7 @@ import {
 import { CATALOG } from "./launch/recipes.js";
 import { terminateOwned } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
-import { startServer } from "./server.js";
+import { startServer, startWebSocketServer } from "./server.js";
 
 // The daemon: one Node process, single-threaded (ADR-0030). --backend selects
 // from the registry; this is a LOCAL OPERATOR FLAG on the daemon's own command
@@ -213,7 +213,22 @@ const table = new OwnershipTable();
 // table.owns and never signals a pid it no longer owns. SIGKILL and a crash
 // still skip cleanup by definition; that residue is a named limitation, not a
 // promise.
+// --ws-port <n> / --ws-host <addr>: the second pipe (ADR-0058). ABSENT MEANS
+// ABSENT - no flag, no listener, no port. The bind address defaults to
+// loopback; widening it is always a visible act on a command line, which is
+// what a container publishing a port has to do (--ws-host 0.0.0.0), because
+// Docker's proxy cannot reach the container's own loopback. Port 0 lets the
+// kernel choose and the daemon prints what it got.
+const wsPortArg = arg("--ws-port");
+const wsPort = wsPortArg === null ? null : Number(wsPortArg);
+if (wsPort !== null && (!Number.isInteger(wsPort) || wsPort < 0 || wsPort > 65535)) {
+  console.error(`daemon: --ws-port wants a port number, got ${JSON.stringify(wsPortArg)}`);
+  process.exit(1);
+}
+const wsHost = arg("--ws-host") ?? "127.0.0.1";
+
 let server: Awaited<ReturnType<typeof startServer>> | undefined;
+let wsServer: Awaited<ReturnType<typeof startWebSocketServer>> | undefined;
 let shuttingDown = false;
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   process.on(signal, () => {
@@ -225,6 +240,7 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     shuttingDown = true;
     terminateOwned(table);
     server?.close();
+    wsServer?.close();
     backend.close().then(
       () => process.exit(0),
       () => process.exit(1)
@@ -243,5 +259,19 @@ server = await startServer({
   visibility,
 });
 server.on("close", () => terminateOwned(table));
+
+if (wsPort !== null) {
+  wsServer = await startWebSocketServer({
+    port: wsPort,
+    host: wsHost,
+    backend,
+    launch: { permits: launchPermits, allows, capabilities, catalog, table },
+    visibility,
+  });
+  // Belt and braces for a close that arrives without a signal. The signal path
+  // does NOT rely on this: ws only fires "close" once every client has gone.
+  wsServer.on("close", () => terminateOwned(table));
+  console.log(`daemon: websocket listening on ${wsServer.host}:${wsServer.port}`);
+}
 
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);
