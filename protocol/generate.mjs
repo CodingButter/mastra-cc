@@ -306,8 +306,15 @@ const indexTs = parts.join("\n");
 const packageJson = `${JSON.stringify(
   {
     name: "@mastra-cc/protocol-types",
+    // The protocol's own version is this package's version: a consumer that
+    // resolves @mastra-cc/protocol-types@1.6.1 is holding schema v1.6.1 and
+    // nothing else. It is deliberately NOT the daemon's version (ADR-0057).
     version: schema.version,
-    private: true,
+    license: "MIT",
+    publishConfig: { access: "public" },
+    // main is the source: a types-only package with no runtime to build.
+    // dist carries the declarations, src carries the module - a tarball needs both.
+    files: ["dist", "src"],
     type: "module",
     main: "./src/index.ts",
     // Declarations come from a real emit step: a consumer's dts bundler cannot reach into

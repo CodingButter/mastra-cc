@@ -48,6 +48,12 @@ jobs:
         run: node tools/mutations.mjs
       - name: "step 9: integration dry run (catalog divergence)"
         run: bash tools/dry-run-integration.sh
+      # A tarball is the only artefact a consumer sees. Pack every publishable
+      # package, unpack it outside the workspace, and read what actually landed
+      # (no workspace protocol, entry points present, dependencies resolvable).
+      # Runs after build, because it inspects dist.
+      - name: "release check (publishable tarballs; not one of the nine steps)"
+        run: node tools/release-check.mjs
       - name: "lint (workspace hygiene; not one of the nine steps)"
         run: pnpm turbo run lint
 
