@@ -730,6 +730,14 @@
     "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
   },
   {
+    "name": "instance-dials-more-than-once",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    this.#dial ??= connect(this.#options);",
+    "replace": "    this.#dial = connect(this.#options);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
+  },
+  {
     "name": "release-check-source-entry-of-its-own-removed",
     "file": "tools/release-check.mjs",
     "find": "      if (point.endsWith(\".ts\") && !point.endsWith(\".d.ts\")) {",
@@ -751,5 +759,77 @@
     "replace": "  if (explicit) return dial(options).catch(() => ({}) as TransportClient);",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-refusal-survives-the-wrapper.test.ts"
+  },
+  {
+    "name": "signals-attribution-allowlist-emptied",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "\"external\"",
+    "replace": "",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-throttle-window-opened",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "      if (last !== undefined && event.at - last < this.#dedupeWindowMs) return;",
+    "replace": "      if (false && last !== undefined && event.at - last < this.#dedupeWindowMs) return;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-priority-rewritten-on-the-way-through",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "        priority: event.priority,",
+    "replace": "        priority: \"urgent\",",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-never-attaches-the-listener",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "    this.#detach = client.onChangeEvent((event) => {\n      void this.#onChange(event);\n    });",
+    "replace": "",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-summary-carries-the-elements-content",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "  return `desktop ${event.kind}: ${event.role} ${event.id} (watch ${event.subscriptionId})`;",
+    "replace": "  return `desktop ${event.kind}: ${event.role} said something (watch ${event.subscriptionId})`;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-stop-abandons-the-listener",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "    this.#detach?.();\n    this.#detach = undefined;",
+    "replace": "    this.#detach = undefined;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-let-the-idle-thread-sleep",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "      ifIdle: deps.target.ifIdle ?? { behavior: \"wake\" },",
+    "replace": "      ifIdle: deps.target.ifIdle,",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "b8-forgets-the-proof-harness-is-exempt",
+    "file": "tools/pins/b8.mjs",
+    "find": "\"infra/webtop/signals/proof.sh\"",
+    "replace": "",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "instance-redials-after-close",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    this.#closed = true;",
+    "replace": "",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
   }
 ]

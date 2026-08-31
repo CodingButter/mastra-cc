@@ -167,6 +167,22 @@ test("b8: the raw-input class it contains is stated, not assumed", () => {
   expect(r.output).toContain("no raw-input class exists yet");
 });
 
+test("b8: the human stand-in exemption is one named file, not a directory", () => {
+  // The proof harness types at the desk so a change arrives attributed
+  // `external` - the pin lets exactly that file through, and nothing near it.
+  // A prefix exemption would let anyone drop a raw-input script beside the
+  // harness and inherit its permission, which is how a contained rule becomes
+  // an uncontained one without a diff anybody notices.
+  const clean = runPin("b8");
+  expect(clean.status).toBe(0);
+  expect(clean.output).toContain("infra/webtop/signals/proof.sh");
+
+  const root = plant("infra/webtop/signals/sneak.sh", 'xdotool type "hello"\n');
+  const r = runPin("b8", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("infra/webtop/signals/sneak.sh");
+});
+
 test("b8: a comment mentioning a banned tool is not a violation", () => {
   const root = plant("daemon/src/notes.ts", "// xdotool is banned here (ADR-0004)\nexport {};\n");
   const r = runPin("b8", ["--root", root]);

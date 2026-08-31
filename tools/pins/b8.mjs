@@ -21,6 +21,21 @@ import { collect, fail, rootFromArgs, stripComments } from "./lib.mjs";
 // nobody has built.
 const CONTAINMENT_HOME = [];
 
+// One exemption, and it is not part of the class. B8's subject is the PRODUCT:
+// the daemon and the package must never synthesise input. A proof harness is the
+// opposite direction - it stands in for the human at the keyboard, so that a
+// change arrives at the daemon attributed `external` rather than `self`. Without
+// a human-shaped actor there is no honest way to prove the desk can wake an agent
+// (docs/proofs/the-desk-wakes-the-agent.md); a script opening its own protocol
+// dial would produce a self-attributed change and prove the opposite of the
+// claim.
+//
+// Listed as EXACT FILES, never a directory prefix, so the exemption cannot grow
+// quietly: a new harness that wants raw input has to appear in this diff. The
+// mutation on this list only proves the exemption is load-bearing; that it
+// cannot WIDEN into a prefix is the `sneak.sh` case in pins.test.mjs.
+const HUMAN_STAND_INS = ["infra/webtop/signals/proof.sh"];
+
 const BANNED_TOOL = /\b(xdotool|wmctrl|uinput)\b/;
 
 const root = rootFromArgs(process.argv);
@@ -42,6 +57,7 @@ for (const file of files) {
   // mutation belongs to that commit. A red manufactured before then would be
   // scoring a rule with no subject.
   if (CONTAINMENT_HOME.some((home) => path === home || path.startsWith(`${home}/`))) continue;
+  if (HUMAN_STAND_INS.includes(path)) continue;
   const source = stripComments(readFileSync(file, "utf8"), file);
   const match = source.match(BANNED_TOOL);
   if (match) {
@@ -56,4 +72,7 @@ if (violations.length > 0) {
   process.exit(1);
 }
 const home = CONTAINMENT_HOME.length === 0 ? "no raw-input class exists yet" : CONTAINMENT_HOME.join(", ");
-console.log(`pin-b8: ok - ${files.length} file(s), no raw input tool outside the raw-input class (${home})`);
+console.log(
+  `pin-b8: ok - ${files.length} file(s), no raw input tool outside the raw-input class (${home}), ` +
+    `${HUMAN_STAND_INS.length} proof harness(es) standing in for a human: ${HUMAN_STAND_INS.join(", ")}`,
+);
