@@ -87,7 +87,13 @@ set -e
 cat /tmp/wake-proof.log
 
 AUDIT_AFTER="$(docker exec "$CONTAINER" bash -lc "wc -l < $AUDIT" | tr -d ' ')"
-echo "audit entries after the wake: $AUDIT_AFTER (daemon-side requests while the agent was quiet: $((AUDIT_AFTER - AUDIT_AT_IDLE)))"
+SERVED=$((AUDIT_AFTER - AUDIT_AT_IDLE))
+echo "audit entries after the wake: $AUDIT_AFTER (daemon-side requests while the agent was quiet: $SERVED)"
+# The daemon's count is the one written by the process being talked to, so it
+# gates the proof rather than decorating the transcript. Note what it counts:
+# requests the daemon answered, not wire frames - a transport-level heartbeat, if
+# one ever existed, would be invisible to it and to the consumer-side counter.
+test "$SERVED" -eq 0 || { echo "PROOF: RED - the daemon served $SERVED request(s) while the agent was supposedly quiet"; exit 1; }
 echo "events the desk pushed: $(docker exec "$CONTAINER" bash -lc "grep -c 'atspi-stream' /tmp/mastra-cc.log || true")"
 
 test "$STATUS" -eq 0 || { echo "PROOF: RED - the agent script exited $STATUS"; exit 1; }

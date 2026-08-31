@@ -33,19 +33,20 @@ container address: 172.20.0.2
 audit entries when the agent went quiet: 3
 
 == a human types into Kate; nothing here opens a socket ==
-typed at the desk: EXTERNAL EDIT 2026-08-31T04:36:55Z
+typed at the desk: EXTERNAL EDIT 2026-08-31T04:53:32Z
 
 tool-call: {"n":1,"name":"queryElements"}
 tool-call: {"n":2,"name":"queryElements"}
 tool-call: {"n":3,"name":"subscribeElement"}
-agent-asked: {"text":"Element ID: el-935a7b1c4c7f, Subscription ID: sub-000001-246332","toolCalls":3}
+agent-asked: {"text":"The element id is el-935a7b1c4c7f and the subscription id is sub-000001-cdd9dc.","toolCalls":3}
 SUBSCRIBED: {"callsSoFar":3,"messages":2}
 IDLE: the agent is now calling nothing. Mutate the element from the desktop.
-woken: {"text":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-246332)"}
+woken: {"text":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)"}
 frames-between-subscribe-and-wake: 0
+delivered-record: {"priority":"high","status":"delivered","summary":"desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)","attribution":"external"}
 OBSERVING: keep typing
-observed-event-rate: {"events":6,"spanSeconds":10.61,"perSecond":0.57,"wakes":6}
-{"proof":"green","framesBetween":0,"callsBeforeIdle":3,"woken":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-246332)"}
+observed-event-rate: {"events":6,"spanSeconds":11.62,"perSecond":0.52,"wakes":6}
+{"proof":"green","framesBetween":0,"callsBeforeIdle":3,"woken":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)"}
 audit entries after the wake: 3 (daemon-side requests while the agent was quiet: 0)
 PROOF: GREEN
 ```
@@ -62,7 +63,21 @@ names an element id or a subscription id.
 | Requests the daemon answered in the same window | the daemon's own `--audit` log, on the other side of the socket, in another namespace | **0** (3 before, 3 after) |
 
 The second number is the one that matters, because it is written by the process being talked to
-rather than by the process making the claim.
+rather than by the process making the claim, and the script fails on a non-zero delta rather than
+printing it. Say what it counts, though: **requests the daemon answered**, not wire frames. A
+transport-level heartbeat, if one existed, would be invisible to both measures — neither number can
+see below the protocol.
+
+The delivered record was read back out of storage rather than trusted from the input object:
+
+```
+{"priority":"high","status":"delivered","attribution":"external",
+ "summary":"desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)"}
+```
+
+`high` is the priority the agent chose at `subscribeElement`, still intact after persistence and
+after the delivery policy read it. The summary is the fixed pointer format and contains none of the
+text sitting in the document.
 
 ## The mutation was made from the desktop
 
@@ -81,8 +96,9 @@ through it. The typing is the point.
 
 ## How fast a real desk actually talks
 
-Five bursts typed two seconds apart produced **6 events in 10.6 seconds — 0.57 events per
-second**, and 6 wakes. That is the measured number the throttle window is set against; it is not
+Five bursts typed two seconds apart produced **6 events in 11.6 seconds — 0.52 events per
+second**, and 6 wakes. That window mixes typing with the pauses between bursts; it is not a
+continuous-typing rate. That is the measured number the throttle window is set against; it is not
 a guess, and it is small because the daemon already collapses repeat changes upstream. A whole
 typed sentence arrives as roughly one event, not one per keystroke.
 
@@ -103,6 +119,10 @@ SyntaxError: The requested module '@mastra-cc/desktop/mastra' does not provide a
 Before this work the installed package could be *asked*. It could not *tell*.
 
 ## What this does not prove
+
+The throttle never fired. Every event in this run produced a wake, because a desk at half an event
+per second never enters the 1000 ms window. S6 — one wake per element per window, in both
+directions — rests on the unit tests, and this run is not evidence for it.
 
 One agent, one instance, one socket, one thread. The multi-agent property — two agents cannot
 confuse each other's attribution because they cannot share a connection — is true by

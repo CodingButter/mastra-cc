@@ -86,4 +86,19 @@ describe("MastraCC", () => {
     const neverDialled = new MastraCC({ socketPath: "/nonexistent/never/dialled.sock" });
     await neverDialled.close();
   });
+
+  it("refuses to dial again once closed, rather than quietly opening a different connection", async () => {
+    // The failure this prevents is invisible: a re-dial gets a new daemon-side
+    // identity and an empty subscription book, so tools would keep working while
+    // every subscription made before the close is gone and any provider still
+    // listening is attached to a dead client.
+    const instance = desk(await daemonOnATape());
+    await instance.client();
+    await instance.close();
+
+    await expect(instance.client()).rejects.toThrow(/closed/);
+    await expect(
+      instance.getTools().queryElements.execute!({ role: "window" } as never, undefined as never),
+    ).rejects.toThrow(/closed/);
+  });
 });

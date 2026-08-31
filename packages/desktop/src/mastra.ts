@@ -80,6 +80,7 @@ export class MastraCC {
   // promise rather than awaiting into a field is what makes two concurrent
   // first-callers share one connection instead of racing into two.
   #dial: Promise<TransportClient> | undefined;
+  #closed = false;
 
   constructor(options: ConnectOptions = {}) {
     this.#options = options;
@@ -92,6 +93,17 @@ export class MastraCC {
    * assembling an agent at module scope has not yet decided to talk to anything.
    */
   client(): Promise<TransportClient> {
+    // A closed instance stays closed. Re-dialling would silently hand back a
+    // DIFFERENT connection: new daemon-side identity, empty subscription book,
+    // and any provider still holding a listener on the old client would be
+    // attached to a corpse while the tools quietly worked. That failure is
+    // invisible, so it is refused instead - an instance is one connection for
+    // its whole life (ADR-0060), and a caller who wants another builds another.
+    // Rejected rather than thrown: this returns a promise, and a method that
+    // sometimes throws synchronously is a method callers get wrong.
+    if (this.#closed) {
+      return Promise.reject(new Error("this MastraCC was closed; construct another to dial again"));
+    }
     this.#dial ??= connect(this.#options);
     return this.#dial;
   }
@@ -145,9 +157,12 @@ export class MastraCC {
    *
    * Idempotent, and a no-op on an instance that never dialled: closing a desk
    * you never opened is not an error, and a caller unwinding a failed startup
-   * should not have to know how far it got.
+   * should not have to know how far it got. It is also final: see `client()` for
+   * why a closed instance refuses to dial again rather than opening a second,
+   * different connection behind the caller's back.
    */
   async close(): Promise<void> {
+    this.#closed = true;
     const dial = this.#dial;
     if (dial === undefined) return;
     this.#dial = undefined;

@@ -110,6 +110,24 @@ if (!woke) {
 log("woken", { text: String(woke.text).slice(0, 400) });
 log("frames-between-subscribe-and-wake", framesBetween);
 
+// The RECORD, not the input object the provider handed to Mastra. Persistence is
+// where a field silently disappears, and the delivery policy reads the record.
+const record = await deliveredRecord();
+log("delivered-record", record);
+const wrong =
+  record.priority !== "high"
+    ? `the subscriber chose priority high; the stored record says ${record.priority}`
+    : record.attribution !== "external"
+      ? `attribution ${record.attribution} should never have woken anyone`
+      : /INSTALLABLE|EXTERNAL EDIT|burst-/.test(record.summary)
+        ? `the summary carries the element's content: ${record.summary}`
+        : null;
+if (wrong) {
+  console.log(JSON.stringify({ proof: "red", reason: wrong }));
+  await desk.close();
+  process.exit(1);
+}
+
 // How fast does a real desk actually talk? Measured, not assumed: the window
 // below is the one the throttle is set against.
 console.log("OBSERVING: keep typing");
@@ -131,6 +149,23 @@ console.log(
 );
 await desk.close();
 process.exit(framesBetween === 0 ? 0 : 1);
+
+async function deliveredRecord() {
+  // `attributes` is stored as a blob; reading it as text makes the driver panic
+  // on invalid utf-8, so take the hex and pull the two strings that matter out
+  // of it rather than pretending to parse a format nobody documented here.
+  const raw = await createClient({ url: dbUrl }).execute(
+    "select priority, status, summary, hex(attributes) as attributes from mastra_notifications order by createdAt limit 1",
+  );
+  const row = raw.rows[0];
+  const blob = Buffer.from(row.attributes ?? "", "hex").toString("latin1");
+  return {
+    priority: row.priority,
+    status: row.status,
+    summary: row.summary,
+    attribution: /attribution.(self|external|unattributed)/.exec(blob)?.[1] ?? null,
+  };
+}
 
 async function countMessages() {
   const raw = await createClient({ url: dbUrl }).execute("select count(*) as n from mastra_messages");

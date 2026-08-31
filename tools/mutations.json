@@ -817,11 +817,19 @@
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
   {
-    "name": "b8-exempts-anything-beside-the-proof-harness",
+    "name": "b8-forgets-the-proof-harness-is-exempt",
     "file": "tools/pins/b8.mjs",
     "find": "\"infra/webtop/signals/proof.sh\"",
     "replace": "",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "instance-redials-after-close",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    this.#closed = true;",
+    "replace": "",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
   }
 ]

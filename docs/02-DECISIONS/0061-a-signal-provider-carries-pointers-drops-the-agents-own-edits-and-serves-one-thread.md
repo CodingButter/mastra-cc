@@ -35,7 +35,10 @@ guarded by a mutation.
 
 **4. Priority passes through untouched.** Daemon `low | medium | high` is a literal subset of Mastra's
 four. No translation table, no invented `urgent`. The subscriber chose the priority; the delivery
-policy is Mastra's business.
+policy is Mastra's business — with one consequence a subscriber must know: on an idle thread, `low`
+does **not** wake. It is recorded as `pending` with reason `idle-low-summary`; only `medium` and
+above start a run. A watch subscribed at `low` will therefore look wired and never wake anything,
+which is Mastra's policy working as designed and our job to say out loud.
 
 **5. One wake per `(subscriptionId, elementId, kind)` per window.** This is a throttle, not judgement:
 it deliberately suppresses *distinct* changes inside the window, because nothing here can know which
@@ -47,7 +50,7 @@ repeats are logically the same. `dedupeKey` and `coalesceKey` are set for the sa
 `SendNotificationSignalInput` this path uses (`@mastra/core@1.63.2`
 `dist/notifications/types.d.ts:60-71`). Every delivered change is a stored `NotificationRecord`.
 Dedupe and coalesce keys collapse a stream, but a chatty desk still accumulates rows. Measured rate on
-a real desk under continuous typing: **0.57 events/second** (`docs/proofs/the-desk-wakes-the-agent.md`),
+a real desk, over a window mixing typing bursts with the pauses between them: **0.57 events/second** (`docs/proofs/the-desk-wakes-the-agent.md`),
 low enough that the window suppresses little in practice — it is a floor against a pathological
 element, not a rate limiter.
 
@@ -72,8 +75,8 @@ for anyone who would rather have the noise.
 - Implementation: `packages/desktop/src/signals.ts`; exposed by `MastraCC.getSignalProvider()` in
   `packages/desktop/src/mastra.ts`.
 - Tests: `packages/desktop/src/__tests__/the-desk-speaks-first.test.ts` — delivery to a connected
-  agent, priority on the *received* record, `external` delivered while `self` and `unattributed` are
-  not, burst-inside-window waking once and outside-window waking twice, the fixed summary format,
+  agent, priority at the notification boundary, `external` delivered while `self` and `unattributed`
+  are not, burst-inside-window waking once and outside-window waking twice, the fixed summary format,
   `stop()` silencing delivery without closing the dial, and the anti-polling assertions.
 - Mutations: the attribution default, the throttle guard, the priority passthrough, the pointer-only
   summary, listener attachment and listener cleanup — each confirmed red when planted
