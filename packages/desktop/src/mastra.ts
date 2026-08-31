@@ -1,6 +1,7 @@
 import { createTool } from "@mastra/core/tools";
 import { METHOD_DESCRIPTORS, METHOD_NAMES, type MethodName } from "@mastra-cc/protocol-types";
 import type { TransportClient } from "@mastra-cc/transport";
+import { connect, type ConnectOptions } from "./index.js";
 
 // THE ADAPTER. @mastra/core is a PEER dependency and is imported only from this
 // module, which is reachable only through the "@mastra-cc/desktop/mastra"
@@ -46,4 +47,81 @@ export function desktopTools(client: TransportClient): DesktopTools {
     });
   }
   return tools;
+}
+
+/**
+ * One desk, held as one object.
+ *
+ * The instance IS the connection (ADR-0060, as amended). There is no agent id
+ * anywhere on this surface: the identity of the agent is the instance it is
+ * holding, so two agents are two instances and therefore two sockets, which is
+ * what keeps the daemon's `self` attribution true without asking the daemon to
+ * change. Everything obtained from one instance - the tools and the signal
+ * provider - is bound to that instance's single dial.
+ *
+ * It lives here in the `/mastra` subpath rather than in the base entry because
+ * a signal provider is a value import of `@mastra/core`, and the base entry has
+ * to stay importable by a runtime that has no agent framework installed (C5).
+ */
+export class MastraCC {
+  readonly #options: ConnectOptions;
+  // The dial is a PROMISE, not a client, and it is created once. Storing the
+  // promise rather than awaiting into a field is what makes two concurrent
+  // first-callers share one connection instead of racing into two.
+  #dial: Promise<TransportClient> | undefined;
+
+  constructor(options: ConnectOptions = {}) {
+    this.#options = options;
+  }
+
+  /**
+   * The one connection, opened on first use.
+   *
+   * Lazy because constructing a desk should not be an I/O operation: a caller
+   * assembling an agent at module scope has not yet decided to talk to anything.
+   */
+  client(): Promise<TransportClient> {
+    this.#dial ??= connect(this.#options);
+    return this.#dial;
+  }
+
+  /**
+   * One Mastra tool per protocol method, bound to this instance's connection.
+   *
+   * Delegates to the free `desktopTools` function, which stays exported and
+   * unchanged: it is merged public surface, and a caller who already dials for
+   * themselves has no reason to be broken by this class existing.
+   *
+   * Returned synchronously because `new Agent({ tools })` is assembled before
+   * anything is dialled - each tool awaits the connection when it is actually
+   * called, so building an agent never blocks on a desk being reachable.
+   */
+  getTools(): DesktopTools {
+    // Each method forwards to the real client, dialling on first use. This is
+    // delegation, not a second client: nothing here frames, correlates or opens
+    // a socket - `connect()` does that, once (ADR-0003, pin B5).
+    const deferred: Record<string, unknown> = {};
+    for (const method of METHOD_NAMES) {
+      deferred[method] = async (params: unknown) => {
+        const client = await this.client();
+        const call = client[method] as (p: unknown) => Promise<unknown>;
+        return await call.call(client, params);
+      };
+    }
+    return desktopTools(deferred as unknown as TransportClient);
+  }
+
+  /**
+   * Close the connection, if one was ever opened.
+   *
+   * Idempotent, and a no-op on an instance that never dialled: closing a desk
+   * you never opened is not an error, and a caller unwinding a failed startup
+   * should not have to know how far it got.
+   */
+  async close(): Promise<void> {
+    const dial = this.#dial;
+    if (dial === undefined) return;
+    this.#dial = undefined;
+    (await dial).close();
+  }
 }

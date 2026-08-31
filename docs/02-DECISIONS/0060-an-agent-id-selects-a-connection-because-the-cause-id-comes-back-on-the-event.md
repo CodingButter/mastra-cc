@@ -47,26 +47,40 @@ exists precisely so that this system does not guess about causation.
 
 ## Decision
 
-**An agent id is a first-class argument to the package, and it selects a connection.**
+**An agent's identity binds to a connection. The instance _is_ the connection, so there is no
+id at all.**
 
 The package is held as an instance addressed once with connection details. Both agent-facing
-surfaces are obtained from it by id, and the same id resolves to the same underlying dial:
+surfaces come from that instance and share its single dial:
 
 ```ts
-const desktop = new MastraCC({ url: "ws://desk:9977" });
-desktop.getTools("researcher");          // ─┐  same id →
-desktop.getSignalProvider("researcher"); // ─┘  same connection
+const desk = new MastraCC({ url: "ws://desk:9977" });
+new Agent({
+  tools: desk.getTools(),                              // ─┐  one instance →
+  signals: [desk.getSignalProvider({ threadId, resourceId })], // ─┘  one connection
+});
 ```
 
-The id therefore does two jobs, and it is worth naming both because only the second is
-subtle:
+Every `self` event arriving on that dial belongs to exactly one agent, by construction rather
+than by inference. That is the whole job, and it is what keeps attribution true. Two agents
+means two instances, means two sockets — the property this record wanted, reached by having
+no id rather than by routing one.
 
-1. **It tags tool results.** The caller knows which agent invoked what. Bookkeeping, free,
-   entirely client side.
-2. **It selects the dial.** Every `self` event arriving on that dial belongs to exactly one
-   agent, by construction rather than by inference. This is what keeps attribution true.
+The cost is one connection per agent. That cost is accepted.
 
-The cost is one connection per agent id. That cost is accepted.
+> **Amended 2026-08-31 (signals).** As first written, this decision expressed the binding as an
+> id parameter — `getTools("researcher")` resolving to a dial — and claimed the id did a second
+> job: *tagging tool results*. Both are struck.
+>
+> The tagging job was never real. A toolset obtained from an instance is that instance's by
+> construction; there is nothing left to tag. And once the identity is the object the caller is
+> holding, the id is an indirection with no destination — a lookup key for a map that only ever
+> has one entry. Mastra reaches the same shape independently: a provider's connected agent is a
+> single field set by one `Agent` constructor, so a provider is 1:1 with an agent whether or not
+> we name it.
+>
+> **Everything above this note still holds.** The `causeId` argument is untouched, and it is
+> the entire reason one connection per agent is required at all. Only the surface changed.
 
 Rejected: **carrying the agent id on the wire** so one connection can serve many agents.
 It is the better end state and it is not available now — the daemon would have to attribute
@@ -83,13 +97,15 @@ first agent as `self`.
 - Attribution requires no daemon change and no schema change. The daemon's per-connection
   answer at `daemon/src/server.ts:512` is already correct; the package simply stops asking it
   a question it cannot answer.
-- N agents cost N sockets. For the populations this is built for — one actor and a small
-  number of watchers — N is small. If it stops being small, that is the trigger to revisit,
+- N agents cost N sockets — N instances. For the populations this is built for — one actor and
+  a small number of watchers — N is small. If it stops being small, that is the trigger to revisit,
   not a reason to pre-optimise now.
 - The upgrade is one field, not a redesign: put `causeId` on the call's response, and one
   connection can carry many agents honestly. Consumer code does not change — the instance
   stops opening a socket per id. Recording that here means the future change arrives as a
   scheduled protocol move with a digest bump, which is the only way it is allowed to arrive.
+  (After the amendment the consumer change is smaller still: instances stop opening a socket
+  each. The surface does not move.)
 - **Signal routing falls out for free, and does not need building.** A subscription book
   belongs to the socket — created when the connection is accepted, emptied when it closes, and
   no watch outliving the client that asked for it (`daemon/src/server.ts:535-539`). So once an
@@ -97,9 +113,14 @@ first agent as `self`.
   there and nowhere else. Delivering a change only to the agent that subscribed requires no
   filtering, no fan-out table and no routing code: it is a property of the connection, which is
   the strongest form the guarantee can take.
-- An agent id is therefore part of the package's public surface, and the natural key for
-  anything later scoped per agent — signal delivery, subscription ownership, and whatever
-  filtering a provider grows.
+- **This settles _agent_ identity and says nothing about _thread_ identity, which is a
+  separate gap.** Mastra's `notify(notification, target)` needs a `SignalProviderTarget`
+  carrying both a `threadId` and a `resourceId`, and neither is recoverable from a connection.
+  So the thread is supplied explicitly — `getSignalProvider({ threadId, resourceId })` — and is
+  fixed for that provider's life. One provider serves one thread. Learning the thread instead
+  of being told it means learning which thread called `subscribeElement`, which means
+  intercepting a tool call; that is deferred, and is recorded here so this record is not read
+  as settling more than it does.
 
 ## Evidence
 

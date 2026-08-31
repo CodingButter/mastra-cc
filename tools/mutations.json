@@ -730,6 +730,14 @@
     "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
   },
   {
+    "name": "instance-dials-more-than-once",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    this.#dial ??= connect(this.#options);",
+    "replace": "    this.#dial = connect(this.#options);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
+  },
+  {
     "name": "release-check-source-entry-of-its-own-removed",
     "file": "tools/release-check.mjs",
     "find": "      if (point.endsWith(\".ts\") && !point.endsWith(\".d.ts\")) {",
