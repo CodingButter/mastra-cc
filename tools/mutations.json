@@ -735,5 +735,21 @@
     "find": "      if (point.endsWith(\".ts\") && !point.endsWith(\".d.ts\")) {",
     "cwd": "tools",
     "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "b5-infra-scan-root-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "const SCAN_ROOTS = [\"packages\", \"tools\", \"scripts\", \"infra\"];",
+    "replace": "const SCAN_ROOTS = [\"packages\", \"tools\", \"scripts\"];",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "desktop-connect-swallows-the-refusal",
+    "file": "packages/desktop/src/index.ts",
+    "find": "  if (explicit) return dial(options);",
+    "replace": "  if (explicit) return dial(options).catch(() => ({}) as TransportClient);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-refusal-survives-the-wrapper.test.ts"
   }
 ]

@@ -15,7 +15,11 @@ const NET_IMPORT = /(?:from\s*|require\s*\(\s*|import\s*\(\s*)["'](?:node:)?net[
 const WS_IMPORT = /(?:from\s*|require\s*\(\s*|import\s*\(\s*)["']ws["']/;
 const TRANSPORT_DIR = join("packages", "transport") + sep;
 
-const SCAN_ROOTS = ["packages", "tools", "scripts"];
+// infra/ is scanned too: the harnesses that drive a container desktop are the
+// most tempting place to hand-roll a second dial, precisely because they are
+// "just proof scripts". A proof that reaches the daemon its own way proves
+// nothing about the client we ship.
+const SCAN_ROOTS = ["packages", "tools", "scripts", "infra"];
 
 const root = rootFromArgs(process.argv);
 assertRoots(root, SCAN_ROOTS, "pin-b5");

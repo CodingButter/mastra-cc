@@ -46,7 +46,7 @@ const cases = [
     plantPath: "packages/rogue/src/socket.ts",
     plantSource: 'import net from "node:net";\n',
     expectedMessage: "socket implementation outside packages/transport",
-    scanRoots: ["packages", "tools", "scripts"],
+    scanRoots: ["packages", "tools", "scripts", "infra"],
   },
   {
     pin: "b8",
@@ -122,7 +122,7 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, scanRoots,
 // that half of the matcher does anything at all.
 test("b5: a ws import outside packages/transport fails with the offending path named", () => {
   const root = plant("tools/rogue/dial.mjs", 'import WebSocket from "ws";\n');
-  for (const dir of ["packages", "tools", "scripts"]) mkdirSync(join(root, dir), { recursive: true });
+  for (const dir of ["packages", "tools", "scripts", "infra"]) mkdirSync(join(root, dir), { recursive: true });
   const r = runPin("b5", ["--root", root]);
   expect(r.status).toBe(1);
   expect(r.output).toContain("websocket client outside packages/transport");
@@ -133,10 +133,25 @@ test("b5: the same ws import inside packages/transport passes", () => {
   const root = plant("packages/transport/src/dial.ts", 'import WebSocket from "ws";\n', {
     "tools/keep.mjs": "export {};\n",
   });
-  for (const dir of ["packages", "tools", "scripts"]) mkdirSync(join(root, dir), { recursive: true });
+  for (const dir of ["packages", "tools", "scripts", "infra"]) mkdirSync(join(root, dir), { recursive: true });
   const r = runPin("b5", ["--root", root]);
   expect(r.output).toContain("pin-b5: ok");
   expect(r.status).toBe(0);
+});
+
+test("b5: a dial hand-rolled inside a proof harness under infra/ is caught", () => {
+  // The proof scripts are the tempting exception - they are throwaway, they run
+  // against a container, nobody reviews them like shipped code. A harness that
+  // reaches the daemon its own way proves nothing about the client we ship, so
+  // infra/ is scanned on the same terms as everything else.
+  const root = plant("infra/webtop/harness.mjs", 'import WebSocket from "ws";\n', {
+    "packages/keep/src/a.ts": "export {};\n",
+  });
+  for (const dir of ["packages", "tools", "scripts", "infra"]) mkdirSync(join(root, dir), { recursive: true });
+  const r = runPin("b5", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("websocket client outside packages/transport");
+  expect(r.output).toContain("infra/webtop/harness.mjs");
 });
 
 test("b8: the raw-input class it contains is stated, not assumed", () => {
