@@ -815,5 +815,13 @@
     "replace": "      ifIdle: deps.target.ifIdle,",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "b8-exempts-anything-beside-the-proof-harness",
+    "file": "tools/pins/b8.mjs",
+    "find": "\"infra/webtop/signals/proof.sh\"",
+    "replace": "",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
   }
 ]
