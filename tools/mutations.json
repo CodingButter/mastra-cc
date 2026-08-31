@@ -831,5 +831,19 @@
     "replace": "",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
+  },
+  {
+    "name": "derived-launch-keeps-the-file-placeholder",
+    "file": "daemon/src/launch/derived.ts",
+    "find": "\"%f\", ",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/derived.test.ts"
+  },
+  {
+    "name": "derived-launch-mishandles-the-terminal-key",
+    "file": "daemon/src/launch/derived.ts",
+    "find": " === \"true\"",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/derived.test.ts"
   }
 ]

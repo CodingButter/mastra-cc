@@ -40,7 +40,10 @@ export function desktopEntryDirectories(env: NodeJS.ProcessEnv = process.env): s
   return [...(home === undefined ? [] : [home]), ...system].map((directory) => join(directory, "applications"));
 }
 
-function entryValue(text: string, key: string): string | undefined {
+// Exported so launch/derived.ts reads a desktop entry the same way this module
+// does. A second parser that disagreed about which group a value came from
+// would make listApplications and openApplication describe different files.
+export function entryValue(text: string, key: string): string | undefined {
   // The [Desktop Entry] group only: a value under an action group or a
   // localised key is a different fact, and reading one as the entry's own
   // would report something the file does not say.

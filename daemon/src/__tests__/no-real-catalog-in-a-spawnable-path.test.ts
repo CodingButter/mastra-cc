@@ -14,7 +14,12 @@ import { describe, expect, it } from "vitest";
 // carry their own __tests__ directories) are offline tests too, and a guard
 // that reads one directory is a tripwire wearing the name of an invariant.
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..");
-const PAIRING = /catalog:\s*CATALOG\b/;
+// Two pairings, not one. A derived catalog reaching a context literal is
+// STRICTLY worse than the issue #20 case: its blast radius is every
+// application installed on the machine the suite runs on, not one signed-in
+// Chrome. Tests that need derived NAMES defang them (support/defanged-
+// catalog.ts, defang()).
+const PAIRING = /catalog:\s*(CATALOG\b|deriveLaunchCatalog\b)/;
 
 describe("the real catalog never reaches a spawnable path", () => {
   const files = readdirSync(SRC, { recursive: true })
@@ -29,7 +34,9 @@ describe("the real catalog never reaches a spawnable path", () => {
     // The guard must be able to go red: the exact string a violation would
     // contain is matched here, so a drifted regex fails this test first.
     expect(PAIRING.test("catalog: " + "CATALOG,")).toBe(true);
+    expect(PAIRING.test("catalog: " + "deriveLaunchCatalog(desktopEntryDirectories()),")).toBe(true);
     expect(PAIRING.test("catalog: DEFANGED_CATALOG,")).toBe(false);
+    expect(PAIRING.test("catalog: defang(deriveLaunchCatalog(dirs)),")).toBe(false);
   });
 
   it("no offline test pairs the real CATALOG with a launch context", () => {
