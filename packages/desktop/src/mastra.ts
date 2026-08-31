@@ -1,7 +1,18 @@
 import { createTool } from "@mastra/core/tools";
 import { METHOD_DESCRIPTORS, METHOD_NAMES, type MethodName } from "@mastra-cc/protocol-types";
 import type { TransportClient } from "@mastra-cc/transport";
+import type { SignalProviderTarget } from "@mastra/core/signals";
 import { connect, type ConnectOptions } from "./index.js";
+import { DesktopSignals, type DesktopSignalsOptions } from "./signals.js";
+
+export {
+  DesktopSignals,
+  DEFAULT_DELIVERED_ATTRIBUTIONS,
+  DEFAULT_DEDUPE_WINDOW_MS,
+  changeSummary,
+  type DesktopSignalsOptions,
+  type DeliverAttribution,
+} from "./signals.js";
 
 // THE ADAPTER. @mastra/core is a PEER dependency and is imported only from this
 // module, which is reachable only through the "@mastra-cc/desktop/mastra"
@@ -109,6 +120,24 @@ export class MastraCC {
       };
     }
     return desktopTools(deferred as unknown as TransportClient);
+  }
+
+  /**
+   * A signal provider bound to this instance's connection, delivering the
+   * daemon's change events into one agent thread.
+   *
+   * The target is fixed here and for the provider's life: a notification needs
+   * a thread, and "the instance is the connection" settles which AGENT is
+   * speaking, not which THREAD is listening. Attach it with
+   * `new Agent({ signals: [...] })` - that constructor is the only thing that
+   * connects a provider to an agent, so an editor-configured agent cannot
+   * carry one.
+   */
+  getSignalProvider(
+    target: SignalProviderTarget,
+    options?: DesktopSignalsOptions,
+  ): DesktopSignals {
+    return new DesktopSignals({ client: () => this.client(), target, options });
   }
 
   /**
