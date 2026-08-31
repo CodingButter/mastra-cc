@@ -728,5 +728,12 @@
     "find": "      inputSchema: descriptor.params,",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
+  },
+  {
+    "name": "release-check-source-entry-of-its-own-removed",
+    "file": "tools/release-check.mjs",
+    "find": "      if (point.endsWith(\".ts\") && !point.endsWith(\".d.ts\")) {",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
   }
 ]

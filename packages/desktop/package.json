@@ -38,14 +38,14 @@
     "vitest": "catalog:",
     "@types/node": "^24.10.1",
     "@mastra-cc/daemon": "workspace:*",
-    "@mastra/core": "^1.63.2",
-    "@mastra-cc/protocol-types": "workspace:*"
+    "@mastra/core": "^1.63.2"
   },
   "dependencies": {
-    "@mastra-cc/transport": "workspace:*"
+    "@mastra-cc/transport": "workspace:*",
+    "@mastra-cc/protocol-types": "workspace:*"
   },
   "peerDependencies": {
-    "@mastra/core": ">=1.60.0 <2"
+    "@mastra/core": ">=1.63.0 <2"
   },
   "peerDependenciesMeta": {
     "@mastra/core": {

@@ -356,11 +356,14 @@ const packageJson = `${JSON.stringify(
     version: schema.version,
     license: "MIT",
     publishConfig: { access: "public" },
-    // main is the source: a types-only package with no runtime to build.
-    // dist carries the declarations, src carries the module - a tarball needs both.
+    // This package carries runtime values as well as types - METHOD_NAMES,
+    // TYPE_SPECS, METHOD_DESCRIPTORS - so it is compiled, and the entry point is
+    // the compiled module. Pointing main at src/index.ts would work everywhere
+    // in this workspace and nowhere in a consumer's node_modules, where node
+    // will not strip types for a dependency.
     files: ["dist", "src"],
     type: "module",
-    main: "./src/index.ts",
+    main: "./dist/index.js",
     // Declarations come from a real emit step: a consumer's dts bundler cannot reach into
     // a source file that belongs to no project, and TypeScript 7's tsgo refuses to try.
     types: "./dist/index.d.ts",
@@ -384,7 +387,6 @@ const tsconfigJson = `${JSON.stringify(
       rootDir: "src",
       outDir: "dist",
       declaration: true,
-      emitDeclarationOnly: true,
       module: "NodeNext",
       moduleResolution: "NodeNext",
       target: "ES2022",

@@ -76,10 +76,13 @@ describe("the Mastra adapter", () => {
     }
   });
 
-  // C5. The base entry is what a runtime without an agent framework installs;
-  // it is imported here in a child process whose resolution of @mastra/core is
-  // broken on purpose, so an import added to src/index.ts tomorrow fails this
-  // rather than failing a stranger's install.
+  // C5. The base entry is what a runtime without an agent framework installs.
+  // This is a STATIC guard: it walks the base entry's own module graph and
+  // refuses any `@mastra/*` specifier, so a peer import added to src/index.ts
+  // tomorrow fails here rather than failing a stranger's install. It does not
+  // execute anything with the peer missing - that is the scratch-install step
+  // recorded in docs/proofs/what-the-installable-package-does.md, which is the
+  // real end-to-end evidence for C5.
   it("keeps the peer out of the base entry's module graph", () => {
     const seen = new Set<string>();
     const walk = (file: string) => {

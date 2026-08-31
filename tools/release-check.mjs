@@ -94,6 +94,16 @@ for (const relative of PUBLISHABLE) {
       }
     }
 
+    // (e) - a published package's OWN entry points must be loadable JavaScript.
+    // Rule (b) only asks whether the declared file is in the tarball; a
+    // TypeScript source file passes that and still dies on a consumer's first
+    // import, because node will not strip types under node_modules.
+    for (const point of declared) {
+      if (point.endsWith(".ts") && !point.endsWith(".d.ts")) {
+        problems.push(`${relative}: entry point ${point} is TypeScript source - a consumer cannot load it`);
+      }
+    }
+
     // (c)
     for (const [name, range] of Object.entries(shipped.dependencies ?? {})) {
       if (typeof range !== "string" || range.trim() === "") {

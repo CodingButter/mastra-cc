@@ -103,3 +103,17 @@ test("shipped code importing a source-entry package is caught", () => {
   expect(r.status).toBe(1);
   expect(r.output).toContain("whose entry point is TypeScript source");
 });
+
+// Rule (b) is satisfied by a .ts entry that is genuinely in the tarball; rule
+// (e) is the one that says a consumer still cannot load it.
+test("a package whose own entry point is TypeScript source is caught", () => {
+  const root = fixture({
+    ...publishable,
+    "protocol-types": { main: "./src/index.ts", files: ["dist", "src"] },
+  });
+  mkdirSync(join(root, "packages", "protocol-types", "src"), { recursive: true });
+  writeFileSync(join(root, "packages", "protocol-types", "src", "index.ts"), "export const ok = true;\n");
+  const r = run(root);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("is TypeScript source - a consumer cannot load it");
+});

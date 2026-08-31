@@ -78,19 +78,22 @@ retrying, guessing, or repairing the caller's parameters.
 
 ## Red, at the merge base
 
+The red is the **same driving script**, run in a scratch project outside the
+workspace whose install was built from the merge base. Nothing about the script,
+the container, or the daemon changes; only which packages exist to pack.
+
 ```
-$ ls /tmp/base-red/packages
-transport
-
-$ bash /tmp/base-red/infra/webtop/installable-package/proof.sh
-bash: .../proof.sh: No such file or directory
-
-$ (cd /tmp/base-red && pnpm --filter @mastra-cc/desktop build)
+$ (cd /tmp/base-red && pnpm pack --filter @mastra-cc/desktop)
 No projects matched the filters in "/tmp/base-red"
+
+$ cd /tmp/base-red-install && node drive-the-desktop.mjs
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@mastra-cc/desktop'
+  imported from /tmp/base-red-install/drive-the-desktop.mjs
 ```
 
-At `ddaf98d` there is no package to install, so there is nothing an agent
-process could import by name.
+At `ddaf98d` there is no package to pack, so the install has nothing under that
+name and the import dies before the first protocol call. The green transcript
+above is the whole difference.
 
 ## What this does not prove
 
