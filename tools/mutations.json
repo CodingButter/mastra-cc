@@ -692,5 +692,64 @@
     "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"string\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
     "cwd": "tools",
     "testFile": "__tests__/schema.test.mjs"
+  },
+  {
+    "name": "release-check-forgotten-package-guard-removed",
+    "file": "tools/release-check.mjs",
+    "find": "  if (PUBLISHABLE.includes(`packages/${name.name}`)) continue;\n  problems.push(`packages/${name.name}: publishable but absent from the release check's list`);",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "release-check-entry-point-existence-removed",
+    "file": "tools/release-check.mjs",
+    "find": "      if (!existsSync(join(unpacked, point))) {\n        problems.push(`${relative}: entry point ${point} is declared but absent from the tarball`);\n      }",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "release-check-source-entry-import-guard-removed",
+    "file": "tools/release-check.mjs",
+    "find": "          if (specifier === name || specifier.startsWith(`${name}/`)) {",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "adapter-description-invented-instead-of-generated",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "      description: descriptor.description,",
+    "replace": "      description: \"does a thing\",",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
+  },
+  {
+    "name": "adapter-schema-dropped",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "      inputSchema: descriptor.params,",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
+  },
+  {
+    "name": "release-check-source-entry-of-its-own-removed",
+    "file": "tools/release-check.mjs",
+    "find": "      if (point.endsWith(\".ts\") && !point.endsWith(\".d.ts\")) {",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "b5-infra-scan-root-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "const SCAN_ROOTS = [\"packages\", \"tools\", \"scripts\", \"infra\"];",
+    "replace": "const SCAN_ROOTS = [\"packages\", \"tools\", \"scripts\"];",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "desktop-connect-swallows-the-refusal",
+    "file": "packages/desktop/src/index.ts",
+    "find": "  if (explicit) return dial(options);",
+    "replace": "  if (explicit) return dial(options).catch(() => ({}) as TransportClient);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-refusal-survives-the-wrapper.test.ts"
   }
 ]

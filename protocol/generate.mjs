@@ -118,6 +118,50 @@ for (const [method, spec] of Object.entries(schema.methods)) {
   parts.push(emitInterface(`${method}Result`, spec.returns));
   parts.push("");
 }
+function paramJsonSchema(spec) {
+  const property = { description: spec.description };
+  const vocabulary = vocabularyFor(spec.type);
+  if (vocabulary) {
+    property.type = "string";
+    property.enum = schema[vocabulary.key];
+  } else if (spec.type === "string" || spec.type === "number" || spec.type === "boolean") {
+    property.type = spec.type === "boolean" ? "boolean" : spec.type;
+  } else {
+    throw new Error(`generate: no JSON Schema mapping for param type "${spec.type}"`);
+  }
+  if (spec.pattern === "idPattern") property.pattern = schema.idPattern;
+  return property;
+}
+
+const methodDescriptors = Object.fromEntries(
+  Object.entries(schema.methods).map(([method, spec]) => [
+    method,
+    {
+      description: spec.description,
+      params: {
+        type: "object",
+        properties: Object.fromEntries(
+          Object.entries(spec.params).map(([field, field_spec]) => [field, paramJsonSchema(field_spec)]),
+        ),
+        required: Object.entries(spec.params)
+          .filter(([, field_spec]) => field_spec.required === true)
+          .map(([field]) => field),
+        additionalProperties: false,
+      },
+    },
+  ]),
+);
+parts.push(
+  "/** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */",
+);
+parts.push(
+  `export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = ${JSON.stringify(
+    methodDescriptors,
+    null,
+    2,
+  )};`,
+);
+parts.push("");
 const runtimeFieldSpecs = (fields) =>
   Object.fromEntries(
     Object.entries(fields).map(([field, spec]) => [
@@ -306,10 +350,20 @@ const indexTs = parts.join("\n");
 const packageJson = `${JSON.stringify(
   {
     name: "@mastra-cc/protocol-types",
+    // The protocol's own version is this package's version: a consumer that
+    // resolves @mastra-cc/protocol-types@1.6.1 is holding schema v1.6.1 and
+    // nothing else. It is deliberately NOT the daemon's version (ADR-0057).
     version: schema.version,
-    private: true,
+    license: "MIT",
+    publishConfig: { access: "public" },
+    // This package carries runtime values as well as types - METHOD_NAMES,
+    // TYPE_SPECS, METHOD_DESCRIPTORS - so it is compiled, and the entry point is
+    // the compiled module. Pointing main at src/index.ts would work everywhere
+    // in this workspace and nowhere in a consumer's node_modules, where node
+    // will not strip types for a dependency.
+    files: ["dist", "src"],
     type: "module",
-    main: "./src/index.ts",
+    main: "./dist/index.js",
     // Declarations come from a real emit step: a consumer's dts bundler cannot reach into
     // a source file that belongs to no project, and TypeScript 7's tsgo refuses to try.
     types: "./dist/index.d.ts",
@@ -333,7 +387,6 @@ const tsconfigJson = `${JSON.stringify(
       rootDir: "src",
       outDir: "dist",
       declaration: true,
-      emitDeclarationOnly: true,
       module: "NodeNext",
       moduleResolution: "NodeNext",
       target: "ES2022",

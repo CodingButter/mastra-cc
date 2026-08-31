@@ -1,9 +1,16 @@
 {
   "name": "@mastra-cc/protocol-types",
   "version": "1.6.1",
-  "private": true,
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "description": "GENERATED from protocol/schema.json - do not edit (ADR-0009).",
   "scripts": {
