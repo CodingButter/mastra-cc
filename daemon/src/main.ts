@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { CAPABILITY_NAMES, SCHEMA_DIGEST, type CapabilityName } from "@mastra-cc/protocol-types";
 import { openAuditLog, useAuditLog } from "./audit.js";
 import { registry } from "./backends/registry.js";
+import { desktopEntryDirectories } from "./inventory.js";
 import {
   loadCapabilitiesFile,
   MalformedCapabilitiesFileError,
@@ -16,7 +17,8 @@ import {
   loadProfilesFile,
   MalformedProfilesFileError,
 } from "./launch/profiles.js";
-import { CATALOG } from "./launch/recipes.js";
+import { baseLaunchCatalog } from "./launch/derived.js";
+import type { LaunchCatalog } from "./launch/recipes.js";
 import { terminateOwned } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
 import { startServer, startWebSocketServer } from "./server.js";
@@ -78,10 +80,23 @@ const fixture = arg("--fixture") ?? undefined;
 // (ADR-0038). A malformed profiles file fails startup loudly, like grants.
 // This runs BEFORE the name composition below, which needs the composed
 // catalog to know what each identity appears as in the tree.
+// The machine's own desktop entries are the base of the catalog (ADR-0062),
+// derived ONCE here at boot and never on a request path. Three orderings are
+// load-bearing:
+//   - inside baseLaunchCatalog, CATALOG spreads LAST over the derived
+//     entries, so a google-chrome
+//     desktop entry can never displace the hand-written chrome/gmail recipes
+//     and their profile directories (ADR-0038).
+//   - composeCatalog runs after that, so operator profiles still clone the
+//     built-in browser recipe exactly as they do today.
+//   - the whole expression stays BEFORE the name composition below, which
+//     needs the composed catalog to expand derived appearsAs names.
 const catalog = (() => {
   try {
-    const profiles = arg("--profiles") !== null ? loadProfilesFile(arg("--profiles") as string) : [];
-    return composeCatalog(CATALOG, profiles);
+    const base: LaunchCatalog = baseLaunchCatalog(desktopEntryDirectories());
+    const profiles =
+      arg("--profiles") !== null ? loadProfilesFile(arg("--profiles") as string, base) : [];
+    return composeCatalog(base, profiles);
   } catch (error) {
     if (error instanceof MalformedProfilesFileError) {
       console.error(`daemon: ${error.message}`);

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { normalise } from "../backends/atspi/names.js";
 import { entryValue } from "../inventory.js";
-import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
+import { CATALOG, type LaunchCatalog, type LaunchRecipe } from "./recipes.js";
 
 // THE MACHINE'S OWN CATALOG, read as launch recipes.
 //
@@ -198,4 +198,14 @@ export function deriveLaunchCatalog(directories: string[]): LaunchCatalog {
     }
   }
   return Object.fromEntries(found);
+}
+
+/**
+ * The base catalog the daemon boots with: the machine's own applications,
+ * with the hand-written recipes spread LAST so a google-chrome desktop entry
+ * can never displace the chrome/gmail recipes and the profile directories
+ * behind them (ADR-0038).
+ */
+export function baseLaunchCatalog(directories: string[]): LaunchCatalog {
+  return { ...deriveLaunchCatalog(directories), ...CATALOG };
 }

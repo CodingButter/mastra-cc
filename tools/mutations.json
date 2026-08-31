@@ -845,5 +845,19 @@
     "find": " === \"true\"",
     "cwd": "daemon",
     "testFile": "src/launch/__tests__/derived.test.ts"
+  },
+  {
+    "name": "derived-catalog-shadows-the-built-in-browser",
+    "file": "daemon/src/launch/derived.ts",
+    "find": "...CATALOG",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
+  },
+  {
+    "name": "derived-launch-skips-the-permit-check",
+    "file": "daemon/src/server.ts",
+    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
   }
 ]

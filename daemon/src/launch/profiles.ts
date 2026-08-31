@@ -29,7 +29,10 @@ export class MalformedProfilesFileError extends Error {}
 // Absent file -> no identities (the built-in chrome recipe is unaffected).
 // Every failure carries its own distinct message: a shared message would let a
 // mutation removing one check hide behind another.
-export function loadProfilesFile(path: string): readonly BrowserProfile[] {
+export function loadProfilesFile(
+  path: string,
+  base: LaunchCatalog = CATALOG,
+): readonly BrowserProfile[] {
   if (!existsSync(path)) {
     // Naming no identities composes none.
     return [];
@@ -81,6 +84,14 @@ export function loadProfilesFile(path: string): readonly BrowserProfile[] {
     if (findRecipe(profile.name, CATALOG) !== undefined) {
       throw new MalformedProfilesFileError(
         `the profiles file at ${path} names "${profile.name}", which is already a built-in launch recipe - an operator profile must not shadow one`,
+      );
+    }
+    // The base catalog now carries the machine's own applications too
+    // (ADR-0062). Assigning a profile over one of those would hand the
+    // operator a browser under the name of their real editor, silently.
+    if (findRecipe(profile.name, base) !== undefined) {
+      throw new MalformedProfilesFileError(
+        `the profiles file at ${path} names "${profile.name}", which is already a launch recipe this machine provides - an operator profile must not shadow an application the daemon can already start`,
       );
     }
     if (seenNames.has(profile.name)) {
