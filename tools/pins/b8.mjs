@@ -31,7 +31,9 @@ const CONTAINMENT_HOME = [];
 // claim.
 //
 // Listed as EXACT FILES, never a directory prefix, so the exemption cannot grow
-// quietly: a new harness that wants raw input has to appear in this diff.
+// quietly: a new harness that wants raw input has to appear in this diff. The
+// mutation on this list only proves the exemption is load-bearing; that it
+// cannot WIDEN into a prefix is the `sneak.sh` case in pins.test.mjs.
 const HUMAN_STAND_INS = ["infra/webtop/signals/proof.sh"];
 
 const BANNED_TOOL = /\b(xdotool|wmctrl|uinput)\b/;

@@ -50,9 +50,10 @@ repeats are logically the same. `dedupeKey` and `coalesceKey` are set for the sa
 `SendNotificationSignalInput` this path uses (`@mastra/core@1.63.2`
 `dist/notifications/types.d.ts:60-71`). Every delivered change is a stored `NotificationRecord`.
 Dedupe and coalesce keys collapse a stream, but a chatty desk still accumulates rows. Measured rate on
-a real desk, over a window mixing typing bursts with the pauses between them: **0.57 events/second** (`docs/proofs/the-desk-wakes-the-agent.md`),
+a real desk, over a window mixing typing bursts with the pauses between them: **0.52-0.57 events/second across two runs** (`docs/proofs/the-desk-wakes-the-agent.md`),
 low enough that the window suppresses little in practice — it is a floor against a pathological
-element, not a rate limiter.
+element, not a rate limiter. The live run is therefore no evidence for the throttle at all — every
+event in it produced a wake, and S6 rests on the unit tests, which prove both directions.
 
 **One provider serves one thread.** The target is fixed at construction, because
 `SignalProviderTarget` requires both `threadId` and `resourceId` and nothing in a `ChangeEvent` says

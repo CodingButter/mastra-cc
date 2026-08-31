@@ -112,14 +112,19 @@ log("frames-between-subscribe-and-wake", framesBetween);
 
 // The RECORD, not the input object the provider handed to Mastra. Persistence is
 // where a field silently disappears, and the delivery policy reads the record.
-const record = await deliveredRecord();
+const watch = /watch (sub-[\w-]+)/.exec(String(woke.text))?.[1];
+const record = await deliveredRecord(watch);
 log("delivered-record", record);
 const wrong =
-  record.priority !== "high"
+  record.status !== "delivered"
+    ? `the record says ${record.status}: it was stored but nothing was woken`
+    : record.priority !== "high"
     ? `the subscriber chose priority high; the stored record says ${record.priority}`
     : record.attribution !== "external"
       ? `attribution ${record.attribution} should never have woken anyone`
-      : /INSTALLABLE|EXTERNAL EDIT|burst-/.test(record.summary)
+      : // Not the general guard - the pointer-only FORMAT is asserted by unit
+        // test. This only catches this run's own text leaking into a summary.
+        /INSTALLABLE|EXTERNAL EDIT|burst-/.test(record.summary)
         ? `the summary carries the element's content: ${record.summary}`
         : null;
 if (wrong) {
@@ -150,13 +155,16 @@ console.log(
 await desk.close();
 process.exit(framesBetween === 0 ? 0 : 1);
 
-async function deliveredRecord() {
+async function deliveredRecord(watch) {
   // `attributes` is stored as a blob; reading it as text makes the driver panic
   // on invalid utf-8, so take the hex and pull the two strings that matter out
   // of it rather than pretending to parse a format nobody documented here.
   const raw = await createClient({ url: dbUrl }).execute(
-    "select priority, status, summary, hex(attributes) as attributes from mastra_notifications order by createdAt limit 1",
+    "select priority, status, summary, hex(attributes) as attributes from mastra_notifications " +
+      "where summary like ? order by createdAt limit 1",
+    [`%${watch}%`],
   );
+  if (raw.rows.length === 0) throw new Error(`no stored notification for ${watch}`);
   const row = raw.rows[0];
   const blob = Buffer.from(row.attributes ?? "", "hex").toString("latin1");
   return {

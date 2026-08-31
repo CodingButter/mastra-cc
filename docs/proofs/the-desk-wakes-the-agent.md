@@ -30,37 +30,37 @@ daemon: websocket listening on 0.0.0.0:9977
 container address: 172.20.0.2
 
 == the agent asks once, then goes quiet ==
-audit entries when the agent went quiet: 3
+audit entries when the agent went quiet: 2
 
 == a human types into Kate; nothing here opens a socket ==
-typed at the desk: EXTERNAL EDIT 2026-08-31T04:53:32Z
+typed at the desk: EXTERNAL EDIT 2026-08-31T05:02:44Z
 
 tool-call: {"n":1,"name":"queryElements"}
-tool-call: {"n":2,"name":"queryElements"}
-tool-call: {"n":3,"name":"subscribeElement"}
-agent-asked: {"text":"The element id is el-935a7b1c4c7f and the subscription id is sub-000001-cdd9dc.","toolCalls":3}
-SUBSCRIBED: {"callsSoFar":3,"messages":2}
+tool-call: {"n":2,"name":"subscribeElement"}
+agent-asked: {"text":"The element ID is el-935a7b1c4c7f and the subscription ID is sub-000001-cc25ba.","toolCalls":2}
+SUBSCRIBED: {"callsSoFar":2,"messages":2}
 IDLE: the agent is now calling nothing. Mutate the element from the desktop.
-woken: {"text":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)"}
+woken: {"text":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-cc25ba)"}
 frames-between-subscribe-and-wake: 0
-delivered-record: {"priority":"high","status":"delivered","summary":"desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)","attribution":"external"}
+delivered-record: {"priority":"high","status":"delivered","summary":"desktop changed: text el-935a7b1c4c7f (watch sub-000001-cc25ba)","attribution":"external"}
 OBSERVING: keep typing
-observed-event-rate: {"events":6,"spanSeconds":11.62,"perSecond":0.52,"wakes":6}
-{"proof":"green","framesBetween":0,"callsBeforeIdle":3,"woken":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)"}
-audit entries after the wake: 3 (daemon-side requests while the agent was quiet: 0)
+observed-event-rate: {"events":6,"spanSeconds":10.6,"perSecond":0.57,"wakes":6}
+{"proof":"green","framesBetween":0,"callsBeforeIdle":2,"woken":"WOKEN desktop changed: text el-935a7b1c4c7f (watch sub-000001-cc25ba)"}
+audit entries after the wake: 2 (daemon-side requests while the agent was quiet: 0)
 PROOF: GREEN
 ```
 
-The three tool calls before the subscription are the agent's own: it looked for the document,
-looked again, and subscribed with `priority: high`. It chose those calls; nothing in the harness
-names an element id or a subscription id.
+The tool calls before the subscription are the agent's own: it looked for the document and
+subscribed with `priority: high`. It chose them, and it chose differently across runs — an earlier
+run took three calls because it looked twice. Nothing in the harness names an element id or a
+subscription id.
 
 ## The two counts, measured independently
 
 | Count | Where it comes from | Value |
 |---|---|---|
 | Frames the agent's process sent between subscribe and wake | a counter wrapped round every tool `execute` in the consumer process — the client is private to the `MastraCC` instance, so a frame cannot leave any other way | **0** |
-| Requests the daemon answered in the same window | the daemon's own `--audit` log, on the other side of the socket, in another namespace | **0** (3 before, 3 after) |
+| Requests the daemon answered in the same window | the daemon's own `--audit` log, on the other side of the socket, in another namespace | **0** (2 before, 2 after) |
 
 The second number is the one that matters, because it is written by the process being talked to
 rather than by the process making the claim, and the script fails on a non-zero delta rather than
@@ -72,7 +72,7 @@ The delivered record was read back out of storage rather than trusted from the i
 
 ```
 {"priority":"high","status":"delivered","attribution":"external",
- "summary":"desktop changed: text el-935a7b1c4c7f (watch sub-000001-cdd9dc)"}
+ "summary":"desktop changed: text el-935a7b1c4c7f (watch sub-000001-cc25ba)"}
 ```
 
 `high` is the priority the agent chose at `subscribeElement`, still intact after persistence and
@@ -96,9 +96,9 @@ through it. The typing is the point.
 
 ## How fast a real desk actually talks
 
-Five bursts typed two seconds apart produced **6 events in 11.6 seconds — 0.52 events per
-second**, and 6 wakes. That window mixes typing with the pauses between bursts; it is not a
-continuous-typing rate. That is the measured number the throttle window is set against; it is not
+Five bursts typed two seconds apart produced **6 events in 10.6 seconds — 0.57 events per
+second**, and 6 wakes; the run before it measured 0.52. That window mixes typing with the pauses
+between bursts, so it is not a continuous-typing rate. That is the measured number the throttle window is set against; it is not
 a guess, and it is small because the daemon already collapses repeat changes upstream. A whole
 typed sentence arrives as roughly one event, not one per keystroke.
 
