@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -886,6 +886,33 @@
           "type": "string",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the flag when the operator withheld it, and the missing adapter when no setting would help."
+        }
+      }
+    },
+    "restartApplication": {
+      "description": "Close a running application and start it again. This ends a program the person may be using, so it is refused unless the operator configured a level that acts, and the refusal names the setting. At the graceful level the application is asked to close and is allowed to say no: an unsaved-work dialog outranks the caller, is reported as an element to read, and leaves the application running. Nothing here dismisses such a dialog. The outcome is read back from the desktop rather than taken from an exit status.",
+      "params": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "The human-facing application name, as listApplications reports it. Comparisons normalise to NFKC first."
+        }
+      },
+      "returns": {
+        "application": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the application was closed and started again, and became readable; the application as it reads afterwards."
+        },
+        "blockedBy": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the application refused to close and put something up instead - typically an unsaved-work dialog. The element is reported so a person can be shown it or an agent can read it; the application is still running, and this daemon did not touch the dialog."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer - the restart setting when configuration withheld it, the level that would act when the operator chose to be asked each time, and what was observed when the application neither closed nor put anything up."
         }
       }
     }

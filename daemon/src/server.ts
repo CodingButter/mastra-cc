@@ -20,6 +20,7 @@ import {
   type ChangeEvent,
   type Diagnostic,
   type OpenApplicationResult,
+  type RestartApplicationResult,
   type Priority,
   type SemanticElement,
   type SubscribeElementResult,
@@ -63,9 +64,11 @@ import { ACQUIRE_SETTING, type AccessibilityLayer, type AccessibilityReport } fr
 import { normalise } from "./backends/atspi/names.js";
 import {
   OBSERVE_SETTING,
+  restartLevelFor,
   withheldBy,
   WITHHOLDS_NOTHING,
   type CapabilityConfiguration,
+  type RestartLevel,
 } from "./capabilities.js";
 import { isVisible, type Visibility } from "./grants.js";
 import { CATALOG, contendsForBrowserEndpoint, type LaunchCatalog } from "./launch/recipes.js";
@@ -246,6 +249,36 @@ export const UNAVAILABLE_REFUSAL =
 
 export const ALREADY_RUNNING_REFUSAL =
   "that application is already running and was not opened by this daemon - launching a second copy is refused; the running copy must be closed first";
+
+// Restart authority's two non-acting levels, both of them
+// disabled-by-configuration with the setting named (schema.json:241). They are
+// deliberately different sentences: "refuse" is a machine whose operator wants
+// nothing restarted, and "ask" is a machine whose operator wants to be the one
+// who decides each time. An agent told the second one and handed the first
+// one's sentence would go looking for permission that the file already says it
+// will never get, and an operator reading "ask" learns which levels exist.
+export function restartRefusal(level: RestartLevel, setting: string): { refusal: string; refusalClass: RefusalClass } {
+  const refusal =
+    level === "ask"
+      ? `refused by configuration: restarting this application is the operator's to authorise, one time at a time - ${setting} is "ask", and the levels that act without asking are "graceful" (close it and let it refuse) and "force" (take it down)`
+      : `refused by configuration: this daemon does not restart applications - ${setting} is "refuse"`;
+  return { refusal, refusalClass: "DisabledByConfiguration" };
+}
+
+/**
+ * The gate the restart verb runs before anything is signalled: it answers
+ * either "here is the level you may act at" or a refusal naming the setting.
+ * A level is only ever ACTING here - the two non-acting ones cannot leave this
+ * function as a level, so no caller downstream has to remember to check.
+ */
+export function restartAuthority(
+  configuration: CapabilityConfiguration,
+  application?: string,
+): { level: "graceful" | "force" } | { refusal: string; refusalClass: RefusalClass } {
+  const { level, setting } = restartLevelFor(configuration, application);
+  if (level === "refuse" || level === "ask") return restartRefusal(level, setting);
+  return { level };
+}
 
 // Two browser identities cannot run at once through this daemon: the browser
 // backend dials ONE debugging endpoint (backends/cdp/channel.ts), so a second
@@ -1083,6 +1116,11 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   // per-application and exhaustive (ADR-0064 clause 4). The class still gates
   // it before the call, which is what B11 is about.
   acquireAccessibility: { effectClass: "acquire", enforcement: "before-call", handler: (_p, _b, l) => auditedAcquire(l) },
+  // Its own effect class for the same reason acquire has one: restart
+  // authority is four levels in a sibling configuration section, not a
+  // capability boolean (ADR-0065 clause 3), so none of the five capability
+  // names describes it. The class still gates it before the call.
+  restartApplication: { effectClass: "restart", enforcement: "before-call", handler: (p, b, l) => restartApplication((p ?? {}) as { name?: string }, b, l) },
 };
 
 // The acquire route writes its own record, like every other effect route and
@@ -1359,6 +1397,163 @@ async function decideOpenApplication(
       return { refusal: note === undefined ? timedOut : `${timedOut}; ${note}`, refusalClass: "NotReadableInTime", auditApplication: treeName };
     }
     await new Promise((r) => setTimeout(r, interval));
+  }
+}
+
+// RESTART (ADR-0065). The two acting levels are two signals, and the
+// difference between them is whether the application is allowed to say no.
+// SIGTERM is a REQUEST: a well-behaved application with unsaved work answers
+// it by putting up a dialog and staying alive, which is exactly the case
+// clause 4 protects. SIGKILL is not a request, which is why nothing but an
+// operator writing "force" can reach it.
+//
+// Only owned processes are signalled, and the table re-verifies (pid,
+// starttime) before every signal, so a recycled pid is never touched
+// (ADR-0029). A foreign copy is refused rather than resolved by killing it -
+// the same answer openApplication already gives, for the same reason.
+const NOT_OURS_REFUSAL =
+  "refused by the restart gate: this daemon did not open that application, and it does not signal processes it does not own - the person at the machine owns that window";
+
+const RESTART_BUDGET_MS = 10_000; // how long a closing application gets, before and after
+
+async function restartApplication(
+  params: { name?: string },
+  backend: Backend,
+  launch: LaunchContext,
+): Promise<RestartApplicationResult> {
+  const name = typeof params.name === "string" ? params.name : "";
+  let answer: Classified<RestartApplicationResult>;
+  try {
+    answer = await decideRestartApplication(params, backend, launch);
+  } catch (error) {
+    recordAudit({ application: normalise(name), element: [], scope: "restart", cause: causeOf(undefined), outcome: FAILED });
+    throw error;
+  }
+  const application = answer.auditApplication ?? normalise(name);
+  const element = answer.application ?? answer.blockedBy;
+  recordAudit({
+    application,
+    element: element === undefined ? [] : [element],
+    scope: "restart",
+    cause: causeOf(application),
+    outcome: outcomeOf(answer),
+  });
+  return withoutInternals(answer);
+}
+
+async function decideRestartApplication(
+  params: { name?: string },
+  backend: Backend,
+  launch: LaunchContext,
+): Promise<Classified<RestartApplicationResult>> {
+  const name = typeof params.name === "string" ? params.name : "";
+  // Restarting ENDS a program and STARTS one, so it needs the authority to
+  // start it: a session that may not launch this application may not restart
+  // it into existence either. Session authority first, then the operator's
+  // configuration - the same order every other route uses, so `disabledBy`
+  // never names a setting to a caller who was never going to get past the
+  // session gate anyway.
+  const wanted = normalise(name);
+  if (launch.permits.has(wanted) !== true) {
+    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
+  }
+  const authority = restartAuthority(launch.capabilities ?? WITHHOLDS_NOTHING, name);
+  if ("refusal" in authority) return authority;
+  const treeName = treeNameOf(name, launch.catalog);
+  causeNames(treeName);
+  const owned = launch.table.ownsName(name);
+  if (owned === undefined) return { refusal: NOT_OURS_REFUSAL, refusalClass: "RestartNotOurs", auditApplication: treeName };
+  try {
+    process.kill(owned.pid, authority.level === "force" ? "SIGKILL" : "SIGTERM");
+  } catch (error) {
+    // Ownership was just established, so "not ours" would be a refusal derived
+    // from a check that did not run (ADR-0008 clause 5). Two different things
+    // land here. ESRCH: it exited in the gap between the check and the signal,
+    // which is the close this caller asked for happening without our help -
+    // fall through and start it again. Anything else: the signal was refused,
+    // and the honest answer is that nothing was confirmed.
+    if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
+      return {
+        refusal: `the application is this daemon's to close, but the operating system would not accept the signal - it is still running, and nothing was confirmed`,
+        refusalClass: "RestartNotConfirmed",
+        auditApplication: treeName,
+      };
+    }
+  }
+  const budget = launch.pollBudgetMs ?? RESTART_BUDGET_MS;
+  const interval = launch.pollIntervalMs ?? POLL_INTERVAL_MS;
+  const deadline = Date.now() + budget;
+  let looked = 0;
+  for (;;) {
+    // The PROCESS is what closing means. An application can drop off the
+    // accessibility tree while still alive, and reading absence there as
+    // "closed" would relaunch a program that never went away and leave two
+    // under one name.
+    if (launch.table.owns(owned.pid) !== true) break;
+    looked += 1;
+    // Something it put up outranks this daemon: report the element and stop.
+    // Nothing here dismisses it, and nothing escalates the signal - a
+    // "graceful" that ends in a kill is a force with a delay (ADR-0065
+    // clause 4). Two conditions before that sentence may be said. Force asked
+    // nothing, so nothing can have refused it. And a dialog seen in the same
+    // instant as the signal may be one that was already open - only a dialog
+    // that is still there a poll later is an answer to what we sent.
+    const blocking = authority.level === "force" || looked < 2
+      ? undefined
+      : await blockingDialogOf(backend, treeName);
+    if (blocking !== undefined) {
+      return {
+        blockedBy: blocking,
+        refusal: `the application was asked to close and did not: it put up ${JSON.stringify(blocking.name)} instead, and this daemon does not answer that dialog - it is still running`,
+        refusalClass: "RestartRefusedByApplication",
+        auditApplication: treeName,
+      };
+    }
+    if (Date.now() >= deadline) {
+      // Neither gone nor visibly blocked. Saying "restarted" here would be
+      // reporting an intention, and escalating would be punishing an
+      // application for being slow (ADR-0065 clause 6).
+      return {
+        refusal: `the application was asked to close and neither closed nor put anything up within ${budget}ms - it is still running, and this daemon does not escalate because a timer expired`,
+        refusalClass: "RestartNotConfirmed",
+        auditApplication: treeName,
+      };
+    }
+    await new Promise((r) => setTimeout(r, interval));
+  }
+  try {
+    await launchApplication(name, launch.catalog, launch.table);
+  } catch (error) {
+    const message = (error as Error).message;
+    const noRecipe = message === NO_RECIPE_REFUSAL;
+    return { refusal: noRecipe ? message : COULD_NOT_START_REFUSAL, refusalClass: noRecipe ? "NoRecipe" : "CouldNotStart", auditApplication: treeName };
+  }
+  const readable = Date.now() + budget;
+  for (;;) {
+    const application = await findApplication(backend, treeName);
+    // The outcome is READ BACK, never taken from the signal or the spawn
+    // (ADR-0065 clause 5).
+    if (application !== undefined) return { application, auditApplication: treeName };
+    if (Date.now() >= readable) {
+      return {
+        refusal: `the application was closed and started again but did not become readable within ${budget}ms - refusing to pretend it is ready`,
+        refusalClass: "NotReadableInTime",
+        auditApplication: treeName,
+      };
+    }
+    await new Promise((r) => setTimeout(r, interval));
+  }
+}
+
+// What the application put up instead of closing. A dialog belonging to the
+// application being closed is the shape clause 4 is about; anything else on
+// the desktop is somebody else's window and is not reported as a blocker.
+async function blockingDialogOf(backend: Backend, treeName: string): Promise<SemanticElement | undefined> {
+  try {
+    const { elements } = await backend.queryElements({ role: "dialog" });
+    return elements.find((el) => normalise(backend.applicationOfElement(el.id) ?? "") === normalise(treeName));
+  } catch {
+    return undefined; // could not look; the caller falls through to the timeout, which says so
   }
 }
 

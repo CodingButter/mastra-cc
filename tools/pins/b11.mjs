@@ -72,6 +72,10 @@ const REQUIRED = {
   // missing. acquireAccessibility changes the operator's machine, which is the
   // least deniable effect this daemon has.
   acquireAccessibility: "acquire",
+  // Ends a program the person may be using, then starts it again. Its own
+  // class because restart authority is four operator-chosen levels, not a
+  // capability boolean (ADR-0065 clause 3).
+  restartApplication: "restart",
 };
 for (const [method, effectClass] of Object.entries(REQUIRED)) {
   const entry = entries.find((e) => e.method === method);

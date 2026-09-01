@@ -349,6 +349,18 @@ describe("effect authority: every element method is refused before the backend i
     }
   });
 
+  it("restartApplication and acquireAccessibility are refused before the call too - the whole non-observe table, not just the element half", async () => {
+    // B11 pins that every non-observe route DECLARES before-call enforcement;
+    // this is where the declaration is made true. The two machine-lifecycle
+    // routes are not in `cases` because their authority is not a --allow class
+    // - one needs a launch permit, the other an operator flag - but the
+    // ordering property is identical: no authority, no backend touched.
+    const restart = await call("restartApplication", { name: "kate" }, launch({ permits: new Set() }));
+    expect(restart.refusal).toBe(UNAVAILABLE_REFUSAL);
+    const acquire = await call("acquireAccessibility", {}, launch({ mayAcquireAccessibility: false }));
+    expect(acquire.refusal).toContain("--acquire-accessibility");
+  });
+
   it("holding the class gets past the gate and reaches the backend", async () => {
     // The other side of the same property, and the reason the tests above are
     // not vacuous: with the class held, the verb DOES reach the backend - the

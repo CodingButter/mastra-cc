@@ -923,5 +923,42 @@
     "find": "  if (layer === undefined || !layer.acquirable) {\n    return { refusal: ACQUIRE_NOT_EXPOSED_REFUSAL, refusalClass: \"AccessibilityNotAcquirable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
+  },
+  {
+    "name": "the-restart-gate-lets-a-refusing-level-out-as-a-level",
+    "file": "daemon/src/server.ts",
+    "find": "  if (level === \"refuse\" || level === \"ask\") return restartRefusal(level, setting);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/restart-authority.test.ts"
+  },
+  {
+    "name": "restart-signals-a-process-it-does-not-own",
+    "file": "daemon/src/server.ts",
+    "find": "const owned = launch.table.ownsName(name);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts",
+    "replace": "const owned = launch.table.entries()[0];"
+  },
+  {
+    "name": "graceful-restart-escalates-to-a-kill",
+    "file": "daemon/src/server.ts",
+    "find": "authority.level === \"force\" ? \"SIGKILL\" : \"SIGTERM\"",
+    "replace": "\"SIGKILL\"",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "a-dialog-in-the-same-instant-counts-as-a-refusal",
+    "file": "daemon/src/server.ts",
+    "find": " || looked < 2",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "restart-never-checks-whether-the-process-ended",
+    "file": "daemon/src/server.ts",
+    "find": "if (launch.table.owns(owned.pid) !== true) break;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   }
 ]

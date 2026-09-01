@@ -42,7 +42,36 @@ export class MalformedCapabilitiesFileError extends Error {}
 export const CONFIGURABLE_CAPABILITIES: readonly CapabilityName[] = ["launch", "edit", "activate", "submit"];
 export const OBSERVE_SETTING = "the grants file (--grants)";
 
+// Restart authority is NOT in CONFIGURABLE_CAPABILITIES, and the reason is the
+// same shape as the OBSERVE_SETTING note above: those are booleans answering
+// "may this session do this to this application", and the entries in the two
+// capability blocks are parsed and refused as such, by name, at load
+// (readCapabilityBlock below). Restarting is a four-level choice about what the
+// daemon may do to the operator's own processes - "no", "no, but here is the
+// setting", "ask the application and take no for an answer", "take it down" -
+// and a boolean cannot say which of the two acting levels was meant. So it gets
+// its own sibling section in the same file, with the same parsing discipline,
+// and its own named setting.
+export const RESTART_LEVELS = ["refuse", "ask", "graceful", "force"] as const;
+export type RestartLevel = (typeof RESTART_LEVELS)[number];
+
+/**
+ * The level a daemon with no configuration runs under: today's behavior, which
+ * is a flat refusal (server.ts:248 - the running copy must be closed by a
+ * person). Every acting level is something an operator asked for in writing.
+ */
+export const RESTART_DEFAULT: RestartLevel = "refuse";
+
+export interface RestartConfiguration {
+  /** the level for applications with no entry of their own */
+  readonly fallback: RestartLevel;
+  /** per-application levels, keyed by NFKC-normalised name; these beat the fallback */
+  readonly applications: ReadonlyMap<string, RestartLevel>;
+}
+
 export interface CapabilityConfiguration {
+  /** what the operator permits the daemon to do to a running application */
+  readonly restart: RestartConfiguration;
   /** the fallback answer per capability, for applications with no entry of their own */
   readonly defaults: ReadonlyMap<CapabilityName, boolean>;
   /** per-application answers, keyed by NFKC-normalised name; these beat the defaults */
@@ -53,6 +82,9 @@ export interface CapabilityConfiguration {
 export const WITHHOLDS_NOTHING: CapabilityConfiguration = {
   defaults: new Map(),
   applications: new Map(),
+  // Except this: withholding nothing from a SESSION is not the same as handing
+  // out authority over the operator's processes, which no session ever had.
+  restart: { fallback: RESTART_DEFAULT, applications: new Map() },
 };
 
 function readCapabilityBlock(path: string, where: string, raw: unknown): Map<CapabilityName, boolean> {
@@ -87,8 +119,50 @@ function readCapabilityBlock(path: string, where: string, raw: unknown): Map<Cap
   return block;
 }
 
+function readRestartLevel(path: string, where: string, raw: unknown): RestartLevel {
+  const level = typeof raw === "string" ? (normalise(raw) as RestartLevel) : undefined;
+  if (level === undefined || !RESTART_LEVELS.includes(level)) {
+    throw new MalformedCapabilitiesFileError(
+      `the capability configuration at ${path} gives ${where} the restart level ${JSON.stringify(raw)}, which is not one of ${RESTART_LEVELS.join(", ")} - the operator meant something, and guessing between "ask the application" and "take it down" is not a guess anyone should make`,
+    );
+  }
+  return level;
+}
+
+function readRestartSection(path: string, raw: unknown): RestartConfiguration {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    throw new MalformedCapabilitiesFileError(
+      `the capability configuration at ${path} has a "restart" that is not {"default": <level>, "applications": {...}} - refusing to guess what was meant`,
+    );
+  }
+  const record = raw as Record<string, unknown>;
+  for (const key of Object.keys(record)) {
+    if (key !== "default" && key !== "applications") {
+      throw new MalformedCapabilitiesFileError(
+        `the capability configuration at ${path} has an unknown key ${JSON.stringify(key)} in "restart" - the section holds "default" and "applications"`,
+      );
+    }
+  }
+  const fallback = record.default === undefined ? RESTART_DEFAULT : readRestartLevel(path, '"restart".default', record.default);
+  const applications = new Map<string, RestartLevel>();
+  if (record.applications !== undefined) {
+    if (typeof record.applications !== "object" || record.applications === null || Array.isArray(record.applications)) {
+      throw new MalformedCapabilitiesFileError(
+        `the capability configuration at ${path} has a "restart".applications that is not an object of application names - refusing to guess what was meant`,
+      );
+    }
+    for (const [name, level] of Object.entries(record.applications as Record<string, unknown>)) {
+      // Normalised at load, the same rule the capability blocks and the grants
+      // use - a second normalisation rule would silently disagree with them.
+      applications.set(normalise(name), readRestartLevel(path, `"restart".applications entry ${JSON.stringify(name)}`, level));
+    }
+  }
+  return { fallback, applications };
+}
+
 // The file: JSON, {"defaults": {"<capability>": bool}, "applications": {"<name>":
-// {"<capability>": bool}}}. Both blocks are optional; an unknown top-level key
+// {"<capability>": bool}}, "restart": {"default": <level>, "applications":
+// {"<name>": <level>}}}. Every block is optional; an unknown top-level key
 // is refused, because a configuration whose meaning was misspelled must not
 // read as a configuration that permits everything.
 export function loadCapabilitiesFile(path: string): CapabilityConfiguration {
@@ -113,9 +187,9 @@ export function loadCapabilitiesFile(path: string): CapabilityConfiguration {
   }
   const record = parsed as Record<string, unknown>;
   for (const key of Object.keys(record)) {
-    if (key !== "defaults" && key !== "applications") {
+    if (key !== "defaults" && key !== "applications" && key !== "restart") {
       throw new MalformedCapabilitiesFileError(
-        `the capability configuration at ${path} has an unknown top-level key ${JSON.stringify(key)} - the file holds "defaults" and "applications", and nothing here turns enforcement itself off`,
+        `the capability configuration at ${path} has an unknown top-level key ${JSON.stringify(key)} - the file holds "defaults", "applications" and "restart", and nothing here turns enforcement itself off`,
       );
     }
   }
@@ -133,7 +207,27 @@ export function loadCapabilitiesFile(path: string): CapabilityConfiguration {
       applications.set(normalise(name), readCapabilityBlock(path, `"applications" entry ${JSON.stringify(name)}`, block));
     }
   }
-  return { defaults, applications };
+  const restart = record.restart === undefined ? WITHHOLDS_NOTHING.restart : readRestartSection(path, record.restart);
+  return { defaults, applications, restart };
+}
+
+/**
+ * The level in force for an application, and the setting that says so. The
+ * setting is returned whatever the level is, including the permissive ones,
+ * because an operator reading an audit line asks the same question either way:
+ * which line of my file decided this.
+ */
+export function restartLevelFor(
+  configuration: CapabilityConfiguration,
+  application?: string,
+): { level: RestartLevel; setting: string } {
+  if (application !== undefined) {
+    const named = configuration.restart.applications.get(normalise(application));
+    if (named !== undefined) {
+      return { level: named, setting: `restart.applications[${JSON.stringify(normalise(application))}]` };
+    }
+  }
+  return { level: configuration.restart.fallback, setting: "restart.default" };
 }
 
 function settingName(application: string | undefined, capability: CapabilityName, perApplication: boolean): string {

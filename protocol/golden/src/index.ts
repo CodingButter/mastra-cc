@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.8.0
+// Mastra CC protocol v1.9.0
 
-export const PROTOCOL_VERSION = "1.8.0";
-export const SCHEMA_DIGEST = "0f51153ecd51a9ef017eed9d829ea88de26027657fd96887c618a993772bf2c3";
+export const PROTOCOL_VERSION = "1.9.0";
+export const SCHEMA_DIGEST = "6bed5455c6b65464cd2f2e6473e2030c80a0e89ea24be4fa9c9f92919a185f05";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -24,7 +24,7 @@ export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility"] as const;
+export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -441,6 +441,21 @@ export interface AcquireAccessibilityResult {
   refusal?: string;
 }
 
+/** Close a running application and start it again. This ends a program the person may be using, so it is refused unless the operator configured a level that acts, and the refusal names the setting. At the graceful level the application is asked to close and is allowed to say no: an unsaved-work dialog outranks the caller, is reported as an element to read, and leaves the application running. Nothing here dismisses such a dialog. The outcome is read back from the desktop rather than taken from an exit status. */
+export interface RestartApplicationParams {
+  /** The human-facing application name, as listApplications reports it. Comparisons normalise to NFKC first. */
+  name: string;
+}
+
+export interface RestartApplicationResult {
+  /** Present when the application was closed and started again, and became readable; the application as it reads afterwards. */
+  application?: SemanticElement;
+  /** Present when the application refused to close and put something up instead - typically an unsaved-work dialog. The element is reported so a person can be shown it or an agent can read it; the application is still running, and this daemon did not touch the dialog. */
+  blockedBy?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer - the restart setting when configuration withheld it, the level that would act when the operator chose to be asked each time, and what was observed when the application neither closed nor put anything up. */
+  refusal?: string;
+}
+
 /** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */
 export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = {
   "queryElements": {
@@ -764,6 +779,22 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
       "type": "object",
       "properties": {},
       "required": [],
+      "additionalProperties": false
+    }
+  },
+  "restartApplication": {
+    "description": "Close a running application and start it again. This ends a program the person may be using, so it is refused unless the operator configured a level that acts, and the refusal names the setting. At the graceful level the application is asked to close and is allowed to say no: an unsaved-work dialog outranks the caller, is reported as an element to read, and leaves the application running. Nothing here dismisses such a dialog. The outcome is read back from the desktop rather than taken from an exit status.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The human-facing application name, as listApplications reports it. Comparisons normalise to NFKC first.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
       "additionalProperties": false
     }
   }
