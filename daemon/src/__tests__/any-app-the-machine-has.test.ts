@@ -16,7 +16,13 @@ import {
 import { CATALOG, type LaunchCatalog } from "../launch/recipes.js";
 import { NO_RECIPE_REFUSAL, findRecipe } from "../launch/spawn.js";
 import { OwnershipTable } from "../launch/table.js";
-import { UNAVAILABLE_REFUSAL, capabilityStateFor, handleRequest, type LaunchContext } from "../server.js";
+import {
+  ONE_BROWSER_IDENTITY_REFUSAL,
+  UNAVAILABLE_REFUSAL,
+  capabilityStateFor,
+  handleRequest,
+  type LaunchContext,
+} from "../server.js";
 import { defang } from "./support/defanged-catalog.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
 
@@ -139,6 +145,41 @@ describe("the machine's own catalog", () => {
     // that would mean the name was turned away before spawning.
     expect(answer.refusal).not.toBe(UNAVAILABLE_REFUSAL);
     expect(answer.refusal).not.toBe(NO_RECIPE_REFUSAL);
+  });
+
+  it("two derived applications over one binary are not competing browser identities", async () => {
+    // The machine routinely puts several desktop entries over one executable -
+    // libreoffice-writer and libreoffice-calc both run `libreoffice`, so they
+    // share an appearsAs. The one-browser-identity guard (ADR-0038) is about
+    // the debugging endpoint those two contend for nothing of, and a guard
+    // keyed on tree names alone would refuse the second one outright.
+    const directory = mkdtempSync(join(tmpdir(), "mastra-cc-siblings-"));
+    writeFileSync(
+      join(directory, "office-writer.desktop"),
+      "[Desktop Entry]\nType=Application\nName=Writer\nExec=officesuite --writer\n",
+    );
+    writeFileSync(
+      join(directory, "office-calc.desktop"),
+      "[Desktop Entry]\nType=Application\nName=Calc\nExec=officesuite --calc\n",
+    );
+    const catalog = defang(composedBase([directory]));
+    expect(catalog["office-writer"]?.appearsAs).toBe(catalog["office-calc"]?.appearsAs);
+    const table = new OwnershipTable();
+    table.record(process.pid, "office-writer"); // a live sibling of ours
+    const context = launch({ permits: new Set(["office-writer", "office-calc"]), catalog, table });
+    try {
+      const answer = await open("office-calc", context);
+      expect(answer.refusal).not.toBe(ONE_BROWSER_IDENTITY_REFUSAL);
+    } finally {
+      for (const entry of table.entries()) {
+        if (entry.pid === process.pid) continue;
+        try {
+          process.kill(entry.pid, "SIGKILL");
+        } catch {
+          // already gone
+        }
+      }
+    }
   });
 
   it("a derived entry cannot displace the built-in browser identities", () => {

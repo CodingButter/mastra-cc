@@ -275,7 +275,7 @@
   {
     "name": "second-identity-conflict-never-checked",
     "file": "daemon/src/server.ts",
-    "find": "  for (const key of Object.keys(launch.catalog)) {\n    if (normalise(key) === normalise(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
+    "find": "  for (const key of contending) {\n    if (normalise(key) === normalise(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/profile-launch.test.ts"
   },
@@ -857,6 +857,13 @@
     "name": "derived-launch-skips-the-permit-check",
     "file": "daemon/src/server.ts",
     "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
+  },
+  {
+    "name": "browser-identity-guard-catches-ordinary-derived-apps",
+    "file": "daemon/src/server.ts",
+    "find": " && contendsForBrowserEndpoint(requested)",
     "cwd": "daemon",
     "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
   }
