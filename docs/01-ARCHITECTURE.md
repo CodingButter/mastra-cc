@@ -237,6 +237,24 @@ For M6, `infra/units/mastra-desktop-daemon.service` is the boot-composition owne
 
 ---
 
+## The accessibility layer is a machine-scoped authority
+
+A desktop whose accessibility layer is switched off answers every query with nothing, which reads
+exactly like an empty desktop. `describeAccessibility` makes that state a reported fact — `enabled`,
+`disabled`, or `cannot-tell` with a reason — behind a platform adapter, so no platform's vocabulary
+reaches a caller ([ADR-0064](02-DECISIONS/0064-the-desk-says-whether-it-can-be-heard.md)).
+
+Switching the layer on changes the operator's machine rather than one application, so it is **not** a
+capability: `capabilityNames` is answered once per application, and a per-application key for a
+machine-wide switch would say one application can be made audible and another not. It is held by the
+`--acquire-accessibility` launch flag instead, default off, in the shape the grants file already uses
+for `observe`. Without the flag `acquireAccessibility` refuses as `disabled-by-configuration` naming
+the flag; on a platform with no adapter it refuses as not-acquirable. Nothing the agent sends reaches
+either decision, and the state reported after an acquire is re-read from the layer rather than
+asserted from the attempt.
+
+---
+
 ## Receipts
 
 | Claim | Source |

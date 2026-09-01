@@ -10,6 +10,7 @@ import {
 } from "./capabilities.js";
 import { normalise } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
+import { selectAccessibilityLayer } from "./accessibility/select.js";
 import { loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
 import {
   composeBootNames,
@@ -164,6 +165,17 @@ for (const cls of allows) {
   }
 }
 
+// --acquire-accessibility: the OPERATOR's permission for the daemon to switch
+// this machine's accessibility layer on (ADR-0064). Off unless it is present,
+// and present only in the argv this process started with - nothing a client
+// sends reaches here, which is the point: a session cannot grant itself
+// authority to reconfigure the machine it is running on. It is a flag rather
+// than a capability because the layer is machine-scoped and the capability list
+// is per-application and exhaustive; the flag IS the setting, and refusals name
+// it (ACQUIRE_SETTING).
+const mayAcquireAccessibility = process.argv.includes("--acquire-accessibility");
+const accessibility = selectAccessibilityLayer();
+
 const backend = registry[backendName]({ capture, fixture, visibility });
 
 const query = arg("--query");
@@ -270,7 +282,7 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
 server = await startServer({
   socketPath,
   backend,
-  launch: { permits: launchPermits, allows, capabilities, catalog, table },
+  launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility },
   visibility,
 });
 server.on("close", () => terminateOwned(table));
@@ -280,7 +292,7 @@ if (wsPort !== null) {
     port: wsPort,
     host: wsHost,
     backend,
-    launch: { permits: launchPermits, allows, capabilities, catalog, table },
+    launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility },
     visibility,
   });
   // Belt and braces for a close that arrives without a signal. The signal path

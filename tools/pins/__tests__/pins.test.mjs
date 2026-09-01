@@ -71,6 +71,7 @@ const cases = [
       '  setElementText: { effectClass: "edit", enforcement: "before-call" },\n' +
       '  setElementCaret: { effectClass: "edit", enforcement: "before-call" },\n' +
       '  revealElement: { effectClass: "activate", enforcement: "before-call" },\n' +
+      '  acquireAccessibility: { effectClass: "acquire", enforcement: "before-call" },\n' +
       "};\n",
     expectedMessage: 'not marked enforcement "before-call"',
     // b11 reads one table rather than a file set, so its empty-subject sentence

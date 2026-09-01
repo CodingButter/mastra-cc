@@ -9,6 +9,10 @@ import {
   type ChangeEvent,
   type EditElementParams,
   type EditElementResult,
+  type AcquireAccessibilityParams,
+  type AcquireAccessibilityResult,
+  type DescribeAccessibilityParams,
+  type DescribeAccessibilityResult,
   type ListApplicationsParams,
   type ListApplicationsResult,
   type OpenApplicationParams,
@@ -94,6 +98,8 @@ export interface TransportClient {
   setElementCaret(params: SetElementCaretParams): Promise<SetElementCaretResult>;
   revealElement(params: RevealElementParams): Promise<RevealElementResult>;
   listApplications(params?: ListApplicationsParams): Promise<ListApplicationsResult>;
+  describeAccessibility(params?: DescribeAccessibilityParams): Promise<DescribeAccessibilityResult>;
+  acquireAccessibility(params?: AcquireAccessibilityParams): Promise<AcquireAccessibilityResult>;
   /**
    * Register a listener for pushed change events. Returns a function that
    * removes it. Events are delivered as they arrive and are never buffered:
@@ -287,6 +293,10 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     setElementCaret: (params) => call("setElementCaret", params) as Promise<SetElementCaretResult>,
     revealElement: (params) => call("revealElement", params) as Promise<RevealElementResult>,
     listApplications: (params) => call("listApplications", params ?? {}) as Promise<ListApplicationsResult>,
+    describeAccessibility: (params) =>
+      call("describeAccessibility", params ?? {}) as Promise<DescribeAccessibilityResult>,
+    acquireAccessibility: (params) =>
+      call("acquireAccessibility", params ?? {}) as Promise<AcquireAccessibilityResult>,
     onChangeEvent: (listener) => {
       listeners.add(listener);
       return () => void listeners.delete(listener);
