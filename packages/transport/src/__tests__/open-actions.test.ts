@@ -156,7 +156,7 @@ describe("the listing describes the fence, never what is behind it", () => {
         // Withheld observation withholds the running state with it, and says
         // so: cannot-tell naming the file, never a claim that it is closed.
         running: "cannot-tell",
-        runningUnknownBy: "grants file (--grants)",
+        runningUnknownBy: "the grants file (--grants)",
         capabilities: [
           { capability: "observe", availability: "disabled-by-configuration", disabledBy: "capabilities.observe" },
           { capability: "launch", availability: "disabled-by-configuration", disabledBy: "capabilities.launch" },

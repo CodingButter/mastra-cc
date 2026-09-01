@@ -466,18 +466,25 @@ export class AtspiBackend implements Backend {
   // (server.ts, listApplications). The names never leave the daemon.
   async runningApplications(): Promise<RunningCensus> {
     const observable = new Set<string>();
+    let read = true;
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     for (const app of apps) {
       try {
         observable.add(normalise(await this.nameOf(app)));
       } catch (error) {
         // Same rule the walk uses: an off-tape read under replay is ignorance
-        // and must surface, while an application dying mid-census simply is
-        // not answering.
+        // and must surface.
         if (error instanceof UnrecordedExchangeError) throw error;
+        // AN APPLICATION WHOSE NAME WOULD NOT READ IS NOT AN APPLICATION THAT
+        // IS ABSENT. It answered the registry a moment ago; a name that times
+        // out leaves this census holding a child it cannot identify. There is
+        // no way to say WHICH name went unread - that is the thing that
+        // failed - so the horizon shrinks to what was actually read, and every
+        // other name becomes cannot-tell rather than a confident closed.
+        read = false;
       }
     }
-    return { observable, answersFor: "every-application" };
+    return { observable, answersFor: read ? "every-application" : observable };
   }
 
   // WHAT HOLDS THE FOCUS (ADR-0044).

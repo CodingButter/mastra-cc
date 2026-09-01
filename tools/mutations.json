@@ -892,8 +892,22 @@
   {
     "name": "running-state-escapes-the-observe-grant",
     "file": "daemon/src/server.ts",
-    "find": "  if (!isVisible(launch.visibility ?? new Set(), application)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
+    "find": "  if (!isVisible(launch.visibility ?? new Set(), entry.name)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "a-failed-census-reports-the-desk-closed",
+    "file": "daemon/src/server.ts",
+    "find": "    census = { observable: new Set(), answersFor: new Set() };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "an-unread-name-still-claims-the-whole-desk-was-seen",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    return { observable, answersFor: read ? \"every-application\" : observable };",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/running-applications.test.ts"
   }
 ]

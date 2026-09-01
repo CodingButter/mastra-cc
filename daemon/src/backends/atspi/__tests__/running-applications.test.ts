@@ -82,13 +82,21 @@ describe("the census of what is answering on the bus", () => {
     expect(runningStateOf(census, "KATE")).toBe("answering");
   });
 
-  it("counts an application that dies mid-census as not answering, and keeps the rest of the census", async () => {
+  it("keeps what it read when one child's name will not read, and stops claiming to have seen the whole desk", async () => {
+    // A child that answered the registry and then failed its name read is not
+    // an absent application - it is one this census is holding and cannot
+    // identify. There is no way to say WHICH name went unread, so the horizon
+    // shrinks to what was actually read: everything else becomes cannot-tell
+    // rather than a confident closed, and only the names in hand stay
+    // measurements.
     const backend = new AtspiBackend(busHolding(["__dead__", "kate"]), "all");
 
     const census = await backend.runningApplications();
 
     expect(runningStateOf(census, "kate")).toBe("answering");
     expect(census.observable.size).toBe(1);
+    expect(census.answersFor).not.toBe("every-application");
+    expect(runningStateOf(census, "mousepad")).toBe("cannot-tell");
   });
 
   it("refuses to answer at all when a reading is off the tape", async () => {

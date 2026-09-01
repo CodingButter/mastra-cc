@@ -149,6 +149,62 @@ describe("the listing says what is answering, not just what is installed", () =>
     expect(entry(applications, "hidden-from-menus").running).toBe("not-answering");
   });
 
+  it("answers under the runtime name an entry id implies, not only under ids the catalog has a recipe for", async () => {
+    // The appears-as join covers applications this daemon knows how to start,
+    // which is the minority. `org.kde.dolphin` has no recipe and runs as
+    // `dolphin` all the same, and asking under the id alone reported a file
+    // manager sitting open on screen as closed - the same bug the live proof
+    // caught for Kate, surviving everywhere the catalog does not reach.
+    const applications = await handleRequest(
+      { type: "request", id: 1, method: "listApplications", params: {} },
+      backendSeeing(wholeDesk("dolphin")),
+      {
+        permits: new Set(),
+        catalog: { "org.kde.dolphin": { argv: ["sleep", "30"], env: {} } },
+        table: new OwnershipTable(),
+        visibility: "all",
+      },
+    ).then((answer) => (answer.result as { applications: InstalledApplication[] }).applications);
+
+    expect(entry(applications, "org.kde.dolphin").running).toBe("answering");
+  });
+
+  it("refuses to pick when two entries could both be the name that is answering", async () => {
+    // Two fixture entries publish the same display name. The bus publishes a
+    // name, not which entry started it, so naming one of them the running one
+    // would be a coin flip reported as a reading.
+    const applications = await listing({ visibility: "all" }, wholeDesk("Same Display Name"));
+
+    expect(entry(applications, "collide-one").running).toBe("cannot-tell");
+    expect(entry(applications, "collide-two").running).toBe("cannot-tell");
+    // Ignorance about the desk, not about permission: no setting would help.
+    expect(entry(applications, "collide-one").runningUnknownBy).toBeUndefined();
+  });
+
+  it("still lists what is installed when the census instrument fails outright", async () => {
+    // Before this field existed the listing was a filesystem scan and answered
+    // on a machine with no accessibility bus at all. A census that throws must
+    // not take the installed set down with it - and must not be flattened into
+    // "nothing is running" either.
+    const backend = {
+      ...backendSeeing(wholeDesk()),
+      runningApplications: async () => {
+        throw new Error("the accessibility registry did not answer");
+      },
+    } as unknown as Backend;
+    const applications = await handleRequest(
+      { type: "request", id: 1, method: "listApplications", params: {} },
+      backend,
+      { permits: new Set(), catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" },
+    ).then((answer) => (answer.result as { applications: InstalledApplication[] }).applications);
+
+    expect(applications.length).toBeGreaterThan(1);
+    for (const application of applications) {
+      expect(application.running).toBe("cannot-tell");
+      expect(application.runningUnknownBy).toBeUndefined();
+    }
+  });
+
   it("every entry carries the field, and the listing is not vacuous", async () => {
     const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
 
