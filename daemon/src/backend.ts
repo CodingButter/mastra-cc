@@ -15,6 +15,8 @@ import type {
   ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
+  SendKeyChordParams,
+  SendKeyChordResult,
   Role,
   SemanticElement,
   SetElementCaretParams,
@@ -424,6 +426,24 @@ export interface Backend {
   setElementCaret(params: SetElementCaretParams): Promise<SetElementCaretResult>;
   revealElement(params: RevealElementParams): Promise<RevealElementResult>;
 
+  // RAW INPUT, the most restricted class this contract has (ADR-0046,
+  // ADR-0067). It is on the seam and not above it for the same reason every
+  // other effect is: how a key reaches a desktop is a platform question, and a
+  // route that has no way to deliver one throws EffectUnsupportedError rather
+  // than pretending it sent something.
+  //
+  // What it does NOT do is decide whether it may. The capability is composed at
+  // boot and enforced in the server before this method is reached, exactly like
+  // the other verbs - a backend that checked authority would be a second
+  // permission system, disagreeing quietly with the first.
+  //
+  // It returns the element as it reads AFTERWARDS and nothing else, because
+  // there is nothing else honest to return: the emission's own reply is `()`
+  // whether the key landed on this element, on another window, or nowhere
+  // (measured; see backends/atspi/rawinput/keys.ts). The read back is the whole
+  // of the evidence (ADR-0047).
+  sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult>;
+
   close(): Promise<void>;
 }
 
@@ -444,5 +464,6 @@ export const BACKEND_METHODS = [
   "setElementText",
   "setElementCaret",
   "revealElement",
+  "sendKeyChord",
   "close",
 ] as const;

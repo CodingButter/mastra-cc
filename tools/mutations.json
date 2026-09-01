@@ -416,7 +416,7 @@
   {
     "name": "a-launch-takes-the-focus-and-never-gives-it-back",
     "file": "daemon/src/server.ts",
-    "find": "    held = await focusBeforeLaunch(backend);\n",
+    "find": "    held = await focusBeforeEffect(backend);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/focus-preservation.test.ts"
   },
@@ -967,5 +967,26 @@
     "find": "if (allows.has(effectClass) !== true) return false;",
     "cwd": "daemon",
     "testFile": "src/__tests__/raw-input-authority.test.ts"
+  },
+  {
+    "name": "the-key-route-forgets-the-chord-list-is-closed",
+    "file": "daemon/src/server.ts",
+    "find": "if (!(KEY_CHORD_NAMES as readonly string[]).includes(chord)) return { refusal: unknownChordRefusal(chord), refusalClass: \"MalformedParameter\" as const };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
+  },
+  {
+    "name": "the-key-route-claims-a-machine-that-has-none",
+    "file": "daemon/src/server.ts",
+    "find": "if (launch.keys === undefined) return { refusal: NO_KEY_ROUTE_REFUSAL, refusalClass: \"EffectUnsupportedError\" as const };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
+  },
+  {
+    "name": "b8-lets-the-raw-input-class-leak-past-its-fence",
+    "file": "tools/pins/b8.mjs",
+    "find": "if (CONTAINMENT_HOME.some((home) => path === home || path.startsWith(`${home}/`))) continue;",
+    "cwd": ".",
+    "testFile": "tools/pins/__tests__/pins.test.mjs"
   }
 ]

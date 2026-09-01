@@ -11,6 +11,8 @@ import type {
   ReadElementContentResult,
   RevealElementParams,
   RevealElementResult,
+  SendKeyChordParams,
+  SendKeyChordResult,
   SemanticElement,
   SetElementCaretParams,
   SetElementCaretResult,
@@ -48,6 +50,7 @@ import {
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
+import { emitChord } from "./rawinput/keys.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches, normalise } from "./names.js";
 import { readPublishedActions } from "./actions.js";
@@ -643,6 +646,29 @@ export class AtspiBackend implements Backend {
   // no state to compare here - an action is a bare verb and the element does
   // not publish what it was supposed to change - so the decline is the only
   // reading there is, and discarding it left this verb with none.
+  // FOCUS, EMIT, READ BACK. The order is the whole design and none of it is
+  // optional: the emission is global (it goes to whatever holds focus), so the
+  // grab is how the chord is aimed, and the re-read - which `performing` does
+  // for every verb here - is the only thing that can say what became of it.
+  //
+  // Putting the PREVIOUS focus back is deliberately not done here. It is the
+  // server's job, above this seam, for the same reason it is above the seam for
+  // a launch (ADR-0044): the thing to restore was read before this call and the
+  // failure to restore it has to be REPORTED to the caller, not swallowed by a
+  // backend that has nowhere to put the sentence.
+  //
+  // Nothing in this method inspects why the caller wanted a key, and no other
+  // method in this file calls it. There is no path from a refused action or a
+  // failed setText into here (ADR-0046 clause 3) - a daemon that retried a
+  // refused semantic verb as a keystroke would escalate its own authority at
+  // precisely the moment it had just been told no.
+  async sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult> {
+    return this.performing(params.id, async (ref) => {
+      await grabFocus(this.channel, ref);
+      await emitChord(this.channel, params.chord);
+    });
+  }
+
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
     return this.performing(params.id, async (ref) => {
       const performed = await performAction(this.channel, ref, params.action);

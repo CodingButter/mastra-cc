@@ -10,6 +10,8 @@ import { randomBytes } from "node:crypto";
 import type { WebSocket } from "ws";
 import {
   CAPABILITY_NAMES,
+  KEY_CHORD_NAMES,
+  type KeyChordName,
   SCHEMA_DIGEST,
   PRIORITIES,
   PROTOCOL_VERSION,
@@ -375,6 +377,26 @@ export const SET_CARET_SCOPE_REFUSAL =
 
 export const REVEAL_SCOPE_REFUSAL =
   'refused by the scope gate: "revealElement" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method';
+
+export const RAW_INPUT_SCOPE_REFUSAL =
+  'refused by the scope gate: "sendKeyChord" is rawInput-class and this session holds no rawInput authority - a key is raw input even when it is addressed to one element, this session was started without the session flag --allow rawInput, and only a session started with it can perform this method';
+
+// The two refusals that are NOT about authority, and the difference between
+// them is the difference the wire's vocabulary was built for. A chord this
+// contract never defined is the caller's mistake and naming the vocabulary
+// tells them how to fix it. A machine with no key route is nobody's mistake:
+// no setting changes it, which is why the sentence offers none - offering one
+// is how an operator spends an afternoon editing a file that was never the
+// problem.
+export function unknownChordRefusal(chord: string): string {
+  return (
+    `refused before the call: "sendKeyChord" was given the chord ${JSON.stringify(chord)}, which this contract does not define - ` +
+    `the chord list is closed on purpose (a free-form key string is an arbitrary-input surface wearing a chord's clothes), and the names it does define are: ${KEY_CHORD_NAMES.join(", ")}`
+  );
+}
+
+export const NO_KEY_ROUTE_REFUSAL =
+  'refused before the call: "sendKeyChord" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
 
 // The application listing (schema version 1.4.0, ADR-0042). Observe-class: it
 // reads the fence around an application and never anything behind it. The
@@ -1113,6 +1135,50 @@ function revealElement(params: { id?: unknown }, backend: Backend, launch: Launc
   return performEffect("activate", "revealElement", REVEAL_SCOPE_REFUSAL, launch, backend, id, () => backend.revealElement({ id }));
 }
 
+// A KEY, ADDRESSED TO ONE ELEMENT (ADR-0046, ADR-0067).
+//
+// The ordering inside this function is the design, and each step is here
+// because leaving it out would produce a specific lie:
+//
+//   authority first    - performEffect's gate, same as every other verb, so a
+//                        session without the class hears about the class and
+//                        the backend is never touched (ADR-0021).
+//   reach next         - a build with no route says so without naming a
+//                        setting, because no setting would help.
+//   vocabulary next    - a chord this contract never defined is refused BY
+//                        NAME. The generated validator already refuses it at
+//                        the wire, and this is the second lock: the daemon does
+//                        not rely on a client having been generated from a
+//                        schema it cannot see.
+//   focus, borrowed    - read what holds it, aim, and put it back afterwards,
+//                        reporting a failure to put it back rather than
+//                        claiming a clean keypress (ADR-0044 clause 4).
+//   read the desk back - the element as it reads afterwards, which the seam
+//                        does, because the emission's own reply says only that
+//                        something was sent (ADR-0047).
+//
+// NOTHING CALLS THIS FUNCTION EXCEPT THE DISPATCH TABLE. That is the whole of
+// ADR-0046 clause 3 in one sentence: no failed action, no refused submit and no
+// unsupported operation reaches a keystroke, because there is no edge into here
+// except a caller explicitly asking for one. It is asserted by a test rather
+// than left to a reader's grep.
+function sendKeyChord(params: { id?: unknown; chord?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const chord = typeof params.chord === "string" ? params.chord : "";
+  return performEffect("rawInput", "sendKeyChord", RAW_INPUT_SCOPE_REFUSAL, launch, backend, id, async () => {
+    if (launch.keys === undefined) return { refusal: NO_KEY_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
+    if (!(KEY_CHORD_NAMES as readonly string[]).includes(chord)) return { refusal: unknownChordRefusal(chord), refusalClass: "MalformedParameter" as const };
+    const held = await focusBeforeEffect(backend);
+    const answer = await backend.sendKeyChord({ id, chord: chord as KeyChordName });
+    const note = await restoreFocusAfterEffect(backend, held, "keypress");
+    // The seam always answers with an element (it re-reads); the wire type
+    // makes it optional because the refusal shape shares it. Passing an absent
+    // element through unchanged rather than asserting one keeps the focus note
+    // from being the reason a result gets invented.
+    return answer.element === undefined ? answer : { element: withFocusNote(answer.element, note) };
+  });
+}
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -1137,6 +1203,7 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   setElementText: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => setElementText((p ?? {}) as { id?: unknown; text?: unknown; offset?: unknown }, b, l) },
   setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => setElementCaret((p ?? {}) as { id?: unknown; offset?: unknown }, b, l) },
   revealElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },
+  sendKeyChord: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => sendKeyChord((p ?? {}) as { id?: unknown; chord?: unknown }, b, l) },
   listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
   describeAccessibility: { effectClass: "observe", enforcement: "at-result", handler: (_p, _b, l) => describeAccessibility(l) },
   // Its own effect class, not one of the five capability names, because it is
@@ -1217,7 +1284,7 @@ type FocusHeld =
 // is REPORTED rather than swallowed - a route that cannot read focus cannot
 // promise it protected it, and clause 4 is explicit that a silent best-effort
 // is worse than none.
-async function focusBeforeLaunch(backend: Backend): Promise<FocusHeld> {
+async function focusBeforeEffect(backend: Backend): Promise<FocusHeld> {
   try {
     const element = await backend.focusedElement();
     return element === undefined ? { kind: "none" } : { kind: "held", element };
@@ -1230,11 +1297,11 @@ const FOCUS_UNREADABLE_NOTE =
   "the focus was not protected across this launch: this session's backend cannot read or restore what holds focus, " +
   "so whether this launch took the keyboard is unmeasured - only a route that can read focus back would answer differently";
 
-function focusNotRestored(before: SemanticElement, now: SemanticElement | undefined): string {
+function focusNotRestored(before: SemanticElement, now: SemanticElement | undefined, occasion: string): string {
   const holder = now === undefined ? "nothing holds it now" : `${JSON.stringify(now.name)} holds it now`;
   return (
-    `the focus was not restored after this launch: ${JSON.stringify(before.name)} held it before the launch and ${holder} - ` +
-    "this is not a clean launch, and the keyboard is somewhere the caller did not ask for"
+    `the focus was not restored after this ${occasion}: ${JSON.stringify(before.name)} held it before the ${occasion} and ${holder} - ` +
+    `this is not a clean ${occasion}, and the keyboard is somewhere the caller did not ask for`
   );
 }
 
@@ -1249,7 +1316,7 @@ function focusNotRestored(before: SemanticElement, now: SemanticElement | undefi
 // Focus that never moved is left alone deliberately: putting back what was
 // never taken would itself be a focus change nobody asked for, which is the
 // thing this whole path exists to prevent (clause 5).
-async function restoreFocusAfterLaunch(backend: Backend, held: FocusHeld): Promise<string | undefined> {
+async function restoreFocusAfterEffect(backend: Backend, held: FocusHeld, occasion = "launch"): Promise<string | undefined> {
   if (held.kind === "none") return undefined;
   if (held.kind === "unreadable") return FOCUS_UNREADABLE_NOTE;
   let after: SemanticElement | undefined;
@@ -1263,10 +1330,10 @@ async function restoreFocusAfterLaunch(backend: Backend, held: FocusHeld): Promi
   try {
     regained = await backend.restoreFocus(held.element.id);
   } catch {
-    return focusNotRestored(held.element, after);
+    return focusNotRestored(held.element, after, occasion);
   }
   if (regained !== undefined && regained.id === held.element.id) return undefined;
-  return focusNotRestored(held.element, regained);
+  return focusNotRestored(held.element, regained, occasion);
 }
 
 // Where the report goes. The launch result has two shapes and the note reaches
@@ -1393,7 +1460,7 @@ async function decideOpenApplication(
       // surface arrives with a later milestone).
       return { refusal: ALREADY_RUNNING_REFUSAL, refusalClass: "AlreadyRunning", auditApplication: treeName };
     }
-    held = await focusBeforeLaunch(backend);
+    held = await focusBeforeEffect(backend);
     try {
       await launchApplication(name, launch.catalog, launch.table);
     } catch (error) {
@@ -1413,14 +1480,14 @@ async function decideOpenApplication(
       // application is readable, which is the earliest moment it could have
       // taken the keyboard. A restore before that races the window that has
       // not appeared yet.
-      const note = await restoreFocusAfterLaunch(backend, held);
+      const note = await restoreFocusAfterEffect(backend, held);
       return { application: withFocusNote(application, note), auditApplication: treeName };
     }
     if (Date.now() >= deadline) {
       // The launch is already not clean; a focus it could not protect is said
       // in the same breath rather than dropped because there is no element to
       // hang it on.
-      const note = await restoreFocusAfterLaunch(backend, held);
+      const note = await restoreFocusAfterEffect(backend, held);
       const timedOut = `the application was opened but did not become readable within ${budget}ms - refusing to pretend it is ready`;
       return { refusal: note === undefined ? timedOut : `${timedOut}; ${note}`, refusalClass: "NotReadableInTime", auditApplication: treeName };
     }

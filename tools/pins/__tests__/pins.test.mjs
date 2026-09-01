@@ -73,6 +73,7 @@ const cases = [
       '  revealElement: { effectClass: "activate", enforcement: "before-call" },\n' +
       '  acquireAccessibility: { effectClass: "acquire", enforcement: "before-call" },\n' +
       '  restartApplication: { effectClass: "restart", enforcement: "before-call" },\n' +
+      '  sendKeyChord: { effectClass: "rawInput", enforcement: "before-call" },\n' +
       "};\n",
     expectedMessage: 'not marked enforcement "before-call"',
     // b11 reads one table rather than a file set, so its empty-subject sentence
@@ -159,14 +160,29 @@ test("b5: a dial hand-rolled inside a proof harness under infra/ is caught", () 
 test("b8: the raw-input class it contains is stated, not assumed", () => {
   // ADR-0046 struck the outright ban and re-specified this pin as containment:
   // the tool names appear ONLY inside the raw-input class implementation. The
-  // class does not exist yet, so the contained set is empty - and an empty set
-  // has to SAY so rather than let a reader assume the pin still bans outright.
-  // Without this, the pin's report is identical whether containment was
-  // implemented or forgotten, which is the shape of a gate that cannot fail.
+  // class now EXISTS (ADR-0067), so the pin has to name where it lives - a
+  // report identical whether containment was implemented or forgotten is the
+  // shape of a gate that cannot fail. This assertion is against the real root,
+  // so emptying the set reds it rather than merely changing a temp tree.
   const r = runPin("b8");
   expect(r.status).toBe(0);
   expect(r.output).toContain("outside the raw-input class");
-  expect(r.output).toContain("no raw-input class exists yet");
+  expect(r.output).toContain("daemon/src/backends/atspi/rawinput");
+  expect(r.output).not.toContain("no raw-input class exists yet");
+});
+
+test("b8: the class may hold a raw-input tool and its neighbours may not", () => {
+  // The whole of containment in one pair. The same file content is legal at the
+  // class's path and illegal one directory up, which is what distinguishes
+  // "raw input lives in exactly one place" from "raw input is banned" and from
+  // "raw input is allowed" - two rules this pin must never be mistaken for.
+  const inside = plant("daemon/src/backends/atspi/rawinput/xtest.ts", 'const route = "uinput";\n');
+  expect(runPin("b8", ["--root", inside]).status).toBe(0);
+
+  const outside = plant("daemon/src/backends/atspi/xtest.ts", 'const route = "uinput";\n');
+  const r = runPin("b8", ["--root", outside]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("daemon/src/backends/atspi/xtest.ts");
 });
 
 test("b8: the human stand-in exemption is one named file, not a directory", () => {
