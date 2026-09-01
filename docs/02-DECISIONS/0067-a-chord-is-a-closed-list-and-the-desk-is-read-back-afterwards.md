@@ -28,7 +28,7 @@ Every other closed vocabulary in this contract closes a word *the daemon decides
 roles, states, the three ways a capability can be unavailable. This one closes what
 a *caller may send*, which is a different kind of closure and the reason it exists:
 a free-form key string is an arbitrary-input surface wearing a chord's clothes.
-`"Enter"` and `"Control+s"` are a vocabulary. `"any keysym you like"` is a
+`"Enter"` and `"PageDown"` are a vocabulary. `"any keysym you like"` is a
 keyboard, and handing an agent a keyboard is the thing ADR-0046 declined to do.
 
 The list can grow. Growing it is a schema change, in a diff, which is the point:

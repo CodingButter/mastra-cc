@@ -90,11 +90,27 @@ and release around the key, done by hand as a control) the same document selecte
 all of its text. The difference is holding, and holding needs a keycode this
 daemon cannot resolve without opening an X connection it has no business opening.
 
-Schema 1.12.0 therefore removes all seven. Fourteen single keys remain, every one
-of them measured. The evidence is in the spike transcript beside this document.
+Schema 1.12.0 therefore removes all seven. Fourteen single keys remain - each one
+a key the single-keysym form can express, which is the form that was measured. Two
+of them carry the transcript evidence beside this document: `Delete` landing in a
+Kate document, `Control+a` landing nowhere. The other twelve are not individually
+transcripted, and this document does not claim they are: what was measured is the
+ROUTE and the FORM, and the table mapping a name to a key is checked in both
+directions by test - every name has a key, and the seven withdrawn names have
+none.
 
 The same review asked for the key to be refused when the focus grab fails. That
 was implemented, measured, and withdrawn: on this desk the grab answers `false`
 and the tree names an unrelated list item as focused, for a document that then
-takes the key perfectly. Both predicates refuse a working press. The guarantee
-stays where it was: the desk is read back afterwards and the caller compares.
+takes the key perfectly. Both predicates refuse a working press.
+
+The guarantee that replaced it was read-back - and read-back has a limit this
+document previously glossed. It separates a key that landed from a key that went
+elsewhere only for a chord that CHANGES the element. Eleven of the fourteen
+(`Enter`, `Escape`, `Tab`, `F2`, the four arrows, `Home`, `End`, `PageUp`,
+`PageDown`) normally leave content and name identical even when they succeed, so
+for those the reply reads the same either way. The two withdrawn predicates are
+therefore kept and demoted: they may not refuse, but when either one doubts the
+aim the reply now carries a `mastra-cc/key-aim` note in the debugging subtree,
+naming what claimed the focus instead. Doubt is reported; it is never a refusal,
+and the key is always sent.

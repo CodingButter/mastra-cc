@@ -678,7 +678,11 @@ export class AtspiBackend implements Backend {
       // one may not have arrived", which is the diagnostic below. See
       // docs/proofs/04-a-key-addressed-to-one-element-spike.txt.
       const taken = await grabFocus(this.channel, ref);
-      const focused = await this.focusedElement();
+      // Read defensively: this observation exists only to DOUBT, so a desktop
+      // that cannot be read for it must not take the key down with it. A throw
+      // here would let the weaker of the two signals stop a press, which is the
+      // exact thing the paragraph above refuses to let it do.
+      const focused = await this.focusedElement().catch(() => undefined);
       if (!taken || focused?.id !== params.id) {
         doubt =
           "this element was not confirmed to hold the focus when the key was sent" +
@@ -829,6 +833,11 @@ export class AtspiBackend implements Backend {
  * diagnostic subtree is the one place the neutral-vocabulary rule is relaxed,
  * and it is not load-bearing for agent logic - the sentence tells a human what
  * to compare, exactly as the focus-preservation note does.
+ *
+ * Its ABSENCE says both signals agreed that this element held the focus. That is
+ * a real statement and it is the safe direction - every measured failure of these
+ * signals was a false negative, never a false positive - but it is not proof, and
+ * a caller reading silence as certainty is reading further than the desk said.
  */
 function keyAimNote(diagnostic: Diagnostic | undefined, note: string): Diagnostic & { "mastra-cc/key-aim": string } {
   return { ...(diagnostic ?? {}), "mastra-cc/key-aim": note };
