@@ -78,3 +78,23 @@ this image publishes no rename on `F2` at all, through the accessibility layer o
 keyboard, so the errand is unreachable in this desktop for reasons that have nothing to do with
 this capability. The editor errand above tests the same claim against a surface that can be read
 back character by character, which is the stronger evidence anyway.
+
+## Amendment: fourteen keys, not twenty-one
+
+A review after the green run found seven of the shipped chord names carried a
+modifier, and this route cannot hold one down - it emits a single keysym at a
+time, so `Control+a` was a Control tapped, released, and then a plain `a`. Kate
+was measured both ways: through the product's route the document was unchanged
+and the call reported success; with the modifier genuinely held (a keycode press
+and release around the key, done by hand as a control) the same document selected
+all of its text. The difference is holding, and holding needs a keycode this
+daemon cannot resolve without opening an X connection it has no business opening.
+
+Schema 1.12.0 therefore removes all seven. Fourteen single keys remain, every one
+of them measured. The evidence is in the spike transcript beside this document.
+
+The same review asked for the key to be refused when the focus grab fails. That
+was implemented, measured, and withdrawn: on this desk the grab answers `false`
+and the tree names an unrelated list item as focused, for a document that then
+takes the key perfectly. Both predicates refuse a working press. The guarantee
+stays where it was: the desk is read back afterwards and the caller compares.

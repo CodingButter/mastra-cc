@@ -9,3 +9,46 @@ WM_NAME(STRING) = "YAD"
   the document before the key: 'lpha'
   the document after Delete:   'lpha'
   and after grabbing focus on the window itself first: 'lpha'
+
+================================================================================
+LATER MEASUREMENT, 2026-09-01: held modifiers, and two focus predicates that lie
+================================================================================
+
+Asked because a review found the shipped chord list contained seven names with a
+modifier in them, and this interface takes ONE keysym per call.
+
+1. HELD MODIFIERS ARE NOT EXPRESSIBLE ON THIS ROUTE.
+
+   Kate, document reading "alpha", caret at the start.
+
+   through the product's route (SYM, one keysym at a time - Control tapped,
+   released, then a):        document unchanged, call answered success
+   through a keycode press/release pair, Control held down across the a
+   (keycode 37, the human-shaped control):  ALL TEXT SELECTED, and a
+                                            following Delete emptied it
+
+   The difference is holding, not naming. GenerateKeyboardEvent's SYM form
+   releases each keysym before the next, so a modifier can only ever be tapped.
+   Resolving a real keycode needs an X connection this daemon does not have and
+   should not open.
+
+   => schema 1.12.0 removes all seven chorded names. Fourteen single keys
+      remain. A name that cannot be honoured is worse than a name that is
+      absent: the caller cannot tell the difference at the call site.
+
+2. NEITHER FOCUS PREDICATE CAN GATE THE PRESS.
+
+   A review also asked that a refused focus grab stop the key. Both available
+   predicates were measured against the same Kate document that then took the
+   key correctly:
+
+   Component.GrabFocus return value ....... false
+   the tree's own focused state ........... an unrelated listitem named "All"
+   the key, sent anyway ................... landed: "alpha" -> "lpha"
+   the element re-read after the key ...... states include "focused"
+
+   Both predicates would have refused a press that worked. The element reports
+   the focus it holds AFTER the key, not before - so the honest guarantee is the
+   one already shipped: send, re-read, and hand back what the desk says (ADR-0067
+   clauses 5 and 6). A key that went to another window is an element that did not
+   change, and the reply shows it unchanged.

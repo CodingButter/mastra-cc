@@ -67,7 +67,7 @@ describe("protocol/schema.json v1", () => {
   });
 
   it("requires one provider-neutral observable-content state, including value-free protected redaction (ADR-0056)", () => {
-    expect(schema.version).toBe("1.11.0");
+    expect(schema.version).toBe("1.12.0");
     expect(schema.types.semanticElement.fields.content).toMatchObject({
       type: "observableContent",
       required: true,

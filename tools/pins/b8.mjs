@@ -53,9 +53,10 @@ const CONTAINMENT_HOME = ["daemon/src/backends/atspi/rawinput"];
 // The third stand-in is the delivery measurement. It presses ONE key the way a
 // person's keyboard presses it, to answer a question the daemon cannot ask about
 // itself: when a key sent through the product's route fails to arrive, is that
-// the route or the desk? Without a human-shaped control the negative result is
-// an anecdote - and that negative result is why nothing in this build delivers a
-// key at all (docs/proofs/04-a-key-addressed-to-one-element.md). It performs no
+// the route or the desk? That question was asked in anger - a build nearly
+// shipped "this desk takes no key" as a finding, and the control is what proved
+// the route was being aimed at an unfocused element rather than the desk being
+// deaf (docs/proofs/04-a-key-addressed-to-one-element.md). It performs no
 // step of any errand; the daemon's own attempts go through the wire.
 const HUMAN_STAND_INS = [
   "infra/webtop/signals/proof.sh",

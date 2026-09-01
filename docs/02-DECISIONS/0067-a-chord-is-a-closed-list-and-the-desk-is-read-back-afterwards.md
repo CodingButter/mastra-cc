@@ -118,3 +118,26 @@ whatever the bus said.
 Everything else in this record stands — the closed vocabulary, the before-call enforcement, the
 separate attribution, and the prohibition on reaching a key from a refused semantic verb. A second
 platform arrives with its own measurement and its own containment entry in pin B8.
+
+## Amendment, 2026-09-01: the chorded names are gone, in schema version 1.12.0
+
+The vocabulary shipped with seven chorded names — `Shift+Tab` and six `Control+` combinations —
+and they could not work. The emission uses `SYM`, which synthesises a complete press *and release*
+of the keysym it is given, so a modifier sent that way is tapped rather than held. Measured on a
+live desk: `Control` `a` `Control` as three `SYM` taps leaves the document exactly as it was, while
+the same chord sent as a keycode `PRESS`, a `SYM`, and a keycode `RELEASE` selects the document and
+the following `Delete` empties it.
+
+The working form is unavailable to this daemon on purpose. `PRESS` and `RELEASE` take a **keycode**,
+not a keysym, and a keycode is a fact about the display server's current keyboard layout. This
+daemon speaks to the accessibility layer and never to the display server (pin B1), and a guessed
+keycode is a different key on a different layout — the exact class of promise ADR-0047 forbids.
+
+So schema version 1.12.0 removes all seven names. Fourteen single-key chords remain, each one a keysym
+`SYM` can express. A caller that asks for a name outside the list is refused with the list, which is
+how it should learn the vocabulary shrank. This is clause 2 of this record working as intended: a
+closed list is only honest if every name in it does something, and a name that quietly does nothing
+is worse than a refusal — the caller believes the desk received a chord it never saw.
+
+A chord with a held modifier arrives when there is an honest keysym-to-keycode route, with its own
+measurement. It is not owed by this record.

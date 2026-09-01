@@ -664,6 +664,21 @@ export class AtspiBackend implements Backend {
   // precisely the moment it had just been told no.
   async sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult> {
     return this.performing(params.id, async (ref) => {
+      // Focus is grabbed, and then the key is sent WITHOUT a pre-flight claim
+      // that the focus arrived - because on this desk no such claim can be made
+      // honestly. Two candidate predicates were measured against a Kate
+      // document that provably takes the key:
+      //
+      //   the grab's own boolean  - answers false while the key lands perfectly
+      //   the tree's focus state  - names an unrelated listitem as focused
+      //
+      // Refusing on either one refuses a working press, which is a worse lie
+      // than the one it was meant to prevent. So the guarantee lives where this
+      // file already puts every other guarantee: the caller re-reads the desk
+      // afterwards and compares (ADR-0067 clauses 5 and 6). A key that landed
+      // in another window shows up as an element that did not change, which is
+      // exactly what the reply says. See
+      // docs/proofs/04-a-key-addressed-to-one-element-spike.txt.
       await grabFocus(this.channel, ref);
       await emitChord(this.channel, params.chord);
     });

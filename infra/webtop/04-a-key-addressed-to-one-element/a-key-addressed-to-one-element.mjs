@@ -12,8 +12,8 @@
 // modes:
 //   denied - a daemon started WITHOUT --allow rawInput; the key must be refused
 //            for want of authority, naming the flag that would grant it
-//   armed  - a daemon started WITH it; the key must be refused for want of a
-//            ROUTE, because this machine has none - see below
+//   armed  - a daemon started WITH it; the key must be DELIVERED to the element
+//            it was addressed to, and the change read back off the desk
 //
 // TWO CORRECTIONS LIVE HERE, and both are the same mistake made twice: reading
 // a measurement failure as a fact about the world.
@@ -38,15 +38,6 @@
 // other end of it is an environment fact, and pretending otherwise would be
 // making the same mistake a third time.
 //
-// (Legacy note.) This driver's first version reported that the
-// accessibility interface takes F2, Enter and every arrow and delivers none of
-// them, and the segment came within one commit of shipping "this desk will not
-// take a key" as a finding. It was wrong. The interface was being asked to
-// deliver into an element that had never been given focus - the driver reached
-// for a published action instead of a focus grab - and a key sent at nothing
-// lands nowhere. Told to grab focus first, the same desk takes every one of
-// them. The measurement that settles it, including the control keystroke, is
-// measure-delivery.sh beside this file; the story is in the proof document.
 //
 // The verdict is never the return code of a keypress. The interface answers
 // `()` to a key that landed and to a key that vanished (ADR-0067), so what this

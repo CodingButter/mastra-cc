@@ -152,8 +152,11 @@ around it.
 
 ## A key, when nothing else will do
 
-`sendKeyChord` sends one named chord — `Enter`, `Escape`, `Tab`, `F2`, an arrow,
-`Control+a` and a few more — to one element you name. It is a last resort and it
+`sendKeyChord` sends one named key — `Enter`, `Escape`, `Tab`, `Backspace`,
+`Delete`, `F2`, an arrow, `Home`, `End`, `PageUp`, `PageDown` — to one element
+you name. There are no modifier chords: this route cannot hold a modifier down,
+so nothing like a save-or-select-all shortcut is offered rather than offered and
+silently wrong. It is a last resort and it
 is off unless an operator turned it on; when it is off the refusal says so and
 names the flag.
 

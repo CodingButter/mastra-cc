@@ -30,6 +30,17 @@ const DEVICE_EVENT_CONTROLLER = "org.a11y.atspi.DeviceEventController";
 const REGISTRY_BUS = "org.a11y.atspi.Registry";
 const REGISTRY_PATH = "/org/a11y/atspi/registry/deviceeventcontroller";
 
+// EVERY CHORD HERE IS ONE KEY, and that is a consequence of the synth type
+// rather than a preference. SYM synthesises a complete press AND release of the
+// keysym it is given, so a modifier emitted this way is tapped, not held: on a
+// live desk `Control` `a` `Control` as three SYM taps is an `a`, measured, with
+// the document unchanged. Holding a modifier needs PRESS and RELEASE, which
+// take a KEYCODE - a number this daemon has no honest way to obtain, since it
+// speaks to the accessibility layer and never to the display server, and a
+// guessed keycode is a different key on a different keyboard layout. So the
+// chorded names were removed from the vocabulary in schema 1.12.0 rather than
+// shipped as names that quietly do nothing (ADR-0067).
+//
 // SYM, which is 3 in this enum - PRESS is 0, RELEASE 1, PRESSRELEASE 2. The
 // number is written here rather than imported because there is no binding to
 // import it from, and it is worth naming the others precisely once: this
@@ -57,35 +68,28 @@ interface CallSeam {
 // the schema added has no keysym here, so a chord can never reach the desk as
 // an undefined.
 //
-// Modifiers are emitted as their own keysym around the key, in the order a
-// keyboard would produce them. There is no "modifier mask" argument on this
-// interface, and inventing one out of an unrelated field is how a Control+s
-// becomes a plain s on somebody's unsaved document.
-const CONTROL = 0xffe3;
-const SHIFT = 0xffe1;
+// Every name here is a SINGLE key. Held modifiers are absent from the contract
+// on purpose: this interface takes one keysym at a time, so a modifier can only
+// be tapped and released before the key it was meant to modify - measured live,
+// a Control+a sent that way selects nothing and reports success. Rather than
+// ship seven names that quietly do the wrong thing, schema 1.12.0 removed them
+// (ADR-0067, amended).
 
-const KEYSYMS: Record<KeyChordName, { readonly modifiers: readonly number[]; readonly key: number }> = {
-  Enter: { modifiers: [], key: 0xff0d },
-  Escape: { modifiers: [], key: 0xff1b },
-  Tab: { modifiers: [], key: 0xff09 },
-  "Shift+Tab": { modifiers: [SHIFT], key: 0xff09 },
-  Backspace: { modifiers: [], key: 0xff08 },
-  Delete: { modifiers: [], key: 0xffff },
-  ArrowUp: { modifiers: [], key: 0xff52 },
-  ArrowDown: { modifiers: [], key: 0xff54 },
-  ArrowLeft: { modifiers: [], key: 0xff51 },
-  ArrowRight: { modifiers: [], key: 0xff53 },
-  Home: { modifiers: [], key: 0xff50 },
-  End: { modifiers: [], key: 0xff57 },
-  PageUp: { modifiers: [], key: 0xff55 },
-  PageDown: { modifiers: [], key: 0xff56 },
-  F2: { modifiers: [], key: 0xffbf },
-  "Control+a": { modifiers: [CONTROL], key: 0x061 },
-  "Control+c": { modifiers: [CONTROL], key: 0x063 },
-  "Control+x": { modifiers: [CONTROL], key: 0x078 },
-  "Control+v": { modifiers: [CONTROL], key: 0x076 },
-  "Control+z": { modifiers: [CONTROL], key: 0x07a },
-  "Control+s": { modifiers: [CONTROL], key: 0x073 },
+const KEYSYMS: Record<KeyChordName, number> = {
+  Enter: 0xff0d,
+  Escape: 0xff1b,
+  Tab: 0xff09,
+  Backspace: 0xff08,
+  Delete: 0xffff,
+  ArrowUp: 0xff52,
+  ArrowDown: 0xff54,
+  ArrowLeft: 0xff51,
+  ArrowRight: 0xff53,
+  Home: 0xff50,
+  End: 0xff57,
+  PageUp: 0xff55,
+  PageDown: 0xff56,
+  F2: 0xffbf,
 };
 
 /**
@@ -94,7 +98,7 @@ const KEYSYMS: Record<KeyChordName, { readonly modifiers: readonly number[]; rea
  * approximated: there is no nearest key, exactly as there is no nearest action
  * name (ADR-0047).
  */
-export function keysymFor(chord: string): { readonly modifiers: readonly number[]; readonly key: number } | undefined {
+export function keysymFor(chord: string): number | undefined {
   return Object.prototype.hasOwnProperty.call(KEYSYMS, chord) ? KEYSYMS[chord as KeyChordName] : undefined;
 }
 
@@ -112,12 +116,7 @@ export function keysymFor(chord: string): { readonly modifiers: readonly number[
 export async function emitChord(seam: CallSeam, chord: KeyChordName): Promise<void> {
   const keysym = keysymFor(chord);
   if (keysym === undefined) throw new Error(`no keysym for the chord ${JSON.stringify(chord)}`);
-  for (const modifier of keysym.modifiers) await generate(seam, modifier);
-  await generate(seam, keysym.key);
-  // Modifiers are released in reverse, so a chord that threw halfway leaves the
-  // fewest keys held. A stuck Control is not a failed keystroke - it is a
-  // desktop that behaves strangely for everyone until somebody notices.
-  for (const modifier of [...keysym.modifiers].reverse()) await generate(seam, modifier);
+  await generate(seam, keysym);
 }
 
 async function generate(seam: CallSeam, keysym: number): Promise<void> {

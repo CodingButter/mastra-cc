@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -57,7 +57,6 @@
     "Enter",
     "Escape",
     "Tab",
-    "Shift+Tab",
     "Backspace",
     "Delete",
     "ArrowUp",
@@ -68,13 +67,7 @@
     "End",
     "PageUp",
     "PageDown",
-    "F2",
-    "Control+a",
-    "Control+c",
-    "Control+x",
-    "Control+v",
-    "Control+z",
-    "Control+s"
+    "F2"
   ],
   "capabilityNames": [
     "observe",

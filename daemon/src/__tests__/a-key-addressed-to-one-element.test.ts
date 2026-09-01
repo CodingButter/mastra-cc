@@ -186,3 +186,4 @@ describe("a key, addressed to one element", () => {
     expect(source).toContain("sendKeyChord: { effectClass: \"rawInput\", enforcement: \"before-call\"");
   });
 });
+
