@@ -2,6 +2,8 @@
 
 A daemon that gives an agent a truthful, actionable model of a live desktop — and a package that knows how to use it.
 
+**[Explore the interactive Mastra CC presentation →](https://codingbutter.github.io/mastra-cc/)**
+
 An agent asks what applications are open, asks a window what is inside it, reads the value of a field, types into it and proves the text arrived, and subscribes to one element so it is *told* when something under it changes. It does that by asking the desktop what things **are** — role, name, state, place in the hierarchy — never by photographing the screen and guessing where to click.
 
 **Mastra CC is a peripheral, not an assistant.** There is no face, no wake word and no voice here. Thinking belongs to an agent runtime; the desk belongs to us. → [ADR-0057](docs/02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)
