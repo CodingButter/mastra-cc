@@ -44,6 +44,11 @@ An agent asks what applications are open, asks a window what is inside it, reads
 - **Refuses honestly.** Authority is capability-scoped per application. A refusal names its reason in bytes the caller can act on, and never widens itself as a fallback.
 - **Writes receipts.** The audit record is written by the daemon at the point of effect, because nothing above it can be trusted to write an honest one. → [ADR-0026](docs/02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md)
 
+**See it.** [`apps/desk-demo`](apps/desk-demo/README.md) puts a real desktop and an
+agent side by side in a browser: you type an errand, the agent works the machine,
+and when a step is yours — a sign-in, a password — it hands you the keyboard and
+waits for you to say you are done. It cannot take control back.
+
 **Two findings a newcomer should not have to rediscover.** The daemon is Node, not Python — Linux accessibility is plain D-Bus underneath, and Node matched Python on read, write and events. And an application becomes readable only at the moment it starts, so the daemon opens applications itself and changes nothing about how your system launches them.
 
 ---
