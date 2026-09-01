@@ -42,6 +42,15 @@ The second beat is the one that matters. A restart that only ever succeeded
 would prove the easy half; the half worth proving is the one where a person's
 unsaved work outranks the caller.
 
+## Why there is no model in this one
+
+Segments 01 and 02 put a real model on the wire, because the thing being proven
+was what an agent could learn from the desk. This segment proves something an
+agent has no part in: whether an operator's written decision is obeyed, and
+whether an application's refusal outranks the caller. A model narrating that
+would add a place for the run to sound right while being wrong. The driver
+speaks the wire directly and every verdict is read back from the desk.
+
 ## What the harness does and does not do
 
 No synthetic input: no `xdotool`, no `wmctrl`, no `uinput`. The document is made

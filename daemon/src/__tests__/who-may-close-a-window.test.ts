@@ -108,6 +108,16 @@ function restart(name: string, backend: Backend, context: Partial<LaunchContext>
   });
 }
 
+function killEverything(table: OwnershipTable) {
+  for (const entry of table.entries()) {
+    try {
+      process.kill(entry.pid, "SIGKILL");
+    } catch {
+      // already gone
+    }
+  }
+}
+
 function resultOf(response: { result?: unknown }) {
   return response.result as { application?: SemanticElement; blockedBy?: SemanticElement; refusal?: string };
 }
@@ -237,6 +247,105 @@ describe("who may close a window", () => {
         }
       }
     }
+  });
+
+  it("graceful: a dialog that was already open when the signal was sent is not called a refusal", async () => {
+    // A dialog seen in the same instant as the SIGTERM proves nothing: a Find
+    // box that happened to be up is not the application answering. Only a
+    // dialog still there a poll later is an answer. This application takes the
+    // signal and goes, with a dialog on the desk the whole time.
+    const obliging = await child(false);
+    const table = new OwnershipTable();
+    table.record(obliging.pid, "test-app");
+    let showing: SemanticElement[] = [];
+    const backend = desk(() => showing);
+    showing = [element(backend, "application", "test-app"), element(backend, "dialog", "Find and Replace", "test-app")];
+    try {
+      const pending = restart("test-app", backend, { table, capabilities: configured("graceful") });
+      const appear = setTimeout(() => {
+        showing = [element(backend, "application", "test-app")];
+      }, 120);
+      const answer = resultOf(await pending);
+      clearTimeout(appear);
+
+      expect(answer.blockedBy).toBeUndefined();
+      expect(answer.application?.name).toBe("test-app");
+      expect(obliging.alive()).toBe(false);
+    } finally {
+      obliging.stop();
+      killEverything(table);
+    }
+  });
+
+  it("graceful: an application that leaves the accessibility tree but keeps running is not declared closed", async () => {
+    // Absence from the tree is not death. A daemon that read it as death would
+    // start a second copy while the first is still holding the person's work,
+    // and the ownership table would then have two processes under one name.
+    const stubborn = await child(true);
+    const table = new OwnershipTable();
+    table.record(stubborn.pid, "test-app");
+    const backend = desk(() => []); // nothing readable at all
+    try {
+      const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
+
+      expect(answer.refusal).toContain("neither closed nor put anything up");
+      expect(answer.application).toBeUndefined();
+      expect(stubborn.alive()).toBe(true);
+      expect(table.entries().filter((entry) => entry.name === "test-app").length).toBe(1);
+    } finally {
+      stubborn.stop();
+    }
+  });
+
+  it("force: a dialog on the desk does not become a refusal - force asked nothing, so nothing refused it", async () => {
+    const stubborn = await child(true);
+    const table = new OwnershipTable();
+    table.record(stubborn.pid, "test-app");
+    let showing: SemanticElement[] = [];
+    const backend = desk(() => showing);
+    showing = [element(backend, "application", "test-app"), element(backend, "dialog", "Close Document", "test-app")];
+    try {
+      const pending = restart("test-app", backend, { table, capabilities: configured("force") });
+      const appear = setTimeout(() => {
+        showing = [element(backend, "application", "test-app")];
+      }, 120);
+      const answer = resultOf(await pending);
+      clearTimeout(appear);
+
+      expect(answer.blockedBy).toBeUndefined();
+      expect(answer.application?.name).toBe("test-app");
+      expect(stubborn.alive()).toBe(false);
+    } finally {
+      stubborn.stop();
+      killEverything(table);
+    }
+  });
+
+  it("an application that exits between the ownership check and the signal is started again, not called foreign", async () => {
+    // The gap is real: ownsName said yes, and the process was gone a
+    // microsecond later. "This daemon did not open that application" would be
+    // a refusal derived from a check that never ran - it DID open it, and the
+    // close the caller asked for has already happened.
+    const gone = await child(false);
+    const table = new OwnershipTable();
+    table.record(gone.pid, "test-app");
+    const stale = table.entries()[0];
+    gone.stop();
+    while (gone.alive()) await new Promise((r) => setTimeout(r, 5));
+    // the table would now answer "not ours" honestly, so the race is staged by
+    // holding the answer it WOULD have given an instant earlier
+    const racing = Object.assign(Object.create(Object.getPrototypeOf(table)), table, {
+      ownsName: () => stale,
+      owns: () => false,
+    }) as OwnershipTable;
+    const backend = desk(() => showing);
+    const showing: SemanticElement[] = [element(backend, "application", "test-app")];
+
+    const answer = resultOf(await restart("test-app", backend, { table: racing, capabilities: configured("graceful") }));
+
+    expect(answer.refusal).toBeUndefined();
+    expect(answer.application?.name).toBe("test-app");
+    killEverything(racing);
   });
 
   it("force: an application that refuses SIGTERM is taken down, because the operator wrote that down", async () => {

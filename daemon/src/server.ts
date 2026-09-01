@@ -1465,24 +1465,42 @@ async function decideRestartApplication(
   if (owned === undefined) return { refusal: NOT_OURS_REFUSAL, refusalClass: "RestartNotOurs", auditApplication: treeName };
   try {
     process.kill(owned.pid, authority.level === "force" ? "SIGKILL" : "SIGTERM");
-  } catch {
-    // It exited between the ownership check and the signal. Nothing was
-    // closed by this daemon, and there is nothing to relaunch that the caller
-    // asked for - openApplication is the verb for starting something that is
-    // not running.
-    return { refusal: NOT_OURS_REFUSAL, refusalClass: "RestartNotOurs", auditApplication: treeName };
+  } catch (error) {
+    // Ownership was just established, so "not ours" would be a refusal derived
+    // from a check that did not run (ADR-0008 clause 5). Two different things
+    // land here. ESRCH: it exited in the gap between the check and the signal,
+    // which is the close this caller asked for happening without our help -
+    // fall through and start it again. Anything else: the signal was refused,
+    // and the honest answer is that nothing was confirmed.
+    if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
+      return {
+        refusal: `the application is this daemon's to close, but the operating system would not accept the signal - it is still running, and nothing was confirmed`,
+        refusalClass: "RestartNotConfirmed",
+        auditApplication: treeName,
+      };
+    }
   }
   const budget = launch.pollBudgetMs ?? RESTART_BUDGET_MS;
   const interval = launch.pollIntervalMs ?? POLL_INTERVAL_MS;
   const deadline = Date.now() + budget;
+  let looked = 0;
   for (;;) {
-    const still = await findApplication(backend, treeName);
-    if (still === undefined) break;
-    // It is still there. Something it put up outranks this daemon: report the
-    // element and stop. Nothing here dismisses it, and nothing escalates the
-    // signal - a "graceful" that ends in a kill is a force with a delay
-    // (ADR-0065 clause 4).
-    const blocking = await blockingDialogOf(backend, treeName);
+    // The PROCESS is what closing means. An application can drop off the
+    // accessibility tree while still alive, and reading absence there as
+    // "closed" would relaunch a program that never went away and leave two
+    // under one name.
+    if (launch.table.owns(owned.pid) !== true) break;
+    looked += 1;
+    // Something it put up outranks this daemon: report the element and stop.
+    // Nothing here dismisses it, and nothing escalates the signal - a
+    // "graceful" that ends in a kill is a force with a delay (ADR-0065
+    // clause 4). Two conditions before that sentence may be said. Force asked
+    // nothing, so nothing can have refused it. And a dialog seen in the same
+    // instant as the signal may be one that was already open - only a dialog
+    // that is still there a poll later is an answer to what we sent.
+    const blocking = authority.level === "force" || looked < 2
+      ? undefined
+      : await blockingDialogOf(backend, treeName);
     if (blocking !== undefined) {
       return {
         blockedBy: blocking,

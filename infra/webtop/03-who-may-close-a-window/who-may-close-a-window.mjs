@@ -130,8 +130,12 @@ if (mode === "acts") {
   if (blocked.route === "absent") problems.push("this daemon has no restartApplication route");
   else if (blocked.application !== undefined) {
     problems.push("the application was restarted while it still had unsaved work");
-  } else if (blocked.blockedBy === undefined && blocked.refusal === undefined) {
-    problems.push(`the restart neither reported a blocking element nor an unconfirmed close: ${JSON.stringify(blocked.refusal)}`);
+  } else if (blocked.blockedBy === undefined) {
+    // A timeout refusal is an honest answer, but it is not THIS proof: the
+    // claim being made is that the application's own dialog came back as a
+    // readable element. Accepting "it did not close" for that would let the
+    // index document say something the run never showed.
+    problems.push(`the restart returned no blocking element: ${JSON.stringify(blocked.refusal)}`);
   }
 
   const survived = await runningState();

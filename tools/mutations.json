@@ -946,5 +946,19 @@
     "replace": "\"SIGKILL\"",
     "cwd": "daemon",
     "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "a-dialog-in-the-same-instant-counts-as-a-refusal",
+    "file": "daemon/src/server.ts",
+    "find": " || looked < 2",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "restart-never-checks-whether-the-process-ended",
+    "file": "daemon/src/server.ts",
+    "find": "if (launch.table.owns(owned.pid) !== true) break;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   }
 ]
