@@ -35,6 +35,7 @@ const BASE: LaunchCatalog = {
     argv: ["sleep", "30", `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`],
     env: {},
     appearsAs: "chrome",
+    sharesBrowserEndpoint: true, // the stub stands in for the browser recipe, endpoint and all
   },
 };
 

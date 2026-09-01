@@ -1,0 +1,17 @@
+daemon: websocket listening on 0.0.0.0:9979
+daemon ready after .671987887s
+(node:1158935) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+roots-before-the-agent-ran: []
+elements-before-the-agent-ran: 0
+tool-call: {"n":1,"name":"openApplication"}
+tool-call: {"n":2,"name":"listApplications"}
+every-root-now: []
+errand: {"app":"org.kde.kate","toolkit":"Qt6","said":"I was unable to open the text editor named \"org.kde.kate\" because `listApplications` reports that it is not launchable. I also checked other applications in the list and none of them appear to be laun","roots":[],"elementsBefore":0,"elementsNow":0,"grew":false}
+tool-call: {"n":3,"name":"openApplication"}
+tool-call: {"n":4,"name":"listApplications"}
+every-root-now: []
+errand: {"app":"org.xfce.mousepad","toolkit":"GTK3","said":"I'm sorry, I was unable to open the simple notepad. The `listApplications` tool reports \"org.xfce.mousepad\" as the simple notepad, but it is not launchable with the `openApplication` tool.","roots":[],"elementsBefore":0,"elementsNow":0,"grew":false}
+chromium-measurement: {"launch":"launch: nothing can be launched by that name","readableRoot":null,"roots":[],"elements":0}
+{"proof":"red","launched":[{"app":"org.kde.kate","toolkit":"Qt6","roots":0,"elements":"0 -> 0"},{"app":"org.xfce.mousepad","toolkit":"GTK3","roots":0,"elements":"0 -> 0"}],"toolCalls":4,"reason":"no readable root with elements for org.kde.kate, org.xfce.mousepad"}
+base daemon exited 1, as it must

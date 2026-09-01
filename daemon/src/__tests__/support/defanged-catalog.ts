@@ -7,6 +7,8 @@ import { CATALOG, type LaunchCatalog } from "../../launch/recipes.js";
 // test that proves it keeps its meaning while a deleted authority guard's
 // blast radius becomes a 30-second sleep instead of a real Chrome on the
 // operator's signed-in Gmail profile (issue #20).
-export const DEFANGED_CATALOG: LaunchCatalog = Object.fromEntries(
-  Object.entries(CATALOG).map(([name, recipe]) => [name, { ...recipe, argv: ["sleep", "30"] }]),
-);
+export function defang(catalog: LaunchCatalog): LaunchCatalog {
+  return Object.fromEntries(Object.entries(catalog).map(([name, recipe]) => [name, { ...recipe, argv: ["sleep", "30"] }]));
+}
+
+export const DEFANGED_CATALOG: LaunchCatalog = defang(CATALOG);

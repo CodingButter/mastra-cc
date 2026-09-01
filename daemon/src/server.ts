@@ -64,7 +64,7 @@ import {
   type CapabilityConfiguration,
 } from "./capabilities.js";
 import { isVisible, type Visibility } from "./grants.js";
-import { CATALOG, type LaunchCatalog } from "./launch/recipes.js";
+import { CATALOG, contendsForBrowserEndpoint, type LaunchCatalog } from "./launch/recipes.js";
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
 
@@ -1113,7 +1113,13 @@ async function decideOpenApplication(
   // would call our own browser one we did not open. Catalog keys are iterated
   // rather than table.entries(), because ownsName re-verifies (pid, starttime)
   // and so cannot fire on a process that has exited.
-  for (const key of Object.keys(launch.catalog)) {
+  // Scoped to recipes that open the browser's debugging endpoint: the conflict
+  // is that endpoint, not the tree name. Derived recipes routinely share an
+  // appearsAs (several desktop entries over one binary) and contend for
+  // nothing, so they must not be caught by a guard about browsers.
+  const requested = findRecipe(name, launch.catalog);
+  const contending = requested !== undefined && contendsForBrowserEndpoint(requested) ? Object.keys(launch.catalog) : [];
+  for (const key of contending) {
     if (normalise(key) === normalise(name)) continue;
     if (treeNameOf(key, launch.catalog) !== treeName) continue;
     if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: "OneBrowserIdentity", auditApplication: treeName };

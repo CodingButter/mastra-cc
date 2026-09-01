@@ -23,9 +23,29 @@ export interface LaunchRecipe {
   // own version reply, backends/cdp/index.ts). Static data like argv - wire
   // input selects a catalog key and never contributes this.
   readonly appearsAs?: string;
+  // Set only on recipes that open the browser's debugging endpoint. It is a
+  // declared property of the recipe rather than something sniffed out of argv,
+  // because the test catalogs defang argv to a harmless sleep and the guard
+  // this feeds must keep its meaning there.
+  readonly sharesBrowserEndpoint?: true;
 }
 
 export type LaunchCatalog = Readonly<Record<string, LaunchRecipe>>;
+
+// The one-browser-identity-at-a-time guard (ADR-0038) exists because two
+// browser identities would want the SAME debugging endpoint - it is a
+// statement about that endpoint, not about tree names in general. A recipe
+// contends for it exactly when it says so - the property is declared on the
+// recipe, not inferred from argv, because a defanged catalog replaces argv
+// while keeping every other field and an argv sniff would silently stop
+// recognising the browser there. This became load-bearing when the catalog stopped
+// being four hand-written entries: the machine's own entries routinely put
+// several desktop entries over one binary (libreoffice-writer, -calc, -impress
+// all run `libreoffice`), so they share an appearsAs while sharing nothing
+// about the browser, and a tree-name-only guard would refuse the second one.
+export function contendsForBrowserEndpoint(recipe: LaunchRecipe): boolean {
+  return recipe.sharesBrowserEndpoint === true;
+}
 
 // The built-in browser's profile directory. Exported so profile composition
 // (launch/profiles.ts) substitutes one identified argv element instead of
@@ -70,6 +90,7 @@ export const CATALOG: LaunchCatalog = {
     ],
     env: {},
     appearsAs: "chrome",
+    sharesBrowserEndpoint: true,
   },
   // The same browser under the operator's signed-in Gmail identity (M2.5).
   // Identical shape to the chrome entry - only the profile directory and the
@@ -87,6 +108,7 @@ export const CATALOG: LaunchCatalog = {
     ],
     env: {},
     appearsAs: "chrome",
+    sharesBrowserEndpoint: true,
   },
   // Qt6 enabling (M2.5, Q05 - measured on minibeast, Qt 6.4): without a knob
   // the process registers an application root on the accessibility bus but
