@@ -930,5 +930,21 @@
     "find": "  if (level === \"refuse\" || level === \"ask\") return restartRefusal(level, setting);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/restart-authority.test.ts"
+  },
+  {
+    "name": "restart-signals-a-process-it-does-not-own",
+    "file": "daemon/src/server.ts",
+    "find": "const owned = launch.table.ownsName(name);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts",
+    "replace": "const owned = launch.table.entries()[0];"
+  },
+  {
+    "name": "graceful-restart-escalates-to-a-kill",
+    "file": "daemon/src/server.ts",
+    "find": "authority.level === \"force\" ? \"SIGKILL\" : \"SIGTERM\"",
+    "replace": "\"SIGKILL\"",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   }
 ]

@@ -17,6 +17,8 @@ import {
   type ListApplicationsResult,
   type OpenApplicationParams,
   type OpenApplicationResult,
+  type RestartApplicationParams,
+  type RestartApplicationResult,
   type QueryElementsParams,
   type QueryElementsResult,
   type ReadElementContentParams,
@@ -100,6 +102,7 @@ export interface TransportClient {
   listApplications(params?: ListApplicationsParams): Promise<ListApplicationsResult>;
   describeAccessibility(params?: DescribeAccessibilityParams): Promise<DescribeAccessibilityResult>;
   acquireAccessibility(params?: AcquireAccessibilityParams): Promise<AcquireAccessibilityResult>;
+  restartApplication(params: RestartApplicationParams): Promise<RestartApplicationResult>;
   /**
    * Register a listener for pushed change events. Returns a function that
    * removes it. Events are delivered as they arrive and are never buffered:
@@ -297,6 +300,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
       call("describeAccessibility", params ?? {}) as Promise<DescribeAccessibilityResult>,
     acquireAccessibility: (params) =>
       call("acquireAccessibility", params ?? {}) as Promise<AcquireAccessibilityResult>,
+    restartApplication: (params) => call("restartApplication", params) as Promise<RestartApplicationResult>,
     onChangeEvent: (listener) => {
       listeners.add(listener);
       return () => void listeners.delete(listener);
