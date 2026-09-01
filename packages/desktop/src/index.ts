@@ -43,6 +43,49 @@ export const INSTRUCTIONS: string = readFileSync(
   "utf8",
 );
 
+/**
+ * What to keep from a session that operated a desk, for the reflection agent
+ * that turns finished work into durable knowledge.
+ *
+ * It exists because the literacy in INSTRUCTIONS has a floor it cannot rise
+ * above: it is the same prose on every desk, and every desk is different. What
+ * an agent learns about *this* machine - which menu holds the save control,
+ * that a menu item is named with an ellipsis - has to accumulate somewhere, and
+ * the reflection agent needs telling what a desktop procedure must look like to
+ * still be true tomorrow. Chiefly: no element identifiers, because those are
+ * handles to one live session and a stored one is active misinformation.
+ *
+ * A plain string, deliberately: it is passed as the `instructions` of a
+ * reflection agent the consumer configures, and this package neither imports
+ * nor requires the memory system that consumes it. Byte-identical to
+ * `docs/12-LEARN-INSTRUCTIONS.md`; a test fails if they drift.
+ *
+ * Shipped unused. The reflection agent this was written for is not in the
+ * initial release of the memory system's subconscious schema, so nothing in
+ * this repository proves it works - there is no proof artifact and no decision
+ * record behind it. It is here so it is in place when that agent lands.
+ */
+export const LEARN_INSTRUCTIONS: string = readFileSync(
+  new URL("../instructions/LEARN-INSTRUCTIONS.md", import.meta.url),
+  "utf8",
+);
+
+/**
+ * What to keep and what to throw away, for the reflection agent that maintains
+ * accumulated knowledge.
+ *
+ * Desktop knowledge rots in a particular way - identifiers go stale, procedures
+ * multiply, the contents of documents linger long after the reason to hold them
+ * - and curation is where that is caught. Same shape as LEARN_INSTRUCTIONS: a
+ * plain string, no peer dependency, byte-identical to
+ * `docs/13-CURATE-INSTRUCTIONS.md` - and, like it, shipped unused: no proof
+ * artifact, no decision record, waiting on the same agent.
+ */
+export const CURATE_INSTRUCTIONS: string = readFileSync(
+  new URL("../instructions/CURATE-INSTRUCTIONS.md", import.meta.url),
+  "utf8",
+);
+
 export interface ConnectOptions {
   /** A unix socket path. Mutually exclusive with `url`. */
   socketPath?: string;

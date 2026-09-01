@@ -21,7 +21,7 @@ import { collect, fail, rootFromArgs, stripComments } from "./lib.mjs";
 // nobody has built.
 const CONTAINMENT_HOME = [];
 
-// One exemption, and it is not part of the class. B8's subject is the PRODUCT:
+// Two exemptions, and neither is part of the class. B8's subject is the PRODUCT:
 // the daemon and the package must never synthesise input. A proof harness is the
 // opposite direction - it stands in for the human at the keyboard, so that a
 // change arrives at the daemon attributed `external` rather than `self`. Without
@@ -30,11 +30,21 @@ const CONTAINMENT_HOME = [];
 // dial would produce a self-attributed change and prove the opposite of the
 // claim.
 //
+// The second stand-in is the errand harness. It never performs a step of an
+// errand - the agent does that through the protocol, and a transcript where the
+// keyboard did the work would be worthless. It types for exactly one reason: to
+// leave the desk in the state a PERSON left it in before the errand starts. E6
+// ("close the editor without saving") has no confirmation dialog to recognise
+// unless someone made an unsaved edit first, and only a human-shaped actor can
+// make that edit without the agent attributing it to itself.
+//
 // Listed as EXACT FILES, never a directory prefix, so the exemption cannot grow
-// quietly: a new harness that wants raw input has to appear in this diff. The
-// mutation on this list only proves the exemption is load-bearing; that it
-// cannot WIDEN into a prefix is the `sneak.sh` case in pins.test.mjs.
-const HUMAN_STAND_INS = ["infra/webtop/signals/proof.sh"];
+// quietly: a new harness that wants raw input has to appear in this diff. It is
+// also why each harness keeps its raw input in its shell wrapper - B8 scans .mjs
+// as well, so a driver that shelled out would need a third entry. The mutation on
+// this list only proves the exemptions are load-bearing; that they cannot WIDEN
+// into a prefix is the `sneak.sh` case in pins.test.mjs.
+const HUMAN_STAND_INS = ["infra/webtop/signals/proof.sh", "infra/webtop/errands/run-errands.sh"];
 
 const BANNED_TOOL = /\b(xdotool|wmctrl|uinput)\b/;
 

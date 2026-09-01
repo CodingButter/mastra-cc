@@ -825,6 +825,14 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
+    "name": "b8-forgets-the-errand-harness-is-exempt",
+    "file": "tools/pins/b8.mjs",
+    "find": "\"infra/webtop/errands/run-errands.sh\"",
+    "replace": "",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
     "name": "instance-redials-after-close",
     "file": "packages/desktop/src/mastra.ts",
     "find": "    this.#closed = true;",
@@ -866,5 +874,19 @@
     "find": " && contendsForBrowserEndpoint(requested)",
     "cwd": "daemon",
     "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
+  },
+  {
+    "name": "shipped-instructions-drift-from-the-reviewed-copy",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "button commonly offers nothing but `focus`, and ",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instructions-ship-with-it.test.ts"
+  },
+  {
+    "name": "prose-names-a-verb-the-protocol-does-not-have",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "`submitElement` sends the form",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-names-real-verbs.test.ts"
   }
 ]

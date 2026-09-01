@@ -183,6 +183,31 @@ test("b8: the human stand-in exemption is one named file, not a directory", () =
   expect(r.output).toContain("infra/webtop/signals/sneak.sh");
 });
 
+test("b8: the errand harness is the second named stand-in, and there are exactly two", () => {
+  // Asserted against the REAL root, not a planted one: a test written against a
+  // temp tree would stay green with the exemption string deleted, and the
+  // mutation on it would report survived rather than killed.
+  const clean = runPin("b8");
+  expect(clean.status).toBe(0);
+  expect(clean.output).toContain("infra/webtop/errands/run-errands.sh");
+
+  // The COUNT, not just membership: a toContain on one path cannot tell two
+  // exemptions from five, and quiet growth is the failure this pin exists to
+  // catch. Counted from the listed paths rather than parsed out of the sentence,
+  // so rewording the success line does not break the assertion.
+  const listed = clean.output.slice(clean.output.indexOf("standing in for a human:"));
+  expect(listed.match(/infra\/\S+?\.sh/g)).toHaveLength(2);
+});
+
+test("b8: a sibling of the errand harness is still refused", () => {
+  // The errand harness is an exact file. Its neighbours inherit nothing - if this
+  // ever passes, the entry has widened into a prefix.
+  const root = plant("infra/webtop/errands/sneak.sh", 'xdotool type "hello"\n');
+  const r = runPin("b8", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("infra/webtop/errands/sneak.sh");
+});
+
 test("b8: a comment mentioning a banned tool is not a violation", () => {
   const root = plant("daemon/src/notes.ts", "// xdotool is banned here (ADR-0004)\nexport {};\n");
   const r = runPin("b8", ["--root", root]);

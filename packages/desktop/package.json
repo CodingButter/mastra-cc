@@ -16,6 +16,8 @@
       "default": "./dist/mastra.mjs"
     },
     "./instructions": "./instructions/AGENT-INSTRUCTIONS.md",
+    "./instructions/learn": "./instructions/LEARN-INSTRUCTIONS.md",
+    "./instructions/curate": "./instructions/CURATE-INSTRUCTIONS.md",
     "./package.json": "./package.json"
   },
   "files": [
