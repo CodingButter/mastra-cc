@@ -2,6 +2,9 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import type { Channel } from "../backends/atspi/channel.js";
+import { AtspiBackend } from "../backends/atspi/index.js";
+import { replayChannel } from "../backends/replay/index.js";
 import { KEY_CHORD_NAMES } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
 import { OwnershipTable } from "../launch/table.js";
@@ -165,9 +168,16 @@ describe("a key, addressed to one element", () => {
   it("every chord the wire defines has a keysym, and no route invents one", async () => {
     // A name the schema added and this route cannot express would reach a desk
     // as an undefined. The table is a total function over the vocabulary.
-    const { keysymFor } = await import("../backends/atspi/rawinput/keys.js");
+    const { keysymCount, keysymFor } = await import("../backends/atspi/rawinput/keys.js");
     for (const chord of KEY_CHORD_NAMES) expect(keysymFor(chord), chord).toBeDefined();
     expect(keysymFor("Control+Alt+Delete")).toBeUndefined();
+    // And the other direction: a name REMOVED from the wire must not leave a
+    // key behind that nothing can ask for. Seven were removed in 1.12.0 for
+    // being unhonourable, and a stale keysym is how one of them creeps back.
+    expect(keysymCount(), "the table holds a key the contract does not name").toBe(KEY_CHORD_NAMES.length);
+    for (const gone of ["Control+a", "Control+s", "Control+c", "Control+v", "Control+x", "Control+z", "Shift+Tab"]) {
+      expect(keysymFor(gone), gone).toBeUndefined();
+    }
   });
 
   it("has no edge from a semantic verb into the key route", async () => {
@@ -187,3 +197,41 @@ describe("a key, addressed to one element", () => {
   });
 });
 
+
+describe("a key this daemon could not aim", () => {
+  // The withdrawn gate's residue, and the point of it: neither signal may
+  // REFUSE a press (both were measured answering wrong for a key that arrived),
+  // but a caller is owed the doubt - especially for the eleven chords that
+  // change nothing readable when they succeed, where the reply looks identical
+  // whether the key landed here or in somebody else's window.
+  it("sends the key anyway, and says in the debugging subtree that the aim was unconfirmed", async () => {
+    const tape = replayChannel("gtk-dialog");
+    let generated = 0;
+    const wandering: Channel = {
+      async call(exchange) {
+        if (exchange.member === "GenerateKeyboardEvent") {
+          generated += 1;
+          return [];
+        }
+        if (exchange.member === "GrabFocus") return [false];
+        return tape.call(exchange);
+      },
+      watch: (subscribedTo, sink, anchor) => tape.watch(subscribedTo, sink, anchor),
+      close: () => tape.close(),
+    };
+
+    const backend = new AtspiBackend(wandering, new Set(["yad"]));
+    const seen = await backend.queryElements({});
+    const target = seen.elements.find((element) => element.role === "button");
+    expect(target).toBeDefined();
+
+    const result = await backend.sendKeyChord({ id: target!.id, chord: "Enter" });
+
+    expect(generated, "the key was withheld - doubt is not a refusal").toBe(1);
+    expect(result.element).toBeDefined();
+    const note = (result.element?.diagnostic as Record<string, string> | undefined)?.["mastra-cc/key-aim"];
+    expect(note, "a key sent into an unconfirmed aim said nothing about it").toBeDefined();
+    expect(note).toContain("not confirmed to hold the focus");
+    await backend.close();
+  });
+});

@@ -98,6 +98,10 @@ const KEYSYMS: Record<KeyChordName, number> = {
  * approximated: there is no nearest key, exactly as there is no nearest action
  * name (ADR-0047).
  */
+export function keysymCount(): number {
+  return Object.keys(KEYSYMS).length;
+}
+
 export function keysymFor(chord: string): number | undefined {
   return Object.prototype.hasOwnProperty.call(KEYSYMS, chord) ? KEYSYMS[chord as KeyChordName] : undefined;
 }

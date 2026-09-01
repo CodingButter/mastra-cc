@@ -50,5 +50,14 @@ modifier in them, and this interface takes ONE keysym per call.
    Both predicates would have refused a press that worked. The element reports
    the focus it holds AFTER the key, not before - so the honest guarantee is the
    one already shipped: send, re-read, and hand back what the desk says (ADR-0067
-   clauses 5 and 6). A key that went to another window is an element that did not
-   change, and the reply shows it unchanged.
+   clauses 5 and 6).
+
+   That guarantee has a KNOWN EDGE, and it is recorded here rather than glossed:
+   read-back separates a key that landed from a key that went elsewhere only for
+   a chord that CHANGES the element. Eleven of the fourteen - Enter, Escape, Tab,
+   F2, the four arrows, Home, End, PageUp, PageDown - normally leave content and
+   name identical even when they succeed, so for those the reply looks the same
+   either way. Which is why neither unreliable signal is thrown away: they cannot
+   refuse, but together they can raise DOUBT, and the route now attaches that
+   doubt to the reply as a debugging note. Refusing was wrong; staying silent
+   would have been a quieter version of the same fault.

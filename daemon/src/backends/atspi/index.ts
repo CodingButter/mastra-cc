@@ -3,6 +3,7 @@ import type {
   ActivateElementResult,
   AttestElementParams,
   AttestElementResult,
+  Diagnostic,
   EditElementParams,
   EditElementResult,
   QueryElementsParams,
@@ -638,14 +639,6 @@ export class AtspiBackend implements Backend {
     return this.performing(params.id, (ref) => setTextContents(this.channel, ref, params.value));
   }
 
-  // The action's own reply is evidence in exactly one direction (effects.ts):
-  // a `true` is worth nothing, a `false` is the platform declining in its own
-  // words before anything happened. Submit has always checked it; activate
-  // dropped it on the floor and answered with a freshly re-read element, which
-  // told the caller "performed" for an action the application refused. There is
-  // no state to compare here - an action is a bare verb and the element does
-  // not publish what it was supposed to change - so the decline is the only
-  // reading there is, and discarding it left this verb with none.
   // FOCUS, EMIT, READ BACK. The order is the whole design and none of it is
   // optional: the emission is global (it goes to whatever holds focus), so the
   // grab is how the chord is aimed, and the re-read - which `performing` does
@@ -663,7 +656,8 @@ export class AtspiBackend implements Backend {
   // refused semantic verb as a keystroke would escalate its own authority at
   // precisely the moment it had just been told no.
   async sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult> {
-    return this.performing(params.id, async (ref) => {
+    let doubt: string | undefined;
+    const performed = await this.performing(params.id, async (ref) => {
       // Focus is grabbed, and then the key is sent WITHOUT a pre-flight claim
       // that the focus arrived - because on this desk no such claim can be made
       // honestly. Two candidate predicates were measured against a Kate
@@ -676,14 +670,42 @@ export class AtspiBackend implements Backend {
       // than the one it was meant to prevent. So the guarantee lives where this
       // file already puts every other guarantee: the caller re-reads the desk
       // afterwards and compares (ADR-0067 clauses 5 and 6). A key that landed
-      // in another window shows up as an element that did not change, which is
-      // exactly what the reply says. See
+      // in another window shows up as an element that did not change - for a
+      // chord that changes it. Eleven of the fourteen leave the element reading
+      // identically when they SUCCEED, so read-back alone cannot separate those
+      // from a key that went to the wrong window. What both predicates are still
+      // good for is DOUBT: neither can refuse, but together they can say "this
+      // one may not have arrived", which is the diagnostic below. See
       // docs/proofs/04-a-key-addressed-to-one-element-spike.txt.
-      await grabFocus(this.channel, ref);
+      const taken = await grabFocus(this.channel, ref);
+      const focused = await this.focusedElement();
+      if (!taken || focused?.id !== params.id) {
+        doubt =
+          "this element was not confirmed to hold the focus when the key was sent" +
+          (focused === undefined ? ", and nothing on the desk claimed it" : `, and ${JSON.stringify(focused.name)} claimed it instead`) +
+          ". A key reaches an element only while that element's window is the front one, and this daemon does not " +
+          "raise windows. Neither signal is reliable enough to refuse on - both have been observed reading wrong for " +
+          "a key that arrived - so the key WAS sent. Compare the element above against what you expected before " +
+          "believing it landed here.";
+      }
       await emitChord(this.channel, params.chord);
     });
+
+    if (doubt === undefined) return performed;
+    return {
+      ...performed,
+      element: { ...performed.element, diagnostic: keyAimNote(performed.element.diagnostic, doubt) },
+    };
   }
 
+  // The action's own reply is evidence in exactly one direction (effects.ts):
+  // a `true` is worth nothing, a `false` is the platform declining in its own
+  // words before anything happened. Submit has always checked it; activate
+  // dropped it on the floor and answered with a freshly re-read element, which
+  // told the caller "performed" for an action the application refused. There is
+  // no state to compare here - an action is a bare verb and the element does
+  // not publish what it was supposed to change - so the decline is the only
+  // reading there is, and discarding it left this verb with none.
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
     return this.performing(params.id, async (ref) => {
       const performed = await performAction(this.channel, ref, params.action);
@@ -797,4 +819,17 @@ export class AtspiBackend implements Backend {
     this.watches.clear();
     await this.channel.close();
   }
+}
+
+/**
+ * Records, in the debugging subtree, that a key was sent into an aim this
+ * daemon could not confirm. It is a NOTE and never a refusal: both signals it
+ * summarises have been measured answering wrong for a key that arrived, so
+ * refusing on them would refuse working presses (ADR-0067, amended). The
+ * diagnostic subtree is the one place the neutral-vocabulary rule is relaxed,
+ * and it is not load-bearing for agent logic - the sentence tells a human what
+ * to compare, exactly as the focus-preservation note does.
+ */
+function keyAimNote(diagnostic: Diagnostic | undefined, note: string): Diagnostic & { "mastra-cc/key-aim": string } {
+  return { ...(diagnostic ?? {}), "mastra-cc/key-aim": note };
 }
