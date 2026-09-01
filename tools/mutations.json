@@ -960,5 +960,12 @@
     "find": "if (launch.table.owns(owned.pid) !== true) break;",
     "cwd": "daemon",
     "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "raw-input-is-available-to-a-session-nobody-armed",
+    "file": "daemon/src/server.ts",
+    "find": "if (allows.has(effectClass) !== true) return false;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/raw-input-authority.test.ts"
   }
 ]

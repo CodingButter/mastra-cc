@@ -11,6 +11,7 @@ import {
 import { normalise } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
 import { selectAccessibilityLayer } from "./accessibility/select.js";
+import { selectKeyDelivery } from "./rawinput/select.js";
 import { loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
 import {
   composeBootNames,
@@ -159,7 +160,7 @@ const allows = new Set(argAll("--allow")) as Set<CapabilityName>;
 for (const cls of allows) {
   if (!CAPABILITY_NAMES.includes(cls) || cls === "observe" || cls === "launch") {
     console.error(
-      `daemon: --allow must name one of the element-effect classes: edit, activate, submit (got ${JSON.stringify(cls)})`,
+      `daemon: --allow must name one of the effect classes: edit, activate, submit, rawInput (got ${JSON.stringify(cls)})`,
     );
     process.exit(2);
   }
@@ -175,6 +176,11 @@ for (const cls of allows) {
 // it (ACQUIRE_SETTING).
 const mayAcquireAccessibility = process.argv.includes("--acquire-accessibility");
 const accessibility = selectAccessibilityLayer();
+// Whether this build has ANY route to deliver a key here, decided from the
+// platform and nothing else. It is not authority and does not grant anything:
+// a machine with a route and no --allow rawInput still presses no keys
+// (ADR-0066 clause 2).
+const keys = selectKeyDelivery();
 
 const backend = registry[backendName]({ capture, fixture, visibility });
 
@@ -282,7 +288,7 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
 server = await startServer({
   socketPath,
   backend,
-  launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility },
+  launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility, keys },
   visibility,
 });
 server.on("close", () => terminateOwned(table));
@@ -292,7 +298,7 @@ if (wsPort !== null) {
     port: wsPort,
     host: wsHost,
     backend,
-    launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility },
+    launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility, keys },
     visibility,
   });
   // Belt and braces for a close that arrives without a signal. The signal path

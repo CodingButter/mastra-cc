@@ -61,6 +61,7 @@ import {
   type RefusalClass,
 } from "./audit.js";
 import { ACQUIRE_SETTING, type AccessibilityLayer, type AccessibilityReport } from "./accessibility/index.js";
+import type { KeyDeliverySelection } from "./rawinput/index.js";
 import { normalise } from "./backends/atspi/names.js";
 import {
   OBSERVE_SETTING,
@@ -138,6 +139,15 @@ export interface LaunchContext {
    * to reconfigure the machine it is running on (ADR-0064 clause 3).
    */
   mayAcquireAccessibility?: boolean;
+  /**
+   * Whether THIS BUILD has any route to deliver a key on the platform it is
+   * running on, selected once at boot (rawinput/select.ts). Absent means no
+   * route, and the raw-input capability is reported not-exposed rather than
+   * disabled-by-configuration - "no setting would change this" and "a person
+   * turned it off" are different answers with different remedies
+   * (ADR-0066 clause 2, protocol/schema.json:236).
+   */
+  keys?: KeyDeliverySelection;
 }
 
 const NO_PERMITS: LaunchContext = { permits: new Set(), catalog: CATALOG, table: new OwnershipTable() };
@@ -150,7 +160,15 @@ const NO_PERMITS: LaunchContext = { permits: new Set(), catalog: CATALOG, table:
 // owners and different remedies: this one is answered by restarting the daemon
 // differently, that one by changing a setting (ADR-0019, ADR-0043 clause 4).
 export function holdsEffectAuthority(launch: LaunchContext, effectClass: string): boolean {
-  return (launch.allows ?? new Set()).has(effectClass);
+  // An absent --allow is the EMPTY set, never "everything": this single line is
+  // the whole of off-by-default for every effect class, and for raw input it is
+  // the line standing between "the operator switched this on" and "the agent
+  // can press keys on a machine nobody armed" (ADR-0066 clause 2). It is
+  // written as an explicit deny so the mutation sweep can delete it and watch a
+  // test die, which is the only way a default nobody can see stays true.
+  const allows = launch.allows ?? new Set<string>();
+  if (allows.has(effectClass) !== true) return false;
+  return true;
 }
 
 // A capability the user's configuration turns off is refused BEFORE the call,
@@ -394,6 +412,16 @@ export function capabilityStateFor(
   // which is a question about a running application rather than about this
   // one, so they are reported on their own terms below.
   if (capability === "launch" && findRecipe(application, launch.catalog) === undefined) {
+    return { capability, availability: "not-exposed" };
+  }
+  // Raw input's reach question, asked in the same breath as launch's for the
+  // same reason: this is what the daemon can do AT ALL here, before any
+  // question of permission. A build with no key route on this platform reports
+  // not-exposed, and names no setting, because none would help (ADR-0066
+  // clause 2). Note the ORDER against permission below - reach first means an
+  // unarmed session on an unsupported platform is told the true reason rather
+  // than sent to add a flag that would still deliver nothing.
+  if (capability === "rawInput" && launch.keys === undefined) {
     return { capability, availability: "not-exposed" };
   }
   // Observe is the grants file's, and it is the one capability whose session
