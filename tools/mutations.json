@@ -888,5 +888,12 @@
     "find": "`submitElement` sends the form",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-prose-names-real-verbs.test.ts"
+  },
+  {
+    "name": "running-state-escapes-the-observe-grant",
+    "file": "daemon/src/server.ts",
+    "find": "  if (!isVisible(launch.visibility ?? new Set(), application)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
   }
 ]

@@ -315,11 +315,16 @@ describe("the application listing", () => {
     // InstalledApplication.diagnostic). Demanding the key be present would
     // force this daemon to invent a diagnostic for those rows, which is the
     // opposite of the rule the assertion is protecting.
-    const allowed = ["capabilities", "diagnostic", "launchable", "name"];
+    // running joined the set at schema 1.7.0 (ADR-0063) and is a fact ABOUT
+    // the application rather than from inside it: that it is answering on the
+    // bus at all, which is the same class of statement as "it exists".
+    // runningUnknownBy is optional for the same reason diagnostic is - it names
+    // a setting only where one would change the answer.
+    const allowed = ["capabilities", "diagnostic", "launchable", "name", "running", "runningUnknownBy"];
     for (const application of applications) {
       for (const key of Object.keys(application)) expect(allowed).toContain(key);
-      // The load-bearing three are never optional.
-      expect(Object.keys(application)).toEqual(expect.arrayContaining(["capabilities", "launchable", "name"]));
+      // The load-bearing four are never optional.
+      expect(Object.keys(application)).toEqual(expect.arrayContaining(["capabilities", "launchable", "name", "running"]));
     }
   });
 

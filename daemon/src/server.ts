@@ -27,6 +27,8 @@ import {
 } from "@mastra-cc/protocol-types";
 import {
   type Backend,
+  type RunningCensus,
+  type RunningState,
   type BackendChange,
   type BackendSubscription,
   AttestationFailedError,
@@ -43,6 +45,7 @@ import {
   UnwatchableElementError,
   WatchUnsupportedError,
   WriteNotObservedError,
+  runningStateOf,
 } from "./backend.js";
 import {
   FAILED,
@@ -381,6 +384,36 @@ function sessionSettingFor(capability: CapabilityName): string {
   return capability === "launch" ? "the session flag --permit <application>" : `the session flag --allow ${capability}`;
 }
 
+// WHETHER ONE APPLICATION IS ANSWERING, decided here and not in the backend
+// (ADR-0063).
+//
+// The grant is checked FIRST and short-circuits the census entirely. That
+// order is the whole point: a session with no observe grant for an application
+// is not permitted to know, and reporting the census's answer to it would leak
+// the desk through a field that is not gated. Reporting "not-observable"
+// instead would be worse - a false statement about the desktop manufactured
+// out of a fact about permission - so the answer is cannot-tell, naming the
+// grants file, which genuinely is the setting a person would change to be told.
+//
+// isVisible is the same reader the observe capability uses six lines up, on the
+// same deny-by-default fallback, so the field and the capability beside it can
+// never disagree about what this session may see.
+function runningFieldsFor(
+  launch: LaunchContext,
+  census: RunningCensus,
+  application: string,
+): { running: RunningState; runningUnknownBy?: string } {
+  if (!isVisible(launch.visibility ?? new Set(), application)) {
+    return { running: "cannot-tell", runningUnknownBy: OBSERVE_SETTING };
+  }
+  // A cannot-tell from the census is a DIFFERENT ignorance: this session may
+  // look, and the route that answered has no view of that name. No setting
+  // changes that, so none is named - offering the grants file here would send
+  // a person to edit a file that cannot help. The bare cannot-tell is the
+  // honest answer, and the schema says so.
+  return { running: runningStateOf(census, normalise(application)) };
+}
+
 // The listing (ADR-0042). Existence and permission are readable; nothing from
 // inside an application is. The backend answers WHAT EXISTS and this function
 // answers WHAT MAY BE DONE - the second half from the same tables the gates
@@ -413,6 +446,14 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
   for (const key of Object.keys(launch.catalog)) {
     if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });
   }
+  // WHAT IS ANSWERING (ADR-0063), asked once for the whole listing rather than
+  // once per application.
+  //
+  // A route that cannot see a name says so IN the census - an empty horizon
+  // makes every entry cannot-tell - so there is nothing to catch here. A throw
+  // means the instrument itself failed, and it travels like any other backend
+  // failure rather than being flattened into "nothing is running".
+  const census = await backend.runningApplications();
   return {
     applications: [...byName.values()]
       .sort((left, right) => left.name.localeCompare(right.name))
@@ -422,6 +463,7 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
         // A statement about this daemon's own recipes, never about permission:
         // an application can be installed and honestly not launchable.
         launchable: findRecipe(entry.name, launch.catalog) !== undefined,
+        ...runningFieldsFor(launch, census, entry.name),
         ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
       })),
   };
