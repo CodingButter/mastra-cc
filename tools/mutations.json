@@ -825,6 +825,14 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
+    "name": "b8-forgets-the-errand-harness-is-exempt",
+    "file": "tools/pins/b8.mjs",
+    "find": "\"infra/webtop/errands/run-errands.sh\"",
+    "replace": "",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
     "name": "instance-redials-after-close",
     "file": "packages/desktop/src/mastra.ts",
     "find": "    this.#closed = true;",
