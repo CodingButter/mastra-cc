@@ -27,13 +27,44 @@ DEMO_SOCKET=/config/.XDG/mastra-cc/desk-demo.sock
 # What this desk lets the agent do, stated in one place so a viewer can read the
 # demo's authority off the screen rather than guessing it. Everything absent from
 # these lists is refused by the daemon, and a refusal is part of the demo.
-PERMITS=(org.kde.kate org.kde.dolphin org.kde.konsole chromium firefox)
-GRANTS=(kate dolphin konsole chromium firefox plasmashell)
+#
+# By default this is EVERY application the desktop actually has, derived from the
+# machine's own freedesktop entries rather than a list someone typed. That is a
+# deliberate demo posture, not a doctrine change: the daemon still denies by
+# default and still has no wildcard: each name below is stated to it one at a
+# time, and a name the machine does not have is a name the agent cannot use. An
+# operator who wants the narrow version sets DESK_DEMO_APPS to a space-separated
+# list and gets exactly that.
+#
+# Two names per entry: the identifier the desktop file is called by, and its last
+# dot-segment, which is usually what the application answers to on the
+# accessibility bus. plasmashell is added by hand because the desktop shell
+# itself ships no launcher entry and is the thing an agent looks at first.
+mapfile -t ENTRY_NAMES < <(
+  if test -n "${DESK_DEMO_APPS:-}"; then
+    printf '%s\n' $DESK_DEMO_APPS
+  else
+    container_exec bash -lc \
+      'ls /usr/share/applications/*.desktop 2>/dev/null | xargs -n1 basename | sed "s/\.desktop$//"'
+  fi
+)
+PERMITS=()
+GRANTS=(plasmashell)
+for entry in "${ENTRY_NAMES[@]}"; do
+  PERMITS+=("$entry")
+  GRANTS+=("$entry")
+  short="${entry##*.}"
+  if test "$short" != "$entry"; then
+    PERMITS+=("$short")
+    GRANTS+=("$short")
+  fi
+done
 # Effect classes this session may perform. rawInput is DELIBERATELY absent: it is
 # off unless a person turns it on, and a demo that armed it by default would be
 # demonstrating the opposite of ADR-0046. Add --allow rawInput here on purpose.
 ALLOWS=(edit activate submit)
 
+echo "== authority: ${#ENTRY_NAMES[@]} application(s), effects: ${ALLOWS[*]} =="
 echo "== building the daemon =="
 (cd "$ROOT" && pnpm --filter @mastra-cc/daemon build >/dev/null)
 
