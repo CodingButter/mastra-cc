@@ -89,22 +89,32 @@ The chord list will be found wanting — the first real errand that needs a chor
 not have will say so. That is the intended failure: a missing name is a refusal that
 names the vocabulary, which is a bug report with a fix that fits in one line of schema.
 
-## Amendment, 2026-09-01: no platform in this build delivers a chord
+## Amendment, 2026-09-01: retracted, and the precondition a chord really has
 
-The route this record was written against was measured on a printable keysym and assumed to carry the
-rest of the vocabulary. It does not. On a live KDE desktop the accessibility device controller accepts
-`Enter`, `Backspace`, `Escape`, `Delete`, `F2`, every arrow and the `Control+` chords and delivers none
-of them, returning success for each — proven against a control keystroke delivered by a different
-mechanism to the same window in the same second
-(`docs/proofs/04-a-key-addressed-to-one-element.md`).
+An earlier amendment in this record said no platform in this build delivers a chord, and that the
+accessibility device controller accepted every named chord and delivered none. **That is withdrawn.
+It was false, and both of its supports were bugs of ours.** The harness that produced it never put
+focus on a document — it typed into an editor welcome screen, whose search box accepts a word and
+gives it back — and the daemon's synth-type constant was `1`, which is `RELEASE`, where `SYM` is
+`3`. The daemon was emitting the release of a key nobody had pressed, and the interface answered
+success every time.
 
-So `selectKeyDelivery` returns no route on any platform and the capability reports `not-exposed`. That
-is this record's clause 5 taken seriously rather than abandoned: the emission's own reply was never
-evidence, and here the reply was success while nothing happened. Reporting the capability as available
-would have made the daemon the source of the false belief; reporting it as
-`disabled-by-configuration` would have sent an operator to add a flag that cannot help.
+What is true, and measured on a live KDE desktop
+(`docs/proofs/04-a-key-addressed-to-one-element.md`, and the spike transcript beside it):
+
+- The Linux route delivers. `Delete` sent to a named element in a text editor removed exactly one
+  character, confirmed by a second connection holding no raw-input authority.
+- **A key follows the display server's focus, not the accessibility layer's.** With another window
+  in front, the element cannot even take accessibility focus, the key vanishes, and the emission
+  still returns success. Grabbing focus on the target's own window first does not change that.
+
+So the capability is real and conditional: a chord addressed to an element lands when that
+element's window is the front one. This daemon does not raise windows on an agent's behalf, and
+this record does not ask it to — that would be focus theft dressed as a keystroke, and ADR-0044
+settled that question in the other direction. The clause that carries the weight is clause 5: the
+caller reads the desk back, so a chord that went nowhere is visible as a chord that went nowhere,
+whatever the bus said.
 
 Everything else in this record stands — the closed vocabulary, the before-call enforcement, the
-separate attribution, the read-back-afterwards rule, and the prohibition on reaching a key from a
-refused semantic verb. A delivering route arrives with its own measurement, its own containment entry
-in pin B8, and a decision about the mechanism it needs.
+separate attribution, and the prohibition on reaching a key from a refused semantic verb. A second
+platform arrives with its own measurement and its own containment entry in pin B8.

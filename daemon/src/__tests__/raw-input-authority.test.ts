@@ -170,14 +170,9 @@ describe("the shape of the authority", () => {
 
   it("the route is chosen from the platform, never from anything a caller sends", () => {
     // A wire that could pick the route could ask a Linux daemon to answer as a
-    // Mac one. The selector takes a platform and nothing else - and today it
-    // answers the same way for all of them, because the one route that was
-    // measured turned out to accept a key and deliver nothing
-    // (docs/proofs/04-a-key-addressed-to-one-element.md). The authority above
-    // this seam is proven off regardless, which is the point of testing them
-    // apart.
-    for (const platform of ["linux", "darwin", "win32"] as NodeJS.Platform[]) {
-      expect(selectKeyDelivery(platform), platform).toBeUndefined();
-    }
+    // Mac one. The selector takes a platform and nothing else.
+    expect(selectKeyDelivery("linux")).toBeDefined();
+    expect(selectKeyDelivery("darwin")).toBeUndefined();
+    expect(selectKeyDelivery("win32")).toBeUndefined();
   });
 });

@@ -1,19 +1,23 @@
 == GREEN, part 1: this branch, with nobody having armed it ==
 daemon: websocket listening on 0.0.0.0:9979
-(node:2199136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:2274361) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-the-file-as-the-desk-lists-it: {"role":"listitem","name":"notes.txt"}
-the-rename-key: {"route":"present","refusal":"refused by the scope gate: \"sendKeyChord\" is rawInput-class and this session holds no rawInput authority - a key is raw input even when it is addressed to one element, this session was started without the session flag --allow rawInput, and only a session started with it can perform this method"}
-REFUSED FOR WANT OF AUTHORITY, as it must be
+the-document-as-the-editor-confirms-it: {"id":"el-8e49a892a44d","holds":"alpha"}
+the-document-brought-into-view: {"reveal":"the desktop could not be read by this session's backend"}
+the-key: {"route":"present","refusal":"refused by the scope gate: \"sendKeyChord\" is rawInput-class and this session holds no rawInput authority - a key is raw input even when it is addressed to one element, this session was started without the session flag --allow rawInput, and only a session started with it can perform this method"}
+the-document-read-back-by-another-connection: {"holds":"alpha"}
+REFUSED FOR WANT OF AUTHORITY, and the document is untouched
 the directory afterwards:
-notes.txt
-== GREEN, part 2: this branch, armed - and refusing for a different reason ==
+the file on disk still reads: alpha
+== GREEN, part 2: this branch, armed - and the errand finally finishes ==
 daemon: websocket listening on 0.0.0.0:9979
-(node:2199648) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:2275070) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-the-file-as-the-desk-lists-it: {"role":"listitem","name":"notes.txt"}
-the-rename-key: {"route":"present","refusal":"refused before the call: \"sendKeyChord\" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that"}
-the-file-manager-afterwards: {"still_shows_old_name":true,"shows_new_name":false}
-REFUSED FOR WANT OF A ROUTE, as it must be
+the-document-as-the-editor-confirms-it: {"id":"el-ffc07ac22fa4","holds":"alpha"}
+the-document-brought-into-view: {"reveal":"the desktop could not be read by this session's backend"}
+the-key: {"route":"present","element":{"id":"el-ffc07ac22fa4","role":"text","name":"Untitled","states":["enabled","focused","visible"],"content":{"kind":"text","value":"lpha"},"actions":[],"operations":[{"operation":"setValue","availability":"not-exposed"},{"operation":"setText","availability":"available"},{"operation":"setCaret","availability":"available"},{"operation":"reveal","availability":"available"}],"diagnostic":{"mastra-cc/visibility-route":"accessibility-bus"}}}
+the-document-read-back-by-another-connection: {"holds":"lpha"}
+THE KEY WAS DELIVERED, AND THE DESK SHOWS IT
+the window the display server called active: WM_NAME(STRING) = "Untitled *"
 the directory afterwards, which is the verdict:
-notes.txt
+the file on disk still reads: alpha

@@ -157,32 +157,32 @@ test("b5: a dial hand-rolled inside a proof harness under infra/ is caught", () 
   expect(r.output).toContain("infra/webtop/harness.mjs");
 });
 
-test("b8: with nothing delivering a key, the ban is total and says so", () => {
-  // ADR-0046 struck the outright ban and re-specified this pin as containment.
-  // The class exists on the wire (ADR-0067) and NOTHING in the product delivers
-  // a key: the interface the route was written against accepts Enter and every
-  // arrow and delivers none of them, so the emitting file was withdrawn
-  // (docs/proofs/04-a-key-addressed-to-one-element.md). An empty home is
-  // therefore the strictest reading of this pin rather than an unfinished one,
-  // and the report has to say which state it is in - a line identical either way
-  // is the shape of a gate that cannot fail.
+test("b8: the raw-input class it contains is stated, not assumed", () => {
+  // ADR-0046 struck the outright ban and re-specified this pin as containment:
+  // the tool names appear ONLY inside the raw-input class implementation. The
+  // class now EXISTS (ADR-0067), so the pin has to name where it lives - a
+  // report identical whether containment was implemented or forgotten is the
+  // shape of a gate that cannot fail. This assertion is against the real root,
+  // so emptying the set reds it rather than merely changing a temp tree.
   const r = runPin("b8");
   expect(r.status).toBe(0);
   expect(r.output).toContain("outside the raw-input class");
-  expect(r.output).toContain("nothing delivers a key in this build");
+  expect(r.output).toContain("daemon/src/backends/atspi/rawinput");
+  expect(r.output).not.toContain("no raw-input class exists yet");
 });
 
-test("b8: no path is exempt while no route delivers", () => {
-  // The pair that used to prove containment, now proving its absence: the same
-  // file content is illegal at the withdrawn class's old path AND one directory
-  // up. When a delivering route is written, the first half of this goes green
-  // by listing its directory - in that diff, deliberately visible.
-  for (const path of ["daemon/src/backends/atspi/rawinput/xtest.ts", "daemon/src/backends/atspi/xtest.ts"]) {
-    const root = plant(path, 'const route = "uinput";\n');
-    const r = runPin("b8", ["--root", root]);
-    expect(r.status, path).toBe(1);
-    expect(r.output).toContain(path);
-  }
+test("b8: the class may hold a raw-input tool and its neighbours may not", () => {
+  // The whole of containment in one pair. The same file content is legal at the
+  // class's path and illegal one directory up, which is what distinguishes
+  // "raw input lives in exactly one place" from "raw input is banned" and from
+  // "raw input is allowed" - two rules this pin must never be mistaken for.
+  const inside = plant("daemon/src/backends/atspi/rawinput/xtest.ts", 'const route = "uinput";\n');
+  expect(runPin("b8", ["--root", inside]).status).toBe(0);
+
+  const outside = plant("daemon/src/backends/atspi/xtest.ts", 'const route = "uinput";\n');
+  const r = runPin("b8", ["--root", outside]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("daemon/src/backends/atspi/xtest.ts");
 });
 
 test("b8: the human stand-in exemption is one named file, not a directory", () => {
@@ -194,6 +194,9 @@ test("b8: the human stand-in exemption is one named file, not a directory", () =
   const clean = runPin("b8");
   expect(clean.status).toBe(0);
   expect(clean.output).toContain("infra/webtop/signals/proof.sh");
+  // The delivery measurement, whose one control keystroke is the reason the
+  // product ships no key route at all.
+  expect(clean.output).toContain("04-a-key-addressed-to-one-element/measure-delivery.sh");
 
   const root = plant("infra/webtop/signals/sneak.sh", 'xdotool type "hello"\n');
   const r = runPin("b8", ["--root", root]);
@@ -201,7 +204,7 @@ test("b8: the human stand-in exemption is one named file, not a directory", () =
   expect(r.output).toContain("infra/webtop/signals/sneak.sh");
 });
 
-test("b8: the errand harness is the second named stand-in, and there are exactly two", () => {
+test("b8: the errand harness is a named stand-in, and the list is counted not sampled", () => {
   // Asserted against the REAL root, not a planted one: a test written against a
   // temp tree would stay green with the exemption string deleted, and the
   // mutation on it would report survived rather than killed.
@@ -214,7 +217,7 @@ test("b8: the errand harness is the second named stand-in, and there are exactly
   // catch. Counted from the listed paths rather than parsed out of the sentence,
   // so rewording the success line does not break the assertion.
   const listed = clean.output.slice(clean.output.indexOf("standing in for a human:"));
-  expect(listed.match(/infra\/\S+?\.sh/g)).toHaveLength(2);
+  expect(listed.match(/infra\/\S+?\.sh/g)).toHaveLength(3);
 });
 
 test("b8: a sibling of the errand harness is still refused", () => {

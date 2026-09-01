@@ -1,0 +1,11 @@
+condition 1 - the window the display server calls active:
+WM_NAME(STRING) = "keys.txt "
+  the document before the key: 'alpha'
+  the document after Delete:   'lpha'
+
+condition 2 - another window is given the display server focus:
+WM_NAME(STRING) = "YAD"
+  the accessibility layer says the document is focused: False
+  the document before the key: 'lpha'
+  the document after Delete:   'lpha'
+  and after grabbing focus on the window itself first: 'lpha'

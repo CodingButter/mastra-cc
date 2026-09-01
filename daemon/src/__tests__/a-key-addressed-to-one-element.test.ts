@@ -99,6 +99,30 @@ describe("a key, addressed to one element", () => {
     expect(pressed).toEqual([]);
   });
 
+  it("tells an unarmed session on a routeless machine BOTH things, not the flattering one", async () => {
+    // The shipped configuration, and the combination the two tests above miss
+    // between them. Authority is answered first (ADR-0019), so the sentence
+    // would otherwise stop at "add --allow rawInput" on a machine where that
+    // flag delivers nothing - sending an operator to spend an afternoon on a
+    // file that was never the problem. Both facts, in the order they would have
+    // to be fixed, and the second one says the first is not enough here.
+    const pressed: Pressed[] = [];
+    const answer = await press("Enter", { allows: new Set(), keys: undefined }, backendThat({ pressed }));
+    expect(refusalIn(answer)).toContain("--allow rawInput");
+    expect(refusalIn(answer)).toContain("the flag alone would not be enough");
+    expect(refusalIn(answer)).toContain("no setting on this daemon would change that");
+    expect(pressed).toEqual([]);
+  });
+
+  it("does not add the routeless caveat on a machine that has a route", async () => {
+    // The mirror error: a session that lacks only permission must not be told
+    // the machine cannot type, because the machine can, and the flag is the
+    // whole of what is missing.
+    const answer = await press("Enter", { allows: new Set() }, backendThat({ pressed: [] }));
+    expect(refusalIn(answer)).toContain("--allow rawInput");
+    expect(refusalIn(answer)).not.toContain("the flag alone would not be enough");
+  });
+
   it("refuses a chord this contract never defined, and says which ones it does", async () => {
     // The generated validator refuses this at the wire. The daemon refuses it
     // again, because relying on the client having been generated from a schema
@@ -110,12 +134,6 @@ describe("a key, addressed to one element", () => {
     expect(pressed).toEqual([]);
   });
 
-  // The three tests below hold the SERVER's half of the contract - what it does
-  // once a route exists. No shipped platform provides one today (the test above
-  // says why), so these drive the seam with a route supplied by the test. That
-  // is deliberate: the authority, the closed vocabulary and the focus reporting
-  // were reviewed against a real desk, and they should not have to be reviewed
-  // again on the day a delivering route is written.
   it("delivers the chord it was asked for, to the element it was addressed to", async () => {
     const pressed: Pressed[] = [];
     const answer = await press("Enter", { allows: new Set(["rawInput"]) }, backendThat({ pressed }));
@@ -144,18 +162,12 @@ describe("a key, addressed to one element", () => {
     expect(note ?? "").toContain("the address bar");
   });
 
-  it("claims no delivering route on any platform, because none of them delivered", async () => {
-    // The measurement, kept where a future reader will trip over it: the
-    // accessibility interface this route was built on accepts Enter and every
-    // arrow and delivers none of them, while reporting success
-    // (docs/proofs/04-a-key-addressed-to-one-element.md). Until a route exists
-    // that can carry a chord, saying so is the honest answer - and a platform
-    // added here without a live measurement behind it is the failure this test
-    // is here to make loud.
-    const { selectKeyDelivery } = await import("../rawinput/select.js");
-    for (const platform of ["linux", "darwin", "win32"] as NodeJS.Platform[]) {
-      expect(selectKeyDelivery(platform), platform).toBeUndefined();
-    }
+  it("every chord the wire defines has a keysym, and no route invents one", async () => {
+    // A name the schema added and this route cannot express would reach a desk
+    // as an undefined. The table is a total function over the vocabulary.
+    const { keysymFor } = await import("../backends/atspi/rawinput/keys.js");
+    for (const chord of KEY_CHORD_NAMES) expect(keysymFor(chord), chord).toBeDefined();
+    expect(keysymFor("Control+Alt+Delete")).toBeUndefined();
   });
 
   it("has no edge from a semantic verb into the key route", async () => {

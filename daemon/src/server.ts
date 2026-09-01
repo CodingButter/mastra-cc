@@ -398,6 +398,27 @@ export function unknownChordRefusal(chord: string): string {
 export const NO_KEY_ROUTE_REFUSAL =
   'refused before the call: "sendKeyChord" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
 
+// BOTH FACTS, WHEN BOTH ARE TRUE. An unarmed session on a machine with no key
+// route is refused for want of authority first - ADR-0019's ordering, and the
+// gate that runs before a target is even named - but stopping there would hand
+// an operator a flag that fixes nothing, which is the exact false belief the
+// availability vocabulary exists to prevent (protocol/schema.json:236). Saying
+// only the second would be the mirror error: it would tell a session it lacks a
+// route when it also lacks permission, and the permission is real and would
+// still be missing on a machine that could type.
+//
+// So the sentence carries both, in the order they would have to be fixed, and
+// says plainly that the flag alone is not enough here. The capability report
+// answers the same question with `not-exposed` and names no setting
+// (capabilityFor above), because a report has no room for a sequence.
+export function rawInputScopeRefusal(hasRoute: boolean): string {
+  if (hasRoute) return RAW_INPUT_SCOPE_REFUSAL;
+  return (
+    `${RAW_INPUT_SCOPE_REFUSAL} - and on this machine the flag alone would not be enough: ` +
+    "this build has no way to deliver a key here, and no setting on this daemon would change that"
+  );
+}
+
 // The application listing (schema version 1.4.0, ADR-0042). Observe-class: it
 // reads the fence around an application and never anything behind it. The
 // method is routed; this refusal fires only when the session's backend cannot
@@ -1165,18 +1186,26 @@ function revealElement(params: { id?: unknown }, backend: Backend, launch: Launc
 function sendKeyChord(params: { id?: unknown; chord?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const chord = typeof params.chord === "string" ? params.chord : "";
-  return performEffect("rawInput", "sendKeyChord", RAW_INPUT_SCOPE_REFUSAL, launch, backend, id, async () => {
-    if (launch.keys === undefined) return { refusal: NO_KEY_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
-    if (!(KEY_CHORD_NAMES as readonly string[]).includes(chord)) return { refusal: unknownChordRefusal(chord), refusalClass: "MalformedParameter" as const };
-    const held = await focusBeforeEffect(backend);
-    const answer = await backend.sendKeyChord({ id, chord: chord as KeyChordName });
-    const note = await restoreFocusAfterEffect(backend, held, "keypress");
-    // The seam always answers with an element (it re-reads); the wire type
-    // makes it optional because the refusal shape shares it. Passing an absent
-    // element through unchanged rather than asserting one keeps the focus note
-    // from being the reason a result gets invented.
-    return answer.element === undefined ? answer : { element: withFocusNote(answer.element, note) };
-  });
+  return performEffect(
+    "rawInput",
+    "sendKeyChord",
+    rawInputScopeRefusal(launch.keys !== undefined),
+    launch,
+    backend,
+    id,
+    async () => {
+      if (launch.keys === undefined) return { refusal: NO_KEY_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
+      if (!(KEY_CHORD_NAMES as readonly string[]).includes(chord)) return { refusal: unknownChordRefusal(chord), refusalClass: "MalformedParameter" as const };
+      const held = await focusBeforeEffect(backend);
+      const answer = await backend.sendKeyChord({ id, chord: chord as KeyChordName });
+      const note = await restoreFocusAfterEffect(backend, held, "keypress");
+      // The seam always answers with an element (it re-reads); the wire type
+      // makes it optional because the refusal shape shares it. Passing an absent
+      // element through unchanged rather than asserting one keeps the focus note
+      // from being the reason a result gets invented.
+      return answer.element === undefined ? answer : { element: withFocusNote(answer.element, note) };
+    },
+  );
 }
 
 // The dispatch table names every method the daemon serves, its effect class,

@@ -1,10 +1,11 @@
 daemon: websocket listening on 0.0.0.0:9979
-(node:2198622) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:2273620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-the-file-as-the-desk-lists-it: {"role":"listitem","name":"notes.txt"}
-the-rename-key: {"route":"absent"}
-the-file-manager-afterwards: {"still_shows_old_name":true,"shows_new_name":false}
+the-document-as-the-editor-confirms-it: {"id":"el-28780ab1d45b","holds":"alpha"}
+the-document-brought-into-view: {"reveal":"the desktop could not be read by this session's backend"}
+the-key: {"route":"absent"}
+the-document-read-back-by-another-connection: {"holds":"alpha"}
 PROBLEM: this daemon has no sendKeyChord route
+PROBLEM: the document holds "alpha", expected "lpha"
 the directory afterwards:
-notes.txt
-base daemon exited 1, as it must
+the file on disk still reads: alphabase daemon exited 1, as it must
