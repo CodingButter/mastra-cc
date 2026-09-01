@@ -9,40 +9,56 @@ this file.
 - baseline prose: `48ec9147…`, 65 lines — `baseline/E*.txt`
 - literate prose: `c3584f7b…`, 132 lines — `after/E*.txt`
 
+The literate prose as it ships today hashes `4e868255…` (132 lines, 7,632 bytes),
+not the `c3584f7b…` stamped in those transcript headers. The difference is one
+word, in the sentence of the preamble that reports this exercise's own baseline
+result: *"It completed three of eighteen"* became *"two of eighteen"*, because
+recounting the committed transcripts for this review found the original tally
+wrong. It is a correction to a number the page reports about itself. No line of
+guidance an agent acts on differs between the two hashes, so the transcripts
+remain evidence for the shipped text — but the hashes are not equal and saying
+they were would be the same sin this page exists to name.
+
 ## The number that matters
 
 |  | baseline | literate |
 | --- | --- | --- |
-| errand runs that finished the errand | **1 / 18** | **9 / 18** |
+| errand runs that finished the errand | **2 / 18** | **9 / 18** |
 | runs that never made a single tool call | **6 / 18** | **0 / 18** |
-| runs that claimed success without confirming it | 3 | 0 |
+| runs that claimed success without confirming it | 2 | 0 |
 
 | errand | baseline | literate |
 | --- | --- | --- |
-| E1 save a new shopping list | 0/3 (2 claimed it anyway) | 0/3 |
+| E1 save a new shopping list | 0/3 (1 claimed it anyway) | 0/3 |
 | E2 rename a file in the file manager | 0/3 | 1/3 |
-| E3 fill and submit a contact form | 3/3 | 3/3 |
+| E3 fill and submit a contact form | 2/3 (1 claimed it anyway) | 3/3 |
 | E4 change the wallpaper | 0/3 (**0 tool calls**) | 0/3 (looked hard, 24 steps) |
-| E5 carry a total between two documents | 0/3 (1 claimed it anyway) | 2/3 |
+| E5 carry a total between two documents | 0/3 | 2/3 |
 | E6 close a dirty editor, handle the dialog | 0/3 (**0 tool calls**) | 3/3 |
 
-E3 was already fine and stayed fine — the protocol prose was never the problem
-for a form that is all fields and a submit button.
+E3 was nearly fine already and became reliably fine — the protocol prose was
+never much of a problem for a form that is all fields and a submit button. The
+one baseline miss is the same failure as everywhere else: `baseline/E3-run1.txt`
+focused the *Send message* button twice with `activateElement`, never called
+`submitElement`, and reported *"activated the Send message button"* as though the
+form had gone. All three literate runs called `submitElement`.
 
 ## What actually changed
 
 **The six runs that never looked.** Asked to close an editor, the baseline agent
-replied "Which editor do you want to close?" — three times out of three, without
-calling anything. Asked to change the wallpaper it said it was "unable to change
-desktop settings," again with zero calls, having never once looked at the desk to
-find out. That is the single largest failure in the baseline and it is not a
+asked which editor was meant — three times out of three, without calling
+anything (`baseline/E6-run1.txt` puts it as "Which editor do you want to close?";
+the other two paraphrase). Asked to change the wallpaper it answered that its
+"capabilities are limited to interacting with application UI elements"
+(`baseline/E4-run1.txt`), again with zero calls, having never once looked at the
+desk to find out. That is the single largest failure in the baseline and it is not a
 capability gap: it is an agent guessing about a room it can see. Adding *look
 before you conclude; an unopened application is not an absent one* took that
 column to zero. Every literate run looks.
 
 **E6 is the clean before-and-after.** Baseline: 0 calls, a question back. Literate:
 window, menu, press Close, `role:"dialog"`, press the discard button, then a fresh
-query to confirm the window is gone — 8 calls, three times out of three.
+query to confirm the window is gone — 8, 9 and 8 calls across the three runs.
 
 **The modals were never invisible.** The open question from the baseline was
 whether Kate's confirmation dialogs reach the wire at all. They do, exactly as
@@ -52,8 +68,8 @@ nothing ever asked for them.
 
 **Honesty improved along with success.** Baseline E1 pressed Save, queried the
 dialog once, and then reported "I have opened Kate, written the list, and saved
-it" — with no confirmation and, in fact, no save. Three baseline runs report work
-they did not finish. Zero literate runs do; E1's literate runs say plainly that
+it" — with no confirmation and, in fact, no save. Two baseline runs report work
+they did not finish (`baseline/E1-run3.txt` and `baseline/E3-run1.txt`). Zero literate runs do; E1's literate runs say plainly that
 they could not find the save option. Slower and truthful beats fast and wrong,
 and the fresh-read-after-write rule is what bought it: literate E5 types the
 total and then reads the element back before saying it is done.
@@ -74,14 +90,33 @@ the honest limit of what this desk exposes, and it stays 0/3 in both columns.
 
 ## One correction the transcripts forced on me
 
-The first literate draft made E5 *worse* than baseline: 0/3 against 3/3. The
-transcript said why. At call 3 the agent already held the empty second document —
+A first literate draft regressed E5. Running that draft against the baseline
+prose three times each — an E5-only diagnostic, not the sweep scored above — the
+baseline finished it 3/3 and the draft 0/3. The transcript said why. At call 3 the agent already held the empty second document —
 an unnamed `text` element — and threw it away to go hunting for a window that
 would prove which application owned it. My new prose had pushed identify-the-app-
 first hard enough to step on the existing rule about choosing an element by its
 shape. Elements do not carry their application, many publish no name, and some
 applications never publish a window at all; the proof the agent went looking for
 does not exist. Saying so explicitly is what turned E5 into 2/3.
+
+## A second harness bug, found in review, still standing
+
+E2 asks for `proof.txt` to be renamed to `receipt.txt` in a directory where the
+fixture reset also creates a `receipt.txt`, because E5 needs a receipt to read.
+The destination name is already taken before the errand starts. That makes the
+E2 row untrustworthy in both directions: `after/E2-run2.txt` reports "the
+original `proof.txt` still exists alongside a new file named `receipt.txt`" — a
+sentence about the fixture, not about a half-finished rename — and the single
+scored E2 success was never checked against the filesystem afterwards, because
+the transcripts do not capture the directory's post-state at all.
+
+Both sweeps ran against the identical broken fixture, so it does not favour
+either side, and the headline counts hold with or without E2 (baseline 2/18 and
+after 9/18 become 2/15 and 8/15). But the E2 cell is not evidence and should not
+be read as any. Fixing it means renaming to a name the reset does not create and
+appending a post-run listing of the directory to the transcript, then
+re-collecting E2 on both sides. That is not done here.
 
 ## A harness bug that was pretending to be evidence
 

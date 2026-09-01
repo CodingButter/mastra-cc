@@ -1,12 +1,14 @@
 # What the desk does not teach: the baseline
 
-> **The counts here are superseded by [COMPARISON.md](../after/COMPARISON.md).** These
-> findings were read off a first sweep whose editor fixtures were unreliable: a
-> hard-killed editor reopened into a session chooser, so some runs were scored
-> against a document that was never on screen. The transcripts in this directory
-> were re-collected on the fixed desk, and the comparison scores both prose
-> versions from that same sweep. The *classifications* below — which failures are
-> prose and which are surface — survived re-collection; the tallies did not.
+> **These findings were first read off a sweep that no longer exists.** Its editor
+> fixtures were unreliable — a hard-killed editor reopened into a session chooser,
+> so some runs were scored against a document that was never on screen. The
+> transcripts in this directory were re-collected on the fixed desk, and
+> [COMPARISON.md](../after/COMPARISON.md) scores both prose versions from that same
+> sweep. The scoreboard below has been recounted against the re-collected
+> transcripts and agrees with the comparison. The *classifications* — which failures
+> are prose and which are surface — are the original ones; they survived
+> re-collection unchanged, which is the substance of this document.
 
 Eighteen runs. Six errands, three runs each, `google/gemini-2.5-flash` at
 temperature 0, 24 max steps, driven through the packed `@mastra-cc/desktop`
@@ -26,14 +28,25 @@ which is the only reason the two sets can be compared at all.
 
 | Errand | What was asked | Done | Tool calls |
 |---|---|---|---|
-| E1 | write a shopping list in an editor and save it | 0/3 | 25, 16, 18 |
-| E2 | rename `proof.txt` to `receipt.txt` in the file manager | 0/3 | 13, 13, 7 |
-| E3 | fill in and submit the contact form in the browser | 1/3 | 9, 9, 9 |
+| E1 | write a shopping list in an editor and save it | 0/3 | 13, 15, 12 |
+| E2 | rename `proof.txt` to `receipt.txt` in the file manager | 0/3 | 5, 10, 8 |
+
+> E2's fixture is broken — the reset creates the destination `receipt.txt` before
+> the errand asks for it. See [COMPARISON.md](../after/COMPARISON.md). The row is
+> reported for completeness; it is not evidence in either direction.
+
+| E3 | fill in and submit the contact form in the browser | 2/3 | 10, 9, 10 |
 | E4 | change the wallpaper in system settings | 0/3 | **0, 0, 0** |
-| E5 | copy the receipt total from Kate into Mousepad | 2/3 | 12, 14, 13 |
+| E5 | copy the receipt total from Kate into Mousepad | 0/3 | 10, 12, 13 |
 | E6 | close the editor without saving | 0/3 | **0, 0, 0** |
 
-**3 of 18.** Six of the eighteen runs never touched the desk at all.
+**2 of 18.** Six of the eighteen runs never touched the desk at all.
+
+Every cell above is counted from the transcripts in this directory - the
+re-collected sweep, not the first one. A run is *done* only where the transcript
+shows the errand finished, which is why `E1-run3` and `E3-run1` are misses: both
+reported success, neither had it. Those two are the whole of the baseline's
+unconfirmed-success claims.
 
 The instructions are 65 lines of protocol literacy - catalogue, identity,
 bounded reads, redaction, fresh-read verification, refusals - and they are

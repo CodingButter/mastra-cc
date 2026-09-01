@@ -106,11 +106,11 @@ describe("the Mastra adapter", () => {
     expect(seen.size).toBeGreaterThan(0);
   });
 
-  // The reflection guidance is the case where "plain strings, not skills"
-  // (ADR-0063) is cashed out. Those strings are consumed by a memory system
-  // this package does not depend on, so the proof they cost nothing is that
-  // they arrive through the SAME base entry the guard above keeps peer-free -
-  // read off disk, not routed through the adapter.
+  // The reflection guidance is where "plain strings, not skill objects" is
+  // cashed out. Those strings are consumed by a memory system this package does
+  // not depend on, so the proof they cost nothing is that they arrive through
+  // the SAME base entry the guard above keeps peer-free - read off disk, not
+  // routed through the adapter.
   it("serves the reflection guidance from the peer-free base entry", async () => {
     const base = await import("../index.js");
     for (const name of ["INSTRUCTIONS", "LEARN_INSTRUCTIONS", "CURATE_INSTRUCTIONS"] as const) {

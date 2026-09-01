@@ -78,7 +78,8 @@ export const LEARN_INSTRUCTIONS: string = readFileSync(
  * multiply, the contents of documents linger long after the reason to hold them
  * - and curation is where that is caught. Same shape as LEARN_INSTRUCTIONS: a
  * plain string, no peer dependency, byte-identical to
- * `docs/13-CURATE-INSTRUCTIONS.md`.
+ * `docs/13-CURATE-INSTRUCTIONS.md` - and, like it, shipped unused: no proof
+ * artifact, no decision record, waiting on the same agent.
  */
 export const CURATE_INSTRUCTIONS: string = readFileSync(
   new URL("../instructions/CURATE-INSTRUCTIONS.md", import.meta.url),

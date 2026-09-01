@@ -6,7 +6,7 @@ says, append a line, be certain the append landed, and hear about it when it
 changes. That produced everything from *The shape of a session* down.
 
 Then a model was given six ordinary errands on a real desktop, three runs each,
-with only that half of this page. It completed three of eighteen, and six of the
+with only that half of this page. It completed two of eighteen, and six of the
 runs never called a single tool — asked to close an unsaved editor, it asked the
 human whether there was an unsaved document rather than looking. The page had
 taught the protocol and skipped the desk. *Working on a desktop* is what those
@@ -108,11 +108,13 @@ proof that the desktop changed.
 
 Saving is a different claim, and a fresh read of the text box does not support
 it: the characters are in the editor whether or not anything reached the disk.
-What corroborates a save is the application's own report of its state — the
-window title stops saying `Untitled` and starts naming the file, and an
-unsaved-changes marker disappears from it. Query the `window` after saving and
-read its name. If the title still says the document is untitled or modified, the
-save did not happen, whatever the editor's toolbar did.
+Editors report that state in the window name, which is a thing you can read —
+observed names include `proof.txt * — Kate` and `Untitled Document - Mousepad`,
+one carrying a file name and a modified marker, the other admitting it has
+neither. So query the `window` after saving and read its name. A name that still
+says the document is untitled, or still carries a modified marker, is not a
+saved document, whatever the editor's toolbar did. Report the name you read
+rather than the save you assume.
 
 ## Hearing about changes
 

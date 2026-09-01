@@ -72,6 +72,12 @@ close_the_desk() {
 # that must exist; E5 reads a total that must be in the document. A fixture that
 # drifted between the baseline and the Phase 2 re-run would make the comparison
 # meaningless, so this runs before every single run, not once per sweep.
+# KNOWN DEFECT, disclosed in docs/proofs/errands/after/COMPARISON.md: E5 needs a
+# receipt.txt here, and E2 asks for a rename *to* receipt.txt - so E2's destination
+# already exists when the errand starts. Both sweeps ran against it identically, so
+# it skews neither side, but the E2 result is not evidence. Fixing it means a
+# destination name this reset does not create, plus a post-run listing of $WORK in
+# the transcript, and re-collecting E2 on both sides.
 reset_fixtures() {
   session_exec "mkdir -p $WORK && rm -f $WORK/proof.txt $WORK/receipt.txt $WORK/list.txt && printf 'the desk remembers this line\\n' > $WORK/proof.txt"
   session_exec "cat > $WORK/receipt.txt <<'RECEIPT'

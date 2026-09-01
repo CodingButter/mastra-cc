@@ -7,8 +7,9 @@
 //
 //   node drive-errands.mjs ws://<address>:<port> <errand-id> <run-index>
 //
-// It writes a verbatim transcript to stdout: every tool call, every argument, every
-// result, the model's closing message, and the counts. It asserts NOTHING about the
+// It writes a transcript to stdout: every tool call, every argument, every result
+// (each truncated to 1200 characters - element queries are long and the interesting
+// part is the head), the model's closing message, and the counts. It asserts NOTHING about the
 // outcome - the transcript is evidence, and Phase 1's whole point is that the agent
 // fails in ways worth writing down.
 //
