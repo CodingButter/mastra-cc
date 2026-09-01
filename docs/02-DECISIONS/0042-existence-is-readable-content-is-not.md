@@ -73,6 +73,10 @@ further.
 
 **1. Existence is readable.** The daemon may report that an application is
 installed, and whether it is running, regardless of what the user has permitted.
+*(Amended 2026-09-01 by [ADR-0063](0063-running-is-a-fact-about-the-desk-not-a-permission.md):
+the running half is observe-class, because it is read off the accessibility bus rather than off
+the filesystem. Existence stays readable unconditionally; an ungranted application reports its
+running-state as cannot-tell, naming the grants file.)*
 
 **2. Permission is readable, and it names itself.** For each application the
 daemon reports which capabilities are enabled and which are refused —

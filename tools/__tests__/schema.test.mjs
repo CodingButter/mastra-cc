@@ -53,12 +53,17 @@ describe("protocol/schema.json v1", () => {
 
   it("lets the listing report an application without reporting anything inside it (ADR-0042)", () => {
     const fields = Object.keys(schema.types.installedApplication.fields);
-    expect(fields).toEqual(["name", "capabilities", "launchable", "diagnostic"]);
+    // `running` and `runningUnknownBy` joined in 1.7.0 (ADR-0063). They are
+    // still facts ABOUT the application rather than from inside it: whether it
+    // answers the accessibility layer, and which setting withholds the answer.
+    expect(fields).toEqual(["name", "capabilities", "launchable", "running", "runningUnknownBy", "diagnostic"]);
+    expect(schema.runningStates).toEqual(["answering", "not-answering", "cannot-tell"]);
+    expect(schema.types.installedApplication.fields.running.required).toBe(true);
     expect(schema.types.capability.fields.disabledBy).toBeDefined();
   });
 
   it("requires one provider-neutral observable-content state, including value-free protected redaction (ADR-0056)", () => {
-    expect(schema.version).toBe("1.6.1");
+    expect(schema.version).toBe("1.7.0");
     expect(schema.types.semanticElement.fields.content).toMatchObject({
       type: "observableContent",
       required: true,

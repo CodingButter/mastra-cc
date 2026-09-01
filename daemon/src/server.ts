@@ -27,6 +27,8 @@ import {
 } from "@mastra-cc/protocol-types";
 import {
   type Backend,
+  type RunningCensus,
+  type RunningState,
   type BackendChange,
   type BackendSubscription,
   AttestationFailedError,
@@ -43,6 +45,7 @@ import {
   UnwatchableElementError,
   WatchUnsupportedError,
   WriteNotObservedError,
+  runningStateOf,
 } from "./backend.js";
 import {
   FAILED,
@@ -381,6 +384,76 @@ function sessionSettingFor(capability: CapabilityName): string {
   return capability === "launch" ? "the session flag --permit <application>" : `the session flag --allow ${capability}`;
 }
 
+// WHETHER ONE APPLICATION IS ANSWERING, decided here and not in the backend
+// (ADR-0063).
+//
+// The grant is checked FIRST and short-circuits the census entirely. That
+// order is the whole point: a session with no observe grant for an application
+// is not permitted to know, and reporting the census's answer to it would leak
+// the desk through a field that is not gated. Reporting "not-answering"
+// instead would be worse - a false statement about the desktop manufactured
+// out of a fact about permission - so the answer is cannot-tell, naming the
+// grants file, which genuinely is the setting a person would change to be told.
+//
+// isVisible is the same reader the observe capability uses six lines up, on the
+// same deny-by-default fallback, so the field and the capability beside it can
+// never disagree about what this session may see.
+function runningFieldsFor(
+  launch: LaunchContext,
+  census: RunningCensus,
+  entry: { name: string; diagnostic?: Record<string, string> },
+  claims: ReadonlyMap<string, number>,
+): { running: RunningState; runningUnknownBy?: string } {
+  if (!isVisible(launch.visibility ?? new Set(), entry.name)) {
+    return { running: "cannot-tell", runningUnknownBy: OBSERVE_SETTING };
+  }
+  // A cannot-tell from the census is a DIFFERENT ignorance: this session may
+  // look, and the route that answered has no view of that name. No setting
+  // changes that, so none is named - offering the grants file here would send
+  // a person to edit a file that cannot help. The bare cannot-tell is the
+  // honest answer, and the schema says so.
+  const names = censusNamesOf(entry, launch.catalog);
+  const answering = [...names].filter((name) => census.observable.has(name));
+  // AN AMBIGUOUS MATCH IS NOT A MEASUREMENT. Two entries can offer the same
+  // runtime name (`org.kde.dolphin` and a second packaging of it both answer
+  // to `dolphin`), and the bus publishes one name, not which entry started it.
+  // Naming one of them the running one would be a coin flip reported as a
+  // reading, so both are told the truth: something answers to that name and
+  // this daemon cannot say which of you it is.
+  if (answering.some((name) => (claims.get(name) ?? 0) > 1)) return { running: "cannot-tell" };
+  if (answering.length > 0) return { running: "answering" };
+  // Absence is only a measurement if EVERY name this entry could answer to was
+  // within the horizon. Otherwise the route never had a view of it.
+  const states = [...names].map((name) => runningStateOf(census, name));
+  return { running: states.every((state) => state === "not-answering") ? "not-answering" : "cannot-tell" };
+}
+
+// THE NAMES ONE INSTALLED ENTRY COULD BE ANSWERING TO.
+//
+// The census keys on RUNTIME names - what the desk calls the process - and an
+// entry is named by its desktop-entry id. `org.kde.kate` runs as `kate`, so
+// asking the census under the id alone gets not-answering for an editor
+// sitting open on screen. The catalog's appears-as join already owns this
+// translation for applications this daemon has a recipe for; the majority that
+// have no recipe need the same join from what the ENTRY ITSELF said.
+//
+// Every candidate is read off the entry - the id, its final dot-segment, and
+// the `Name=` the machine put in the file - never guessed from a table of
+// known applications, which is the ACTIONS_BY_ROLE mistake in another costume.
+// The residual is real and recorded: an application whose bus name matches
+// none of these is reported not-answering while open. That is narrower than
+// the alternative of reporting every recipe-less application cannot-tell, and
+// it is why an ambiguous positive degrades rather than picks.
+function censusNamesOf(entry: { name: string; diagnostic?: Record<string, string> }, catalog: LaunchCatalog): Set<string> {
+  const names = new Set<string>([normalise(entry.name), treeNameOf(entry.name, catalog)]);
+  const segment = entry.name.slice(entry.name.lastIndexOf(".") + 1);
+  if (segment.length > 0) names.add(normalise(segment));
+  const displayed = entry.diagnostic?.["mastra-cc/display-name"];
+  if (displayed !== undefined) names.add(normalise(displayed));
+  return names;
+}
+
+
 // The listing (ADR-0042). Existence and permission are readable; nothing from
 // inside an application is. The backend answers WHAT EXISTS and this function
 // answers WHAT MAY BE DONE - the second half from the same tables the gates
@@ -413,6 +486,32 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
   for (const key of Object.keys(launch.catalog)) {
     if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });
   }
+  // WHAT IS ANSWERING (ADR-0063), asked once for the whole listing rather than
+  // once per application.
+  //
+  // A route that cannot see a name says so IN the census - an empty horizon
+  // makes every entry cannot-tell - so there is nothing to catch here. A throw
+  // means the instrument itself failed, and it travels like any other backend
+  // failure rather than being flattened into "nothing is running".
+  let census: RunningCensus;
+  try {
+    census = await backend.runningApplications();
+  } catch {
+    // THE INSTRUMENT FAILED, WHICH IS NOT NEWS ABOUT THE DESKTOP. Before this
+    // field existed the listing was a filesystem scan and answered on a machine
+    // with no accessibility bus at all; letting the census's throw take the
+    // whole listing down would have made "what is installed" depend on whether
+    // the desk is listening. An empty census with an empty horizon says the
+    // honest thing instead - cannot-tell for every entry, no setting named,
+    // because none would help.
+    census = { observable: new Set(), answersFor: new Set() };
+  }
+  // Which runtime names more than one entry could answer to, counted once for
+  // the listing so an ambiguous match can be told from a certain one.
+  const claims = new Map<string, number>();
+  for (const entry of byName.values()) {
+    for (const name of censusNamesOf(entry, launch.catalog)) claims.set(name, (claims.get(name) ?? 0) + 1);
+  }
   return {
     applications: [...byName.values()]
       .sort((left, right) => left.name.localeCompare(right.name))
@@ -422,6 +521,7 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
         // A statement about this daemon's own recipes, never about permission:
         // an application can be installed and honestly not launchable.
         launchable: findRecipe(entry.name, launch.catalog) !== undefined,
+        ...runningFieldsFor(launch, census, entry, claims),
         ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
       })),
   };
@@ -918,14 +1018,6 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
 const POLL_BUDGET_MS = 10_000; // how long a launched app gets to become readable
 const POLL_INTERVAL_MS = 250;
 
-// A backend read that throws here means "no daemon-visible application by
-// that name" - not a refusal. For the CDP backend that is literally true: a
-// browser without its debug port is invisible to this backend, so unreachable
-// and not-running are the same observation. This tolerance covers BOTH call
-// sites (the pre-spawn already-running check and the post-spawn poll, where a
-// per-tick exception is "not ready yet" within the poll budget) - without it,
-// opening the browser while the browser is down would refuse instead of
-// launching.
 // The appears-as join (ADR-0038). A composed profile identity launches a
 // browser that still calls itself "chrome" in the semantic tree, because the
 // browser reports its own product name whichever profile it opened
@@ -935,6 +1027,14 @@ function treeNameOf(name: string, catalog: LaunchCatalog): string {
   return normalise(findRecipe(name, catalog)?.appearsAs ?? name);
 }
 
+// A backend read that throws here means "no daemon-visible application by
+// that name" - not a refusal. For the CDP backend that is literally true: a
+// browser without its debug port is invisible to this backend, so unreachable
+// and not-running are the same observation. This tolerance covers BOTH call
+// sites (the pre-spawn already-running check and the post-spawn poll, where a
+// per-tick exception is "not ready yet" within the poll budget) - without it,
+// opening the browser while the browser is down would refuse instead of
+// launching.
 async function findApplication(backend: Backend, name: string): Promise<SemanticElement | undefined> {
   try {
     const { elements } = await backend.queryElements({ role: "application", name });

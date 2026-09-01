@@ -66,9 +66,13 @@ not arrived after a few tries, then it is absent and that is worth reporting.
 
 ## The shape of a session
 
-1. `listApplications` names what the daemon may talk to. It answers with the
-   configured catalog, not with what is running. Treat it as authority, not as a
-   process list; ask `queryElements` whether an application is actually there.
+1. `listApplications` names what the daemon may talk to, and for each name says
+   whether it is `running`: `answering` means it is answering the desk right
+   now, `not-answering` means it is not, and `cannot-tell` means the daemon is
+   not in a position to say — `runningUnknownBy` names the setting when one
+   would change that. Treat `answering` as "already open, go look at it" and
+   `not-answering` as "you will have to open it". Both are answers; only
+   `cannot-tell` is not, and then `queryElements` is what settles it.
 2. `queryElements` is the one search. Give it a neutral `role` and, when you can,
    a name. The daemon picks the fastest reachable route on its own — a toolkit
    collection query when the application publishes one, an honest bounded walk

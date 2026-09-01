@@ -50,6 +50,7 @@ const VOCABULARIES = [
   { key: "roles", constant: "ROLES", type: "Role", base: "role" },
   { key: "states", constant: "STATES", type: "State", base: "state" },
   { key: "availabilityStates", constant: "AVAILABILITY_STATES", type: "AvailabilityState", base: "availabilityState" },
+  { key: "runningStates", constant: "RUNNING_STATES", type: "RunningState", base: "runningState" },
   { key: "operationNames", constant: "OPERATION_NAMES", type: "OperationName", base: "operationName" },
   { key: "capabilityNames", constant: "CAPABILITY_NAMES", type: "CapabilityName", base: "capabilityName" },
   { key: "priorities", constant: "PRIORITIES", type: "Priority", base: "priority" },

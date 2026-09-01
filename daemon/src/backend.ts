@@ -130,6 +130,48 @@ export class WriteNotObservedError extends Error {}
 // to prevent, so the seam refuses instead of answering emptily.
 export class InventoryUnsupportedError extends Error {}
 
+// WHETHER AN APPLICATION IS ANSWERING RIGHT NOW (issue #53).
+//
+// Three states rather than a boolean, for the reason schema.json:236 gives
+// about availability: "it is not running" and "I have no way to tell you" are
+// different facts, and a caller told the first when the second is true forms a
+// false belief - it launches a second copy of something already open, or reads
+// an empty result as an absent application.
+//
+// This is deliberately NOT the availability vocabulary. Availability answers
+// whether THIS SESSION MAY PERFORM a capability; running-ness is a fact about
+// the desktop that no permission grants and no setting starts. Borrowed shape,
+// separate type.
+export type RunningState = "answering" | "not-answering" | "cannot-tell";
+
+// A backend's census of what is answering. Two fields, because the set of names
+// a route can SEE and the set of names it can SPEAK ABOUT are different sets,
+// and collapsing them is what turns "I never had a view of that" into "it is
+// not running".
+//
+// `answersFor` is the horizon. "every-application" means absence from
+// `observable` is itself a measurement - the route enumerated the whole desktop
+// and this name was not on it. A name set means the route can only speak about
+// those names: the browser route dials one debugging endpoint and has no view
+// of anything else on the machine, so it says so rather than reporting the rest
+// of the desktop closed.
+export interface RunningCensus {
+  // Names answering right now, NFKC-normalised exactly as the inventory and
+  // grants layers normalise them (backends/atspi/names.ts). A third
+  // normalisation rule here would silently disagree with both.
+  readonly observable: ReadonlySet<string>;
+  readonly answersFor: "every-application" | ReadonlySet<string>;
+}
+
+// What a census says about one normalised name. The only reader of the two
+// fields' relationship, so the "absent but out of horizon is cannot-tell" rule
+// is written once rather than at every call site.
+export function runningStateOf(census: RunningCensus, normalisedName: string): RunningState {
+  if (census.observable.has(normalisedName)) return "answering";
+  if (census.answersFor === "every-application") return "not-answering";
+  return census.answersFor.has(normalisedName) ? "not-answering" : "cannot-tell";
+}
+
 // The element does not publish the action that was named. The published list is
 // the only vocabulary a call may use, and a name outside it is refused rather
 // than guessed at - performing "the closest one" is the ACTIONS_BY_ROLE mistake
@@ -313,6 +355,28 @@ export interface Backend {
   // says what may be done with it, from the same tables that enforce it.
   installedApplications(): Promise<InventoryEntry[]>;
 
+  // WHAT IS ANSWERING RIGHT NOW (issue #53). The other half of the sentence
+  // installedApplications() starts: that method reads the machine's catalogue
+  // from outside every application, and this one asks the running desktop which
+  // of those names is present at this instant.
+  //
+  // "Running" means OBSERVABLE, not "a process exists". The daemon does not
+  // read the process table for this, and the distinction is not pedantry: a
+  // process the bus cannot see cannot be acted on, so reporting it running
+  // would promise an agent a desktop it cannot touch - and reading /proc for
+  // arbitrary applications is a wider authority than observing, which issue
+  // #53 explicitly refuses to take.
+  //
+  // A route with no view answers with a HORIZON rather than an empty set
+  // (RunningCensus above), because an empty answer is the claim that nothing is
+  // running, which is the same false belief InventoryUnsupportedError exists to
+  // prevent one question earlier.
+  //
+  // Permission is NOT decided here, exactly as it is not in
+  // installedApplications(): the backend says what is answering, the server
+  // says whom it may tell.
+  runningApplications(): Promise<RunningCensus>;
+
   // WHAT CURRENTLY HOLDS FOCUS, and how to put it back (ADR-0044).
   //
   // Two methods rather than one, because they answer different questions and
@@ -370,6 +434,7 @@ export const BACKEND_METHODS = [
   "unsubscribeElement",
   "applicationOfElement",
   "installedApplications",
+  "runningApplications",
   "focusedElement",
   "restoreFocus",
   "editElement",
