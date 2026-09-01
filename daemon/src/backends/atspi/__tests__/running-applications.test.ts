@@ -47,10 +47,10 @@ describe("the census of what is answering on the bus", () => {
 
     const census = await backend.runningApplications();
 
-    expect(runningStateOf(census, "kate")).toBe("observable");
+    expect(runningStateOf(census, "kate")).toBe("answering");
   });
 
-  it("reports an application absent from a fully enumerated bus as not-observable", async () => {
+  it("reports an application absent from a fully enumerated bus as not-answering", async () => {
     const backend = new AtspiBackend(busHolding(["kate"]), "all");
 
     const census = await backend.runningApplications();
@@ -58,7 +58,7 @@ describe("the census of what is answering on the bus", () => {
     // Absence is a MEASUREMENT here, not a shrug: this route enumerated the
     // whole top level, so a name that is not on it is genuinely not answering.
     expect(census.answersFor).toBe("every-application");
-    expect(runningStateOf(census, "mousepad")).toBe("not-observable");
+    expect(runningStateOf(census, "mousepad")).toBe("not-answering");
   });
 
   it("says cannot-tell for a name the answering route has no view of", () => {
@@ -67,19 +67,19 @@ describe("the census of what is answering on the bus", () => {
     // the machine rather than a claim that the rest of the machine is closed.
     const browser = { observable: new Set(["chromium"]), answersFor: new Set(["chromium"]) } as const;
 
-    expect(runningStateOf(browser, "chromium")).toBe("observable");
+    expect(runningStateOf(browser, "chromium")).toBe("answering");
     expect(runningStateOf(browser, "kate")).toBe("cannot-tell");
   });
 
   it("normalises the names it reports, exactly as the grants and inventory layers do", async () => {
-    // Math-bold KATE. A census that skipped NFKC would answer not-observable
+    // Math-bold KATE. A census that skipped NFKC would answer not-answering
     // for the same application the grants file just permitted by its plain
     // name - two normalisation rules disagreeing inside one daemon.
     const backend = new AtspiBackend(busHolding(["\u{1D40A}\u{1D400}\u{1D413}\u{1D404}"]), "all");
 
     const census = await backend.runningApplications();
 
-    expect(runningStateOf(census, "KATE")).toBe("observable");
+    expect(runningStateOf(census, "KATE")).toBe("answering");
   });
 
   it("counts an application that dies mid-census as not answering, and keeps the rest of the census", async () => {
@@ -87,7 +87,7 @@ describe("the census of what is answering on the bus", () => {
 
     const census = await backend.runningApplications();
 
-    expect(runningStateOf(census, "kate")).toBe("observable");
+    expect(runningStateOf(census, "kate")).toBe("answering");
     expect(census.observable.size).toBe(1);
   });
 

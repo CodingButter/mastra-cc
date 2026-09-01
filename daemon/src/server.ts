@@ -390,7 +390,7 @@ function sessionSettingFor(capability: CapabilityName): string {
 // The grant is checked FIRST and short-circuits the census entirely. That
 // order is the whole point: a session with no observe grant for an application
 // is not permitted to know, and reporting the census's answer to it would leak
-// the desk through a field that is not gated. Reporting "not-observable"
+// the desk through a field that is not gated. Reporting "not-answering"
 // instead would be worse - a false statement about the desktop manufactured
 // out of a fact about permission - so the answer is cannot-tell, naming the
 // grants file, which genuinely is the setting a person would change to be told.
@@ -411,7 +411,12 @@ function runningFieldsFor(
   // changes that, so none is named - offering the grants file here would send
   // a person to edit a file that cannot help. The bare cannot-tell is the
   // honest answer, and the schema says so.
-  return { running: runningStateOf(census, normalise(application)) };
+  // The census keys on RUNTIME names - what the desk calls the process - and an
+  // entry is named by its desktop-entry id. `org.kde.kate` runs as `kate`, so
+  // asking the census under the id gets not-answering for an editor sitting
+  // open on screen. The launch layer already owns this translation through
+  // appearsAs; running-state uses the same one rather than inventing a second.
+  return { running: runningStateOf(census, treeNameOf(application, launch.catalog)) };
 }
 
 // The listing (ADR-0042). Existence and permission are readable; nothing from

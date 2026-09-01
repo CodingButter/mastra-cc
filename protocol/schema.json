@@ -25,7 +25,7 @@
   ],
   "states": ["enabled", "visible", "focused", "selected", "checked", "expanded", "offscreen"],
   "availabilityStates": ["available", "disabled-by-configuration", "not-exposed"],
-  "runningStates": ["observable", "not-observable", "cannot-tell"],
+  "runningStates": ["answering", "not-answering", "cannot-tell"],
   "operationNames": ["setValue", "setText", "setCaret", "reveal"],
   "capabilityNames": ["observe", "launch", "edit", "activate", "submit"],
   "priorities": ["low", "medium", "high"],
@@ -314,7 +314,7 @@
         "running": {
           "type": "runningState",
           "required": true,
-          "description": "Whether this application is answering right now. Deliberately not an availabilityState: availability answers whether this session MAY do something, while this answers what the desktop IS doing, which no permission grants and no setting starts. Always present, because a silently absent field would be read as a no."
+          "description": "Whether this application is answering the machine's accessibility layer right now: answering means it is open and reachable, not-answering means it is not open (or is open and publishes nothing, which for a caller is the same wall), and cannot-tell means the daemon is not in a position to say - which is never a way of saying no. Deliberately not an availabilityState: availability answers whether this session MAY do something, while this answers what the desktop IS doing, which no permission grants and no setting starts. Always present, because a silently absent field would be read as a no."
         },
         "runningUnknownBy": {
           "type": "string",
@@ -784,7 +784,7 @@
       }
     },
     "listApplications": {
-      "description": "List the applications this machine has, each with what may be done with it and the setting behind every refusal. Observation only, and observation of the fence rather than of anything behind it: an application this session may not touch is present here with its capabilities off and their settings named. Withholding its existence would teach a reader it is absent, and a reader who believes that recommends installing what is already installed. How the inventory is discovered belongs to the platform underneath, which is why nothing in this result names a mechanism.",
+      "description": "List the applications this machine has, each with what may be done with it and the setting behind every refusal. Observation only, and observation of the fence rather than of anything behind it: an application this session may not touch is present here with its capabilities off and their settings named. Withholding its existence would teach a reader it is absent, and a reader who believes that recommends installing what is already installed. Each entry also says whether the application is answering the machine's accessibility layer RIGHT NOW, so a caller can tell an application that is merely installed from one that is already open in front of the user - the difference between opening a second copy and walking up to the one that is there. How the inventory is discovered belongs to the platform underneath, which is why nothing in this result names a mechanism.",
       "params": {},
       "returns": {
         "applications": {

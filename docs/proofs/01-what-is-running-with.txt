@@ -1,0 +1,14 @@
+daemon: websocket listening on 0.0.0.0:9978
+(node:1713008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+application-roots-before-anything: []
+the-daemon-before-the-launch: {"found":true,"running":"not-answering","launchable":true}
+tool-call: {"n":1,"name":"listApplications"}
+the-model-before-the-launch: {"word":"NOT-RUNNING","said":"NOT-RUNNING"}
+tool-call: {"n":2,"name":"openApplication"}
+the-launch: "DONE"
+application-roots-after-the-launch: ["kate"]
+the-daemon-after-the-launch: {"found":true,"running":"answering","launchable":true}
+tool-call: {"n":3,"name":"listApplications"}
+the-model-after-the-launch: {"word":"RUNNING","said":"RUNNING"}
+{"proof":"green","application":"org.kde.kate","daemon":"\"not-answering\" -> \"answering\"","model":"NOT-RUNNING -> RUNNING","toolCalls":3}

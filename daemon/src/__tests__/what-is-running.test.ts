@@ -69,18 +69,18 @@ describe("the listing says what is answering, not just what is installed", () =>
   it("a granted application that is on the bus reports observable", async () => {
     const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
 
-    expect(entry(applications, "ordinary").running).toBe("observable");
+    expect(entry(applications, "ordinary").running).toBe("answering");
     // Nothing to act on: the state stands alone, because a setting is only
     // named where changing it would change the answer.
     expect(entry(applications, "ordinary").runningUnknownBy).toBeUndefined();
   });
 
-  it("a granted application absent from a fully enumerated desk reports not-observable", async () => {
+  it("a granted application absent from a fully enumerated desk reports not-answering", async () => {
     const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
 
     // The horizon is what makes this a measurement rather than a shrug: this
     // route enumerated everything, so absence means absent.
-    expect(entry(applications, "hidden-from-menus").running).toBe("not-observable");
+    expect(entry(applications, "hidden-from-menus").running).toBe("not-answering");
     expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
   });
 
@@ -127,13 +127,35 @@ describe("the listing says what is answering, not just what is installed", () =>
     expect(entry(applications, "ordinary").runningUnknownBy).toBeUndefined();
   });
 
+  it("asks the census under the name the desk actually uses, not the desktop-entry id", async () => {
+    // The live proof caught this one: Kate was open on screen and the listing
+    // said not-answering, because the census keys on `kate` and the entry is
+    // named `org.kde.kate`. The launch layer already owns that translation
+    // through appearsAs, and running-state borrows it instead of inventing a
+    // second answer to the same question.
+    const applications = await handleRequest(
+      { type: "request", id: 1, method: "listApplications", params: {} },
+      backendSeeing(wholeDesk("editor-binary")),
+      {
+        permits: new Set(),
+        catalog: { ordinary: { argv: ["sleep", "30"], env: {}, appearsAs: "editor-binary" } },
+        table: new OwnershipTable(),
+        visibility: "all",
+      },
+    ).then((answer) => (answer.result as { applications: InstalledApplication[] }).applications);
+
+    expect(entry(applications, "ordinary").running).toBe("answering");
+    // And a name with no recipe still asks under itself.
+    expect(entry(applications, "hidden-from-menus").running).toBe("not-answering");
+  });
+
   it("every entry carries the field, and the listing is not vacuous", async () => {
     const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
 
     expect(applications.length).toBeGreaterThan(1);
     // Never silently absent: a missing field reads as a no (schema 1.7.0).
     for (const application of applications) {
-      expect(["observable", "not-observable", "cannot-tell"]).toContain(application.running);
+      expect(["answering", "not-answering", "cannot-tell"]).toContain(application.running);
     }
     // And the answers are not all the same one, which is what would make every
     // assertion above pass against a server that ignored the census entirely.
@@ -147,7 +169,7 @@ describe("the listing says what is answering, not just what is installed", () =>
     // and what a caller names, and both go through normalise() before meeting.
     const applications = await listing({ visibility: "all" }, wholeDesk("collide-one"));
 
-    expect(entry(applications, "collide-one").running).toBe("observable");
-    expect(entry(applications, "collide-two").running).toBe("not-observable");
+    expect(entry(applications, "collide-one").running).toBe("answering");
+    expect(entry(applications, "collide-two").running).toBe("not-answering");
   });
 });

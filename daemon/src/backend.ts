@@ -142,7 +142,7 @@ export class InventoryUnsupportedError extends Error {}
 // whether THIS SESSION MAY PERFORM a capability; running-ness is a fact about
 // the desktop that no permission grants and no setting starts. Borrowed shape,
 // separate type.
-export type RunningState = "observable" | "not-observable" | "cannot-tell";
+export type RunningState = "answering" | "not-answering" | "cannot-tell";
 
 // A backend's census of what is answering. Two fields, because the set of names
 // a route can SEE and the set of names it can SPEAK ABOUT are different sets,
@@ -167,9 +167,9 @@ export interface RunningCensus {
 // fields' relationship, so the "absent but out of horizon is cannot-tell" rule
 // is written once rather than at every call site.
 export function runningStateOf(census: RunningCensus, normalisedName: string): RunningState {
-  if (census.observable.has(normalisedName)) return "observable";
-  if (census.answersFor === "every-application") return "not-observable";
-  return census.answersFor.has(normalisedName) ? "not-observable" : "cannot-tell";
+  if (census.observable.has(normalisedName)) return "answering";
+  if (census.answersFor === "every-application") return "not-answering";
+  return census.answersFor.has(normalisedName) ? "not-answering" : "cannot-tell";
 }
 
 // The element does not publish the action that was named. The published list is

@@ -37,7 +37,7 @@ own vocabulary, governed by the grants file and by no new capability.**
 
 Five things this commits to:
 
-1. **A new closed vocabulary, `runningState`: `observable`, `not-observable`,
+1. **A new closed vocabulary, `runningState`: `observable`, `not-answering`,
    `cannot-tell`.** It borrows availability's *shape* — three states, and a named setting on
    the middle-ish case — and not its type. `runningUnknownBy` is present exactly when the
    state is `cannot-tell`, naming the setting a person would change to be told.
@@ -61,7 +61,7 @@ Five things this commits to:
    setting — the grants file. `CONFIGURABLE_CAPABILITIES` is unchanged, and a capabilities
    file naming `observe` is still refused by name. The daemon filters the census by the
    session's grants at the server, not in the backend: filtering inside the backend would
-   report an ungranted application as `not-observable`, which is the false belief again, one
+   report an ungranted application as `not-answering`, which is the false belief again, one
    layer down.
 
 ## The amendment to ADR-0042 clause 1
@@ -89,6 +89,16 @@ person grants it, is what the desk is doing.
 The cost of the amendment: an agent cannot avoid launching a second copy of an application it was
 never permitted to observe. That is the right trade — it can see the application exists, it can
 see that observe is off, and it can see which file would change that.
+
+## The words were chosen twice
+
+The states were first spelled `observable` / `not-observable` / `cannot-tell`, matching issue #53's
+"observable right now". The live proof killed that spelling: with the daemon answering correctly,
+the model still reported UNKNOWN about a closed editor, because *not-observable* reads as **I could
+not observe it** - ignorance - rather than **it is not there**. A three-state design whose whole
+purpose is keeping ignorance separable from a no had merged them again in its own vocabulary. The
+states are `answering` / `not-answering` / `cannot-tell`, and the same model on the same desk then
+said NOT-RUNNING. Evidence: [docs/proofs/01-what-is-running.md](../proofs/01-what-is-running.md).
 
 ## Consequences
 
