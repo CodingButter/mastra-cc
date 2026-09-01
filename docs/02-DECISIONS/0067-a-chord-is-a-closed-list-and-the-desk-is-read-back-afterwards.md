@@ -88,3 +88,23 @@ worth turning on, not who may turn it on.
 The chord list will be found wanting — the first real errand that needs a chord it does
 not have will say so. That is the intended failure: a missing name is a refusal that
 names the vocabulary, which is a bug report with a fix that fits in one line of schema.
+
+## Amendment, 2026-09-01: no platform in this build delivers a chord
+
+The route this record was written against was measured on a printable keysym and assumed to carry the
+rest of the vocabulary. It does not. On a live KDE desktop the accessibility device controller accepts
+`Enter`, `Backspace`, `Escape`, `Delete`, `F2`, every arrow and the `Control+` chords and delivers none
+of them, returning success for each — proven against a control keystroke delivered by a different
+mechanism to the same window in the same second
+(`docs/proofs/04-a-key-addressed-to-one-element.md`).
+
+So `selectKeyDelivery` returns no route on any platform and the capability reports `not-exposed`. That
+is this record's clause 5 taken seriously rather than abandoned: the emission's own reply was never
+evidence, and here the reply was success while nothing happened. Reporting the capability as available
+would have made the daemon the source of the false belief; reporting it as
+`disabled-by-configuration` would have sent an operator to add a flag that cannot help.
+
+Everything else in this record stands — the closed vocabulary, the before-call enforcement, the
+separate attribution, the read-back-afterwards rule, and the prohibition on reaching a key from a
+refused semantic verb. A delivering route arrives with its own measurement, its own containment entry
+in pin B8, and a decision about the mechanism it needs.

@@ -1,0 +1,10 @@
+daemon: websocket listening on 0.0.0.0:9979
+(node:2198622) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+the-file-as-the-desk-lists-it: {"role":"listitem","name":"notes.txt"}
+the-rename-key: {"route":"absent"}
+the-file-manager-afterwards: {"still_shows_old_name":true,"shows_new_name":false}
+PROBLEM: this daemon has no sendKeyChord route
+the directory afterwards:
+notes.txt
+base daemon exited 1, as it must

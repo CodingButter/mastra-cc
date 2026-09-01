@@ -1,0 +1,19 @@
+== GREEN, part 1: this branch, with nobody having armed it ==
+daemon: websocket listening on 0.0.0.0:9979
+(node:2199136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+the-file-as-the-desk-lists-it: {"role":"listitem","name":"notes.txt"}
+the-rename-key: {"route":"present","refusal":"refused by the scope gate: \"sendKeyChord\" is rawInput-class and this session holds no rawInput authority - a key is raw input even when it is addressed to one element, this session was started without the session flag --allow rawInput, and only a session started with it can perform this method"}
+REFUSED FOR WANT OF AUTHORITY, as it must be
+the directory afterwards:
+notes.txt
+== GREEN, part 2: this branch, armed - and refusing for a different reason ==
+daemon: websocket listening on 0.0.0.0:9979
+(node:2199648) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+the-file-as-the-desk-lists-it: {"role":"listitem","name":"notes.txt"}
+the-rename-key: {"route":"present","refusal":"refused before the call: \"sendKeyChord\" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that"}
+the-file-manager-afterwards: {"still_shows_old_name":true,"shows_new_name":false}
+REFUSED FOR WANT OF A ROUTE, as it must be
+the directory afterwards, which is the verdict:
+notes.txt

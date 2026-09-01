@@ -11,21 +11,24 @@ import { collect, fail, rootFromArgs, stripComments } from "./lib.mjs";
 // record re-specifies this pin as "a grep-for-absence becomes a grep-for-
 // containment" (0046:46).
 //
-// CONTAINMENT_HOME is that class's implementation. It was empty until the
-// milestone that built the class, and it is no longer: schema 1.11.0 carries a
-// closed keyChordNames vocabulary, daemon/src/server.ts dispatches sendKeyChord
-// as rawInput-class, and the delivery itself lives at the one path below. This
-// is the visible act ADR-0004 wanted and ADR-0046 preserved - the set grew in a
-// diff, with the class, and not before.
+// CONTAINMENT_HOME is that class's implementation, and it is EMPTY AGAIN - not
+// because the class was never built, but because the route it was built on
+// turned out not to deliver. Schema 1.11.0 carries the closed keyChordNames
+// vocabulary and daemon/src/server.ts dispatches sendKeyChord as rawInput-class;
+// what no longer exists is any code that puts a key on a machine. The
+// accessibility interface the delivery was written against accepts Enter and
+// every arrow and delivers none of them, measured against a control keystroke
+// that moved the same window in the same second
+// (docs/proofs/04-a-key-addressed-to-one-element.md), so the emitting file was
+// withdrawn rather than left in the tree pressing keys into the void.
 //
-// One path, deliberately. The daemon's own key route reaches AT-SPI rather than
-// any of the banned tools, so nothing in the tree needs this exemption TODAY -
-// and that is the point of listing the class rather than the tools it happens
-// to use: the day a second platform's route needs XTest or uinput, it may only
-// be written here, and writing it anywhere else is still a red pin. Listed as
-// an exact directory of the class, so a raw-input helper stashed in a sibling
-// module inherits nothing.
-const CONTAINMENT_HOME = ["daemon/src/backends/atspi/rawinput"];
+// The consequence is that this pin is at its STRICTEST reading right now: with
+// no home, a raw-input tool may appear nowhere in the product at all, which is
+// the exact truth about this build. The day a route is written that can carry a
+// chord - XTest, uinput, or a second platform's own interface - its directory is
+// listed here, in that diff, with the mutation that scores this skip. That is
+// the visible act ADR-0004 wanted and ADR-0046 preserved, and it is owed again.
+const CONTAINMENT_HOME = [];
 
 // Two exemptions, and neither is part of the class. B8's subject is the PRODUCT:
 // the daemon and the package must never synthesise input. A proof harness is the
@@ -66,10 +69,10 @@ if (files.length === 0) fail("pin-b8: no files matched - the pin would pass vacu
 const violations = [];
 for (const file of files) {
   const path = relative(root, file);
-  // This line now has a mutation entry, and this commit is the one that owes it.
-  // While CONTAINMENT_HOME was empty the skip was unscoreable - every path is
-  // outside an empty set either way - so the entry waited for the commit that
-  // gave the class a path, exactly as the note here used to promise.
+  // Unscoreable while the set is empty - every path is outside an empty set
+  // either way - so this skip carries no mutation entry today, and the entry
+  // returns with the delivering route that gives the class a path again. A red
+  // manufactured before then would be scoring a rule with no subject.
   if (CONTAINMENT_HOME.some((home) => path === home || path.startsWith(`${home}/`))) continue;
   if (HUMAN_STAND_INS.includes(path)) continue;
   const source = stripComments(readFileSync(file, "utf8"), file);
@@ -85,8 +88,11 @@ if (violations.length > 0) {
   for (const violation of violations) console.error(violation);
   process.exit(1);
 }
-const home = CONTAINMENT_HOME.length === 0 ? "no raw-input class exists yet" : CONTAINMENT_HOME.join(", ");
-if (CONTAINMENT_HOME.length === 0) fail("pin-b8: the raw-input class exists (ADR-0046, ADR-0067) but no path is contained - containment would be vacuous");
+// No home is a real state and it is said out loud rather than treated as an
+// error: the class is defined on the wire and nothing in the product can put a
+// key on a machine, so the ban is total. The guard that used to insist on a
+// path came from the commit that had one.
+const home = CONTAINMENT_HOME.length === 0 ? "nothing delivers a key in this build" : CONTAINMENT_HOME.join(", ");
 console.log(
   `pin-b8: ok - ${files.length} file(s), no raw input tool outside the raw-input class (${home}), ` +
     `${HUMAN_STAND_INS.length} proof harness(es) standing in for a human: ${HUMAN_STAND_INS.join(", ")}`,

@@ -35,6 +35,7 @@ import {
   IncompleteObservationError,
   UnperformableElementError,
   UnwatchableElementError,
+  EffectUnsupportedError,
   WriteNotObservedError,
 } from "../../backend.js";
 import { desktopEntryDirectories, type InventoryEntry, scanInstalledApplications } from "../../inventory.js";
@@ -50,7 +51,6 @@ import {
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
-import { emitChord } from "./rawinput/keys.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { nameMatches, normalise } from "./names.js";
 import { readPublishedActions } from "./actions.js";
@@ -646,27 +646,28 @@ export class AtspiBackend implements Backend {
   // no state to compare here - an action is a bare verb and the element does
   // not publish what it was supposed to change - so the decline is the only
   // reading there is, and discarding it left this verb with none.
-  // FOCUS, EMIT, READ BACK. The order is the whole design and none of it is
-  // optional: the emission is global (it goes to whatever holds focus), so the
-  // grab is how the chord is aimed, and the re-read - which `performing` does
-  // for every verb here - is the only thing that can say what became of it.
+  // NO KEY LEAVES THIS BACKEND, and that is a measurement rather than a
+  // decision. This route did once focus an element and emit the chord on the
+  // accessibility registry, chosen from a spike that watched a printable keysym
+  // arrive in a real editor. Driving the errand the segment exists for showed
+  // that the same interface accepts Enter, Escape, F2 and every arrow and
+  // delivers none of them, while answering success to all of them - proven
+  // against a control keystroke that moved the same window in the same second
+  // (docs/proofs/04-a-key-addressed-to-one-element.md, ADR-0067).
   //
-  // Putting the PREVIOUS focus back is deliberately not done here. It is the
-  // server's job, above this seam, for the same reason it is above the seam for
-  // a launch (ADR-0044): the thing to restore was read before this call and the
-  // failure to restore it has to be REPORTED to the caller, not swallowed by a
-  // backend that has nowhere to put the sentence.
+  // A backend that emitted anyway would be the worst thing this daemon could
+  // do with a key: it would report a keypress that never happened, to a caller
+  // whose whole reason for asking was that no semantic verb would do it. So the
+  // route says the true thing instead, in the vocabulary the wire has for it -
+  // the machine cannot, and no setting changes that.
   //
-  // Nothing in this method inspects why the caller wanted a key, and no other
-  // method in this file calls it. There is no path from a refused action or a
-  // failed setText into here (ADR-0046 clause 3) - a daemon that retried a
-  // refused semantic verb as a keystroke would escalate its own authority at
-  // precisely the moment it had just been told no.
-  async sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult> {
-    return this.performing(params.id, async (ref) => {
-      await grabFocus(this.channel, ref);
-      await emitChord(this.channel, params.chord);
-    });
+  // Nothing else in this file calls this method, and nothing reaches it from a
+  // refused semantic verb (ADR-0046 clause 3).
+  async sendKeyChord(): Promise<never> {
+    throw new EffectUnsupportedError(
+      "this machine's accessibility interface accepts a key and delivers nothing - measured, not assumed - " +
+        "so this daemon has no way to press one here, and no setting would change that",
+    );
   }
 
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
