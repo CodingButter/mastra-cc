@@ -1,15 +1,15 @@
-(node:1345010) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:1458479) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 errand: E6
 run: 2
 model: google/gemini-2.5-flash
 sampling: {"temperature":0,"maxSteps":24}
-instructions-source: @mastra-cc/desktop INSTRUCTIONS
+instructions-source: /tmp/baseline-instructions.md
 instructions-sha256: 48ec91473f0a134a3acdc9479dd8e35d577f9504d5d85ff29214e4dae42e5dac
 instructions-bytes: 3445
 goal: Close the editor without saving.
 --
 --
-final-message: "Which editor do you want to close? Is there an unsaved document or a dialog open?"
+final-message: "I can help with that, but I need to know which editor you would like to close. Could you please specify the name of the editor?"
 tool-calls: 0
 outcome: the run completed

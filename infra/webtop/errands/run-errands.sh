@@ -59,6 +59,12 @@ test ${#ERRANDS[@]} -gt 0 || ERRANDS=(E1 E2 E3 E4 E5 E6)
 close_the_desk() {
   session_exec "pkill -KILL -x kate; pkill -KILL -x dolphin; pkill -KILL -x mousepad; pkill -KILL -x systemsettings; true" >/dev/null 2>&1 || true
   sleep 2
+  # SIGKILL leaves the editor believing it crashed, and the NEXT launch then opens
+  # a session-chooser dialog instead of the document. That poisons the errand
+  # silently: the fixture process is alive, so a liveness check passes, but the
+  # document the errand talks about is not on screen. Clearing the saved session
+  # is what makes each run start from the same desk as the one before it.
+  session_exec "rm -rf /config/.local/share/kate/sessions /config/.local/share/kate/anonymous.katesession; true" >/dev/null 2>&1 || true
 }
 
 # ---- fixtures ---------------------------------------------------------------
@@ -97,22 +103,44 @@ FORM"
 # stop. Opening the application an errand names is only done where the errand's own
 # sentence presupposes it is already open ("the receipt open in Kate"). E1 and E4
 # name no open application, so nothing is opened for them - the agent launches.
+# A fixture application is started and then CHECKED FOR LIFE, up to three times,
+# and the sweep dies rather than proceeding without it. This is not defensiveness
+# for its own sake: a run whose precondition never existed - "close the editor"
+# with no editor open, "type it into the empty document" with no document - reads
+# in the transcript exactly like the agent failing, and it would be filed as
+# evidence about the instructions. It cost me a prose change I nearly wrote from
+# a dead fixture. A void run must be impossible to mistake for a result.
+start_fixture() { # $1 = process name, $2 = command
+  for attempt in 1 2 3; do
+    session_exec "pgrep -x $1 >/dev/null || ($2 >/dev/null 2>&1 &); sleep 5"
+    session_exec "pgrep -x $1 >/dev/null" >/dev/null 2>&1 && return 0
+  done
+  echo "ERRANDS: RED - the fixture application \"$1\" would not start" >&2
+  exit 1
+}
+
 prepare_desk() { # $1 = errand id
   close_the_desk
   reset_fixtures
   case "$1" in
     E1|E4) : ;;                                     # the agent opens what it needs
-    E2) session_exec "dolphin '$WORK' >/dev/null 2>&1 & sleep 4" ;;
+    E2) start_fixture dolphin "dolphin '$WORK'" ;;
     E3) start_page_browser ;;
-    E5) session_exec "kate '$WORK/receipt.txt' >/dev/null 2>&1 & sleep 4"
-        session_exec "mousepad >/dev/null 2>&1 & sleep 4" ;;
+    E5) start_fixture kate "kate --startanon '$WORK/receipt.txt'"
+        start_fixture mousepad "mousepad" ;;
     E6) # The one errand whose starting state cannot be reached by opening a file:
         # the editor has to hold UNSAVED work, or "close without saving" has no
         # confirmation dialog to recognise and the errand tests nothing. This is
         # the human stand-in doing exactly what a person did before walking away.
-        session_exec "kate '$WORK/proof.txt' >/dev/null 2>&1 & sleep 5"
-        session_exec "xdotool search --name 'proof.txt' | tail -1 | xargs -I{} xdotool windowactivate --sync {}; sleep 1; xdotool type --delay 40 ' an unsaved thought'"
-        sleep 2 ;;
+        start_fixture kate "kate --startanon '$WORK/proof.txt'"
+        session_exec "xdotool search --onlyvisible --name 'proof.txt' | tail -1 | xargs -I{} xdotool windowactivate --sync {}; sleep 1; xdotool type --delay 40 ' an unsaved thought'"
+        sleep 2
+        # The unsaved edit is the precondition, so it is verified too: Kate marks a
+        # modified document with a trailing asterisk in the window title. Without
+        # the asterisk there is no confirmation dialog to close, and E6 would be
+        # asking about something that is not there.
+        session_exec "xdotool search --onlyvisible --name 'proof.txt \\*' >/dev/null" >/dev/null 2>&1 ||
+          { echo "ERRANDS: RED - the E6 editor never became dirty, so there is nothing to confirm" >&2; exit 1; } ;;
   esac
 }
 

@@ -1,5 +1,13 @@
 # What the desk does not teach: the baseline
 
+> **The counts here are superseded by [COMPARISON.md](../COMPARISON.md).** These
+> findings were read off a first sweep whose editor fixtures were unreliable: a
+> hard-killed editor reopened into a session chooser, so some runs were scored
+> against a document that was never on screen. The transcripts in this directory
+> were re-collected on the fixed desk, and the comparison scores both prose
+> versions from that same sweep. The *classifications* below — which failures are
+> prose and which are surface — survived re-collection; the tallies did not.
+
 Eighteen runs. Six errands, three runs each, `google/gemini-2.5-flash` at
 temperature 0, 24 max steps, driven through the packed `@mastra-cc/desktop`
 tarball against a real KDE desktop in another namespace.
