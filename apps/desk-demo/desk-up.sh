@@ -63,7 +63,19 @@ wait_for 'AT-SPI accessibility bus' 60 2 container_exec test -S /config/.XDG/at-
 # operator's own machine, before any agent is connected. Nothing here drives
 # the desktop on an agent's behalf, which is the daemon's job and is refused
 # unless configured (see the authority list below).
-session_exec 'for app in kate dolphin konsole galculator chromium firefox mousepad systemsettings yad; do pkill -x "$app" 2>/dev/null || true; done; sleep 1; for app in kate dolphin galculator; do pkill -9 -x "$app" 2>/dev/null || true; done; rm -rf /config/.local/share/kate/anonymous.katesession /config/.config/session /config/.config/ksmserverrc; true' >/dev/null 2>&1 || true
+session_exec 'for app in kate dolphin konsole kcalc chromium firefox mousepad systemsettings yad; do pkill -x "$app" 2>/dev/null || true; done; sleep 1; for app in kate dolphin kcalc; do pkill -9 -x "$app" 2>/dev/null || true; done; rm -rf /config/.local/share/kate/anonymous.katesession /config/.config/session /config/.config/ksmserverrc; true' >/dev/null 2>&1 || true
+
+# A desk people demo on needs the small tools people reach for. The Webtop image
+# ships an editor, a file manager, a terminal and a browser, but no calculator,
+# and "add two and two" is the first thing anyone asks an agent to do at a
+# machine. Installed here rather than baked into the image because this is the
+# DEMO's desk and the harness's image is shared; skipped when already present,
+# so it costs nothing except on a --fresh desk.
+if ! container_exec bash -lc 'command -v kcalc >/dev/null'; then
+  echo "== installing a calculator (kcalc) =="
+  container_exec bash -lc 'apt-get update -qq && apt-get install -y -qq kcalc' >/dev/null 2>&1 ||
+    echo "   could not install kcalc - the desk will simply not have one"
+fi
 
 # What this desk lets the agent do, stated in one place so a viewer can read the
 # demo's authority off the screen rather than guessing it. Everything absent from
@@ -75,18 +87,27 @@ session_exec 'for app in kate dolphin konsole galculator chromium firefox mousep
 # default and still has no wildcard: each name below is stated to it one at a
 # time, and a name the machine does not have is a name the agent cannot use. An
 # operator who wants the narrow version sets DESK_DEMO_APPS to a space-separated
-# list and gets exactly that.
+# list and gets exactly that, or DESK_DEMO_APPS=all for the whole machine.
 #
 # Two names per entry: the identifier the desktop file is called by, and its last
 # dot-segment, which is usually what the application answers to on the
 # accessibility bus. plasmashell is added by hand because the desktop shell
 # itself ships no launcher entry and is the thing an agent looks at first.
 mapfile -t ENTRY_NAMES < <(
-  if test -n "${DESK_DEMO_APPS:-}"; then
-    printf '%s\n' $DESK_DEMO_APPS
-  else
+  # The demo's default is the drawer of things a person actually opens. Every
+  # application on the machine is one DESK_DEMO_APPS=all away, but that posture
+  # costs the agent a 77KB inventory on every turn - a hundred settings modules
+  # it will never open, in front of the six it might - and a demo where each
+  # turn spends twenty thousand tokens reading a catalogue is a demo about
+  # latency. Narrow is not a smaller permission model; it is a shorter list
+  # stated to the same deny-by-default daemon.
+  if test "${DESK_DEMO_APPS:-}" = all; then
     container_exec bash -lc \
       'ls /usr/share/applications/*.desktop 2>/dev/null | xargs -n1 basename | sed "s/\.desktop$//"'
+  elif test -n "${DESK_DEMO_APPS:-}"; then
+    printf '%s\n' $DESK_DEMO_APPS
+  else
+    printf '%s\n' kcalc kate dolphin konsole chromium systemsettings
   fi
 )
 PERMITS=()
