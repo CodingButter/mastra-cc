@@ -35,8 +35,10 @@ export type LaunchCatalog = Readonly<Record<string, LaunchRecipe>>;
 // The one-browser-identity-at-a-time guard (ADR-0038) exists because two
 // browser identities would want the SAME debugging endpoint - it is a
 // statement about that endpoint, not about tree names in general. A recipe
-// contends for it exactly when its argv opens the debugging port; nothing
-// else in the catalog can. This became load-bearing when the catalog stopped
+// contends for it exactly when it says so - the property is declared on the
+// recipe, not inferred from argv, because a defanged catalog replaces argv
+// while keeping every other field and an argv sniff would silently stop
+// recognising the browser there. This became load-bearing when the catalog stopped
 // being four hand-written entries: the machine's own entries routinely put
 // several desktop entries over one binary (libreoffice-writer, -calc, -impress
 // all run `libreoffice`), so they share an appearsAs while sharing nothing
