@@ -223,6 +223,8 @@ Expected modes are `700` for the config and state directories and `600` for both
 | audit destination | unit `--audit` | explicit `audit.jsonl` path |
 | browser profiles | absent | built-in `gmail` identity only |
 
+Since schema 1.7.0, the grants file also decides who is told what is **open**. Every inventory entry carries a three-state `running`, and an application this session may not observe reports `cannot-tell` naming the grants file rather than `not-answering` — a machine's owner withholding observation withholds the running state with it, and no reader is handed a false statement about a desktop it is not allowed to watch ([ADR-0063](02-DECISIONS/0063-running-is-a-fact-about-the-desk-not-a-permission.md)). Nothing new to configure: it is the file that is already there.
+
 The built-in Gmail recipe publishes its tree as `chrome`. Effective observe visibility is therefore exactly `{gmail, chrome}`: a separately running built-in Chrome tree is observable. Launch authority does **not** follow that join and remains exactly `{gmail}`. Every non-Gmail inventory entry reports `defaults.launch` as the setting withholding launch.
 
 The hub and model cannot enumerate or change the permit list, and the model receives no launch tool. The existing `hub --open` command remains a human-invoked diagnostic. Stage 3 adds a separate trusted orchestration seam that delegates one named request to the same daemon gate; it neither lists nor changes authority.

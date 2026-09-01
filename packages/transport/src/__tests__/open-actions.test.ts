@@ -153,6 +153,10 @@ describe("the listing describes the fence, never what is behind it", () => {
       validateInstalledApplication({
         name: "OBS Studio",
         launchable: false,
+        // Withheld observation withholds the running state with it, and says
+        // so: cannot-tell naming the file, never a claim that it is closed.
+        running: "cannot-tell",
+        runningUnknownBy: "grants file (--grants)",
         capabilities: [
           { capability: "observe", availability: "disabled-by-configuration", disabledBy: "capabilities.observe" },
           { capability: "launch", availability: "disabled-by-configuration", disabledBy: "capabilities.launch" },
@@ -171,6 +175,7 @@ describe("the listing describes the fence, never what is behind it", () => {
       validateInstalledApplication({
         name: "Creality Print",
         launchable: false,
+        running: "not-answering",
         capabilities: [{ capability: "observe", availability: "available" }],
       }),
     ).toEqual([]);
@@ -181,15 +186,40 @@ describe("the listing describes the fence, never what is behind it", () => {
     const problems = validateInstalledApplication({
       name: "OBS Studio",
       launchable: true,
+      running: "answering",
       capabilities: [{ capability: "observe", availability: "disabled-by-configuration" }],
     });
     expect(problems).toContain("capability.disabledBy: an availability withheld by configuration must name the setting that withholds it");
+  });
+
+  it("refuses a listing that says nothing about what is open", () => {
+    // Silence is not an answer, and a reader would take an absent field for a
+    // no. Schema 1.7.0 makes running required for exactly that reason.
+    const problems = validateInstalledApplication({
+      name: "OBS Studio",
+      launchable: true,
+      capabilities: [{ capability: "observe", availability: "available" }],
+    });
+    expect(problems).toContain("installedApplication.running: required field is missing");
+  });
+
+  it("refuses a running state outside the three the contract defines", () => {
+    // "maybe" or "true" would each be a new state smuggled past every reader
+    // written against the vocabulary.
+    const problems = validateInstalledApplication({
+      name: "OBS Studio",
+      launchable: true,
+      running: "probably",
+      capabilities: [{ capability: "observe", availability: "available" }],
+    });
+    expect(problems.join(" ")).toContain("running");
   });
 
   it("refuses a capability the contract never defined", () => {
     const problems = validateInstalledApplication({
       name: "OBS Studio",
       launchable: true,
+      running: "answering",
       capabilities: [{ capability: "screenshot", availability: "available" }],
     });
     expect(problems).toContain('capability.capability: "screenshot" is not one of the capabilityName values');
