@@ -1,0 +1,17 @@
+daemon: websocket listening on 0.0.0.0:9979
+daemon ready after .674236044s
+(node:1159718) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+roots-before-the-agent-ran: []
+elements-before-the-agent-ran: 0
+tool-call: {"n":1,"name":"openApplication"}
+tool-call: {"n":2,"name":"queryElements"}
+every-root-now: [{"id":"app-1c573c5ef1a2","name":"kate"}]
+errand: {"app":"org.kde.kate","toolkit":"Qt6","said":"The text editor \"org.kde.kate\" is open. One element I can see is the window with the ID `win-7df230902c12`.","roots":[{"id":"app-1c573c5ef1a2","name":"kate"}],"elementsBefore":0,"elementsNow":500,"grew":true}
+tool-call: {"n":3,"name":"openApplication"}
+tool-call: {"n":4,"name":"queryElements"}
+tool-call: {"n":5,"name":"queryElements"}
+every-root-now: [{"id":"app-1c573c5ef1a2","name":"kate"},{"id":"app-6b0712d04d54","name":"org.xfce.mousepad"}]
+errand: {"app":"org.xfce.mousepad","toolkit":"GTK3","said":"","roots":[{"id":"app-6b0712d04d54","name":"org.xfce.mousepad"}],"elementsBefore":500,"elementsNow":500,"grew":false}
+chromium-measurement: {"launch":"the application was opened but did not become readable within 10000ms - refusing to pretend it is ready","readableRoot":null,"roots":[],"elements":500}
+{"proof":"green","launched":[{"app":"org.kde.kate","toolkit":"Qt6","roots":1,"elements":"0 -> 500"},{"app":"org.xfce.mousepad","toolkit":"GTK3","roots":1,"elements":"500 -> 500"}],"toolCalls":5}
