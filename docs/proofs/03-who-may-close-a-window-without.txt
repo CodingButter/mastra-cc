@@ -1,0 +1,18 @@
+the base daemon rejects the operator restart block outright:
+daemon: the capability configuration at /opt/mastra-cc/restart-proof-capabilities.json has an unknown top-level key "restart" - the file holds "defaults" and "applications", and nothing here turns enforcement itself off
+daemon: websocket listening on 0.0.0.0:9978
+(node:2007561) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+the-new-document: {"pressed":"pressed"}
+the-unsaved-work: {"surface":"el-14a203fa7625","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-00953763fc08","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-efe63cce4a3e","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-3f14deeb3cb0","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-e3ed5be230b2","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-58dff9671acc","wrote":"written","editorSaysModified":true}
+the-restart-against-unsaved-work: {"route":"absent"}
+still-running-after-the-block: "answering"
+a-clean-application: {"opened":"org.kde.dolphin"}
+the-restart-with-nothing-to-lose: {"restarted":false}
+{"proof":"red","mode":"acts","blocked":{"route":"absent"},"survived":"answering","acted":{"restarted":false},"reason":["this daemon has no restartApplication route","a clean application did not come back from a graceful restart: undefined"]}
+base daemon exited 1, as it must
