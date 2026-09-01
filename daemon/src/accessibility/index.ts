@@ -36,7 +36,32 @@ export interface AccessibilityReport {
 // path could ship, and be tested, before anything could act.
 export interface AccessibilityLayer {
   report(): Promise<AccessibilityReport>;
+  /**
+   * Whether THIS BUILD has a way to switch the layer on for the platform it is
+   * running on. Separate from whether the operator permitted it, because the
+   * two refusals are different facts and the wire has always said so
+   * (protocol/schema.json:236): a withheld acquire is disabled-by-configuration
+   * and names the flag, and an acquire this build cannot perform anywhere is
+   * not-exposed, because no setting would change that answer.
+   */
+  readonly acquirable: boolean;
+  /**
+   * Switch the layer on. Called only after both gates passed. It returns
+   * nothing: the state the caller receives is RE-READ afterwards through
+   * report(), because an acquire that reports its own intention is not a
+   * measurement (ADR-0064 clause 6, and the same discipline ADR-0018 put on
+   * every effect).
+   */
+  acquire(): Promise<void>;
 }
+
+// THE SETTING BEHIND ACQUIRE, named here so a refusal can say it. In the shape
+// of OBSERVE_SETTING (capabilities.ts) and for the identical reason: an
+// authority with exactly one setting, scoped to something other than one
+// application, does not belong in the per-application capability list - it
+// would report "may this daemon reconfigure the machine" once per installed
+// application, which is a category error (ADR-0064 clause 4).
+export const ACQUIRE_SETTING = "the accessibility acquire flag (--acquire-accessibility)";
 
 // The answer for a platform this daemon has no adapter for. NEVER "disabled":
 // that would be a claim about a machine whose accessibility layer this build
@@ -51,6 +76,12 @@ export function unsupportedPlatform(platform: string): AccessibilityLayer {
         state: "cannot-tell",
         reason: `this daemon has no accessibility adapter for ${platform}`,
       };
+    },
+    // Not acquirable, and never for a reason an operator could fix by changing
+    // a setting - which is exactly the distinction not-exposed carries.
+    acquirable: false,
+    async acquire() {
+      throw new Error(`this daemon has no accessibility adapter for ${platform}`);
     },
   };
 }

@@ -59,6 +59,7 @@ import {
   type Classified,
   type RefusalClass,
 } from "./audit.js";
+import { ACQUIRE_SETTING, type AccessibilityLayer, type AccessibilityReport } from "./accessibility/index.js";
 import { normalise } from "./backends/atspi/names.js";
 import {
   OBSERVE_SETTING,
@@ -120,6 +121,20 @@ export interface LaunchContext {
    * there is one composed set and not two that could drift.
    */
   visibility?: Visibility;
+  /**
+   * The platform adapter that answers whether this machine can be heard, and
+   * can be asked to switch it on. Selected once at boot from the platform this
+   * daemon runs on, never from anything a caller sends (accessibility/select.ts).
+   * Absent means a daemon assembled without one, which reports cannot-tell.
+   */
+  accessibility?: AccessibilityLayer;
+  /**
+   * Whether the OPERATOR permitted acquiring - composed once at boot from the
+   * launch flag, exactly as permits and allows are, and absent by default. No
+   * request an agent can make sets it: a session cannot grant itself authority
+   * to reconfigure the machine it is running on (ADR-0064 clause 3).
+   */
+  mayAcquireAccessibility?: boolean;
 }
 
 const NO_PERMITS: LaunchContext = { permits: new Set(), catalog: CATALOG, table: new OwnershipTable() };
@@ -453,6 +468,55 @@ function censusNamesOf(entry: { name: string; diagnostic?: Record<string, string
   return names;
 }
 
+
+// CAN THIS MACHINE BE HEARD AT ALL (ADR-0064). Observation of the daemon's own
+// instrument rather than of any desktop behind it: it names no application,
+// answers no element, and needs no grant, because there is nothing here an
+// application published. A daemon assembled without an adapter says so in the
+// only honest way - cannot-tell with a reason - rather than reporting the
+// machine's layer off on the strength of its own incompleteness.
+const NO_ADAPTER: AccessibilityReport = {
+  state: "cannot-tell",
+  reason: "this daemon was assembled without a way to look at the accessibility layer",
+};
+
+async function describeAccessibility(launch: LaunchContext): Promise<{ accessibility: AccessibilityReport }> {
+  const layer = launch.accessibility;
+  return { accessibility: layer === undefined ? NO_ADAPTER : await layer.report() };
+}
+
+// ACQUIRING IT, in the order the two refusals must be asked. The operator's
+// flag first, because a daemon the operator did not arm must not report the
+// platform's shape as its reason - and a machine whose layer this build cannot
+// touch must not be told to go and change a setting that would not help. Both
+// sentences use the wire's standing vocabulary (protocol/schema.json:236,241).
+const ACQUIRE_WITHHELD_REFUSAL =
+  `refused before acting: switching this machine's accessibility layer on is disabled-by-configuration, ` +
+  `withheld by ${ACQUIRE_SETTING} - an operator arms it at startup, and no request can`;
+const ACQUIRE_NOT_EXPOSED_REFUSAL =
+  "refused before acting: switching this machine's accessibility layer on is not-exposed on this platform - " +
+  "this build has no adapter that could, and no setting would change that";
+const ACQUIRE_FAILED_REFUSAL =
+  "refused after acting: this machine's accessibility layer did not accept being switched on";
+
+async function acquireAccessibility(launch: LaunchContext): Promise<Classified<{ accessibility?: AccessibilityReport; refusal?: string }>> {
+  if (launch.mayAcquireAccessibility !== true) {
+    return { refusal: ACQUIRE_WITHHELD_REFUSAL, refusalClass: "DisabledByConfiguration" };
+  }
+  const layer = launch.accessibility;
+  if (layer === undefined || !layer.acquirable) {
+    return { refusal: ACQUIRE_NOT_EXPOSED_REFUSAL, refusalClass: "AccessibilityNotAcquirable" };
+  }
+  try {
+    await layer.acquire();
+  } catch {
+    return { refusal: ACQUIRE_FAILED_REFUSAL, refusalClass: "AccessibilityNotAcquired" };
+  }
+  // RE-READ, never report the intention. The state that goes back is measured
+  // after the attempt, so a write that was accepted and changed nothing is
+  // visible as what it is rather than as success (ADR-0064 clause 6).
+  return { accessibility: await layer.report() };
+}
 
 // The listing (ADR-0042). Existence and permission are readable; nothing from
 // inside an application is. The backend answers WHAT EXISTS and this function
@@ -1013,7 +1077,30 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => setElementCaret((p ?? {}) as { id?: unknown; offset?: unknown }, b, l) },
   revealElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },
   listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
+  describeAccessibility: { effectClass: "observe", enforcement: "at-result", handler: (_p, _b, l) => describeAccessibility(l) },
+  // Its own effect class, not one of the five capability names, because it is
+  // not a capability: it is machine-scoped, and the capability list is
+  // per-application and exhaustive (ADR-0064 clause 4). The class still gates
+  // it before the call, which is what B11 is about.
+  acquireAccessibility: { effectClass: "acquire", enforcement: "before-call", handler: (_p, _b, l) => auditedAcquire(l) },
 };
+
+// The acquire route writes its own record, like every other effect route and
+// unlike the observe ones: a change to the OPERATOR'S MACHINE is the least
+// deniable thing this daemon can do, so it is attributable whether it was
+// performed, refused, or failed. No application and no element - there is
+// neither - which is precisely the case `application: null` was defined for.
+async function auditedAcquire(launch: LaunchContext): Promise<Classified<{ accessibility?: AccessibilityReport; refusal?: string }>> {
+  const answer = await acquireAccessibility(launch);
+  recordAudit({
+    application: undefined,
+    element: [],
+    scope: "acquire",
+    cause: causeOf(undefined),
+    outcome: answer.refusal === undefined ? PERFORMED : refused(answer.refusalClass),
+  });
+  return answer;
+}
 
 const POLL_BUDGET_MS = 10_000; // how long a launched app gets to become readable
 const POLL_INTERVAL_MS = 250;

@@ -24,6 +24,13 @@ export interface StatusRead {
   (property: string): Promise<unknown>;
 }
 
+// The write half, a second seam rather than a flag on the first, so a test can
+// drive a bus that answers reads and refuses writes - which is a real machine
+// (a session where the status object is read-only), not a hypothetical one.
+export interface StatusWrite {
+  (property: string, value: boolean): Promise<void>;
+}
+
 // dbus-native hands a property back either unwrapped or as a [signature,
 // [value]] pair, exactly as the element backend observed live (see nameOf in
 // backends/atspi/index.ts). Both shapes are accepted here for the same reason.
@@ -34,8 +41,18 @@ function booleanOf(raw: unknown): boolean | undefined {
   return undefined;
 }
 
-export function accessibilityLayer(read: StatusRead): AccessibilityLayer {
+export function accessibilityLayer(read: StatusRead, write: StatusWrite = liveStatusWrite()): AccessibilityLayer {
   return {
+    acquirable: true,
+    async acquire(): Promise<void> {
+      // Switch the layer on through the SAME status object the report reads,
+      // so the thing acquired and the thing measured are one object and not
+      // two that could disagree. Nothing is returned and nothing is claimed:
+      // the caller re-reads (ADR-0064 clause 6), and a write that failed
+      // surfaces as a throw the server turns into an honest refusal rather
+      // than a silent success.
+      await write("IsEnabled", true);
+    },
     async report(): Promise<AccessibilityReport> {
       let raw: unknown;
       try {
@@ -81,6 +98,31 @@ export function liveStatusRead(): StatusRead {
         (err, ...results) => {
           if (err) reject(new Error(`accessibility status read failed: ${JSON.stringify(err)}`));
           else resolve(results[0]);
+        },
+      );
+    });
+}
+
+// The live writer, lazy on the same terms as the reader: a daemon that never
+// acquires never connects, and a daemon started without the flag never reaches
+// here at all because the gate runs first (server.ts).
+export function liveStatusWrite(): StatusWrite {
+  let session: ReturnType<typeof dbus.sessionBus> | null = null;
+  return (property, value) =>
+    new Promise((resolve, reject) => {
+      session ??= dbus.sessionBus();
+      session.invoke(
+        {
+          destination: STATUS_SERVICE,
+          path: STATUS_PATH,
+          interface: PROPERTIES,
+          member: "Set",
+          signature: "ssv",
+          body: [STATUS_INTERFACE, property, ["b", value]],
+        },
+        (err) => {
+          if (err) reject(new Error(`accessibility status write failed: ${JSON.stringify(err)}`));
+          else resolve();
         },
       );
     });

@@ -909,5 +909,12 @@
     "find": "    return { observable, answersFor: read ? \"every-application\" : observable };",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/running-applications.test.ts"
+  },
+  {
+    "name": "the-daemon-switches-the-desk-on-without-being-asked",
+    "file": "daemon/src/server.ts",
+    "find": "  if (launch.mayAcquireAccessibility !== true) {\n    return { refusal: ACQUIRE_WITHHELD_REFUSAL, refusalClass: \"DisabledByConfiguration\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
   }
 ]

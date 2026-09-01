@@ -88,6 +88,20 @@ describe("the capability configuration file", () => {
     expect(message).toContain("grants file");
   });
 
+  it("acquire is refused by name - the accessibility layer is a machine, not an application", () => {
+    // Acquiring the machine's accessibility layer is machine-scoped authority,
+    // held by a launch flag the agent cannot reach. A per-application entry for
+    // it would read as though one application could be made audible and another
+    // not, which is a category error about what the setting governs.
+    let message = "";
+    try {
+      loadCapabilitiesFile(file("acquire.json", { defaults: { acquire: false } }));
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain("acquire");
+  });
+
   it("there is no key that turns enforcement off - an unknown top-level key is refused", () => {
     // A permission system with a disable switch is a permission system that
     // lies. The property is that no such key exists, so the test asserts the
