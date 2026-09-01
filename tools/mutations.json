@@ -1003,5 +1003,19 @@
     "find": "  if (hasRoute) return RAW_INPUT_SCOPE_REFUSAL;",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
+  },
+  {
+    "name": "an-empty-fast-answer-is-believed-instead-of-walked",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": " && collected.length > 0",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/collection.test.ts"
+  },
+  {
+    "name": "the-match-rule-goes-back-to-the-invalid-match-type",
+    "file": "daemon/src/backends/atspi/collection.ts",
+    "find": "const MATCH_ALL = 1;",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/collection.test.ts"
   }
 ]
