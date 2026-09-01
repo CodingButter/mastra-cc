@@ -28,6 +28,7 @@ import {
   type ChannelWatch,
   commitDescription,
   mintSubscriptionId,
+  type RunningCensus,
   UnknownSubscriptionError,
   IncompleteObservationError,
   UnperformableElementError,
@@ -48,7 +49,7 @@ import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
-import { nameMatches } from "./names.js";
+import { nameMatches, normalise } from "./names.js";
 import { readPublishedActions } from "./actions.js";
 import { readObservableContent } from "./content.js";
 import { advertisesCollection, matchByRole, roleIsCollectable } from "./collection.js";
@@ -445,6 +446,38 @@ export class AtspiBackend implements Backend {
   // anything inside one.
   async installedApplications(): Promise<InventoryEntry[]> {
     return scanInstalledApplications(desktopEntryDirectories());
+  }
+
+  // WHAT IS ANSWERING RIGHT NOW (issue #53). The bus's own top level, which is
+  // the census AT-SPI keeps by construction: an application appears there when
+  // it registers and disappears when it stops answering. One GetChildren and a
+  // name per child - no subtree is walked, no state inside any application is
+  // read, so this stays as far outside the applications as
+  // installedApplications() is.
+  //
+  // The horizon is "every-application" because this route enumerates the whole
+  // desktop: a name absent from the bus's top level is genuinely not answering,
+  // and saying so is a measurement rather than a shrug.
+  //
+  // VISIBILITY IS NOT APPLIED HERE, and that is deliberate. Filtering by the
+  // grant set would report an ungranted application as not-running, which is
+  // the false belief this three-state answer exists to prevent - the server
+  // turns an ungranted name into cannot-tell before anything reaches a caller
+  // (server.ts, listApplications). The names never leave the daemon.
+  async runningApplications(): Promise<RunningCensus> {
+    const observable = new Set<string>();
+    const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
+    for (const app of apps) {
+      try {
+        observable.add(normalise(await this.nameOf(app)));
+      } catch (error) {
+        // Same rule the walk uses: an off-tape read under replay is ignorance
+        // and must surface, while an application dying mid-census simply is
+        // not answering.
+        if (error instanceof UnrecordedExchangeError) throw error;
+      }
+    }
+    return { observable, answersFor: "every-application" };
   }
 
   // WHAT HOLDS THE FOCUS (ADR-0044).

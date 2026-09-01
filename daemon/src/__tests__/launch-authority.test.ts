@@ -257,6 +257,9 @@ describe("effect authority: every element method is refused before the backend i
     installedApplications: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
+    runningApplications: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
     attestElement: async () => {
       throw new Error("the effect authority gate touched the backend");
     },

@@ -34,6 +34,7 @@ import {
   mintSubscriptionId,
   OperationNotExposedError,
   RecordingNotPerformableError,
+  type RunningCensus,
   TextOffsetOutOfRangeError,
   UnknownSubscriptionError,
   UnperformableElementError,
@@ -43,7 +44,7 @@ import {
 import type { InventoryEntry } from "../../inventory.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
-import { nameMatches } from "../atspi/names.js";
+import { nameMatches, normalise } from "../atspi/names.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
 import { needsProtectedClassification, readObservableContent } from "./content.js";
 import {
@@ -165,6 +166,33 @@ export class CdpBackend implements Backend {
     throw new InventoryUnsupportedError(
       "this session's backend speaks to one browser and cannot enumerate what this machine has installed - it would have to answer an empty list, which would say the machine has nothing",
     );
+  }
+
+  // WHAT IS ANSWERING RIGHT NOW (issue #53), for the one browser this route
+  // dials. It cannot enumerate the machine - installedApplications() above
+  // refuses for that reason - but it can answer the question about its own
+  // browser honestly, and a route that stayed silent about the one thing it
+  // does know would be as unhelpful as one that guessed about the rest.
+  //
+  // So the horizon is exactly that browser's name and nothing else. Every other
+  // application on the machine falls outside it and comes back cannot-tell
+  // rather than not-running: this route has no view of the desktop, and
+  // reporting the desktop closed because a browser could not see it is the
+  // empty-list falsehood ADR-0040 keeps visible instead of faking into parity.
+  //
+  // A browser that does not answer the version exchange leaves BOTH sets empty:
+  // with no reply there is no name to speak about, so the route can say nothing
+  // about anything, which is cannot-tell rather than a claim the browser is
+  // closed.
+  async runningApplications(): Promise<RunningCensus> {
+    let name: string;
+    try {
+      name = normalise(productName(await this.version()));
+    } catch {
+      return { observable: new Set(), answersFor: new Set() };
+    }
+    if (name === "") return { observable: new Set(), answersFor: new Set() };
+    return { observable: new Set([name]), answersFor: new Set([name]) };
   }
 
   // WHAT HOLDS THE FOCUS, on the browser route (ADR-0044).
