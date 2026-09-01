@@ -63,9 +63,11 @@ import { ACQUIRE_SETTING, type AccessibilityLayer, type AccessibilityReport } fr
 import { normalise } from "./backends/atspi/names.js";
 import {
   OBSERVE_SETTING,
+  restartLevelFor,
   withheldBy,
   WITHHOLDS_NOTHING,
   type CapabilityConfiguration,
+  type RestartLevel,
 } from "./capabilities.js";
 import { isVisible, type Visibility } from "./grants.js";
 import { CATALOG, contendsForBrowserEndpoint, type LaunchCatalog } from "./launch/recipes.js";
@@ -246,6 +248,36 @@ export const UNAVAILABLE_REFUSAL =
 
 export const ALREADY_RUNNING_REFUSAL =
   "that application is already running and was not opened by this daemon - launching a second copy is refused; the running copy must be closed first";
+
+// Restart authority's two non-acting levels, both of them
+// disabled-by-configuration with the setting named (schema.json:241). They are
+// deliberately different sentences: "refuse" is a machine whose operator wants
+// nothing restarted, and "ask" is a machine whose operator wants to be the one
+// who decides each time. An agent told the second one and handed the first
+// one's sentence would go looking for permission that the file already says it
+// will never get, and an operator reading "ask" learns which levels exist.
+export function restartRefusal(level: RestartLevel, setting: string): { refusal: string; refusalClass: RefusalClass } {
+  const refusal =
+    level === "ask"
+      ? `refused by configuration: restarting this application is the operator's to authorise, one time at a time - ${setting} is "ask", and the levels that act without asking are "graceful" (close it and let it refuse) and "force" (take it down)`
+      : `refused by configuration: this daemon does not restart applications - ${setting} is "refuse"`;
+  return { refusal, refusalClass: "DisabledByConfiguration" };
+}
+
+/**
+ * The gate the restart verb runs before anything is signalled: it answers
+ * either "here is the level you may act at" or a refusal naming the setting.
+ * A level is only ever ACTING here - the two non-acting ones cannot leave this
+ * function as a level, so no caller downstream has to remember to check.
+ */
+export function restartAuthority(
+  configuration: CapabilityConfiguration,
+  application?: string,
+): { level: "graceful" | "force" } | { refusal: string; refusalClass: RefusalClass } {
+  const { level, setting } = restartLevelFor(configuration, application);
+  if (level === "refuse" || level === "ask") return restartRefusal(level, setting);
+  return { level };
+}
 
 // Two browser identities cannot run at once through this daemon: the browser
 // backend dials ONE debugging endpoint (backends/cdp/channel.ts), so a second
