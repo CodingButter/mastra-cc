@@ -1,6 +1,6 @@
 # What the desk does not teach: the baseline
 
-> **The counts here are superseded by [COMPARISON.md](../COMPARISON.md).** These
+> **The counts here are superseded by [COMPARISON.md](../after/COMPARISON.md).** These
 > findings were read off a first sweep whose editor fixtures were unreliable: a
 > hard-killed editor reopened into a session chooser, so some runs were scored
 > against a document that was never on screen. The transcripts in this directory

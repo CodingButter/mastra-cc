@@ -7,7 +7,7 @@ budget), same fixtures, same day. Thirty-six transcripts, all committed beside
 this file.
 
 - baseline prose: `48ec9147…`, 65 lines — `baseline/E*.txt`
-- literate prose: `c3584f7b…`, 132 lines — `literate/E*.txt`
+- literate prose: `c3584f7b…`, 132 lines — `after/E*.txt`
 
 ## The number that matters
 
