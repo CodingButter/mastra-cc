@@ -682,11 +682,18 @@ export class AtspiBackend implements Backend {
       // that cannot be read for it must not take the key down with it. A throw
       // here would let the weaker of the two signals stop a press, which is the
       // exact thing the paragraph above refuses to let it do.
-      const focused = await this.focusedElement().catch(() => undefined);
-      if (!taken || focused?.id !== params.id) {
+      // `null` is the read that FAILED; `undefined` is the read that succeeded
+      // and found nothing focused. Collapsing them would tell a reader something
+      // was learned when nothing was.
+      const focused = await this.focusedElement().catch(() => null);
+      if (!taken || focused === null || focused?.id !== params.id) {
         doubt =
           "this element was not confirmed to hold the focus when the key was sent" +
-          (focused === undefined ? ", and nothing on the desk claimed it" : `, and ${JSON.stringify(focused.name)} claimed it instead`) +
+          (focused === null
+            ? ", and the desk could not be read to say what did"
+            : focused === undefined
+              ? ", and nothing on the desk claimed it"
+              : `, and ${JSON.stringify(focused.name)} claimed it instead`) +
           ". A key reaches an element only while that element's window is the front one, and this daemon does not " +
           "raise windows. Neither signal is reliable enough to refuse on - both have been observed reading wrong for " +
           "a key that arrived - so the key WAS sent. Compare the element above against what you expected before " +

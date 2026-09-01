@@ -21,7 +21,7 @@ failure in that sweep was a literacy problem. This one was an absence.
 ## Decision
 
 **1. The chord vocabulary is closed, and lives in the schema.**
-`keyChordNames` enumerates twenty-one names (fourteen since the amendment below - a chord this route cannot hold is not a name it may offer). A chord outside the list is refused
+`keyChordNames` enumerates fourteen names (twenty-one as first accepted; seven were withdrawn by the amendment below - a chord this route cannot hold is not a name it may offer). A chord outside the list is refused
 by name, by the generated validator, before any daemon code runs.
 
 Every other closed vocabulary in this contract closes a word *the daemon decides* —
