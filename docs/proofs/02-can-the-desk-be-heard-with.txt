@@ -1,0 +1,11 @@
+IsEnabled after the switch-off: b false b false 
+daemon: websocket listening on 0.0.0.0:9979
+(node:1836687) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+windows-visible-while-deaf: []
+the-daemon-while-deaf: {"route":"present","accessibility":{"state":"disabled"}}
+tool-call: {"n":1,"name":"describeAccessibility"}
+the-model-while-deaf: {"word":"DEAF","said":"DEAF\nI know because the accessibility layer is switched off."}
+the-acquire-attempt: {"route":"present","accessibility":{"state":"enabled"}}
+the-daemon-after-the-acquire: {"route":"present","accessibility":{"state":"enabled"}}
+{"proof":"green","daemon":"\"disabled\" -> \"enabled\"","model":"DEAF","toolCalls":1}
