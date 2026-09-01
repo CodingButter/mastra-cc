@@ -19,6 +19,8 @@ import {
   type OpenApplicationResult,
   type RestartApplicationParams,
   type RestartApplicationResult,
+  type SendKeyChordParams,
+  type SendKeyChordResult,
   type QueryElementsParams,
   type QueryElementsResult,
   type ReadElementContentParams,
@@ -103,6 +105,7 @@ export interface TransportClient {
   describeAccessibility(params?: DescribeAccessibilityParams): Promise<DescribeAccessibilityResult>;
   acquireAccessibility(params?: AcquireAccessibilityParams): Promise<AcquireAccessibilityResult>;
   restartApplication(params: RestartApplicationParams): Promise<RestartApplicationResult>;
+  sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult>;
   /**
    * Register a listener for pushed change events. Returns a function that
    * removes it. Events are delivered as they arrive and are never buffered:
@@ -301,6 +304,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     acquireAccessibility: (params) =>
       call("acquireAccessibility", params ?? {}) as Promise<AcquireAccessibilityResult>,
     restartApplication: (params) => call("restartApplication", params) as Promise<RestartApplicationResult>,
+    sendKeyChord: (params) => call("sendKeyChord", params) as Promise<SendKeyChordResult>,
     onChangeEvent: (listener) => {
       listeners.add(listener);
       return () => void listeners.delete(listener);

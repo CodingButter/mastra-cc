@@ -219,7 +219,7 @@ Named here so nobody re-derives them as new ideas. All four are recorded in the 
 - **App-native integration** — talking to an application's own API instead of its accessibility tree.
 - **Compositor-level access** — Wayland-native protocols beyond what the accessibility layer offers.
 - **Vision** — pixels as a *reasoning* input rather than a last-resort addressed capture.
-- **Raw input synthesis** — explicitly out of scope, not merely deferred (B8).
+- **Raw input synthesis** — *was* explicitly out of scope; as of 2026-09-01 a strictly bounded form is in, and B8 is what bounds it. One named chord from a closed list, addressed to one element, under a capability that is off until an operator passes `--allow rawInput`, never reachable from a refused semantic verb, and contained by B8 to a single directory rather than forbidden everywhere ([ADR-0046](02-DECISIONS/0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md), [ADR-0067](02-DECISIONS/0067-a-chord-is-a-closed-list-and-the-desk-is-read-back-afterwards.md)). Everything else the phrase covers stays out: no pointer, no free-form key stream, no window raising, no coordinate anywhere.
 
 ## 9. Open architectural questions
 

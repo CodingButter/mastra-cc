@@ -30,6 +30,7 @@ import {
   type ChannelWatch,
   commitDescription,
   InventoryUnsupportedError,
+  EffectUnsupportedError,
   MagnitudeOutOfRangeError,
   mintSubscriptionId,
   OperationNotExposedError,
@@ -637,6 +638,20 @@ export class CdpBackend implements Backend {
     const ref = this.nodeRefFor(params.id);
     await revealIn(this.channel, ref);
     return { element: await this.reread(params.id) };
+  }
+
+  // NO KEY ROUTE HERE, and this is a fact about the route rather than a gap
+  // waiting to be filled by Input.dispatchKeyEvent. A page's own key event
+  // reaches that page and stops there, so a caller that pressed Enter through
+  // this backend and Enter through the other would be using one word for two
+  // different machines - and the first time that difference mattered, it would
+  // matter on somebody's unsaved work. `not-exposed` is the honest answer, and
+  // it is the answer the wire has a word for (protocol/schema.json:236).
+  async sendKeyChord(): Promise<never> {
+    throw new EffectUnsupportedError(
+      "this route reads a browser through its debugging protocol and has no way to deliver a key to the machine - " +
+        "no setting on this daemon would change that",
+    );
   }
 
   async unsubscribeElement(subscriptionId: string): Promise<void> {

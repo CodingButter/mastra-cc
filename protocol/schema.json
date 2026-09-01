@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.9.0",
+  "version": "1.12.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -53,12 +53,29 @@
     "setCaret",
     "reveal"
   ],
+  "keyChordNames": [
+    "Enter",
+    "Escape",
+    "Tab",
+    "Backspace",
+    "Delete",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "Home",
+    "End",
+    "PageUp",
+    "PageDown",
+    "F2"
+  ],
   "capabilityNames": [
     "observe",
     "launch",
     "edit",
     "activate",
-    "submit"
+    "submit",
+    "rawInput"
   ],
   "priorities": [
     "low",
@@ -913,6 +930,34 @@
           "type": "string",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the restart setting when configuration withheld it, the level that would act when the operator chose to be asked each time, and what was observed when the application neither closed nor put anything up."
+        }
+      }
+    },
+    "sendKeyChord": {
+      "description": "Deliver one named key chord to one element. This is RAW INPUT, not an operation: the four operations describe what an element is for and are answered by the element itself, while a key is delivered to whatever the machine is pointing at and the element is only how it is aimed. It is therefore its own capability, off unless a person switched it on, and it is never reached by a failed operation retrying - nothing in this daemon falls back to a keystroke. The chord must be one of the names this contract lists; anything else is refused by name rather than attempted. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element the chord is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over."
+        },
+        "chord": {
+          "type": "keyChordName",
+          "required": true,
+          "description": "One of the named chords this contract defines. The list is closed on purpose: a free-form key string is an arbitrary-input surface wearing a chord's clothes, and this class is the most restricted one the contract has."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the chord was delivered; the element as it reads AFTERWARDS, read back from the desktop. It is evidence of what the element became, never a claim that the key did what the caller hoped - the caller compares it against what it expected."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the chord vocabulary when the name is not one of them, and what was observed when the element could not be focused or the machine has no way to deliver a key at all."
         }
       }
     }

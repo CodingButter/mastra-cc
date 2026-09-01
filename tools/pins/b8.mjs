@@ -11,15 +11,21 @@ import { collect, fail, rootFromArgs, stripComments } from "./lib.mjs";
 // record re-specifies this pin as "a grep-for-absence becomes a grep-for-
 // containment" (0046:46).
 //
-// CONTAINMENT_HOME is that class's implementation. It is empty today because
-// the class does not exist yet: no dispatch entry in daemon/src/server.ts
-// carries it, and protocol/schema.json has no raw-input vocabulary. While the
-// set is empty, containment and absence are the same assertion, and this pin
-// behaves exactly as the ban did. The milestone that builds the class adds its
-// path here, in a diff - which is the visible act ADR-0004 wanted and ADR-0046
-// preserved. An empty set is not a hole: it is the honest state of a class
-// nobody has built.
-const CONTAINMENT_HOME = [];
+// CONTAINMENT_HOME is that class's implementation. It was empty until the
+// milestone that built the class, and it is no longer: schema 1.11.0 carries a
+// closed keyChordNames vocabulary, daemon/src/server.ts dispatches sendKeyChord
+// as rawInput-class, and the delivery itself lives at the one path below. This
+// is the visible act ADR-0004 wanted and ADR-0046 preserved - the set grew in a
+// diff, with the class, and not before.
+//
+// One path, deliberately. The daemon's own key route reaches AT-SPI rather than
+// any of the banned tools, so nothing in the tree needs this exemption TODAY -
+// and that is the point of listing the class rather than the tools it happens
+// to use: the day a second platform's route needs XTest or uinput, it may only
+// be written here, and writing it anywhere else is still a red pin. Listed as
+// an exact directory of the class, so a raw-input helper stashed in a sibling
+// module inherits nothing.
+const CONTAINMENT_HOME = ["daemon/src/backends/atspi/rawinput"];
 
 // Two exemptions, and neither is part of the class. B8's subject is the PRODUCT:
 // the daemon and the package must never synthesise input. A proof harness is the
@@ -44,7 +50,19 @@ const CONTAINMENT_HOME = [];
 // as well, so a driver that shelled out would need a third entry. The mutation on
 // this list only proves the exemptions are load-bearing; that they cannot WIDEN
 // into a prefix is the `sneak.sh` case in pins.test.mjs.
-const HUMAN_STAND_INS = ["infra/webtop/signals/proof.sh", "infra/webtop/errands/run-errands.sh"];
+// The third stand-in is the delivery measurement. It presses ONE key the way a
+// person's keyboard presses it, to answer a question the daemon cannot ask about
+// itself: when a key sent through the product's route fails to arrive, is that
+// the route or the desk? That question was asked in anger - a build nearly
+// shipped "this desk takes no key" as a finding, and the control is what proved
+// the route was being aimed at an unfocused element rather than the desk being
+// deaf (docs/proofs/04-a-key-addressed-to-one-element.md). It performs no
+// step of any errand; the daemon's own attempts go through the wire.
+const HUMAN_STAND_INS = [
+  "infra/webtop/signals/proof.sh",
+  "infra/webtop/errands/run-errands.sh",
+  "infra/webtop/04-a-key-addressed-to-one-element/measure-delivery.sh",
+];
 
 const BANNED_TOOL = /\b(xdotool|wmctrl|uinput)\b/;
 
@@ -60,12 +78,10 @@ if (files.length === 0) fail("pin-b8: no files matched - the pin would pass vacu
 const violations = [];
 for (const file of files) {
   const path = relative(root, file);
-  // NO MUTATION ENTRY GUARDS THIS LINE, and that is not an oversight. While
-  // CONTAINMENT_HOME is empty, deleting the skip changes nothing a test could
-  // observe: every path is outside an empty set either way. The guarantee
-  // becomes scoreable in the same commit that gives the class a path, and the
-  // mutation belongs to that commit. A red manufactured before then would be
-  // scoring a rule with no subject.
+  // This line now has a mutation entry, and this commit is the one that owes it.
+  // While CONTAINMENT_HOME was empty the skip was unscoreable - every path is
+  // outside an empty set either way - so the entry waited for the commit that
+  // gave the class a path, exactly as the note here used to promise.
   if (CONTAINMENT_HOME.some((home) => path === home || path.startsWith(`${home}/`))) continue;
   if (HUMAN_STAND_INS.includes(path)) continue;
   const source = stripComments(readFileSync(file, "utf8"), file);
@@ -82,6 +98,7 @@ if (violations.length > 0) {
   process.exit(1);
 }
 const home = CONTAINMENT_HOME.length === 0 ? "no raw-input class exists yet" : CONTAINMENT_HOME.join(", ");
+if (CONTAINMENT_HOME.length === 0) fail("pin-b8: the raw-input class exists (ADR-0046, ADR-0067) but no path is contained - containment would be vacuous");
 console.log(
   `pin-b8: ok - ${files.length} file(s), no raw input tool outside the raw-input class (${home}), ` +
     `${HUMAN_STAND_INS.length} proof harness(es) standing in for a human: ${HUMAN_STAND_INS.join(", ")}`,

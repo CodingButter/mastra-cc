@@ -33,7 +33,7 @@ if (!block) fail("pin-b11: no dispatch table found - the pin would pass vacuousl
 const entries = [];
 for (const match of block[1].matchAll(/(\w+):\s*\{([^\n]*)\}/g)) {
   const [, method, body] = match;
-  const effectClass = body.match(/effectClass:\s*"([a-z]+)"/)?.[1];
+  const effectClass = body.match(/effectClass:\s*"([a-zA-Z]+)"/)?.[1];
   const enforcement = body.match(/enforcement:\s*"([a-z-]+)"/)?.[1];
   if (effectClass !== undefined) entries.push({ method, effectClass, enforcement });
 }
@@ -76,6 +76,11 @@ const REQUIRED = {
   // class because restart authority is four operator-chosen levels, not a
   // capability boolean (ADR-0065 clause 3).
   restartApplication: "restart",
+  // A key, addressed to one element (ADR-0046). Its own class because a
+  // synthesised keystroke is raw input even when it names an element, and the
+  // whole point of ADR-0046 is that it is decided separately from the semantic
+  // verbs rather than folded into one of them.
+  sendKeyChord: "rawInput",
 };
 for (const [method, effectClass] of Object.entries(REQUIRED)) {
   const entry = entries.find((e) => e.method === method);

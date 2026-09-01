@@ -54,6 +54,12 @@ const VOCABULARIES = [
   { key: "accessibilityStates", constant: "ACCESSIBILITY_STATES", type: "AccessibilityState", base: "accessibilityState" },
   { key: "operationNames", constant: "OPERATION_NAMES", type: "OperationName", base: "operationName" },
   { key: "capabilityNames", constant: "CAPABILITY_NAMES", type: "CapabilityName", base: "capabilityName" },
+  // The chord list is closed for a reason the others are not: every vocabulary
+  // above closes a word the DAEMON decides, while this one closes what a
+  // CALLER may send. An open key string would be an arbitrary-input surface
+  // wearing a chord's clothes, so the emitted validator refusing an unlisted
+  // name is part of the containment rather than tidiness (ADR-0046 clause 1).
+  { key: "keyChordNames", constant: "KEY_CHORD_NAMES", type: "KeyChordName", base: "keyChordName" },
   { key: "priorities", constant: "PRIORITIES", type: "Priority", base: "priority" },
   { key: "changeKinds", constant: "CHANGE_KINDS", type: "ChangeKind", base: "changeKind" },
   { key: "attributions", constant: "ATTRIBUTIONS", type: "Attribution", base: "attribution" },

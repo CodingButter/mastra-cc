@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.9.0
+// Mastra CC protocol v1.12.0
 
-export const PROTOCOL_VERSION = "1.9.0";
-export const SCHEMA_DIGEST = "6bed5455c6b65464cd2f2e6473e2030c80a0e89ea24be4fa9c9f92919a185f05";
+export const PROTOCOL_VERSION = "1.12.0";
+export const SCHEMA_DIGEST = "431cad1543a7eeded6ceb724aa50d348b86db7e2fa0e30cc2714f839ce65c215";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -16,15 +16,17 @@ export const ACCESSIBILITY_STATES = ["enabled","disabled","cannot-tell"] as cons
 export type AccessibilityState = (typeof ACCESSIBILITY_STATES)[number];
 export const OPERATION_NAMES = ["setValue","setText","setCaret","reveal"] as const;
 export type OperationName = (typeof OPERATION_NAMES)[number];
-export const CAPABILITY_NAMES = ["observe","launch","edit","activate","submit"] as const;
+export const CAPABILITY_NAMES = ["observe","launch","edit","activate","submit","rawInput"] as const;
 export type CapabilityName = (typeof CAPABILITY_NAMES)[number];
+export const KEY_CHORD_NAMES = ["Enter","Escape","Tab","Backspace","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown","F2"] as const;
+export type KeyChordName = (typeof KEY_CHORD_NAMES)[number];
 export const PRIORITIES = ["low","medium","high"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as const;
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication"] as const;
+export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -456,6 +458,21 @@ export interface RestartApplicationResult {
   refusal?: string;
 }
 
+/** Deliver one named key chord to one element. This is RAW INPUT, not an operation: the four operations describe what an element is for and are answered by the element itself, while a key is delivered to whatever the machine is pointing at and the element is only how it is aimed. It is therefore its own capability, off unless a person switched it on, and it is never reached by a failed operation retrying - nothing in this daemon falls back to a keystroke. The chord must be one of the names this contract lists; anything else is refused by name rather than attempted. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed. */
+export interface SendKeyChordParams {
+  /** The element the chord is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
+  id: string;
+  /** One of the named chords this contract defines. The list is closed on purpose: a free-form key string is an arbitrary-input surface wearing a chord's clothes, and this class is the most restricted one the contract has. */
+  chord: KeyChordName;
+}
+
+export interface SendKeyChordResult {
+  /** Present when the chord was delivered; the element as it reads AFTERWARDS, read back from the desktop. It is evidence of what the element became, never a claim that the key did what the caller hoped - the caller compares it against what it expected. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the chord vocabulary when the name is not one of them, and what was observed when the element could not be focused or the machine has no way to deliver a key at all. */
+  refusal?: string;
+}
+
 /** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */
 export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = {
   "queryElements": {
@@ -797,11 +814,49 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
       ],
       "additionalProperties": false
     }
+  },
+  "sendKeyChord": {
+    "description": "Deliver one named key chord to one element. This is RAW INPUT, not an operation: the four operations describe what an element is for and are answered by the element itself, while a key is delivered to whatever the machine is pointing at and the element is only how it is aimed. It is therefore its own capability, off unless a person switched it on, and it is never reached by a failed operation retrying - nothing in this daemon falls back to a keystroke. The chord must be one of the names this contract lists; anything else is refused by name rather than attempted. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element the chord is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "chord": {
+          "description": "One of the named chords this contract defines. The list is closed on purpose: a free-form key string is an arbitrary-input surface wearing a chord's clothes, and this class is the most restricted one the contract has.",
+          "type": "string",
+          "enum": [
+            "Enter",
+            "Escape",
+            "Tab",
+            "Backspace",
+            "Delete",
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "Home",
+            "End",
+            "PageUp",
+            "PageDown",
+            "F2"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "chord"
+      ],
+      "additionalProperties": false
+    }
   }
 };
 
 const TYPE_SPECS = {"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"running":{"type":"runningState","literal":null,"literals":null,"required":true,"pattern":null},"runningUnknownBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"accessibilityLayer":{"fields":{"state":{"type":"accessibilityState","literal":null,"literals":null,"required":true,"pattern":null},"reason":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null}} as const;
-const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"runningState":["answering","not-answering","cannot-tell"],"accessibilityState":["enabled","disabled","cannot-tell"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
+const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"runningState":["answering","not-answering","cannot-tell"],"accessibilityState":["enabled","disabled","cannot-tell"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit","rawInput"],"keyChordName":["Enter","Escape","Tab","Backspace","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown","F2"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
 
 type FieldSpec = {
   type: string | null;

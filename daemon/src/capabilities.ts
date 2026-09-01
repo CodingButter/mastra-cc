@@ -39,7 +39,15 @@ export class MalformedCapabilitiesFileError extends Error {}
 // capability would mean two places to read and a real chance they disagree. A
 // file naming it is refused, and the refusal says where observe is configured
 // instead of quietly accepting a key that would enforce nothing.
-export const CONFIGURABLE_CAPABILITIES: readonly CapabilityName[] = ["launch", "edit", "activate", "submit"];
+// `rawInput` IS configurable here, and being in this list is not what makes it
+// off. It is off because --allow composes an empty set when the flag is absent
+// (server.ts, ADR-0066 clause 2), which is the session layer denying by
+// default exactly as it always has. This layer still withholds NOTHING by
+// default - the invariant above is intact - and its entry here is the second,
+// independent setting: an operator who armed a session with the flag can still
+// take raw input away from one application by name, and the refusal says which
+// of the two settings was responsible.
+export const CONFIGURABLE_CAPABILITIES: readonly CapabilityName[] = ["launch", "edit", "activate", "submit", "rawInput"];
 export const OBSERVE_SETTING = "the grants file (--grants)";
 
 // Restart authority is NOT in CONFIGURABLE_CAPABILITIES, and the reason is the

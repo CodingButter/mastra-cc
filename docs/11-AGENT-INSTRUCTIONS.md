@@ -130,6 +130,52 @@ caused it. To learn what the content became, read it again. Release the watch
 with `unsubscribeElement` when you are done, and close the client when the
 session ends — an open socket keeps the process alive.
 
+## When the desk cannot hear you at all
+
+If every query comes back empty and no application answers, ask
+`describeAccessibility` before concluding the desk is bare. It reports whether
+this machine's accessibility layer is switched on: `enabled`, `disabled`, or
+`cannot-tell` with a reason. A `disabled` desk explains every empty answer you
+have had, and it is not something you can fix — switching it on is an operator's
+act, refused to you by name. Report what you read and stop guessing.
+
+## Restarting an application
+
+`restartApplication` takes an application name and is governed entirely by
+configuration you do not control. Unless an operator said otherwise it refuses,
+and the refusal names the setting. Where it is allowed, a graceful restart may
+come back with `blockedBy` instead of a relaunched application: that is the
+application itself objecting, usually an unsaved-work dialog, and the
+application is still running. That dialog outranks you. Read it, deal with the
+unsaved work through ordinary operations, and ask again — never look for a way
+around it.
+
+## A key, when nothing else will do
+
+`sendKeyChord` sends one named key — `Enter`, `Escape`, `Tab`, `Backspace`,
+`Delete`, `F2`, an arrow, `Home`, `End`, `PageUp`, `PageDown` — to one element
+you name. There are no modifier chords: this route cannot hold a modifier down,
+so nothing like a save-or-select-all shortcut is offered rather than offered and
+silently wrong. It is a last resort and it
+is off unless an operator turned it on; when it is off the refusal says so and
+names the flag.
+
+Three rules, and they are not negotiable:
+
+1. **It is never the answer to a refusal.** A semantic operation that was
+   refused was refused for a reason. Pressing the key that a human would have
+   pressed instead does not make the refusal go away — it makes an unlogged
+   version of the same act. Use it for keys that carry meaning no operation
+   expresses: committing an inline rename with `Enter`, dismissing with
+   `Escape`, moving a selection.
+2. **Never for text.** Typing is `setElementText`. A chord is for the keys that
+   are not characters.
+3. **The reply is not evidence.** The desk hands back success for a key that
+   landed and for one that vanished into an unfocused window, so the call
+   returns the element as it reads afterwards, and you compare. If nothing
+   changed, the key did not arrive — say that, rather than assuming it worked
+   and the application ignored it.
+
 ## Refusals
 
 A refusal is an answer. `readElementContent` on an id the daemon never issued

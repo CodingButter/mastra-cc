@@ -201,6 +201,13 @@ export class ReplayBackend implements Backend {
     this.refuseToPerform("reveal an element");
   }
 
+  // A recording has no keyboard. Refusing is not a limitation to be lifted
+  // later: a tape that "delivered" a key would be replaying a desktop that
+  // never received one.
+  async sendKeyChord(): Promise<never> {
+    this.refuseToPerform("send a key chord");
+  }
+
   close(): Promise<void> {
     return this.inner.close();
   }

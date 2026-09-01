@@ -6,7 +6,14 @@ import {
   UnpublishedActionError,
   WriteNotObservedError,
 } from "../../../backend.js";
-import { insertText, performAction, scrollIntoView, setCaretOffset, setTextContents, setValue } from "../effects.js";
+import {
+  insertText,
+  performAction,
+  scrollIntoView,
+  setCaretOffset,
+  setTextContents,
+  setValue,
+} from "../effects.js";
 
 // Performing, as distinct from reading. These tests pin the four ways a verb
 // can be wrong in a way that still returns success on the real platform:
@@ -344,3 +351,4 @@ describe("revealing an element", () => {
     await expect(scrollIntoView(channel, REF)).rejects.toBeInstanceOf(WriteNotObservedError);
   });
 });
+

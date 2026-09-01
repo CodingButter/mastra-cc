@@ -1,0 +1,11 @@
+daemon: websocket listening on 0.0.0.0:9979
+(node:2395102) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+the-document-as-the-editor-confirms-it: {"id":"el-f1d0a9031275","holds":"alpha"}
+the-document-brought-into-view: {"reveal":"the desktop could not be read by this session's backend"}
+the-key: {"route":"absent"}
+the-document-read-back-by-another-connection: {"holds":"alpha"}
+PROBLEM: this daemon has no sendKeyChord route
+PROBLEM: the document holds "alpha", expected "lpha"
+the directory afterwards:
+the file on disk still reads: alphabase daemon exited 1, as it must
