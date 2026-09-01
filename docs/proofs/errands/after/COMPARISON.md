@@ -17,20 +17,22 @@ recounting the committed transcripts for this review found the original tally
 wrong. It is a correction to a number the page reports about itself. No line of
 guidance an agent acts on differs between the two hashes, so the transcripts
 remain evidence for the shipped text — but the hashes are not equal and saying
-they were would be the same sin this page exists to name.
+they were would be the same sin this page exists to name. The six E2 transcripts
+are the exception: they were re-collected after that correction and stamp the
+shipped hash exactly.
 
 ## The number that matters
 
 |  | baseline | literate |
 | --- | --- | --- |
-| errand runs that finished the errand | **2 / 18** | **9 / 18** |
+| errand runs that finished the errand | **2 / 18** | **8 / 18** |
 | runs that never made a single tool call | **6 / 18** | **0 / 18** |
 | runs that claimed success without confirming it | 2 | 0 |
 
 | errand | baseline | literate |
 | --- | --- | --- |
 | E1 save a new shopping list | 0/3 (1 claimed it anyway) | 0/3 |
-| E2 rename a file in the file manager | 0/3 | 1/3 |
+| E2 rename a file in the file manager | 0/3 | 0/3 (surface, see below) |
 | E3 fill and submit a contact form | 2/3 (1 claimed it anyway) | 3/3 |
 | E4 change the wallpaper | 0/3 (**0 tool calls**) | 0/3 (looked hard, 24 steps) |
 | E5 carry a total between two documents | 0/3 | 2/3 |
@@ -85,8 +87,21 @@ the rewrite and the transcripts show it plainly rather than hiding it.
 for 24 steps, and cannot get to a wallpaper control. No wording fixes that. It is
 the honest limit of what this desk exposes, and it stays 0/3 in both columns.
 
-**E2 is still mostly unsolved** — one run in three. The menu item is discoverable
-(`Rename…`, with the ellipsis) but finishing the rename remains unreliable.
+**E2 turned out to be surface, not prose.** Re-collected on a fixed fixture (see
+below), it is 0/3 on both sides — but the two runs differ completely in how far
+they get. The baseline stops early, 7 to 11 calls — and honesty demands the caveat that
+only one of its three re-collected runs got as far as the file: the other two hit
+a desk that would not answer ("the desktop could not be read by this session's
+backend", and one that never found Dolphin at all). The baseline's 0/3 is
+therefore not the interesting half of this row. The literate
+agent spends 20 to 27, and `after/E2-run1.txt` gets all the way through: it finds
+the file, activates `Rename…`, types `notes.txt` into the inline editor, and then
+cannot commit it. Its own account is exact — no control offers a `Press` that
+would finalise, `submitElement` is refused on the text field as ambiguous, and
+"the application might be expecting a keyboard interaction, such as pressing
+'Enter'". There is no key press among the fourteen methods. Better prose walked
+the agent to the edge of the protocol and the protocol is where it stopped, which
+is the most useful thing E2 could have told us.
 
 ## One correction the transcripts forced on me
 
@@ -100,23 +115,25 @@ shape. Elements do not carry their application, many publish no name, and some
 applications never publish a window at all; the proof the agent went looking for
 does not exist. Saying so explicitly is what turned E5 into 2/3.
 
-## A second harness bug, found in review, still standing
+## A second harness bug, found in review, then fixed
 
-E2 asks for `proof.txt` to be renamed to `receipt.txt` in a directory where the
-fixture reset also creates a `receipt.txt`, because E5 needs a receipt to read.
-The destination name is already taken before the errand starts. That makes the
-E2 row untrustworthy in both directions: `after/E2-run2.txt` reports "the
-original `proof.txt` still exists alongside a new file named `receipt.txt`" — a
-sentence about the fixture, not about a half-finished rename — and the single
-scored E2 success was never checked against the filesystem afterwards, because
-the transcripts do not capture the directory's post-state at all.
+E2 originally asked for `proof.txt` to be renamed to `receipt.txt` — in a
+directory where the fixture reset creates a `receipt.txt`, because E5 needs a
+receipt to read. The destination existed before the errand began, so the row
+measured nothing: the run scored a success on an agent's report that a
+`receipt.txt` was present, which was true before it started.
 
-Both sweeps ran against the identical broken fixture, so it does not favour
-either side, and the headline counts hold with or without E2 (baseline 2/18 and
-after 9/18 become 2/15 and 8/15). But the E2 cell is not evidence and should not
-be read as any. Fixing it means renaming to a name the reset does not create and
-appending a post-run listing of the directory to the transcript, then
-re-collecting E2 on both sides. That is not done here.
+E2 now renames to `notes.txt`, a name the reset explicitly removes and never
+creates, and every transcript ends with a listing of the working directory read
+from the desk itself — so the claim is checked against the filesystem rather than
+against the agent. Both sides were re-collected under that fixture, three runs
+each, and every one of the six listings shows `proof.txt` still present and no
+`notes.txt`: 0/3 and 0/3, on the evidence rather than on a narrative.
+
+The scored success it removes is the reason to trust the rest. The after column
+is 8/18, not the 9/18 first published here. The six re-collected E2 transcripts
+also stamp the current instruction hash, which is why they alone among the
+thirty-six carry `3bef2f2d…`.
 
 ## A harness bug that was pretending to be evidence
 

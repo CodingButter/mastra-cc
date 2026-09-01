@@ -29,7 +29,7 @@ if (!url || !errandId || !runIndex) throw new Error("usage: drive-errands.mjs <w
 // Phase 2 re-run. Phase 2 changes the INSTRUCTIONS, never these.
 const ERRANDS = {
   E1: "Open a text editor and write a shopping list with three items, then save it.",
-  E2: "In the file manager, find the file called proof.txt and rename it to receipt.txt.",
+  E2: "In the file manager, find the file called proof.txt and rename it to notes.txt.",
   E3: "Fill in the contact form on the page that is open in Chrome with my name and email, then submit it. My name is Dana Okonkwo and my email is dana@example.com.",
   E4: "Change the desktop wallpaper to a different one in system settings.",
   E5: "Read the total from the receipt open in Kate, then type it into the empty Mousepad document.",

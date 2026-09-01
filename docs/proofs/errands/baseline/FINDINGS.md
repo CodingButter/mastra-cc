@@ -29,12 +29,7 @@ which is the only reason the two sets can be compared at all.
 | Errand | What was asked | Done | Tool calls |
 |---|---|---|---|
 | E1 | write a shopping list in an editor and save it | 0/3 | 13, 15, 12 |
-| E2 | rename `proof.txt` to `receipt.txt` in the file manager | 0/3 | 5, 10, 8 |
-
-> E2's fixture is broken — the reset creates the destination `receipt.txt` before
-> the errand asks for it. See [COMPARISON.md](../after/COMPARISON.md). The row is
-> reported for completeness; it is not evidence in either direction.
-
+| E2 | rename `proof.txt` to `notes.txt` in the file manager | 0/3 | 11, 8, 7 |
 | E3 | fill in and submit the contact form in the browser | 2/3 | 10, 9, 10 |
 | E4 | change the wallpaper in system settings | 0/3 | **0, 0, 0** |
 | E5 | copy the receipt total from Kate into Mousepad | 0/3 | 10, 12, 13 |
@@ -94,13 +89,18 @@ Cost: 6 of 18 runs, a third of the baseline, failed before making one call.
 
 ### F2 - The agent does not know a menu bar exists. (prose)
 
-*E2, all three runs.*
+*E2 run 1. (This finding predates the E2 re-collection described in
+[COMPARISON.md](../after/COMPARISON.md); it was originally written from all three
+runs. On the re-collected transcripts only run 1 reaches the file — run 2 is
+refused with "the desktop could not be read by this session's backend" and run 3
+never locates Dolphin at all, so two of the three now die on a flaky desk rather
+than on the prose. The finding is re-anchored to the run that still shows it, and
+the sentence it produced was written before the re-collection either way.)*
 
-Every run found the file and stopped at the list item:
+The run finds the file and stops at the list item:
 
-> `E2-run3`: "the element representing the file (`el-6c86533e99ab`) does not
-> expose any operations to directly edit its text or trigger a rename action.
-> The `setText` operation is marked as `not-exposed` [...]"
+> `E2-run1`: "The `proof.txt` element (which is a `listitem`) does not expose any
+> direct "rename" actions in its `actions` list."
 
 That is true, and it is the desk being honest. Renaming a file is not a
 property of the list item; it is a command in the File menu. A direct probe of
@@ -121,11 +121,12 @@ and read what is there.**
 
 ### F3 - `name` is an exact match, and nothing says so. (prose)
 
-*E2 runs 1 and 2 - the near miss that makes F2 worse.*
+*E2 run 1 - the near miss that makes F2 worse.*
 
-Both runs did reach for the menu. They asked for it by name:
+The run did reach for the menu. It asked for it by name, twice:
 
-    queryElements {"role":"menuitem","name":"Rename"}   -> {"elements":[]}
+    call 9:  queryElements {"name":"Rename","role":"button"}    -> {"elements":[]}
+    call 10: queryElements {"name":"Rename","role":"menuitem"}  -> {"elements":[]}
 
 The item is called `Rename…`, with a horizontal ellipsis. `nameMatches` in
 `daemon/src/backends/atspi/names.ts` is NFKC equality, not substring:

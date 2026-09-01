@@ -874,5 +874,19 @@
     "find": " && contendsForBrowserEndpoint(requested)",
     "cwd": "daemon",
     "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
+  },
+  {
+    "name": "shipped-instructions-drift-from-the-reviewed-copy",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "button commonly offers nothing but `focus`, and ",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instructions-ship-with-it.test.ts"
+  },
+  {
+    "name": "prose-names-a-verb-the-protocol-does-not-have",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "`submitElement` sends the form",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-names-real-verbs.test.ts"
   }
 ]
