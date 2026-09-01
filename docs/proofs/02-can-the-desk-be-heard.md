@@ -49,7 +49,14 @@ harness believed it had switched off. Every status object that answers is now sw
 recorded here because a proof that deafens the wrong bus looks exactly like a daemon that lies.
 
 The switch-off is undone from a `trap … EXIT` handler installed before the first switch, since
-segments 03 and 04 drive the same container: `IsEnabled` reads `true` on both buses after the run.
+segments 03 and 04 drive the same container. The transcript records the reading taken *before* that
+handler runs, and it is worth reading exactly: `b false b true`. The daemon switched on the one bus
+it talks to and left the other alone, which is what a daemon acquiring the layer it uses should do,
+and is not what a reader would infer from the word `enabled` alone. The trap then restores both.
+
+The green transcript also records what the desk shows once the layer is on
+(`what-the-desk-shows-after-the-acquire`). It is evidence, not a pass criterion: whether any window
+happens to be open in the container is not what this segment measures.
 
 ## The bounds of this
 

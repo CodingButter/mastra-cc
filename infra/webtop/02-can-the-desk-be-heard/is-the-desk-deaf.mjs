@@ -98,6 +98,15 @@ await new Promise((resolve) => setTimeout(resolve, 3000));
 const daemonAfter = await describe();
 log("the-daemon-after-the-acquire", daemonAfter);
 
+// A state word is a claim about a bus; this is the thing the state word is FOR.
+// Recorded as evidence rather than scored, because whether any window happens to
+// be open in the container is not what this segment is about.
+const readableAfter = await windows().then(
+  (names) => ({ read: true, windows: names }),
+  (error) => ({ read: false, threw: String(error).slice(0, 200) }),
+);
+log("what-the-desk-shows-after-the-acquire", readableAfter);
+
 // ---- the verdict ------------------------------------------------------------
 const problems = [];
 if (daemonWhileDeaf.route === "absent") {

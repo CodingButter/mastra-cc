@@ -12,8 +12,10 @@ import { fail, rootFromArgs, stripComments } from "./lib.mjs";
 // Honesty note: the source marking pins the DECLARATION. The enforcement
 // TIMING - that authority is consulted before capability, before the tree,
 // before the spawn - is pinned by the ordering test in
-// daemon/src/__tests__/launch-authority.test.ts. The pin and the test
-// together are B11.
+// daemon/src/__tests__/launch-authority.test.ts for the element-scoped
+// methods, and by daemon/src/__tests__/can-the-desk-be-heard.test.ts for
+// acquireAccessibility, whose gate is the operator flag rather than a
+// per-application permit. The pin and those tests together are B11.
 
 const root = rootFromArgs(process.argv);
 const serverPath = join(root, "daemon", "src", "server.ts");

@@ -145,6 +145,9 @@ set -e
 
 echo
 echo "transcripts: $WITHOUT (base $BASE_SHA) and $WITH"
-echo "IsEnabled after the run: $(a11y get | tr '\n' ' ')"
+# Into the transcript, not just this terminal: a reader checking that the
+# shared harness was handed back hearing should not have to trust a scrollback
+# that is gone by the time they read the committed file.
+echo "IsEnabled after the run, before the restoring trap: $(a11y get | tr '\n' ' ')" | tee -a "$WITH"
 test "$STATUS" -eq 0 || { echo "PROOF: RED - the branch did not report the deaf desk"; exit 1; }
 echo "PROOF: GREEN"

@@ -916,5 +916,12 @@
     "find": "  if (launch.mayAcquireAccessibility !== true) {\n    return { refusal: ACQUIRE_WITHHELD_REFUSAL, refusalClass: \"DisabledByConfiguration\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
+  },
+  {
+    "name": "an-unacquirable-platform-is-asked-to-acquire-anyway",
+    "file": "daemon/src/server.ts",
+    "find": "  if (layer === undefined || !layer.acquirable) {\n    return { refusal: ACQUIRE_NOT_EXPOSED_REFUSAL, refusalClass: \"AccessibilityNotAcquirable\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
   }
 ]

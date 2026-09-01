@@ -92,12 +92,21 @@ describe("acquiring is the operator's to permit", () => {
     // A session cannot grant itself authority to reconfigure the machine it is
     // running on. The flag lives in the process's argv and nowhere a caller
     // can reach; sending its name as a parameter changes nothing.
+    let acquired = false;
     const response = await handleRequest(
       { type: "request", id: 2, method: "acquireAccessibility", params: { mayAcquireAccessibility: true, "acquire-accessibility": true } },
       backend,
-      context({ accessibility: layerThat(async () => ({ state: "disabled" }), async () => undefined) }),
+      context({
+        accessibility: layerThat(async () => ({ state: "disabled" }), async () => {
+          acquired = true;
+        }),
+      }),
     );
     expect(response.result).toMatchObject({ refusal: expect.stringContaining(ACQUIRE_SETTING) });
+    // And the adapter was never reached, so the parameter did not arm anything
+    // downstream either - the assertion that keeps this from restating the
+    // test above.
+    expect(acquired).toBe(false);
   });
 
   it("acquires when the operator armed it, and reports what it re-read", async () => {
@@ -143,7 +152,7 @@ describe("acquiring is the operator's to permit", () => {
 });
 
 describe("every acquire attempt is written down", () => {
-  it("records the performed one and both refused ones under the acquire scope", async () => {
+  it("records the performed one and every refused one under the acquire scope", async () => {
     // A change to the OPERATOR'S machine is the least deniable thing this
     // daemon does, so it is attributable whether it worked, was withheld, or
     // failed - a record that keeps only the tidy cases is a record of the tidy
@@ -156,6 +165,19 @@ describe("every acquire attempt is written down", () => {
       await call(
         "acquireAccessibility",
         context({ accessibility: layerThat(async () => ({ state: "enabled" }), async () => undefined), mayAcquireAccessibility: true }),
+      );
+      // The two refusals that come from the MACHINE rather than from the
+      // configuration: a platform with no adapter, and a status object that
+      // refused the write. Both changed nothing, and both are attempts.
+      await call("acquireAccessibility", context({ accessibility: unsupportedPlatform("darwin"), mayAcquireAccessibility: true }));
+      await call(
+        "acquireAccessibility",
+        context({
+          accessibility: layerThat(async () => ({ state: "disabled" }), async () => {
+            throw new Error("read-only status object");
+          }),
+          mayAcquireAccessibility: true,
+        }),
       );
     } finally {
       useAuditLog(undefined);
@@ -170,6 +192,8 @@ describe("every acquire attempt is written down", () => {
     expect(lines.map((entry) => [entry.scope, entry.outcome])).toEqual([
       ["acquire", "refused:DisabledByConfiguration"],
       ["acquire", "performed"],
+      ["acquire", "refused:AccessibilityNotAcquirable"],
+      ["acquire", "refused:AccessibilityNotAcquired"],
     ]);
     // No application and no element, because there is neither: this is the
     // case `application: null` was defined for.

@@ -1,12 +1,13 @@
 IsEnabled after the switch-off: b false b false 
 daemon: websocket listening on 0.0.0.0:9979
-(node:1836068) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:1867137) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 windows-visible-while-deaf: []
 the-daemon-while-deaf: {"route":"absent"}
 tool-call: {"n":1,"name":"listApplications"}
-the-model-while-deaf: {"word":"DEAF","said":"DEAF\nNo applications are observable due to grants file configuration."}
+the-model-while-deaf: {"word":"DEAF","said":"DEAF\nThe observation capability is disabled by configuration, so I cannot see any windows or their contents."}
 the-acquire-attempt: {"route":"absent"}
 the-daemon-after-the-acquire: {"route":"absent"}
+what-the-desk-shows-after-the-acquire: {"read":true,"windows":[]}
 {"proof":"red","daemon":"undefined -> undefined","model":"DEAF","toolCalls":1,"reason":["this daemon has no describeAccessibility route - a silent desk cannot be told from an empty one","while deaf the daemon reported undefined, not disabled","this daemon has no acquireAccessibility route","the acquire reported undefined, not enabled","after the acquire the daemon still reported undefined"]}
 base daemon exited 1, as it must

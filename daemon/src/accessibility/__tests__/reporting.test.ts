@@ -68,7 +68,13 @@ describe("reporting whether this machine's accessibility layer is switched on", 
   it("picks the implemented adapter on the platform it implements", async () => {
     // Constructing it must not touch a bus - the same laziness the element
     // channel has - so this asserts selection without reading.
-    expect(selectAccessibilityLayer("linux")).not.toEqual(unsupportedPlatform("linux"));
+    // Comparing the two objects would compare freshly-built closures and pass
+    // whatever was returned, so the assertion is on what the choice MEANS: the
+    // implemented adapter can act, and the fallback for a platform with no
+    // adapter cannot.
+    expect(selectAccessibilityLayer("linux").acquirable).toBe(true);
+    expect(unsupportedPlatform("linux").acquirable).toBe(false);
+    expect((await unsupportedPlatform("linux").report()).state).toBe("cannot-tell");
   });
 
   it("never lets the platform's vocabulary reach anything a caller receives", async () => {
