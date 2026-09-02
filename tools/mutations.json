@@ -205,7 +205,7 @@
   {
     "name": "visibility-filter-never-consulted",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "      try {\n        applicationName = await this.nameOf(app);\n        if (!isVisible(this.visibility, applicationName)) continue;\n      } catch (error) {\n        // an off-tape read under replay is ignorance, and ignorance surfaces\n        // as a refusal - never a skip; a dying app that cannot state its name\n        // cannot be granted, so it is skipped like any dying node\n        if (error instanceof UnrecordedExchangeError) throw error;\n        continue;\n      }\n",
+    "find": "        // an ungranted application is not walked, and is not counted in the divisor\n        if (!isVisible(this.visibility, applicationName)) continue;\n",
     "cwd": "daemon",
     "testFile": "src/backends/__tests__/invisibility.test.ts"
   },
