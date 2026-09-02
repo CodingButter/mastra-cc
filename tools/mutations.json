@@ -1017,5 +1017,19 @@
     "find": "const MATCH_ALL = 1;",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/collection.test.ts"
+  },
+  {
+    "name": "the-listing-believes-a-desk-that-cannot-hear",
+    "file": "daemon/src/server.ts",
+    "find": "if (heard === \"disabled\") return { running: \"cannot-tell\", runningUnknownBy: ACQUIRE_SETTING };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "an-unread-layer-is-treated-as-proof-the-ears-are-on",
+    "file": "daemon/src/server.ts",
+    "find": "if (heard === \"cannot-tell\") return { running: \"cannot-tell\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
   }
 ]

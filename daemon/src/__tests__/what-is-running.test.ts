@@ -5,6 +5,12 @@ import type { InstalledApplication } from "@mastra-cc/protocol-types";
 import type { Backend, RunningCensus } from "../backend.js";
 import { scanInstalledApplications } from "../inventory.js";
 import { OBSERVE_SETTING } from "../capabilities.js";
+import {
+  ACQUIRE_SETTING,
+  type AccessibilityLayer,
+  type AccessibilityLayerState,
+  type AccessibilityReport,
+} from "../accessibility/index.js";
 import { OwnershipTable } from "../launch/table.js";
 import { handleRequest, type LaunchContext } from "../server.js";
 import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
@@ -51,11 +57,40 @@ const wholeDesk = (...names: string[]): RunningCensus => ({
   answersFor: "every-application",
 });
 
+// A LAYER THAT REPORTS WHAT IT IS TOLD TO, and counts how often it was asked.
+// The count is load-bearing: this reading is a D-Bus round trip and the listing
+// answers for every installed application, so once-per-request is a
+// correctness property of the listing, not a preference.
+function layerReporting(state: AccessibilityLayerState): AccessibilityLayer & { reads: number } {
+  const layer = {
+    reads: 0,
+    acquirable: true,
+    async report(): Promise<AccessibilityReport> {
+      layer.reads += 1;
+      return state === "cannot-tell" ? { state, reason: "the test said so" } : { state };
+    },
+    async acquire() {
+      throw new Error("the listing tried to switch the machine's accessibility layer on");
+    },
+  };
+  return layer;
+}
+
+// Every test below that is NOT about the accessibility layer composes a desk
+// that can be heard, so its subject stays the census. Before this reading
+// existed the layer was simply absent, and an absent layer is now (correctly)
+// an ignorance of its own - see the no-adapter test.
 async function listing(launch: Partial<LaunchContext>, census: RunningCensus): Promise<InstalledApplication[]> {
   const answer = await handleRequest(
     { type: "request", id: 1, method: "listApplications", params: {} },
     backendSeeing(census),
-    { permits: new Set(), catalog: DEFANGED_CATALOG, table: new OwnershipTable(), ...launch },
+    {
+      permits: new Set(),
+      catalog: DEFANGED_CATALOG,
+      table: new OwnershipTable(),
+      accessibility: layerReporting("enabled"),
+      ...launch,
+    },
   );
   const result = answer.result as { applications?: InstalledApplication[]; refusal?: string };
   expect(result.refusal).toBeUndefined();
@@ -141,6 +176,7 @@ describe("the listing says what is answering, not just what is installed", () =>
         catalog: { ordinary: { argv: ["sleep", "30"], env: {}, appearsAs: "editor-binary" } },
         table: new OwnershipTable(),
         visibility: "all",
+        accessibility: layerReporting("enabled"),
       },
     ).then((answer) => (answer.result as { applications: InstalledApplication[] }).applications);
 
@@ -227,5 +263,96 @@ describe("the listing says what is answering, not just what is installed", () =>
 
     expect(entry(applications, "collide-one").running).toBe("answering");
     expect(entry(applications, "collide-two").running).toBe("not-answering");
+  });
+});
+
+// A DESK THAT CANNOT HEAR HAS NOT SAID THE APPLICATION IS GONE (ADR-0063,
+// amended). Found by dogfooding: a fresh demo container reports
+// org.a11y.Status/IsEnabled as false, and the daemon reported all hundred-odd
+// installed applications absent while several sat open on screen. The silence
+// was the machine's ears, and the listing presented it as a measurement.
+//
+// Note every fixture here is UNOWNED - the ownership table owns nothing - so
+// the ownership reading added in the next phase cannot quietly become the
+// reason these pass.
+describe("an unheard desk reports ignorance, not absence", () => {
+  it("names the acquire flag when the machine's accessibility layer is switched off", async () => {
+    const applications = await listing(
+      { visibility: "all", accessibility: layerReporting("disabled") },
+      wholeDesk("ordinary"),
+    );
+
+    // NOT not-answering. The census saw nothing because nothing could be
+    // heard, and there is a setting that changes exactly that.
+    expect(entry(applications, "hidden-from-menus").running).toBe("cannot-tell");
+    expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBe(ACQUIRE_SETTING);
+  });
+
+  it("names NOTHING when it could not find out whether the layer is on", async () => {
+    // The guard against sending an operator to switch on something that was
+    // never off. cannot-tell is what a failed read returns AND what an
+    // unsupported platform returns; neither is evidence the layer is off.
+    const applications = await listing(
+      { visibility: "all", accessibility: layerReporting("cannot-tell") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "hidden-from-menus").running).toBe("cannot-tell");
+    expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
+  });
+
+  it("still reports a genuine absence when the desk demonstrably can be heard", async () => {
+    // The qualification must not swallow the measurement it was added beside.
+    const applications = await listing(
+      { visibility: "all", accessibility: layerReporting("enabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "hidden-from-menus").running).toBe("not-answering");
+    expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
+  });
+
+  it("never degrades an application that actually answered", async () => {
+    // A positive is a measurement. The layer's report and the census are read
+    // at different moments, and a stale reading does not un-run an editor.
+    const applications = await listing(
+      { visibility: "all", accessibility: layerReporting("disabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "ordinary").running).toBe("answering");
+    expect(entry(applications, "ordinary").runningUnknownBy).toBeUndefined();
+  });
+
+  it("asks this session's own authority first, and names the grants file", async () => {
+    // Pointing an unpermitted caller at the acquire flag would send them to
+    // the wrong switch entirely: acquiring the layer would not let them look.
+    const applications = await listing(
+      { visibility: new Set(["something-else"]), accessibility: layerReporting("disabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "ordinary").running).toBe("cannot-tell");
+    expect(entry(applications, "ordinary").runningUnknownBy).toBe(OBSERVE_SETTING);
+  });
+
+  it("a daemon with no adapter at all says so, and blames no setting", async () => {
+    // This daemon's own incompleteness is not a claim about the machine - the
+    // same rule describeAccessibility already follows for the same reason.
+    const applications = await listing({ visibility: "all", accessibility: undefined }, wholeDesk("ordinary"));
+
+    expect(entry(applications, "hidden-from-menus").running).toBe("cannot-tell");
+    expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
+  });
+
+  it("reads the layer once for the whole listing, not once per application", async () => {
+    // A D-Bus round trip per entry across an inventory measured at 125 entries
+    // would make listApplications unusable. The census beside it is already
+    // asked once; so is this.
+    const layer = layerReporting("disabled");
+    const applications = await listing({ visibility: "all", accessibility: layer }, wholeDesk("ordinary"));
+
+    expect(applications.length).toBeGreaterThan(1);
+    expect(layer.reads).toBe(1);
   });
 });

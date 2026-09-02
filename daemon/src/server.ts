@@ -62,7 +62,12 @@ import {
   type Classified,
   type RefusalClass,
 } from "./audit.js";
-import { ACQUIRE_SETTING, type AccessibilityLayer, type AccessibilityReport } from "./accessibility/index.js";
+import {
+  ACQUIRE_SETTING,
+  type AccessibilityLayer,
+  type AccessibilityLayerState,
+  type AccessibilityReport,
+} from "./accessibility/index.js";
 import type { KeyDeliverySelection } from "./rawinput/index.js";
 import { normalise } from "./backends/atspi/names.js";
 import {
@@ -517,11 +522,28 @@ function sessionSettingFor(capability: CapabilityName): string {
 // isVisible is the same reader the observe capability uses six lines up, on the
 // same deny-by-default fallback, so the field and the capability beside it can
 // never disagree about what this session may see.
+//
+// AND WHETHER THE DESK COULD BE HEARD AT ALL. A machine whose accessibility
+// layer is switched off did not tell this daemon an application is absent - it
+// told it nothing, about every application at once. Reporting not-answering on
+// that silence is a statement about the desktop manufactured out of a fact
+// about the machine's ears, which is the same error the grant check above
+// exists to prevent, arriving through a different door. Measured on a fresh
+// demo container: org.a11y.Status/IsEnabled was false and every one of the
+// hundred-odd installed applications was reported absent, several of them open.
+//
+// Only the layer state `disabled` names ACQUIRE_SETTING. `cannot-tell` - which
+// is what a failed read and an unsupported platform both return
+// (accessibility/index.ts:19-22, :71) - names NOTHING, because an operator told
+// "switch it on" when the truth is "I could not find out" goes and switches on
+// something that was never off. A positive census result is never degraded by
+// either: an application that answered is not made mute by a stale reading.
 function runningFieldsFor(
   launch: LaunchContext,
   census: RunningCensus,
   entry: { name: string; diagnostic?: Record<string, string> },
   claims: ReadonlyMap<string, number>,
+  heard: AccessibilityLayerState,
 ): { running: RunningState; runningUnknownBy?: string } {
   if (!isVisible(launch.visibility ?? new Set(), entry.name)) {
     return { running: "cannot-tell", runningUnknownBy: OBSERVE_SETTING };
@@ -544,7 +566,13 @@ function runningFieldsFor(
   // Absence is only a measurement if EVERY name this entry could answer to was
   // within the horizon. Otherwise the route never had a view of it.
   const states = [...names].map((name) => runningStateOf(census, name));
-  return { running: states.every((state) => state === "not-answering") ? "not-answering" : "cannot-tell" };
+  if (!states.every((state) => state === "not-answering")) return { running: "cannot-tell" };
+  // The census would say absent. Before that is believed, ask whether this
+  // machine can be heard at all - the one reading that explains every silence
+  // on the desk at once.
+  if (heard === "disabled") return { running: "cannot-tell", runningUnknownBy: ACQUIRE_SETTING };
+  if (heard === "cannot-tell") return { running: "cannot-tell" };
+  return { running: "not-answering" };
 }
 
 // THE NAMES ONE INSTALLED ENTRY COULD BE ANSWERING TO.
@@ -680,6 +708,22 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
   for (const entry of byName.values()) {
     for (const name of censusNamesOf(entry, launch.catalog)) claims.set(name, (claims.get(name) ?? 0) + 1);
   }
+  // WHETHER THE DESK CAN BE HEARD, asked ONCE for the whole listing, exactly
+  // as the census above is. It is a fact about the machine, identical for
+  // every entry, and a D-Bus round trip per application across an inventory
+  // measured at 125 entries would make this call unusable.
+  //
+  // A layer that throws is a failed read, and a failed read is cannot-tell -
+  // the same answer a daemon assembled without an adapter gives, and for the
+  // same reason: neither knows, and neither may say the machine's ears are off.
+  const heard = await (async (): Promise<AccessibilityLayerState> => {
+    if (launch.accessibility === undefined) return NO_ADAPTER.state;
+    try {
+      return (await launch.accessibility.report()).state;
+    } catch {
+      return "cannot-tell";
+    }
+  })();
   return {
     applications: [...byName.values()]
       .sort((left, right) => left.name.localeCompare(right.name))
@@ -689,7 +733,7 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
         // A statement about this daemon's own recipes, never about permission:
         // an application can be installed and honestly not launchable.
         launchable: findRecipe(entry.name, launch.catalog) !== undefined,
-        ...runningFieldsFor(launch, census, entry, claims),
+        ...runningFieldsFor(launch, census, entry, claims, heard),
         ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
       })),
   };
