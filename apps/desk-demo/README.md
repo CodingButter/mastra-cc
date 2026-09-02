@@ -21,20 +21,26 @@ re-lock the desk could lock a person out of their own machine.
 
 ## Running it
 
+Prerequisites: Docker (the desktop is a container), Node 22+, pnpm 10, and a
+`GOOGLE_API_KEY` for the agent's model.
+
 ```bash
-# 1. the desktop
-MASTRA_CC_WEBTOP_PROJECT=mcc-webtop-harness MASTRA_CC_WEBTOP_PORT=13310 \
-  docker compose -p mcc-webtop-harness -f infra/webtop/compose.yml up -d
+# 1. the desk: container, daemon inside it, and .env.local pointed at it
+bash apps/desk-demo/desk-up.sh          # add --fresh for a brand-new desk
 
-# 2. a daemon inside it, and .env.local pointed at it
-MASTRA_CC_WEBTOP_PROJECT=mcc-webtop-harness MASTRA_CC_WEBTOP_PORT=13310 \
-  bash apps/desk-demo/desk-up.sh
-
-# 3. this app
+# 2. this app
 GOOGLE_API_KEY=... pnpm --filter @mastra-cc/desk-demo dev
 ```
 
 Then <http://localhost:3000>.
+
+`desk-up.sh` brings up the demo's **own** desktop — Compose project
+`mcc-desk-demo` on port 13320, its own volumes — and writes
+`apps/desk-demo/.env.local` with `MASTRA_CC_URL` (the daemon's websocket at the
+container's address) and `NEXT_PUBLIC_DESKTOP_URL` (the noVNC desktop the left
+pane frames). Do not point `MASTRA_CC_WEBTOP_PROJECT` at another project: `--fresh`
+destroys that project's volumes, and the demo exists precisely so it does not open
+onto someone else's desk.
 
 `desk-up.sh` states the demo's authority in one readable block: which
 applications may be launched, which may be seen, and which effect classes the
