@@ -189,9 +189,12 @@ turned it on, and the refusal names the flag when it is off.
 
 The order is fixed, and you do not skip steps:
 
-1. **Try the field's own operation first.** `setElementValue`, or
-   `setElementText` for an editable text area. If it succeeds, you are done, and
-   you verify it the way the section above says.
+1. **Try the field's own operation first.** `setElementText` for a text field,
+   `setElementValue` for a magnitude. If it succeeds, you are done, and you
+   verify it the way the section above says. The element you already hold
+   carries the answer too: its `operations` list says `setText` is `available`
+   or `not-exposed`, and a `not-exposed` read there is the same answer as the
+   refusal — you need not make the call just to be told.
 2. **Type blind only on `not-exposed`.** A refusal for any other reason — no
    authority, a protected control, a value the field rejected — is an answer,
    and `typeText` is not the way around it. If the operation was `not-exposed`,
@@ -208,10 +211,11 @@ string carrying one is refused by name before anything is typed. A text is at
 most 1024 characters: a field entry, not a document.
 
 Worked example — navigating a browser: open it, find the element named
-`Address and search bar`, call `setElementValue` with the URL and receive
-`not-exposed`, call `typeText` with the same id and URL, read the bar back and
-see the URL in it, then `sendKeyChord` `Enter`, then query the `document` and
-read its name to learn what page you reached.
+`Address and search bar`, see `setText` is `not-exposed` on it (or call
+`setElementText` and receive the same), call `typeText` with its id and the
+URL, read the bar back and see the URL in it, then `sendKeyChord` `Enter`, then
+query the `window` role and read the browser's title to learn what page you
+reached.
 
 ## Refusals
 
