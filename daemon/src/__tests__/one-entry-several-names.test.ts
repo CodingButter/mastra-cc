@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { InstalledApplication } from "@mastra-cc/protocol-types";
+import type { CapabilityName, InstalledApplication } from "@mastra-cc/protocol-types";
+import {
+  RESTART_DEFAULT,
+  restartLevelForAny,
+  withheldByAny,
+  type CapabilityConfiguration,
+} from "../capabilities.js";
 import { InventoryUnsupportedError, type Backend } from "../backend.js";
 import type { InventoryEntry } from "../inventory.js";
 import type { LaunchCatalog } from "../launch/recipes.js";
@@ -203,5 +209,110 @@ describe("grants resolve through the same candidates", () => {
     expect(capabilityStateFor(launch, "launch", "kate").availability).toBe("not-exposed");
     expect(capabilityStateFor(launch, "observe", "org.kde.kate").availability).toBe("available");
     expect(capabilityStateFor(launch, "observe", "kate").availability).toBe("disabled-by-configuration");
+  });
+});
+
+// Configuration and restart authority are keyed by the name the OPERATOR
+// typed, which is not always the name the resolver settled on. A rule written
+// under `kate` must bind the entry org.kde.kate however a caller reaches it -
+// otherwise resolution would be a way to walk around a restriction by
+// spelling the name differently.
+function capabilities(overrides: Partial<CapabilityConfiguration>): CapabilityConfiguration {
+  return {
+    defaults: new Map(),
+    applications: new Map(),
+    restart: { fallback: RESTART_DEFAULT, applications: new Map() },
+    ...overrides,
+  };
+}
+
+describe("configuration withholding binds the entry, whichever name the rule used", () => {
+  it("an explicit false under ANY candidate withholds, and names that setting", () => {
+    const configuration = capabilities({ applications: new Map([["kate", new Map([["launch", false as const]])]]) });
+    expect(withheldByAny(configuration, "launch", ["org.kde.kate", "kate"])).toBe('applications["kate"].launch');
+  });
+
+  it("restrictive wins over permissive across the same entry's names", () => {
+    const configuration = capabilities({
+      applications: new Map<string, Map<CapabilityName, boolean>>([
+        ["kate", new Map([["launch", false]])],
+        ["org.kde.kate", new Map([["launch", true]])],
+      ]),
+    });
+    expect(withheldByAny(configuration, "launch", ["org.kde.kate", "kate"])).toBe('applications["kate"].launch');
+  });
+
+  it("an explicit true under any name clears a restrictive default", () => {
+    const configuration = capabilities({
+      defaults: new Map([["launch", false as const]]),
+      applications: new Map([["kate", new Map([["launch", true as const]])]]),
+    });
+    expect(withheldByAny(configuration, "launch", ["org.kde.kate", "kate"])).toBeUndefined();
+    // The unconfigured neighbour still meets the default.
+    expect(withheldByAny(configuration, "launch", ["org.kde.dolphin", "dolphin"])).toBe("defaults.launch");
+  });
+
+  it("on the wire: a rule under the short name stops a launch requested by the full id", async () => {
+    const configuration = capabilities({ applications: new Map([["kate", new Map([["launch", false as const]])]]) });
+    const launch = context({
+      permits: new Set(["org.kde.kate"]),
+      catalog: { "org.kde.kate": { argv: ["sleep", "30"], env: {} } },
+      capabilities: configuration,
+    });
+    const answer = await open("org.kde.kate", launch, backendWith([KATE]));
+    expect(answer.refusal).toContain('applications["kate"].launch');
+    expect(launch.table.ownsName("org.kde.kate")).toBeUndefined();
+  });
+});
+
+describe("restart authority follows the resolved entry", () => {
+  it("the most restrictive configured level wins across the entry's names", () => {
+    const configuration = capabilities({
+      restart: {
+        fallback: "force",
+        applications: new Map([
+          ["org.kde.kate", "graceful" as const],
+          ["kate", "refuse" as const],
+        ]),
+      },
+    });
+    const chosen = restartLevelForAny(configuration, ["org.kde.kate", "kate"]);
+    expect(chosen.level).toBe("refuse");
+    expect(chosen.setting).toBe('restart.applications["kate"]');
+    // No candidate configured: the fallback answers.
+    expect(restartLevelForAny(configuration, ["org.kde.dolphin", "dolphin"]).level).toBe("force");
+  });
+
+  it("on the wire: an application opened by its short name is restartable by that same name", async () => {
+    // The regression this pins: open "kate" records ownership under
+    // org.kde.kate; a restart gate that looked up the RAW request would answer
+    // RestartNotOurs for a process this daemon started moments earlier.
+    const configuration = capabilities({
+      restart: { fallback: RESTART_DEFAULT, applications: new Map([["kate", "graceful" as const]]) },
+    });
+    const launch = context({
+      permits: new Set(["org.kde.kate"]),
+      catalog: { "org.kde.kate": { argv: ["sleep", "30"], env: {} } },
+      capabilities: configuration,
+      pollBudgetMs: 400,
+      pollIntervalMs: 20,
+    });
+    const backend = backendWith([KATE]);
+    const opened = await open("kate", launch, backend);
+    // Defanged argv never becomes readable; the gate passed and ownership was
+    // recorded under the full id, which is the half this test is about.
+    expect(opened.refusal).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(opened.refusal).not.toBe(AMBIGUOUS_NAME_REFUSAL);
+    expect(launch.table.ownsName("org.kde.kate")).toBeDefined();
+    const answer = await handleRequest(
+      { type: "request", id: 2, method: "restartApplication", params: { name: "kate" } },
+      backend,
+      launch,
+    );
+    const result = answer.result as { refusal?: string };
+    // Whatever the relaunch reported, the gate did NOT disown its own process
+    // and did NOT turn the short name away.
+    expect(result.refusal ?? "").not.toContain("not this daemon's");
+    expect(result.refusal).not.toBe(UNAVAILABLE_REFUSAL);
   });
 });

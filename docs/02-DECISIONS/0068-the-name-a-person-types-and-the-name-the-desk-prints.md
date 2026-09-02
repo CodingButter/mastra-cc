@@ -81,6 +81,19 @@ runtime tree names during enumeration, and widening them would change what the d
 exposes — which collides with the deny-by-default posture and the deliberate invisibility
 of applications a person launched by hand.
 
+## The resolved entry is the subject downstream
+
+Once a name resolves, the **entry's id** — not the string the caller typed — is the
+subject of everything that follows: ownership is recorded and looked up under it, the
+audit line names it, and a later `restartApplication` by any of the entry's names finds
+the process the launch recorded. Configuration is the one place this runs the other
+way: the operator's per-application rules and restart levels are consulted across **all
+of the entry's permission candidates**, with the restrictive answer winning, because a
+rule written under `kate` was written about the editor and must keep applying when the
+request arrives as `org.kde.kate`. Resolution changes which names reach an entry; it
+must never make a written restriction stop applying — or apply a permissive spelling
+over a restrictive one.
+
 ## Evidence
 
 - `apps/desk-demo/desk-up.sh` double-permitting and double-granting every entry (deleted

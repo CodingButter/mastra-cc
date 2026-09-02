@@ -73,8 +73,9 @@ import type { KeyDeliverySelection } from "./rawinput/index.js";
 import { normalise } from "./backends/atspi/names.js";
 import {
   OBSERVE_SETTING,
-  restartLevelFor,
+  restartLevelForAny,
   withheldBy,
+  withheldByAny,
   WITHHOLDS_NOTHING,
   type CapabilityConfiguration,
   type RestartLevel,
@@ -307,9 +308,10 @@ export function restartRefusal(level: RestartLevel, setting: string): { refusal:
  */
 export function restartAuthority(
   configuration: CapabilityConfiguration,
-  application?: string,
+  application?: string | Iterable<string>,
 ): { level: "graceful" | "force" } | { refusal: string; refusalClass: RefusalClass } {
-  const { level, setting } = restartLevelFor(configuration, application);
+  const names = application === undefined ? [] : typeof application === "string" ? [application] : application;
+  const { level, setting } = restartLevelForAny(configuration, names);
   if (level === "refuse" || level === "ask") return restartRefusal(level, setting);
   return { level };
 }
@@ -513,11 +515,31 @@ export function capabilityStateFor(
       disabledBy: capability === "observe" ? OBSERVE_SETTING : sessionSettingFor(capability),
     };
   }
-  const withheld = configurationWithholding(launch, capability, application);
+  // The configuration is asked under the entry's OWN names when the name
+  // resolved to an entry: an operator who wrote `applications["kate"]` meant
+  // the editor, whichever of its names this row is listed under. Without an
+  // index (or for a name no entry claims) the exact-name question is the only
+  // one there is - the same degradation the resolution above applies.
+  const withheld = configurationWithholdingFor(launch, capability, resolved, application);
   if (withheld !== undefined) {
     return { capability, availability: "disabled-by-configuration", disabledBy: withheld };
   }
   return { capability, availability: "available" };
+}
+
+// Configuration withholding resolved through an entry's permission candidates
+// when an entry is in hand, and through the bare name when not. Restrictive
+// wins across the names (withheldByAny): resolution changes which names REACH
+// an entry, and must never make a rule an operator wrote stop applying because
+// the caller typed a different spelling of the same application.
+function configurationWithholdingFor(
+  launch: LaunchContext,
+  capability: CapabilityName,
+  entry: InventoryEntry | undefined,
+  requested: string,
+): string | undefined {
+  const names = entry === undefined ? [requested] : [...candidateNamesOf(entry, launch.catalog)];
+  return withheldByAny(launch.capabilities ?? WITHHOLDS_NOTHING, capability, names);
 }
 
 // The session flag that would change a session-scoped answer. It is a setting
@@ -729,11 +751,6 @@ export function resolvePermitted(
   return permitted ? { kind: "permitted", entry } : { kind: "unpermitted" };
 }
 
-// Whether a candidate name can CARRY authority (a permit, a grant) for this
-// entry. Its own id always can; a derived name only when this entry is the
-// sole claimant. Without this, one `--permit chrome` would authorise both
-// chrome and gmail through the shared appears-as - candidate matching may
-// change which names REACH an entry, never how many entries one name covers.
 // The one entry a (normalised) name resolves to, or undefined when the name
 // is unclaimed or contested. Exact-id precedence as above.
 function claimantOf(wanted: string, index: InventoryIndex): InventoryEntry | undefined {
@@ -742,6 +759,11 @@ function claimantOf(wanted: string, index: InventoryIndex): InventoryEntry | und
   return exact ?? (claimants.length === 1 ? claimants[0] : undefined);
 }
 
+// Whether a candidate name can CARRY authority (a permit, a grant) for this
+// entry. Its own id always can; a derived name only when this entry is the
+// sole claimant. Without this, one `--permit chrome` would authorise both
+// chrome and gmail through the shared appears-as - candidate matching may
+// change which names REACH an entry, never how many entries one name covers.
 function candidateAuthorises(entry: InventoryEntry, candidate: string, index: InventoryIndex): boolean {
   if (normalise(entry.name) === candidate) return true;
   return (index.permission.get(candidate)?.length ?? 0) === 1;
@@ -1682,8 +1704,11 @@ async function decideOpenApplication(
   // anything is spawned or probed. A name that got this far is one this session
   // was permitted to launch, so naming the setting here tells the caller
   // nothing it did not already know - and it is the difference between "you
-  // cannot" and "it is switched off, here is the switch" (ADR-0042).
-  const withheld = configurationWithholding(launch, "launch", name);
+  // cannot" and "it is switched off, here is the switch" (ADR-0042). Asked
+  // across the ENTRY'S names, not just the resolved id: a rule the operator
+  // keyed on `kate` must keep applying when the request resolves to
+  // `org.kde.kate`, or resolution would widen what the configuration allows.
+  const withheld = configurationWithholdingFor(launch, "launch", resolution.entry, requestedName);
   if (withheld !== undefined) return { refusal: withheldRefusal("openApplication", "launch", withheld), refusalClass: "DisabledByConfiguration" };
   const budget = launch.pollBudgetMs ?? POLL_BUDGET_MS;
   const interval = launch.pollIntervalMs ?? POLL_INTERVAL_MS;
@@ -1810,18 +1835,46 @@ async function decideRestartApplication(
   backend: Backend,
   launch: LaunchContext,
 ): Promise<Classified<RestartApplicationResult>> {
-  const name = typeof params.name === "string" ? params.name : "";
+  const requestedName = typeof params.name === "string" ? params.name : "";
   // Restarting ENDS a program and STARTS one, so it needs the authority to
   // start it: a session that may not launch this application may not restart
   // it into existence either. Session authority first, then the operator's
   // configuration - the same order every other route uses, so `disabledBy`
   // never names a setting to a caller who was never going to get past the
   // session gate anyway.
-  const wanted = normalise(name);
-  if (launch.permits.has(wanted) !== true) {
+  //
+  // The name resolves EXACTLY as the launch gate resolves it, because the
+  // launch is what recorded the ownership this gate is about to look up: an
+  // application opened as `kate` is owned under its entry id `org.kde.kate`,
+  // and a restart that looked the raw request up would refuse to close a
+  // process this daemon started thirty seconds earlier. Same degradation too -
+  // a backend that cannot enumerate keeps the exact-name behaviour.
+  //
+  // A session holding no launch permits at all has no authority under any
+  // name, so the refusal is decidable without the backend - and MUST be, per
+  // the before-call enforcement pin: no authority, no backend touched.
+  if (launch.permits.size === 0) {
     return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
   }
-  const authority = restartAuthority(launch.capabilities ?? WITHHOLDS_NOTHING, name);
+  let index: InventoryIndex | undefined;
+  try {
+    index = indexInventory(await backend.installedApplications(), launch.catalog);
+  } catch (error) {
+    if (!(error instanceof InventoryUnsupportedError)) throw error;
+  }
+  const resolution = resolvePermitted(requestedName, index, launch.catalog, launch.permits);
+  if (resolution.kind === "ambiguous") {
+    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: "LaunchUnavailable" };
+  }
+  if (resolution.kind === "unpermitted") {
+    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
+  }
+  const name = resolution.entry?.name ?? requestedName;
+  // Restart authority across the entry's names, most restrictive winning
+  // (restartLevelForAny): the operator's `restart.applications["kate"]` rule
+  // is about the editor, whichever of its names the caller typed.
+  const authorityNames = resolution.entry === undefined ? [requestedName] : candidateNamesOf(resolution.entry, launch.catalog);
+  const authority = restartAuthority(launch.capabilities ?? WITHHOLDS_NOTHING, authorityNames);
   if ("refusal" in authority) return authority;
   const treeName = treeNameOf(name, launch.catalog);
   causeNames(treeName);
