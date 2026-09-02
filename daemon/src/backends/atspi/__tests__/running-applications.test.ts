@@ -1,3 +1,4 @@
+import { applicationName } from "../names.js";
 import { describe, expect, it } from "vitest";
 import type { Channel } from "../channel.js";
 import { UnrecordedExchangeError } from "../channel.js";
@@ -72,14 +73,16 @@ describe("the census of what is answering on the bus", () => {
   });
 
   it("normalises the names it reports, exactly as the grants and inventory layers do", async () => {
-    // Math-bold KATE. A census that skipped NFKC would answer not-answering
+    // Math-bold KATE, asked for as KATE and as kate. A census that skipped NFKC
+    // or case folding would answer not-answering
     // for the same application the grants file just permitted by its plain
     // name - two normalisation rules disagreeing inside one daemon.
     const backend = new AtspiBackend(busHolding(["\u{1D40A}\u{1D400}\u{1D413}\u{1D404}"]), "all");
 
     const census = await backend.runningApplications();
 
-    expect(runningStateOf(census, "KATE")).toBe("answering");
+    expect(runningStateOf(census, applicationName("KATE"))).toBe("answering");
+    expect(runningStateOf(census, applicationName("kate"))).toBe("answering");
   });
 
   it("keeps what it read when one child's name will not read, and stops claiming to have seen the whole desk", async () => {

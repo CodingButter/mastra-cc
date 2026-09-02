@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { CAPABILITY_NAMES, type CapabilityName } from "@mastra-cc/protocol-types";
-import { normalise } from "./backends/atspi/names.js";
+import { applicationName, normalise } from "./backends/atspi/names.js";
 
 // The capability configuration (ADR-0043 clause 4): the user configures what
 // the daemon may do, per application and globally, and the daemon enforces it.
@@ -10,7 +10,7 @@ import { normalise } from "./backends/atspi/names.js";
 // wall, not an answer).
 //
 // The shape is grants.ts's, deliberately rather than approximately: raw JSON
-// read from disk, application names NFKC-normalised AT LOAD, composed once at
+// read from disk, application names NFKC-normalised, case-folded AT LOAD, composed once at
 // boot, and a file that cannot be parsed failing startup loudly with a named
 // error instead of silently becoming "no configuration". The operator meant
 // something.
@@ -73,7 +73,7 @@ export const RESTART_DEFAULT: RestartLevel = "refuse";
 export interface RestartConfiguration {
   /** the level for applications with no entry of their own */
   readonly fallback: RestartLevel;
-  /** per-application levels, keyed by NFKC-normalised name; these beat the fallback */
+  /** per-application levels, keyed by NFKC-normalised, case-folded name; these beat the fallback */
   readonly applications: ReadonlyMap<string, RestartLevel>;
 }
 
@@ -82,7 +82,7 @@ export interface CapabilityConfiguration {
   readonly restart: RestartConfiguration;
   /** the fallback answer per capability, for applications with no entry of their own */
   readonly defaults: ReadonlyMap<CapabilityName, boolean>;
-  /** per-application answers, keyed by NFKC-normalised name; these beat the defaults */
+  /** per-application answers, keyed by NFKC-normalised, case-folded name; these beat the defaults */
   readonly applications: ReadonlyMap<string, ReadonlyMap<CapabilityName, boolean>>;
 }
 
@@ -162,7 +162,7 @@ function readRestartSection(path: string, raw: unknown): RestartConfiguration {
     for (const [name, level] of Object.entries(record.applications as Record<string, unknown>)) {
       // Normalised at load, the same rule the capability blocks and the grants
       // use - a second normalisation rule would silently disagree with them.
-      applications.set(normalise(name), readRestartLevel(path, `"restart".applications entry ${JSON.stringify(name)}`, level));
+      applications.set(applicationName(name), readRestartLevel(path, `"restart".applications entry ${JSON.stringify(name)}`, level));
     }
   }
   return { fallback, applications };
@@ -212,7 +212,7 @@ export function loadCapabilitiesFile(path: string): CapabilityConfiguration {
     for (const [name, block] of Object.entries(record.applications as Record<string, unknown>)) {
       // Normalised AT LOAD, exactly as grants entries are, so membership
       // checks never see raw file bytes (the M0.5 lesson).
-      applications.set(normalise(name), readCapabilityBlock(path, `"applications" entry ${JSON.stringify(name)}`, block));
+      applications.set(applicationName(name), readCapabilityBlock(path, `"applications" entry ${JSON.stringify(name)}`, block));
     }
   }
   const restart = record.restart === undefined ? WITHHOLDS_NOTHING.restart : readRestartSection(path, record.restart);
@@ -247,10 +247,10 @@ export function restartLevelForAny(
 ): { level: RestartLevel; setting: string } {
   let chosen: { level: RestartLevel; setting: string } | undefined;
   for (const application of applications) {
-    const named = configuration.restart.applications.get(normalise(application));
+    const named = configuration.restart.applications.get(applicationName(application));
     if (named === undefined) continue;
     if (chosen === undefined || RESTRICTIVENESS[named] < RESTRICTIVENESS[chosen.level]) {
-      chosen = { level: named, setting: `restart.applications[${JSON.stringify(normalise(application))}]` };
+      chosen = { level: named, setting: `restart.applications[${JSON.stringify(applicationName(application))}]` };
     }
   }
   return chosen ?? { level: configuration.restart.fallback, setting: "restart.default" };
@@ -290,8 +290,8 @@ export function withheldByAny(
 ): string | undefined {
   let allowed = false;
   for (const application of applications) {
-    const answer = configuration.applications.get(normalise(application))?.get(capability);
-    if (answer === false) return settingName(normalise(application), capability, true);
+    const answer = configuration.applications.get(applicationName(application))?.get(capability);
+    if (answer === false) return settingName(applicationName(application), capability, true);
     if (answer === true) allowed = true;
   }
   if (allowed) return undefined;

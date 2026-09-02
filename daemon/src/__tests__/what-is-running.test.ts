@@ -1,3 +1,4 @@
+import { applicationName } from "../backends/atspi/names.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -52,8 +53,10 @@ function backendSeeing(census: RunningCensus): Backend {
   } as unknown as Backend;
 }
 
+// A real backend reports census names already folded (applicationName);
+// a fixture that skips the backend must fold them the same way.
 const wholeDesk = (...names: string[]): RunningCensus => ({
-  observable: new Set(names),
+  observable: new Set(names.map(applicationName)),
   answersFor: "every-application",
 });
 

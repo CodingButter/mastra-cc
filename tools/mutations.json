@@ -275,21 +275,21 @@
   {
     "name": "second-identity-conflict-never-checked",
     "file": "daemon/src/server.ts",
-    "find": "  for (const key of contending) {\n    if (normalise(key) === normalise(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
+    "find": "  for (const key of contending) {\n    if (applicationName(key) === applicationName(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/profile-launch.test.ts"
   },
   {
     "name": "boot-composition-expands-launch-authority",
     "file": "daemon/src/launch/profiles.ts",
-    "find": "  const launchPermits: ReadonlySet<string> = new Set([...permits].map(normalise));\n",
+    "find": "  const launchPermits: ReadonlySet<string> = new Set([...permits].map(applicationName));\n",
     "cwd": "daemon",
     "testFile": "src/launch/__tests__/profiles.test.ts"
   },
   {
     "name": "permit-implies-observe-skips-appears-as",
     "file": "daemon/src/launch/profiles.ts",
-    "find": "    const appearsAs = findRecipe(name, catalog)?.appearsAs;\n    if (appearsAs !== undefined) expanded.add(normalise(appearsAs));\n",
+    "find": "    const appearsAs = findRecipe(name, catalog)?.appearsAs;\n    if (appearsAs !== undefined) expanded.add(applicationName(appearsAs));\n",
     "cwd": "daemon",
     "testFile": "src/launch/__tests__/profiles.test.ts"
   },
@@ -436,7 +436,7 @@
   {
     "name": "the-listing-forgets-what-this-daemon-can-launch",
     "file": "daemon/src/server.ts",
-    "find": "if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });",
+    "find": "    if (!claimed.has(applicationName(key))) {\n      claimed.add(applicationName(key));\n      entries.push({ name: key });\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
   },
@@ -534,7 +534,7 @@
   {
     "name": "the-failed-launch-that-leaves-no-receipt",
     "file": "daemon/src/server.ts",
-    "find": "    recordAudit({ application: normalise(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome: FAILED });\n",
+    "find": "    recordAudit({ application: applicationName(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome: FAILED });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
@@ -1038,7 +1038,7 @@
   {
     "name": "a-contested-name-starts-carrying-permission-for-everyone",
     "file": "daemon/src/server.ts",
-    "find": "  return (index.permission.get(candidate)?.length ?? 0) === 1;",
+    "find": "  return claimants.length === 1;",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-entry-several-names.test.ts"
   },
@@ -1052,7 +1052,7 @@
   {
     "name": "an-explicit-false-under-a-sibling-name-is-ignored",
     "file": "daemon/src/capabilities.ts",
-    "find": "    if (answer === false) return settingName(normalise(application), capability, true);",
+    "find": "    if (answer === false) return settingName(applicationName(application), capability, true);",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-entry-several-names.test.ts"
   },
@@ -1069,5 +1069,12 @@
     "find": "  if (launch.permits.size === 0) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
+  },
+  {
+    "name": "an-application-name-is-only-the-same-name-in-one-case",
+    "file": "daemon/src/backends/atspi/names.ts",
+    "find": ".toLowerCase()",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-name-any-case.test.ts"
   }
 ]

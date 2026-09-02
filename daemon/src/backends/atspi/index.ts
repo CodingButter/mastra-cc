@@ -53,7 +53,7 @@ import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { emitChord } from "./rawinput/keys.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
-import { nameMatches, normalise } from "./names.js";
+import { applicationName, nameMatches } from "./names.js";
 import { readPublishedActions } from "./actions.js";
 import { readObservableContent } from "./content.js";
 import { advertisesCollection, matchByRole, roleIsCollectable } from "./collection.js";
@@ -481,7 +481,7 @@ export class AtspiBackend implements Backend {
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     for (const app of apps) {
       try {
-        observable.add(normalise(await this.nameOf(app)));
+        observable.add(applicationName(await this.nameOf(app)));
       } catch (error) {
         // Same rule the walk uses: an off-tape read under replay is ignorance
         // and must surface.

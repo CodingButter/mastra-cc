@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { normalise } from "../backends/atspi/names.js";
+import { applicationName } from "../backends/atspi/names.js";
 
 // The ownership table (ADR-0029): the daemon knows what it launched because
 // it records (pid, /proc start time) at launch. The pair is the identity -
@@ -29,7 +29,7 @@ export interface OwnedEntry {
   readonly pid: number;
   /** field 22 of /proc/<pid>/stat - clock ticks since boot; string, compared verbatim */
   starttime: string;
-  /** the catalog key this launch served, NFKC-normalised */
+  /** the catalog key this launch served, NFKC-normalised, case-folded */
   readonly name: string;
 }
 
@@ -67,7 +67,7 @@ export class OwnershipTable {
   record(pid: number, name: string): void {
     const stat = readStat(pid);
     if (stat === undefined) return; // died before we could read it - nothing to own
-    this.byPid.set(pid, { pid, starttime: stat.starttime, name: normalise(name) });
+    this.byPid.set(pid, { pid, starttime: stat.starttime, name: applicationName(name) });
   }
 
   remove(pid: number): void {
@@ -101,7 +101,7 @@ export class OwnershipTable {
    * wire method's already-running and idempotent-re-open checks use.
    */
   ownsName(name: string): OwnedEntry | undefined {
-    const wanted = normalise(name);
+    const wanted = applicationName(name);
     for (const entry of this.byPid.values()) {
       if (entry.name !== wanted) continue;
       const stat = readStat(entry.pid);
