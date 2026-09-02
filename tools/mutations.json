@@ -1111,5 +1111,19 @@
     "find": "  if (text.length > TYPE_TEXT_MAX_LENGTH) {\n    return `refused before the call: \"typeText\" was given ${text.length} characters and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-bottomless-tree-is-walked-forever",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "          if (depth >= this.limits.maxDepth && kids.length > 0) {\n            throw new IncompleteObservationError(\n              `depth budget reached inside \"${applicationName}\" above a node that still has children - the subtree below it was never observed`,\n            );\n          }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/a-deep-application-does-not-silence-the-desk.test.ts"
+  },
+  {
+    "name": "a-runaway-tree-is-never-refused",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "        if (inThisApp >= this.limits.maxNodesPerApp || total >= this.limits.maxNodesTotal) {\n          throw new IncompleteObservationError(\n            `walk budget exhausted inside \"${applicationName}\" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,\n          );\n        }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/a-deep-application-does-not-silence-the-desk.test.ts"
   }
 ]

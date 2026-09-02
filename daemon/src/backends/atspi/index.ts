@@ -76,19 +76,38 @@ const ROOT_PATH = "/org/a11y/atspi/accessible/root";
 // on this machine listed one), and method calls on them fail. Not an element.
 const NULL_PATH = "/org/a11y/atspi/null";
 
-// Walk budgets: a live desktop hands over ~20 applications, some with very
-// large trees. Per-application and global caps keep one query finite; both
-// are policy of this backend, recorded here, not part of the wire contract.
+// Walk budgets: a safety net against a runaway or cyclic tree, NOT a working
+// limit. They are sized so that no real desk meets them; both are policy of
+// this backend, recorded here, not part of the wire contract (ADR-0071).
 //
-// The numbers are sized from a measured desktop rather than guessed: a KDE
-// editor's whole application tree is 1030 nodes and 17 levels deep, and its
-// visible document sits at depth 11, node 195 - outside the caps this backend
-// first shipped with. Exhausting a budget now raises IncompleteObservationError
-// instead of breaking quietly, so a truncated walk can never be mistaken for a
-// desktop that does not contain the element.
-const MAX_DEPTH = 24;
-const MAX_NODES_PER_APP = 4000;
-const MAX_NODES_TOTAL = 20000;
+// The range of real desks, measured rather than guessed: a KDE editor's whole
+// application tree is 1030 nodes and 17 levels deep, with its visible document
+// at depth 11, node 195. Chromium on a Wikipedia article: 3902 nodes, 48 deep,
+// walked in 658 ms (measured 2026-09-02). The caps this backend first shipped
+// with (24 deep, 4000 per application) were sized from the editor alone, and
+// the article tripped the depth cap - which aborted the WHOLE query, so one
+// deep application silenced every other application on the desk.
+//
+// Exhausting a budget raises IncompleteObservationError instead of breaking
+// quietly, so a truncated walk can never be mistaken for a desktop that does
+// not contain the element. The cost of sizing the net this wide is named
+// plainly: the walk keeps no visited set, so a cyclic tree accumulates
+// elements until the net fires, up to MAX_NODES_PER_APP of them.
+const MAX_DEPTH = 10_000;
+const MAX_NODES_PER_APP = 1_000_000;
+const MAX_NODES_TOTAL = 5_000_000;
+
+export interface TraversalLimits {
+  maxDepth: number;
+  maxNodesPerApp: number;
+  maxNodesTotal: number;
+}
+
+export const TRAVERSAL_LIMITS = {
+  maxDepth: MAX_DEPTH,
+  maxNodesPerApp: MAX_NODES_PER_APP,
+  maxNodesTotal: MAX_NODES_TOTAL,
+} as const;
 
 interface NativeRef {
   busName: string;
@@ -117,9 +136,20 @@ export class AtspiBackend implements Backend {
   // Live watches by subscription id. The channel is what feeds them.
   private readonly watches = new Map<string, ChannelWatch>();
 
-  constructor(channel: Channel, visibility: Visibility = new Set()) {
+  // The walk budgets. Only a test may pass its own: the seam exists so the
+  // UNCHANGED comparisons below can be exercised at small numbers, because a
+  // scripted channel cannot afford a million nodes. No CLI flag, environment
+  // variable, configuration key or protocol field reaches this parameter.
+  private readonly limits: TraversalLimits;
+
+  constructor(channel: Channel, visibility: Visibility = new Set(), limits: TraversalLimits = TRAVERSAL_LIMITS) {
     this.channel = channel;
     this.visibility = visibility;
+    this.limits = limits;
+  }
+
+  get traversalLimits(): Readonly<TraversalLimits> {
+    return this.limits;
   }
 
   private async children(ref: NativeRef): Promise<NativeRef[]> {
@@ -309,7 +339,7 @@ export class AtspiBackend implements Backend {
       let fastAnswerTrusted = collected !== undefined && collected.length > 0;
       if (collected !== undefined && fastAnswerTrusted) {
         for (const ref of collected) {
-          if (total >= MAX_NODES_TOTAL) {
+          if (total >= this.limits.maxNodesTotal) {
             throw new IncompleteObservationError(
               `observation budget exhausted inside "${applicationName}" with matches still unread - this observation would be partial`,
             );
@@ -343,7 +373,7 @@ export class AtspiBackend implements Backend {
         // Budget exhausted with tree still unwalked. Answering here would hand
         // back a short list that reads exactly like "the desktop does not
         // contain that element", so the walk refuses instead (ADR-0042).
-        if (inThisApp >= MAX_NODES_PER_APP || total >= MAX_NODES_TOTAL) {
+        if (inThisApp >= this.limits.maxNodesPerApp || total >= this.limits.maxNodesTotal) {
           throw new IncompleteObservationError(
             `walk budget exhausted inside "${applicationName}" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
           );
@@ -364,7 +394,7 @@ export class AtspiBackend implements Backend {
             if (params.limit !== undefined && elements.length >= params.limit) return { elements };
           }
           const kids = await this.children(ref);
-          if (depth >= MAX_DEPTH && kids.length > 0) {
+          if (depth >= this.limits.maxDepth && kids.length > 0) {
             throw new IncompleteObservationError(
               `depth budget reached inside "${applicationName}" above a node that still has children - the subtree below it was never observed`,
             );
@@ -557,7 +587,7 @@ export class AtspiBackend implements Backend {
       while (stack.length > 0) {
         // Same honesty as the query walk: "nothing here holds focus" and "I
         // ran out of budget before I got there" are different answers.
-        if (inThisApp >= MAX_NODES_PER_APP) {
+        if (inThisApp >= this.limits.maxNodesPerApp) {
           throw new IncompleteObservationError(
             `walk budget exhausted inside "${applicationName}" before the focus question was answered - an unfinished walk cannot report that nothing holds focus`,
           );
@@ -574,7 +604,7 @@ export class AtspiBackend implements Backend {
             return await this.readElement(ref, applicationName);
           }
           const kids = await this.children(ref);
-          if (depth >= MAX_DEPTH && kids.length > 0) {
+          if (depth >= this.limits.maxDepth && kids.length > 0) {
             throw new IncompleteObservationError(
               `depth budget reached inside "${applicationName}" above a node that still has children - the focus question was never asked of that subtree`,
             );
