@@ -606,11 +606,26 @@ function runningFieldsFor(
 // the alternative of reporting every recipe-less application cannot-tell, and
 // it is why an ambiguous positive degrades rather than picks.
 function censusNamesOf(entry: { name: string; diagnostic?: Record<string, string> }, catalog: LaunchCatalog): Set<string> {
+  const names = candidateNamesOf(entry, catalog);
+  const displayed = entry.diagnostic?.["mastra-cc/display-name"];
+  if (displayed !== undefined) names.add(normalise(displayed));
+  return names;
+}
+
+// THE NAMES AN ENTRY ITSELF PUBLISHES, minus the human label. The census above
+// adds the desktop file's `Name=` because a wrong census guess degrades to
+// cannot-tell and costs a reading; a wrong PERMISSION guess launches or
+// exposes the wrong application, and the display label is exactly where real
+// desks collide - measured on the live demo desk, 14 of 16 candidate
+// collisions were `Name=` labels ("Discover" printed by the store and its own
+// urlhandler entries, kcm modules twinned with their _x11 builds). So the
+// label stays a census candidate and is never a permission one. Both sets are
+// still read off the entry alone - id, the catalog's appears-as translation,
+// the final dot-segment - never guessed from a table of known applications.
+function candidateNamesOf(entry: { name: string; diagnostic?: Record<string, string> }, catalog: LaunchCatalog): Set<string> {
   const names = new Set<string>([normalise(entry.name), treeNameOf(entry.name, catalog)]);
   const segment = entry.name.slice(entry.name.lastIndexOf(".") + 1);
   if (segment.length > 0) names.add(normalise(segment));
-  const displayed = entry.diagnostic?.["mastra-cc/display-name"];
-  if (displayed !== undefined) names.add(normalise(displayed));
   return names;
 }
 
