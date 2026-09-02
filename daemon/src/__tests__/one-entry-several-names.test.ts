@@ -70,7 +70,7 @@ describe("permits resolve through the entry's own candidate names", () => {
 
   it("the Name= display label is census-only and carries no permission", () => {
     // Permitting the human label authorises nothing: labels are where real
-    // desks collide (14 of 16 measured collisions were Name= labels), and a
+    // desks collide (13 of 16 measured collisions were Name= labels), and a
     // wrong permission match exposes the wrong application.
     const permits = new Set(["Kate"]);
     expect(resolvePermitted("org.kde.kate", index, EMPTY_CATALOG, permits).kind).toBe("unpermitted");

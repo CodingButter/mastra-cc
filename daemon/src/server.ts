@@ -636,9 +636,10 @@ function censusNamesOf(entry: { name: string; diagnostic?: Record<string, string
 // adds the desktop file's `Name=` because a wrong census guess degrades to
 // cannot-tell and costs a reading; a wrong PERMISSION guess launches or
 // exposes the wrong application, and the display label is exactly where real
-// desks collide - measured on the live demo desk, 14 of 16 candidate
-// collisions were `Name=` labels ("Discover" printed by the store and its own
-// urlhandler entries, kcm modules twinned with their _x11 builds). So the
+// desks collide - measured on the live demo desk
+// (tools/candidate-collisions.mjs), 13 of 16 candidate collisions were pure
+// `Name=` label collisions (kcm modules twinned with their _x11 builds), and
+// excluding the label leaves 2, both internal helper entries. So the
 // label stays a census candidate and is never a permission one. Both sets are
 // still read off the entry alone - id, the catalog's appears-as translation,
 // the final dot-segment - never guessed from a table of known applications.
