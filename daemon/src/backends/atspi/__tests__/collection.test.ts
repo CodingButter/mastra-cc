@@ -104,6 +104,44 @@ describe("backend-selected AT-SPI search", () => {
     expect(rule[5]).toBe(2);
   });
 
+  // Measured against a live GTK application: with 0 in these three positions
+  // the bridge answered every role question with an empty list, successfully.
+  // 0 is INVALID, not "do not care"; the empty clause has to be matched by
+  // MATCH_ALL to be vacuously true.
+  it("asks the clauses it does not care about with MATCH_ALL, never the invalid match type", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    await backend.queryElements({ role: "textbox" });
+
+    const matches = channel.asked.find((exchange) => exchange.member === "GetMatches");
+    const rule = (matches?.body?.[0] ?? []) as unknown[];
+    expect([rule[1], rule[3], rule[7]]).toEqual([1, 1, 1]);
+  });
+
+  // "no matches" and "that rule did not work" are the same successful empty
+  // reply, and the role cross-check has nothing to check when nothing came
+  // back. So an empty fast answer buys a walk rather than being reported as a
+  // desktop with no such element on it.
+  it("walks rather than believing an empty fast answer", async () => {
+    const scripted = desktop({ collection: true });
+    const channel: Channel & { asked: Exchange[] } = {
+      asked: scripted.asked,
+      async call(exchange) {
+        if (exchange.member === "GetMatches") return [[]];
+        return scripted.call(exchange);
+      },
+      watch: scripted.watch,
+      close: scripted.close,
+    };
+    const backend = new AtspiBackend(channel, "all");
+
+    const { elements } = await backend.queryElements({ role: "textbox" });
+
+    expect(elements.map((element) => element.role)).toEqual(["textbox"]);
+    expect(channel.asked.filter((exchange) => exchange.member === "GetChildren").length).toBeGreaterThan(1);
+  });
+
   it("walks for the application role, which Collection would answer without its own root", async () => {
     const channel = desktop({ collection: true });
     const backend = new AtspiBackend(channel, "all");

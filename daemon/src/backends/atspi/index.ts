@@ -297,7 +297,14 @@ export class AtspiBackend implements Backend {
       // checked against the role that was asked for, and one disagreement
       // retires the fast answer entirely in favour of the walk.
       const fastAnswer: SemanticElement[] = [];
-      let fastAnswerTrusted = collected !== undefined;
+      // An EMPTY fast answer is never trusted. "No matches" and "this rule
+      // did not work" arrive as the same successful empty reply, and the
+      // cross-check below - which catches a fast answer holding the WRONG
+      // nodes - has nothing to check when there are no nodes at all. A
+      // malformed rule that matched nothing therefore reads exactly like a
+      // desktop with no buttons on it, which is the failure ADR-0042 refuses
+      // elsewhere. So emptiness costs a walk, and the walk is the answer.
+      let fastAnswerTrusted = collected !== undefined && collected.length > 0;
       if (collected !== undefined && fastAnswerTrusted) {
         for (const ref of collected) {
           if (total >= MAX_NODES_TOTAL) {
