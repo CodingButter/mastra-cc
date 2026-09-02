@@ -158,7 +158,7 @@ export type RunningState = "answering" | "not-answering" | "cannot-tell";
 // of anything else on the machine, so it says so rather than reporting the rest
 // of the desktop closed.
 export interface RunningCensus {
-  // Names answering right now, NFKC-normalised exactly as the inventory and
+  // Names answering right now, NFKC-normalised, case-folded exactly as the inventory and
   // grants layers normalise them (backends/atspi/names.ts). A third
   // normalisation rule here would silently disagree with both.
   readonly observable: ReadonlySet<string>;

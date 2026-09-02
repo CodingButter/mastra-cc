@@ -112,12 +112,12 @@ describe("what an operator wrote about one application beats what they wrote abo
   });
 
   it("normalises application names at load, so a lookup never sees raw file bytes", () => {
-    // The same NFKC rule the grants and the capability blocks use. A second
-    // rule here would silently disagree with them.
+    // The same NFKC + case-fold rule the grants and the capability blocks
+    // use. A second rule here would silently disagree with them.
     const configuration = loading('{"restart": {"applications": {"\\uff2b\\uff41\\uff54\\uff45": "graceful"}}}');
-    expect([...configuration.restart.applications.keys()]).toEqual(["Kate"]);
+    expect([...configuration.restart.applications.keys()]).toEqual(["kate"]);
     expect(restartLevelFor(configuration, "\uff2b\uff41\uff54\uff45").level).toBe("graceful");
-    expect(restartLevelFor(configuration, "Kate").setting).toBe('restart.applications["Kate"]');
+    expect(restartLevelFor(configuration, "Kate").setting).toBe('restart.applications["kate"]');
   });
 });
 

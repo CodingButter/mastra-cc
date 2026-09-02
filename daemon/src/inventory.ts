@@ -23,7 +23,7 @@ import { normalise } from "./backends/atspi/names.js";
 // line. Existence and permission are readable; content is not.
 
 export interface InventoryEntry {
-  /** the callable name, NFKC-normalised: the desktop entry's id, which is what a launch recipe keys on */
+  /** the callable name, NFKC-normalised, case-folded: the desktop entry's id, which is what a launch recipe keys on */
   readonly name: string;
   /** debug-only, never load-bearing (the wire contract's own words about diagnostics) */
   readonly diagnostic?: Record<string, string>;
@@ -99,6 +99,10 @@ function scanDirectory(directory: string): Map<string, InventoryEntry> {
       // hang a diagnostic on.
       continue;
     }
+    // NFKC only, deliberately not case-folded: the scan reports the ids the
+    // disk holds. Two files whose ids differ only by case are two entries
+    // here, and it is the resolver (server.ts indexInventory) that decides
+    // they contend for one name - ADR-0069.
     const id = normalise(fileName.slice(0, -".desktop".length));
     if (entryValue(text, "Type") !== "Application") continue;
     const diagnostic: Record<string, string> = { "mastra-cc/desktop-entry-id": id };

@@ -8,7 +8,7 @@ import {
   MalformedCapabilitiesFileError,
   WITHHOLDS_NOTHING,
 } from "./capabilities.js";
-import { normalise } from "./backends/atspi/names.js";
+import { applicationName } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
 import { selectAccessibilityLayer } from "./accessibility/select.js";
 import { selectKeyDelivery } from "./rawinput/select.js";
@@ -117,9 +117,9 @@ const { launchPermits, visibility } = (() => {
   try {
     const file = arg("--grants") !== null ? loadGrantsFile(arg("--grants") as string) : new Set<string>();
     return composeBootNames({
-      permits: new Set(argAll("--permit").map(normalise)),
+      permits: new Set(argAll("--permit").map(applicationName)),
       grants: file,
-      flags: new Set(argAll("--grant").map(normalise)),
+      flags: new Set(argAll("--grant").map(applicationName)),
       catalog,
     });
   } catch (error) {

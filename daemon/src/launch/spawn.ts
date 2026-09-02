@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { normalise } from "../backends/atspi/names.js";
+import { applicationName } from "../backends/atspi/names.js";
 import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
 import type { OwnershipTable } from "./table.js";
 
@@ -16,9 +16,9 @@ export const NO_RECIPE_REFUSAL = "launch: nothing can be launched by that name";
 // the spawner does: a naive catalog[name] misses the NFKC forms, so the recipe
 // would spawn while the appears-as join silently missed it (M2.3b).
 export function findRecipe(name: string, catalog: LaunchCatalog): LaunchRecipe | undefined {
-  const wanted = normalise(name);
+  const wanted = applicationName(name);
   for (const [key, recipe] of Object.entries(catalog)) {
-    if (normalise(key) === wanted) return recipe;
+    if (applicationName(key) === wanted) return recipe;
   }
   return undefined;
 }

@@ -45,7 +45,7 @@ import {
 import type { InventoryEntry } from "../../inventory.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
-import { nameMatches, normalise } from "../atspi/names.js";
+import { applicationName, nameMatches } from "../atspi/names.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
 import { needsProtectedClassification, readObservableContent } from "./content.js";
 import {
@@ -188,7 +188,7 @@ export class CdpBackend implements Backend {
   async runningApplications(): Promise<RunningCensus> {
     let name: string;
     try {
-      name = normalise(productName(await this.version()));
+      name = applicationName(productName(await this.version()));
     } catch {
       return { observable: new Set(), answersFor: new Set() };
     }

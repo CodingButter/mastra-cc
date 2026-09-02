@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
-import { normalise } from "../backends/atspi/names.js";
+import { applicationName } from "../backends/atspi/names.js";
 import { entryValue } from "../inventory.js";
 import { CATALOG, type LaunchCatalog, type LaunchRecipe } from "./recipes.js";
 
@@ -150,7 +150,7 @@ function recipeFrom(text: string): LaunchRecipe | undefined {
   if (exec === undefined) return undefined;
   const argv = argvFromExec(exec);
   if (argv === undefined) return undefined;
-  return { argv, env: ACCESSIBILITY_ENV, appearsAs: normalise(basename(argv[0])) };
+  return { argv, env: ACCESSIBILITY_ENV, appearsAs: applicationName(basename(argv[0])) };
 }
 
 function scanDirectory(directory: string): Map<string, LaunchRecipe> {
@@ -176,7 +176,7 @@ function scanDirectory(directory: string): Map<string, LaunchRecipe> {
     }
     const recipe = recipeFrom(text);
     if (recipe === undefined) continue;
-    found.set(normalise(fileName.slice(0, -".desktop".length)), recipe);
+    found.set(applicationName(fileName.slice(0, -".desktop".length)), recipe);
   }
   return found;
 }

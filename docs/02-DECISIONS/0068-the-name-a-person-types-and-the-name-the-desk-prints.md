@@ -44,9 +44,10 @@ synthetic entries, ids never overwritten).
 3. **An exact full id is never ambiguous.** Derived recipes routinely put a sibling's
    name inside another entry's candidates — `chrome` and `gmail` both appear as `chrome`
    — and a rule that let a sibling's `appears-as` make the real entry's own id
-   unreachable would refuse launches that work today. The union keys entries by
-   normalised id, so at most one entry can claim a name exactly; only derived claims can
-   contend.
+   unreachable would refuse launches that work today. At most one entry can claim a name
+   exactly; only derived claims can contend. (Amended by ADR-0069: equality of candidates
+   is case-folded, so two installed entries whose ids differ only by case *do* both
+   claim one name exactly, and that pair is an ordinary contested candidate that refuses.)
 
 4. **A contested derived name authorises nothing, in both directions.** A *request* by a
    name two entries claim is refused — the gate does not pick, exactly as the census

@@ -70,7 +70,7 @@ import {
   type AccessibilityReport,
 } from "./accessibility/index.js";
 import type { KeyDeliverySelection } from "./rawinput/index.js";
-import { normalise } from "./backends/atspi/names.js";
+import { applicationName } from "./backends/atspi/names.js";
 import {
   OBSERVE_SETTING,
   restartLevelForAny,
@@ -494,7 +494,7 @@ export function capabilityStateFor(
   // not read is still listed (that is the reversal), with observe off.
   // With an index in hand, observe and launch resolve the application through
   // its entry's own candidate names - unique claims only, ambiguity refuses.
-  const resolved = index === undefined ? undefined : claimantOf(normalise(application), index);
+  const resolved = index === undefined ? undefined : claimantOf(applicationName(application), index);
   const held =
     capability === "observe"
       ? // Deny by default when nothing was composed (ADR-0036, the grants
@@ -650,7 +650,7 @@ function runningFieldsFor(
 function censusNamesOf(entry: { name: string; diagnostic?: Record<string, string> }, catalog: LaunchCatalog): Set<string> {
   const names = candidateNamesOf(entry, catalog);
   const displayed = entry.diagnostic?.["mastra-cc/display-name"];
-  if (displayed !== undefined) names.add(normalise(displayed));
+  if (displayed !== undefined) names.add(applicationName(displayed));
   return names;
 }
 
@@ -666,9 +666,9 @@ function censusNamesOf(entry: { name: string; diagnostic?: Record<string, string
 // still read off the entry alone - id, the catalog's appears-as translation,
 // the final dot-segment - never guessed from a table of known applications.
 function candidateNamesOf(entry: { name: string; diagnostic?: Record<string, string> }, catalog: LaunchCatalog): Set<string> {
-  const names = new Set<string>([normalise(entry.name), treeNameOf(entry.name, catalog)]);
+  const names = new Set<string>([applicationName(entry.name), treeNameOf(entry.name, catalog)]);
   const segment = entry.name.slice(entry.name.lastIndexOf(".") + 1);
-  if (segment.length > 0) names.add(normalise(segment));
+  if (segment.length > 0) names.add(applicationName(segment));
   return names;
 }
 
@@ -693,17 +693,25 @@ export interface InventoryIndex {
 }
 
 export function indexInventory(installed: readonly InventoryEntry[], catalog: LaunchCatalog): InventoryIndex {
-  const byName = new Map(installed.map((entry) => [normalise(entry.name), entry] as const));
+  // Installed entries are kept AS SCANNED, never collapsed: two desktop files
+  // whose ids differ only by case (`org.example.Kate`, `org.example.kate`) are
+  // two entries that contend for one folded name, and contention is the
+  // resolver's answer (ADR-0069 under ADR-0068), not a silent pick of one.
+  const entries = [...installed];
+  const claimed = new Set(installed.map((entry) => applicationName(entry.name)));
   for (const key of Object.keys(catalog)) {
-    if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });
+    if (!claimed.has(applicationName(key))) {
+      claimed.add(applicationName(key));
+      entries.push({ name: key });
+    }
   }
   const census = new Map<string, InventoryEntry[]>();
   const permission = new Map<string, InventoryEntry[]>();
-  for (const entry of byName.values()) {
+  for (const entry of entries) {
     for (const name of censusNamesOf(entry, catalog)) census.set(name, [...(census.get(name) ?? []), entry]);
     for (const name of candidateNamesOf(entry, catalog)) permission.set(name, [...(permission.get(name) ?? []), entry]);
   }
-  return { entries: [...byName.values()], census, permission };
+  return { entries, census, permission };
 }
 
 // PERMISSION RESOLVED THE WAY THE CENSUS READS (the launch gate and the
@@ -735,15 +743,17 @@ export function resolvePermitted(
   catalog: LaunchCatalog,
   permits: ReadonlySet<string>,
 ): Resolution {
-  const wanted = normalise(name);
+  const wanted = applicationName(name);
   if (index === undefined) return permits.has(wanted) ? { kind: "permitted" } : { kind: "unpermitted" };
   const claimants = index.permission.get(wanted) ?? [];
   // AN EXACT FULL ID IS NEVER AMBIGUOUS. Derived recipes routinely put a
   // sibling's id inside another entry's candidates - chrome and gmail both
   // appear as `chrome` - and a rule that let a sibling's appears-as make the
   // real entry's own id unreachable would refuse launches that work today.
-  // The union keys entries by normalised id, so at most one entry can match
-  // exactly; only DERIVED claims can contend, and those refuse at >1.
+  // Ids are compared case-folded (ADR-0069), so two installed entries CAN
+  // match one id exactly when their ids differ only by case; that pair is
+  // contested like any other and refuses. Otherwise one exact match wins,
+  // and only DERIVED claims can contend, refusing at >1.
   const entry = claimantOf(wanted, index);
   if (entry === undefined && claimants.length > 1) return { kind: "ambiguous" };
   if (entry === undefined) return { kind: "unpermitted" };
@@ -755,8 +765,10 @@ export function resolvePermitted(
 // is unclaimed or contested. Exact-id precedence as above.
 function claimantOf(wanted: string, index: InventoryIndex): InventoryEntry | undefined {
   const claimants = index.permission.get(wanted) ?? [];
-  const exact = claimants.find((claimant) => normalise(claimant.name) === wanted);
-  return exact ?? (claimants.length === 1 ? claimants[0] : undefined);
+  const exact = claimants.filter((claimant) => applicationName(claimant.name) === wanted);
+  // two entries with the SAME folded id (a case-only pair) are contested, not exact
+  if (exact.length === 1) return exact[0];
+  return exact.length === 0 && claimants.length === 1 ? claimants[0] : undefined;
 }
 
 // Whether a candidate name can CARRY authority (a permit, a grant) for this
@@ -765,8 +777,12 @@ function claimantOf(wanted: string, index: InventoryIndex): InventoryEntry | und
 // chrome and gmail through the shared appears-as - candidate matching may
 // change which names REACH an entry, never how many entries one name covers.
 function candidateAuthorises(entry: InventoryEntry, candidate: string, index: InventoryIndex): boolean {
-  if (normalise(entry.name) === candidate) return true;
-  return (index.permission.get(candidate)?.length ?? 0) === 1;
+  const claimants = index.permission.get(candidate) ?? [];
+  if (applicationName(entry.name) === candidate) {
+    // its own id carries authority unless another entry's id folds to the same name
+    return claimants.filter((claimant) => applicationName(claimant.name) === candidate).length === 1;
+  }
+  return claimants.length === 1;
 }
 
 // VISIBILITY THROUGH THE SAME CANDIDATES, for the two server-side call sites
@@ -1014,7 +1030,7 @@ export interface AttributionStamp {
 // is the point (ADR-0039, ADR-0032 clause 4).
 export function attribute(changeApplication: string, cause: Cause | undefined = inFlight): AttributionStamp {
   if (cause !== undefined) {
-    if (cause.application !== undefined && normalise(cause.application) === normalise(changeApplication)) {
+    if (cause.application !== undefined && applicationName(cause.application) === applicationName(changeApplication)) {
       return { attribution: "self", causeId: cause.causeId };
     }
     // ADR-0039: a verb is open, but nothing binds THIS change to it - it
@@ -1511,7 +1527,7 @@ const POLL_INTERVAL_MS = 250;
 // (backends/cdp/index.ts). So the tree is queried under the name the recipe
 // says it will answer to, never the catalog key.
 function treeNameOf(name: string, catalog: LaunchCatalog): string {
-  return normalise(findRecipe(name, catalog)?.appearsAs ?? name);
+  return applicationName(findRecipe(name, catalog)?.appearsAs ?? name);
 }
 
 // A backend read that throws here means "no daemon-visible application by
@@ -1525,7 +1541,7 @@ function treeNameOf(name: string, catalog: LaunchCatalog): string {
 async function findApplication(backend: Backend, name: string): Promise<SemanticElement | undefined> {
   try {
     const { elements } = await backend.queryElements({ role: "application", name });
-    return elements.find((el) => el.role === "application" && normalise(el.name) === normalise(name));
+    return elements.find((el) => el.role === "application" && applicationName(el.name) === applicationName(name));
   } catch (error) {
     // An observation that ran out of budget did not establish that the
     // application is absent - it established that the daemon does not know.
@@ -1653,10 +1669,10 @@ async function openApplication(
     // launch that left no entry at all would be the one route where an
     // unexplained failure is also an unrecorded one. The name is the caller's
     // own word - past no gate, nothing has been resolved.
-    recordAudit({ application: normalise(name), element: [], scope: "launch", cause: causeOf(undefined), outcome: FAILED });
+    recordAudit({ application: applicationName(name), element: [], scope: "launch", cause: causeOf(undefined), outcome: FAILED });
     throw error;
   }
-  const application = answer.auditApplication ?? normalise(name);
+  const application = answer.auditApplication ?? applicationName(name);
   recordAudit({
     application,
     element: answer.application === undefined ? [] : [answer.application],
@@ -1734,7 +1750,7 @@ async function decideOpenApplication(
   const requested = findRecipe(name, launch.catalog);
   const contending = requested !== undefined && contendsForBrowserEndpoint(requested) ? Object.keys(launch.catalog) : [];
   for (const key of contending) {
-    if (normalise(key) === normalise(name)) continue;
+    if (applicationName(key) === applicationName(name)) continue;
     if (treeNameOf(key, launch.catalog) !== treeName) continue;
     if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: "OneBrowserIdentity", auditApplication: treeName };
   }
@@ -1815,10 +1831,10 @@ async function restartApplication(
   try {
     answer = await decideRestartApplication(params, backend, launch);
   } catch (error) {
-    recordAudit({ application: normalise(name), element: [], scope: "restart", cause: causeOf(undefined), outcome: FAILED });
+    recordAudit({ application: applicationName(name), element: [], scope: "restart", cause: causeOf(undefined), outcome: FAILED });
     throw error;
   }
-  const application = answer.auditApplication ?? normalise(name);
+  const application = answer.auditApplication ?? applicationName(name);
   const element = answer.application ?? answer.blockedBy;
   recordAudit({
     application,
@@ -1968,7 +1984,7 @@ async function decideRestartApplication(
 async function blockingDialogOf(backend: Backend, treeName: string): Promise<SemanticElement | undefined> {
   try {
     const { elements } = await backend.queryElements({ role: "dialog" });
-    return elements.find((el) => normalise(backend.applicationOfElement(el.id) ?? "") === normalise(treeName));
+    return elements.find((el) => applicationName(backend.applicationOfElement(el.id) ?? "") === applicationName(treeName));
   } catch {
     return undefined; // could not look; the caller falls through to the timeout, which says so
   }
