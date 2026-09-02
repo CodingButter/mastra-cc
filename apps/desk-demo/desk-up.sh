@@ -89,10 +89,12 @@ fi
 # operator who wants the narrow version sets DESK_DEMO_APPS to a space-separated
 # list and gets exactly that, or DESK_DEMO_APPS=all for the whole machine.
 #
-# Two names per entry: the identifier the desktop file is called by, and its last
-# dot-segment, which is usually what the application answers to on the
-# accessibility bus. plasmashell is added by hand because the desktop shell
-# itself ships no launcher entry and is the thing an agent looks at first.
+# One name per entry: the identifier the desktop file is called by. The daemon
+# resolves permits and grants through the entry's own candidate names (id,
+# appears-as, final dot-segment), so the old habit of also stating the last
+# dot-segment is gone - a bring-up script compensating for the daemon was the
+# bug report. plasmashell is added by hand because the desktop shell itself
+# ships no launcher entry and is the thing an agent looks at first.
 mapfile -t ENTRY_NAMES < <(
   # The demo's default is the drawer of things a person actually opens. Every
   # application on the machine is one DESK_DEMO_APPS=all away, but that posture
@@ -115,12 +117,17 @@ GRANTS=(plasmashell)
 for entry in "${ENTRY_NAMES[@]}"; do
   PERMITS+=("$entry")
   GRANTS+=("$entry")
-  short="${entry##*.}"
-  if test "$short" != "$entry"; then
-    PERMITS+=("$short")
-    GRANTS+=("$short")
-  fi
 done
+# Extra permit/grant names for a proof or an experiment, stated verbatim on top
+# of the list above - a space-separated list, each name both permitted and
+# granted. This is a hook, not policy: the same deny-by-default daemon hears
+# exactly these extra names and nothing else.
+if test -n "${MASTRA_CC_EXTRA_PERMITS:-}"; then
+  for extra in $MASTRA_CC_EXTRA_PERMITS; do
+    PERMITS+=("$extra")
+    GRANTS+=("$extra")
+  done
+fi
 # Effect classes this session may perform. rawInput is DELIBERATELY absent: it is
 # off unless a person turns it on, and a demo that armed it by default would be
 # demonstrating the opposite of ADR-0046. Add --allow rawInput here on purpose.

@@ -229,13 +229,31 @@ export function restartLevelFor(
   configuration: CapabilityConfiguration,
   application?: string,
 ): { level: RestartLevel; setting: string } {
-  if (application !== undefined) {
+  return restartLevelForAny(configuration, application === undefined ? [] : [application]);
+}
+
+// The same question across an entry's SEVERAL names. One installed entry
+// answers to its full id and to the short name a person types, so an operator
+// who wrote `restart.applications["kate"]` meant the editor, whichever name a
+// caller reaches it by. When more than one of the entry's names is configured,
+// the MOST restrictive level wins: this layer only ever subtracts, and a
+// resolution step that let the permissive spelling outrank the restrictive one
+// would be widening what a configuration authorises through a name change.
+const RESTRICTIVENESS: Record<RestartLevel, number> = { refuse: 0, ask: 1, graceful: 2, force: 3 };
+
+export function restartLevelForAny(
+  configuration: CapabilityConfiguration,
+  applications: Iterable<string>,
+): { level: RestartLevel; setting: string } {
+  let chosen: { level: RestartLevel; setting: string } | undefined;
+  for (const application of applications) {
     const named = configuration.restart.applications.get(normalise(application));
-    if (named !== undefined) {
-      return { level: named, setting: `restart.applications[${JSON.stringify(normalise(application))}]` };
+    if (named === undefined) continue;
+    if (chosen === undefined || RESTRICTIVENESS[named] < RESTRICTIVENESS[chosen.level]) {
+      chosen = { level: named, setting: `restart.applications[${JSON.stringify(normalise(application))}]` };
     }
   }
-  return { level: configuration.restart.fallback, setting: "restart.default" };
+  return chosen ?? { level: configuration.restart.fallback, setting: "restart.default" };
 }
 
 function settingName(application: string | undefined, capability: CapabilityName, perApplication: boolean): string {
@@ -256,12 +274,26 @@ export function withheldBy(
   capability: CapabilityName,
   application?: string,
 ): string | undefined {
-  if (application !== undefined) {
-    const perApplication = configuration.applications.get(normalise(application));
-    const answer = perApplication?.get(capability);
-    if (answer !== undefined) return answer ? undefined : settingName(normalise(application), capability, true);
+  return withheldByAny(configuration, capability, application === undefined ? [] : [application]);
+}
+
+// The same question across an entry's SEVERAL names (see restartLevelForAny
+// above for why). An explicit per-application `false` under ANY of the names
+// withholds and names that setting; an explicit `true` under any name allows,
+// unless a `false` elsewhere outranks it - restrictive wins, because this
+// layer subtracts and name resolution must never widen it. Only when no name
+// is configured does the defaults block answer.
+export function withheldByAny(
+  configuration: CapabilityConfiguration,
+  capability: CapabilityName,
+  applications: Iterable<string>,
+): string | undefined {
+  let allowed = false;
+  for (const application of applications) {
+    const answer = configuration.applications.get(normalise(application))?.get(capability);
+    if (answer === false) return settingName(normalise(application), capability, true);
+    if (answer === true) allowed = true;
   }
-  const fallback = configuration.defaults.get(capability);
-  if (fallback === false) return settingName(application, capability, false);
-  return undefined;
+  if (allowed) return undefined;
+  return configuration.defaults.get(capability) === false ? settingName(undefined, capability, false) : undefined;
 }

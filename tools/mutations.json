@@ -177,7 +177,7 @@
   {
     "name": "launch-skips-the-permit-check",
     "file": "daemon/src/server.ts",
-    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
   },
@@ -360,7 +360,6 @@
     "name": "an-ancestry-climb-that-stops-at-the-first-step",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
     "find": "      climbed.push(here);\n      const parent = await anchor.parentOf(anchor.busName, here);\n",
-    "replace": "      climbed.push(here);\n      const parent = undefined as { busName: string; objectPath: string } | undefined;\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
@@ -409,7 +408,7 @@
   {
     "name": "the-listing-answers-from-its-own-table-not-the-gate",
     "file": "daemon/src/server.ts",
-    "find": "  const withheld = configurationWithholding(launch, capability, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
+    "find": "  const withheld = configurationWithholdingFor(launch, capability, resolved, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
   },
@@ -718,7 +717,6 @@
     "name": "adapter-description-invented-instead-of-generated",
     "file": "packages/desktop/src/mastra.ts",
     "find": "      description: descriptor.description,",
-    "replace": "      description: \"does a thing\",",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
   },
@@ -733,7 +731,6 @@
     "name": "instance-dials-more-than-once",
     "file": "packages/desktop/src/mastra.ts",
     "find": "    this.#dial ??= connect(this.#options);",
-    "replace": "    this.#dial = connect(this.#options);",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
   },
@@ -748,7 +745,6 @@
     "name": "b5-infra-scan-root-removed",
     "file": "tools/pins/b5.mjs",
     "find": "const SCAN_ROOTS = [\"packages\", \"tools\", \"scripts\", \"infra\"];",
-    "replace": "const SCAN_ROOTS = [\"packages\", \"tools\", \"scripts\"];",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
@@ -756,7 +752,6 @@
     "name": "desktop-connect-swallows-the-refusal",
     "file": "packages/desktop/src/index.ts",
     "find": "  if (explicit) return dial(options);",
-    "replace": "  if (explicit) return dial(options).catch(() => ({}) as TransportClient);",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-refusal-survives-the-wrapper.test.ts"
   },
@@ -764,7 +759,6 @@
     "name": "signals-attribution-allowlist-emptied",
     "file": "packages/desktop/src/signals.ts",
     "find": "\"external\"",
-    "replace": "",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
@@ -772,7 +766,6 @@
     "name": "signals-throttle-window-opened",
     "file": "packages/desktop/src/signals.ts",
     "find": "      if (last !== undefined && event.at - last < this.#dedupeWindowMs) return;",
-    "replace": "      if (false && last !== undefined && event.at - last < this.#dedupeWindowMs) return;",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
@@ -780,7 +773,6 @@
     "name": "signals-priority-rewritten-on-the-way-through",
     "file": "packages/desktop/src/signals.ts",
     "find": "        priority: event.priority,",
-    "replace": "        priority: \"urgent\",",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
@@ -788,7 +780,6 @@
     "name": "signals-never-attaches-the-listener",
     "file": "packages/desktop/src/signals.ts",
     "find": "    this.#detach = client.onChangeEvent((event) => {\n      void this.#onChange(event);\n    });",
-    "replace": "",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
@@ -796,7 +787,6 @@
     "name": "signals-summary-carries-the-elements-content",
     "file": "packages/desktop/src/signals.ts",
     "find": "  return `desktop ${event.kind}: ${event.role} ${event.id} (watch ${event.subscriptionId})`;",
-    "replace": "  return `desktop ${event.kind}: ${event.role} said something (watch ${event.subscriptionId})`;",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
@@ -804,7 +794,6 @@
     "name": "signals-stop-abandons-the-listener",
     "file": "packages/desktop/src/signals.ts",
     "find": "    this.#detach?.();\n    this.#detach = undefined;",
-    "replace": "    this.#detach = undefined;",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
@@ -812,7 +801,6 @@
     "name": "signals-let-the-idle-thread-sleep",
     "file": "packages/desktop/src/signals.ts",
     "find": "      ifIdle: deps.target.ifIdle ?? { behavior: \"wake\" },",
-    "replace": "      ifIdle: deps.target.ifIdle,",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
@@ -820,7 +808,6 @@
     "name": "b8-forgets-the-proof-harness-is-exempt",
     "file": "tools/pins/b8.mjs",
     "find": "\"infra/webtop/signals/proof.sh\"",
-    "replace": "",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
@@ -828,7 +815,6 @@
     "name": "b8-forgets-the-errand-harness-is-exempt",
     "file": "tools/pins/b8.mjs",
     "find": "\"infra/webtop/errands/run-errands.sh\"",
-    "replace": "",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
@@ -836,7 +822,6 @@
     "name": "instance-redials-after-close",
     "file": "packages/desktop/src/mastra.ts",
     "find": "    this.#closed = true;",
-    "replace": "",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
   },
@@ -864,7 +849,7 @@
   {
     "name": "derived-launch-skips-the-permit-check",
     "file": "daemon/src/server.ts",
-    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
   },
@@ -892,7 +877,7 @@
   {
     "name": "running-state-escapes-the-observe-grant",
     "file": "daemon/src/server.ts",
-    "find": "  if (!isVisible(launch.visibility ?? new Set(), entry.name)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
+    "find": "  if (!entryVisible(launch, entry, index)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
   },
@@ -936,14 +921,12 @@
     "file": "daemon/src/server.ts",
     "find": "const owned = launch.table.ownsName(name);",
     "cwd": "daemon",
-    "testFile": "src/__tests__/who-may-close-a-window.test.ts",
-    "replace": "const owned = launch.table.entries()[0];"
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   },
   {
     "name": "graceful-restart-escalates-to-a-kill",
     "file": "daemon/src/server.ts",
     "find": "authority.level === \"force\" ? \"SIGKILL\" : \"SIGTERM\"",
-    "replace": "\"SIGKILL\"",
     "cwd": "daemon",
     "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   },
@@ -993,7 +976,6 @@
     "name": "b8-forgets-the-delivery-measurement-is-exempt",
     "file": "tools/pins/b8.mjs",
     "find": "\"infra/webtop/04-a-key-addressed-to-one-element/measure-delivery.sh\",",
-    "replace": "",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
@@ -1045,5 +1027,47 @@
     "find": " && stat.starttime === entry.starttime",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "the-gate-picks-a-claimant-instead-of-refusing-ambiguity",
+    "file": "daemon/src/server.ts",
+    "find": "  if (entry === undefined && claimants.length > 1) return { kind: \"ambiguous\" };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "a-contested-name-starts-carrying-permission-for-everyone",
+    "file": "daemon/src/server.ts",
+    "find": "  return (index.permission.get(candidate)?.length ?? 0) === 1;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "an-enumerated-desk-that-claims-nothing-still-consults-the-permits",
+    "file": "daemon/src/server.ts",
+    "find": "  if (entry === undefined) return { kind: \"unpermitted\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "an-explicit-false-under-a-sibling-name-is-ignored",
+    "file": "daemon/src/capabilities.ts",
+    "find": "    if (answer === false) return settingName(normalise(application), capability, true);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "the-first-configured-restart-spelling-wins-not-the-restrictive-one",
+    "file": "daemon/src/capabilities.ts",
+    "find": " || RESTRICTIVENESS[named] < RESTRICTIVENESS[chosen.level]",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "a-restart-with-no-permits-at-all-still-touches-the-backend",
+    "file": "daemon/src/server.ts",
+    "find": "  if (launch.permits.size === 0) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/launch-authority.test.ts"
   }
 ]
