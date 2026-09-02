@@ -12,6 +12,7 @@ import {
   CAPABILITY_NAMES,
   KEY_CHORD_NAMES,
   type KeyChordName,
+  ROLES,
   SCHEMA_DIGEST,
   PRIORITIES,
   PROTOCOL_VERSION,
@@ -335,6 +336,14 @@ export const COULD_NOT_START_REFUSAL = "the application could not be started";
 // the everyday case, not the exotic one: an unreachable debugging endpoint is
 // a browser this session cannot read.
 export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this session's backend";
+
+// A role the schema does not name is refused HERE, by name, before any backend
+// is asked. The AT-SPI role table is keyed by the generated ROLES vocabulary
+// and has no entry for anything else, so an unchecked "heading" reached the
+// backend and died inside it - and died as BACKEND_UNREADABLE_REFUSAL, which
+// reads as a desk that cannot be read rather than a question that cannot be
+// asked (ADR-0071).
+export const UNKNOWN_ROLE_REFUSAL = "that role is not one this desk can be asked about";
 
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
@@ -1552,7 +1561,7 @@ function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, la
 // multi-line entry would silently escape its scrutiny.
 type Handler = (params: unknown, backend: Backend, launch: LaunchContext, book?: SubscriptionBook) => Promise<unknown>;
 const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
-  queryElements: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.queryElements((p ?? {}) as never), b, l) },
+  queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => queryElements(p, b, l) },
   attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.attestElement((p ?? {}) as never), b, l) },
   readElementContent: { effectClass: "observe", enforcement: "at-result", handler: async (p, b) => b.readElementContent((p ?? {}) as never) },
   subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b, _l, k) => subscribeElement((p ?? {}) as never, b, k) },
@@ -1712,6 +1721,18 @@ function withFocusNote(element: SemanticElement, note: string | undefined): Sema
     "mastra-cc/focus-preservation": note,
   };
   return { ...element, diagnostic };
+}
+
+// The role guard mirrors the chord guard in sendKeyChord: the wire vocabulary
+// is the generated ROLES tuple, and a role outside it (or not a string at all)
+// is a malformed parameter, refused before the call. Enforcement of the
+// answer itself stays at-result, as for every observe-class method.
+async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<unknown> {
+  const role = (p as { role?: unknown } | undefined)?.role;
+  if (role !== undefined && !(ROLES as readonly string[]).includes(role as string)) {
+    return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  return observedWithConfiguration(await b.queryElements((p ?? {}) as never), b, l);
 }
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
@@ -2182,12 +2203,21 @@ export async function handleRequest(
       recordAudit({ application: undefined, element: answeredElements(result), scope: "observe", cause: causeOf(undefined), outcome: observeOutcome(result) });
     }
     return { type: "response", id: request.id, result: withoutInternals(result) };
-  } catch {
+  } catch (error) {
     // Whatever the backend threw stays on this side of the wire; the client
     // gets one honest constant, never the raw error (98ac7fd's lesson). The
-    // attempt is still recorded: an access the daemon could not complete is a
-    // fact about access, and a record that keeps only the tidy cases is a
-    // record of the tidy cases.
+    // operator's own stderr gets the cause - name and message, never the
+    // params - because a failure that is invisible everywhere is a failure
+    // that has to be diagnosed by patching the bundle (ADR-0071). This line is
+    // the daemon's log, not the audit record: the record keeps its no-prose
+    // discipline. The attempt is still recorded: an access the daemon could
+    // not complete is a fact about access, and a record that keeps only the
+    // tidy cases is a record of the tidy cases.
+    // Subclasses here do not set .name (IncompleteObservationError reads as
+    // "Error" through it), so the class name is what gets written.
+    const name = error instanceof Error ? error.constructor.name || error.name : "Error";
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
     if (entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
     }
