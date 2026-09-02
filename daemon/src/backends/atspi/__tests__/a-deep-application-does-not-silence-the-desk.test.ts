@@ -141,8 +141,8 @@ describe("a deep application does not silence the desk", () => {
   });
 
   // T5: the total net. Two applications of 45 nodes against a total of 80:
-  // the first fits (45 < 50 per app), the second trips the total half of the
-  // same check in the walk.
+  // the per-app limit (1000) never binds; the first application fits the total
+  // (45 < 80) and the second trips the total half of the same check in the walk.
   it("still refuses when the desk-wide node budget is met by the second application", async () => {
     const limits = { maxDepth: 1000, maxNodesPerApp: 1000, maxNodesTotal: 80 };
 

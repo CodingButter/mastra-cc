@@ -1723,11 +1723,6 @@ function withFocusNote(element: SemanticElement, note: string | undefined): Sema
   return { ...element, diagnostic };
 }
 
-// The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
-// the permit set is consulted before the catalog, the tree, or anything else,
-// and an unpermitted name never reaches a capability probe, because the probe
-// itself would leak that the application exists. Runs inside the serialised
-// chain like every other operation.
 // The role guard mirrors the chord guard in sendKeyChord: the wire vocabulary
 // is the generated ROLES tuple, and a role outside it (or not a string at all)
 // is a malformed parameter, refused before the call. Enforcement of the
@@ -1740,6 +1735,11 @@ async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<
   return observedWithConfiguration(await b.queryElements((p ?? {}) as never), b, l);
 }
 
+// The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
+// the permit set is consulted before the catalog, the tree, or anything else,
+// and an unpermitted name never reaches a capability probe, because the probe
+// itself would leak that the application exists. Runs inside the serialised
+// chain like every other operation.
 async function openApplication(
   params: { name?: string },
   backend: Backend,
