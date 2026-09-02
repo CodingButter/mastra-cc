@@ -177,7 +177,7 @@
   {
     "name": "launch-skips-the-permit-check",
     "file": "daemon/src/server.ts",
-    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
   },
@@ -864,7 +864,7 @@
   {
     "name": "derived-launch-skips-the-permit-check",
     "file": "daemon/src/server.ts",
-    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
   },
@@ -892,7 +892,7 @@
   {
     "name": "running-state-escapes-the-observe-grant",
     "file": "daemon/src/server.ts",
-    "find": "  if (!isVisible(launch.visibility ?? new Set(), entry.name)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
+    "find": "  if (!entryVisible(launch, entry, index)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
   },
@@ -1045,5 +1045,28 @@
     "find": " && stat.starttime === entry.starttime",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "the-gate-picks-a-claimant-instead-of-refusing-ambiguity",
+    "file": "daemon/src/server.ts",
+    "find": "  if (entry === undefined && claimants.length > 1) return { kind: \"ambiguous\" };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "a-contested-name-starts-carrying-permission-for-everyone",
+    "file": "daemon/src/server.ts",
+    "find": "  return (index.permission.get(candidate)?.length ?? 0) === 1;",
+    "replace": "  return true;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "an-enumerated-desk-that-claims-nothing-still-consults-the-permits",
+    "file": "daemon/src/server.ts",
+    "find": "  if (entry === undefined) return { kind: \"unpermitted\" };",
+    "replace": "  if (entry === undefined) return permits.has(wanted) ? { kind: \"permitted\" } : { kind: \"unpermitted\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
   }
 ]

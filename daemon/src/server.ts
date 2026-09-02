@@ -50,6 +50,7 @@ import {
   WriteNotObservedError,
   runningStateOf,
 } from "./backend.js";
+import type { InventoryEntry } from "./inventory.js";
 import {
   FAILED,
   PERFORMED,
@@ -272,6 +273,14 @@ function observedWithConfiguration<T extends { elements?: SemanticElement[]; ele
 export const UNAVAILABLE_REFUSAL =
   "refused by the launch gate: no application by that name is one this session may launch - listApplications names every application this machine has, each capability's state, and the setting behind every refusal";
 
+// A name TWO entries answer to authorises neither: the gate refuses rather
+// than picking, the same degradation the running census applies to an
+// ambiguous runtime match. The refusal says how to ask unambiguously, and
+// deliberately does NOT name the contenders - the caller can read those from
+// listApplications itself (ADR-0042).
+export const AMBIGUOUS_NAME_REFUSAL =
+  "refused by the launch gate: more than one installed application answers to that name - ask again with the application's full id, which listApplications reports for every entry";
+
 export const ALREADY_RUNNING_REFUSAL =
   "that application is already running and was not opened by this daemon - launching a second copy is refused; the running copy must be closed first";
 
@@ -450,10 +459,16 @@ export const LIST_APPLICATIONS_REFUSAL =
 // which is why the states are not collapsed: a capability withheld by
 // configuration NAMES its setting and a capability this daemon has no path to
 // says so, because no setting would grant it.
+// The optional index is the LISTING's: it holds the enumerated inventory, so
+// observe and launch resolve through the entry's several names (ADR below).
+// A caller without one - a context built without a server, a test asking
+// about one name - gets the exact-name behaviour, the same degradation the
+// launch gate applies when the inventory cannot be read at all.
 export function capabilityStateFor(
   launch: LaunchContext,
   capability: CapabilityName,
   application: string,
+  index?: InventoryIndex,
 ): Capability {
   // What this daemon can do AT ALL for this application, before any question
   // of permission. Launch needs a recipe; the element verbs need an element,
@@ -475,6 +490,9 @@ export function capabilityStateFor(
   // Observe is the grants file's, and it is the one capability whose session
   // answer is a NAME set rather than a class: an application this session may
   // not read is still listed (that is the reversal), with observe off.
+  // With an index in hand, observe and launch resolve the application through
+  // its entry's own candidate names - unique claims only, ambiguity refuses.
+  const resolved = index === undefined ? undefined : claimantOf(normalise(application), index);
   const held =
     capability === "observe"
       ? // Deny by default when nothing was composed (ADR-0036, the grants
@@ -482,9 +500,11 @@ export function capabilityStateFor(
         // nothing, and reporting "all" here would advertise a read the reader
         // would then refuse. startServer always passes the set it composed, so
         // this fallback answers for a context built without a server at all.
-        isVisible(launch.visibility ?? new Set(), application)
+        index !== undefined && resolved !== undefined
+        ? entryVisible(launch, resolved, index)
+        : index === undefined && isVisible(launch.visibility ?? new Set(), application)
       : capability === "launch"
-        ? launch.permits.has(normalise(application))
+        ? resolvePermitted(application, index, launch.catalog, launch.permits).kind === "permitted"
         : holdsEffectAuthority(launch, capability);
   if (!held) {
     return {
@@ -541,12 +561,12 @@ function sessionSettingFor(capability: CapabilityName): string {
 function runningFieldsFor(
   launch: LaunchContext,
   census: RunningCensus,
-  entry: { name: string; diagnostic?: Record<string, string> },
-  claims: ReadonlyMap<string, number>,
+  entry: InventoryEntry,
+  index: InventoryIndex,
   heard: AccessibilityLayerState,
   ownedAndLive: ReadonlySet<string>,
 ): { running: RunningState; runningUnknownBy?: string } {
-  if (!isVisible(launch.visibility ?? new Set(), entry.name)) {
+  if (!entryVisible(launch, entry, index)) {
     return { running: "cannot-tell", runningUnknownBy: OBSERVE_SETTING };
   }
   // A cannot-tell from the census is a DIFFERENT ignorance: this session may
@@ -562,7 +582,7 @@ function runningFieldsFor(
   // Naming one of them the running one would be a coin flip reported as a
   // reading, so both are told the truth: something answers to that name and
   // this daemon cannot say which of you it is.
-  if (answering.some((name) => (claims.get(name) ?? 0) > 1)) return { running: "cannot-tell" };
+  if (answering.some((name) => (index.census.get(name)?.length ?? 0) > 1)) return { running: "cannot-tell" };
   if (answering.length > 0) return { running: "answering" };
   // Absence is only a measurement if EVERY name this entry could answer to was
   // within the horizon. Otherwise the route never had a view of it.
@@ -627,6 +647,120 @@ function candidateNamesOf(entry: { name: string; diagnostic?: Record<string, str
   const segment = entry.name.slice(entry.name.lastIndexOf(".") + 1);
   if (segment.length > 0) names.add(normalise(segment));
   return names;
+}
+
+// ONE CONSTRUCTION SITE for "what does this desk answer to". The union is the
+// listing's union, moved rather than reimplemented: installed entries first,
+// keeping their diagnostic, then every catalog recipe key the scan did not
+// see as a synthetic entry - a recipe adds a name the scan could not, and
+// never overwrites what the machine itself said. Both the listing and the
+// launch gate build their claims HERE, so there is exactly one notion of
+// which entries claim a name and one notion of ambiguity.
+//
+// Two indexes over one union, because the two readers tolerate different
+// errors: `census` includes the `Name=` display label (a wrong match degrades
+// to cannot-tell), `permission` does not (a wrong match launches or exposes
+// the wrong application - see candidateNamesOf above for the measurement).
+export interface InventoryIndex {
+  readonly entries: readonly InventoryEntry[];
+  /** censusNamesOf-derived: candidate -> entries claiming it */
+  readonly census: ReadonlyMap<string, readonly InventoryEntry[]>;
+  /** candidateNamesOf-derived: candidate -> entries claiming it */
+  readonly permission: ReadonlyMap<string, readonly InventoryEntry[]>;
+}
+
+export function indexInventory(installed: readonly InventoryEntry[], catalog: LaunchCatalog): InventoryIndex {
+  const byName = new Map(installed.map((entry) => [normalise(entry.name), entry] as const));
+  for (const key of Object.keys(catalog)) {
+    if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });
+  }
+  const census = new Map<string, InventoryEntry[]>();
+  const permission = new Map<string, InventoryEntry[]>();
+  for (const entry of byName.values()) {
+    for (const name of censusNamesOf(entry, catalog)) census.set(name, [...(census.get(name) ?? []), entry]);
+    for (const name of candidateNamesOf(entry, catalog)) permission.set(name, [...(permission.get(name) ?? []), entry]);
+  }
+  return { entries: [...byName.values()], census, permission };
+}
+
+// PERMISSION RESOLVED THE WAY THE CENSUS READS (the launch gate and the
+// listing both call this, so they cannot disagree). The rules, in order:
+//
+// - No index at all (`undefined`) means the inventory could not be READ, not
+//   that it was empty: the daemon cannot know whether a name is ambiguous, so
+//   it falls back to the exact check it always did. This is deliberately the
+//   ONLY route to that check - a backend that cannot enumerate must not lose
+//   the ability to launch what it can launch.
+// - Exactly one entry claims the name: that entry is the subject, and it is
+//   permitted if ANY of its own permission candidates is in the permit set.
+//   Permitting `org.kde.kate` covers a request for `kate`, and vice versa.
+// - More than one entry claims it: refuse as ambiguous, whatever the permits
+//   say. The census already degrades this way rather than flipping a coin;
+//   permission must be at least as conservative, because guessing wrong here
+//   launches or exposes the wrong application.
+// - Nothing claims it, on an inventory that WAS read: unpermitted, without
+//   consulting the permit set. The desk was enumerated and does not publish
+//   that name; a permit for a name nothing answers to authorises nothing.
+export type Resolution =
+  | { kind: "permitted"; entry?: InventoryEntry }
+  | { kind: "unpermitted" }
+  | { kind: "ambiguous" };
+
+export function resolvePermitted(
+  name: string,
+  index: InventoryIndex | undefined,
+  catalog: LaunchCatalog,
+  permits: ReadonlySet<string>,
+): Resolution {
+  const wanted = normalise(name);
+  if (index === undefined) return permits.has(wanted) ? { kind: "permitted" } : { kind: "unpermitted" };
+  const claimants = index.permission.get(wanted) ?? [];
+  // AN EXACT FULL ID IS NEVER AMBIGUOUS. Derived recipes routinely put a
+  // sibling's id inside another entry's candidates - chrome and gmail both
+  // appear as `chrome` - and a rule that let a sibling's appears-as make the
+  // real entry's own id unreachable would refuse launches that work today.
+  // The union keys entries by normalised id, so at most one entry can match
+  // exactly; only DERIVED claims can contend, and those refuse at >1.
+  const entry = claimantOf(wanted, index);
+  if (entry === undefined && claimants.length > 1) return { kind: "ambiguous" };
+  if (entry === undefined) return { kind: "unpermitted" };
+  const permitted = [...candidateNamesOf(entry, catalog)].some((candidate) => candidateAuthorises(entry, candidate, index) && permits.has(candidate));
+  return permitted ? { kind: "permitted", entry } : { kind: "unpermitted" };
+}
+
+// Whether a candidate name can CARRY authority (a permit, a grant) for this
+// entry. Its own id always can; a derived name only when this entry is the
+// sole claimant. Without this, one `--permit chrome` would authorise both
+// chrome and gmail through the shared appears-as - candidate matching may
+// change which names REACH an entry, never how many entries one name covers.
+// The one entry a (normalised) name resolves to, or undefined when the name
+// is unclaimed or contested. Exact-id precedence as above.
+function claimantOf(wanted: string, index: InventoryIndex): InventoryEntry | undefined {
+  const claimants = index.permission.get(wanted) ?? [];
+  const exact = claimants.find((claimant) => normalise(claimant.name) === wanted);
+  return exact ?? (claimants.length === 1 ? claimants[0] : undefined);
+}
+
+function candidateAuthorises(entry: InventoryEntry, candidate: string, index: InventoryIndex): boolean {
+  if (normalise(entry.name) === candidate) return true;
+  return (index.permission.get(candidate)?.length ?? 0) === 1;
+}
+
+// VISIBILITY THROUGH THE SAME CANDIDATES, for the two server-side call sites
+// that hold an ENTRY (the observe capability and the running field). A person
+// granting `org.kde.kate` observation should not also have to grant `kate`.
+// A candidate only carries a grant when it names this entry UNAMBIGUOUSLY -
+// two entries claiming `dolphin` make a grant for `dolphin` authorise
+// neither, exactly as a permit would. The entry's own id is always its own
+// unique claim, so full-id grants and the "all" mode behave as they always
+// did. grants.ts and every backend call site are untouched: what the backend
+// walks during enumeration keys on runtime tree names, and widening THAT
+// would change what the desk exposes, which this change must not.
+function entryVisible(launch: LaunchContext, entry: InventoryEntry, index: InventoryIndex): boolean {
+  const visibility = launch.visibility ?? new Set<string>();
+  return [...candidateNamesOf(entry, launch.catalog)].some(
+    (candidate) => candidateAuthorises(entry, candidate, index) && isVisible(visibility, candidate),
+  );
 }
 
 
@@ -706,11 +840,10 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
   //
   // Installed entries come first and keep their diagnostic: a recipe adds a
   // name the scan could not see, and never overwrites what the machine itself
-  // said about an application it does have.
-  const byName = new Map(installed.map((entry) => [normalise(entry.name), entry]));
-  for (const key of Object.keys(launch.catalog)) {
-    if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });
-  }
+  // said about an application it does have. The union and the claims over it
+  // are built by indexInventory so this listing and the launch gate cannot
+  // hold different beliefs about who claims a name.
+  const index = indexInventory(installed, launch.catalog);
   // WHAT IS ANSWERING (ADR-0063), asked once for the whole listing rather than
   // once per application.
   //
@@ -730,12 +863,6 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
     // honest thing instead - cannot-tell for every entry, no setting named,
     // because none would help.
     census = { observable: new Set(), answersFor: new Set() };
-  }
-  // Which runtime names more than one entry could answer to, counted once for
-  // the listing so an ambiguous match can be told from a certain one.
-  const claims = new Map<string, number>();
-  for (const entry of byName.values()) {
-    for (const name of censusNamesOf(entry, launch.catalog)) claims.set(name, (claims.get(name) ?? 0) + 1);
   }
   // WHETHER THE DESK CAN BE HEARD, asked ONCE for the whole listing, exactly
   // as the census above is. It is a fact about the machine, identical for
@@ -769,15 +896,15 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
     ),
   );
   return {
-    applications: [...byName.values()]
+    applications: [...index.entries]
       .sort((left, right) => left.name.localeCompare(right.name))
       .map((entry) => ({
         name: entry.name,
-        capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(launch, capability, entry.name)),
+        capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(launch, capability, entry.name, index)),
         // A statement about this daemon's own recipes, never about permission:
         // an application can be installed and honestly not launchable.
         launchable: findRecipe(entry.name, launch.catalog) !== undefined,
-        ...runningFieldsFor(launch, census, entry, claims, heard, ownedAndLive),
+        ...runningFieldsFor(launch, census, entry, index, heard, ownedAndLive),
         ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
       })),
   };
@@ -1522,10 +1649,34 @@ async function decideOpenApplication(
   backend: Backend,
   launch: LaunchContext,
 ): Promise<Classified<OpenApplicationResult>> {
-  const name = typeof params.name === "string" ? params.name : "";
-  if (!launch.permits.has(normalise(name))) {
+  const requestedName = typeof params.name === "string" ? params.name : "";
+  // THE PERMIT GATE RESOLVES THE WAY THE CENSUS READS. The inventory is
+  // enumerated first because the gate needs to know which entry - if exactly
+  // one - claims the requested name; a backend that cannot enumerate
+  // (InventoryUnsupportedError) degrades to the exact-name check this gate
+  // always was, losing nothing it could ever do. Enumeration is a read the
+  // caller could make directly through listApplications (ADR-0042 made the
+  // inventory readable), so consulting it before refusing leaks nothing the
+  // refusal must protect.
+  let index: InventoryIndex | undefined;
+  try {
+    index = indexInventory(await backend.installedApplications(), launch.catalog);
+  } catch (error) {
+    if (!(error instanceof InventoryUnsupportedError)) throw error;
+  }
+  const resolution = resolvePermitted(requestedName, index, launch.catalog, launch.permits);
+  if (resolution.kind === "ambiguous") {
+    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: "LaunchUnavailable" };
+  }
+  if (resolution.kind === "unpermitted") {
     return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
   }
+  // From here on the launch acts on the ENTRY the name resolved to - its full
+  // id - so a request for `kate` and a request for `org.kde.kate` are the
+  // same launch, hit the same recipe, and are owned under the same name. When
+  // the inventory could not be read there is no entry, and the caller's own
+  // name is the subject, exactly as before this gate learned to resolve.
+  const name = resolution.entry?.name ?? requestedName;
   // The user's configuration, asked after the session's authority and before
   // anything is spawned or probed. A name that got this far is one this session
   // was permitted to launch, so naming the setting here tells the caller

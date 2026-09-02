@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { InstalledApplication } from "@mastra-cc/protocol-types";
-import type { Backend } from "../backend.js";
+import { InventoryUnsupportedError, type Backend } from "../backend.js";
 import { desktopEntryDirectories, scanInstalledApplications } from "../inventory.js";
 import { baseLaunchCatalog, deriveLaunchCatalog } from "../launch/derived.js";
 import {
@@ -131,10 +131,34 @@ describe("the machine's own catalog", () => {
     expect(unpermitted.refusal).toBe(unknown.refusal);
   });
 
-  it("a permitted name the machine does not provide still gets NO_RECIPE_REFUSAL, byte for byte", async () => {
+  it("a permitted name the enumerated machine does not claim refuses at the gate, byte-identically to unpermitted", async () => {
+    // The inventory WAS read and nothing on it answers to this name: a permit
+    // for a name the desk does not publish authorises nothing, and the
+    // refusal is the same constant an unpermitted name gets - the gate does
+    // not disclose whether the permit or the machine was the missing half.
     const context = launch({ permits: new Set(["zz-no-such-app"]) });
     const answer = await open("zz-no-such-app", context);
-    expect(answer.refusal).toBe(NO_RECIPE_REFUSAL);
+    expect(answer.refusal).toBe(UNAVAILABLE_REFUSAL);
+  });
+
+  it("a backend that cannot enumerate keeps the exact-name gate, and NO_RECIPE past it", async () => {
+    // Inventory UNAVAILABLE is not inventory EMPTY: with nothing to resolve
+    // against, the gate degrades to the exact permit check it always was, and
+    // a permitted name with no recipe still reaches the spawner's honest
+    // refusal - a backend that cannot enumerate loses no launch it could do.
+    const backend = {
+      ...inventoryBackend(),
+      installedApplications: async () => {
+        throw new InventoryUnsupportedError("this route cannot look");
+      },
+    } as unknown as Backend;
+    const context = launch({ permits: new Set(["zz-no-such-app"]) });
+    const answer = await handleRequest(
+      { type: "request", id: 1, method: "openApplication", params: { name: "zz-no-such-app" } },
+      backend,
+      context,
+    );
+    expect((answer.result as { refusal?: string }).refusal).toBe(NO_RECIPE_REFUSAL);
   });
 
   it("a permitted derived name reaches the launch path", async () => {
