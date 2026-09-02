@@ -51,6 +51,15 @@ const REGISTRY_PATH = "/org/a11y/atspi/registry/deviceeventcontroller";
 // believing the reply.
 const SYNTH_SYM = 3;
 
+// STRING, which is 4 - read from the platform's own enum on the demo desk
+// (`Atspi.KeySynthType.STRING`) rather than counted from the header. It types
+// a run of text into whatever holds focus; the spike measured it landing
+// exactly, and Phase 0 of ADR-0070 measured it landing in a browser's address
+// bar where no editable-text interface exists. There is no Enter in a string:
+// the newline is a chord (SYNTH_SYM above), and the server refuses a string
+// that carries one before it reaches here.
+const SYNTH_STRING = 4;
+
 interface CallSeam {
   call(exchange: {
     destination: string;
@@ -121,6 +130,24 @@ export async function emitChord(seam: CallSeam, chord: KeyChordName): Promise<vo
   const keysym = keysymFor(chord);
   if (keysym === undefined) throw new Error(`no keysym for the chord ${JSON.stringify(chord)}`);
   await generate(seam, keysym);
+}
+
+/**
+ * Emit a run of text on the accessibility registry, as keystrokes. The same
+ * contract as emitChord: nothing honest to return, global delivery, and the
+ * caller reads back. This is the second and last thing inside the fence
+ * (ADR-0070); it takes the text as given, because what may be in it is the
+ * server's decision, made before the call.
+ */
+export async function emitString(seam: CallSeam, text: string): Promise<void> {
+  await seam.call({
+    destination: REGISTRY_BUS,
+    path: REGISTRY_PATH,
+    iface: DEVICE_EVENT_CONTROLLER,
+    member: "GenerateKeyboardEvent",
+    signature: "isu",
+    body: [0, text, SYNTH_STRING],
+  });
 }
 
 async function generate(seam: CallSeam, keysym: number): Promise<void> {

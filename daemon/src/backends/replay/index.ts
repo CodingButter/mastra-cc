@@ -208,6 +208,10 @@ export class ReplayBackend implements Backend {
     this.refuseToPerform("send a key chord");
   }
 
+  async typeText(): Promise<never> {
+    this.refuseToPerform("type text");
+  }
+
   close(): Promise<void> {
     return this.inner.close();
   }

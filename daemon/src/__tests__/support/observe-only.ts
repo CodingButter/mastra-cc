@@ -37,6 +37,7 @@ export const observeOnlyEffects: Pick<
   | "setElementCaret"
   | "revealElement"
   | "sendKeyChord"
+  | "typeText"
 > = {
   installedApplications: async () => {
     throw new InventoryUnsupportedError("this test double has no machine behind it and cannot enumerate what is installed");
@@ -79,6 +80,9 @@ export const observeOnlyEffects: Pick<
   // a plausible element would let a suite record a key as delivered on a
   // machine with no keyboard, no desktop and no witness.
   sendKeyChord: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  typeText: async () => {
     throw new EffectUnsupportedError("this test double observes only");
   },
 };

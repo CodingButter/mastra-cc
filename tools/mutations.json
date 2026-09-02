@@ -982,7 +982,7 @@
   {
     "name": "an-unarmed-session-is-told-only-the-flattering-half",
     "file": "daemon/src/server.ts",
-    "find": "  if (hasRoute) return RAW_INPUT_SCOPE_REFUSAL;",
+    "find": "  if (hasRoute) return sentence;",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
   },
@@ -1076,5 +1076,33 @@
     "find": ".toLowerCase()",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-name-any-case.test.ts"
+  },
+  {
+    "name": "the-typing-route-claims-a-machine-that-has-none",
+    "file": "daemon/src/server.ts",
+    "find": "if (launch.keys === undefined) return { refusal: NO_TYPE_ROUTE_REFUSAL, refusalClass: \"EffectUnsupportedError\" as const };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-malformed-text-is-typed-anyway",
+    "file": "daemon/src/server.ts",
+    "find": "      if (malformed !== undefined) return { refusal: malformed, refusalClass: \"MalformedParameter\" as const };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-delete-character-is-printable",
+    "file": "daemon/src/server.ts",
+    "find": " || code === 0x7f",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-text-of-any-length-is-a-field-entry",
+    "file": "daemon/src/server.ts",
+    "find": "  if (text.length > TYPE_TEXT_MAX_LENGTH) {\n    return `refused before the call: \"typeText\" was given ${text.length} characters and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
   }
 ]

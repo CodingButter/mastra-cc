@@ -141,3 +141,12 @@ is worse than a refusal — the caller believes the desk received a chord it nev
 
 A chord with a held modifier arrives when there is an honest keysym-to-keycode route, with its own
 measurement. It is not owed by this record.
+
+## Amendment, 2026-09-02: the string surface is admitted, as its own method, by ADR-0070
+
+Clause 1's refusal of a free-form key string is reversed by
+[ADR-0070](0070-type-blind-read-back.md): a browser's address bar was measured publishing a
+value with no interface to set it, and the keyboard is the only route. The chord list stays closed
+and `sendKeyChord` still refuses anything outside it; the string is a separate method, `typeText`,
+bounded and printable-only, in the same fenced class with the same gate, aim, read-back and
+receipt. Clause 3 — nothing falls back to it — stands for both.
