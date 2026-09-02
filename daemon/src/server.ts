@@ -544,6 +544,7 @@ function runningFieldsFor(
   entry: { name: string; diagnostic?: Record<string, string> },
   claims: ReadonlyMap<string, number>,
   heard: AccessibilityLayerState,
+  ownedAndLive: ReadonlySet<string>,
 ): { running: RunningState; runningUnknownBy?: string } {
   if (!isVisible(launch.visibility ?? new Set(), entry.name)) {
     return { running: "cannot-tell", runningUnknownBy: OBSERVE_SETTING };
@@ -572,6 +573,19 @@ function runningFieldsFor(
   // on the desk at once.
   if (heard === "disabled") return { running: "cannot-tell", runningUnknownBy: ACQUIRE_SETTING };
   if (heard === "cannot-tell") return { running: "cannot-tell" };
+  // AND WHETHER THIS DAEMON CAN STILL SEE THE PROCESS BREATHING. The desk can
+  // be heard, and this name is not on the tree - but this daemon started it and
+  // can still verify the process it started is alive. Absence from the
+  // accessibility tree is not absence from the machine, and restart already
+  // treats owned-process liveness as authoritative over tree absence for
+  // exactly this reason (:1613). No setting is named: nothing an operator could
+  // change fixes "I own it, it is alive, and it is not publishing".
+  //
+  // ONLY names this daemon launched are consulted. An application a person
+  // started by hand has no owned entry, so the set does not contain it, so
+  // nothing about it changes. That invisibility is a product decision, and this
+  // reading is scoped to leave it exactly where it was.
+  if ([...names].some((name) => ownedAndLive.has(name))) return { running: "cannot-tell" };
   return { running: "not-answering" };
 }
 
@@ -724,6 +738,21 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
       return "cannot-tell";
     }
   })();
+  // WHICH NAMES THIS DAEMON OWNS A LIVE PROCESS FOR, computed ONCE for the
+  // listing. ownsName does a synchronous readFileSync of /proc/<pid>/stat per
+  // matching record; asking it per installed entry per candidate name would put
+  // that on the event loop dozens of times over an inventory measured at 125
+  // entries. The number of owned processes is small - it is the number of
+  // QUESTIONS that would not have been.
+  //
+  // The table is the only source consulted. Nothing here enumerates processes,
+  // scans /proc for pids this daemon did not launch, or asks a window manager
+  // anything.
+  const ownedAndLive = new Set(
+    [...new Set(launch.table.entries().map((owned) => owned.name))].filter(
+      (name) => launch.table.ownsName(name) !== undefined,
+    ),
+  );
   return {
     applications: [...byName.values()]
       .sort((left, right) => left.name.localeCompare(right.name))
@@ -733,7 +762,7 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
         // A statement about this daemon's own recipes, never about permission:
         // an application can be installed and honestly not launchable.
         launchable: findRecipe(entry.name, launch.catalog) !== undefined,
-        ...runningFieldsFor(launch, census, entry, claims, heard),
+        ...runningFieldsFor(launch, census, entry, claims, heard, ownedAndLive),
         ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
       })),
   };

@@ -356,3 +356,116 @@ describe("an unheard desk reports ignorance, not absence", () => {
     expect(layer.reads).toBe(1);
   });
 });
+
+// A PROCESS THIS DAEMON CAN STILL SEE BREATHING IS NOT GONE.
+//
+// The second half of the same argument. The desk can be heard, the name is not
+// on the tree, and this daemon started the process and can still verify it is
+// alive. Restart already treats owned-process liveness as authoritative over
+// tree absence; the listing now agrees with it.
+//
+// The boundary these tests exist to defend: this reading consults the OWNERSHIP
+// TABLE and nothing else. An application a person launched by hand has no entry
+// in it and is reported exactly as it was before. That invisibility is a product
+// decision, not a gap.
+
+// An ownership table that has really recorded a process, counting how often it
+// was asked. Recording the daemon's own pid is the honest way to get a live,
+// start-time-matching entry: it is a process that genuinely exists.
+function tableOwning(...names: string[]): OwnershipTable & { asks: number } {
+  const table = new OwnershipTable();
+  for (const name of names) table.record(process.pid, name);
+  const counted = table as OwnershipTable & { asks: number };
+  counted.asks = 0;
+  const ownsName = table.ownsName.bind(table);
+  counted.ownsName = (name: string) => {
+    counted.asks += 1;
+    return ownsName(name);
+  };
+  return counted;
+}
+
+describe("an owned process this daemon can still verify is not reported gone", () => {
+  it("reports cannot-tell, and names no setting, for an application it launched and can still see alive", async () => {
+    // No setting fixes "I own it, it is alive, and it is not publishing" -
+    // pointing a person at a file that cannot help is the mistake the bare
+    // cannot-tell exists to avoid.
+    const applications = await listing(
+      { visibility: "all", table: tableOwning("hidden-from-menus"), accessibility: layerReporting("enabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "hidden-from-menus").running).toBe("cannot-tell");
+    expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
+  });
+
+  it("THE BOUNDARY: an application this daemon did not launch stays reported exactly as before", async () => {
+    // The load-bearing test of this phase. The process in question is alive on
+    // this very machine - it is this test runner - but the daemon owns it under
+    // a DIFFERENT name, so nothing about `hidden-from-menus` may change. A
+    // hand-launched application must not become observable through this path.
+    const applications = await listing(
+      { visibility: "all", table: tableOwning("something-else-entirely"), accessibility: layerReporting("enabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "hidden-from-menus").running).toBe("not-answering");
+    expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
+  });
+
+  it("a stale record whose process was replaced is not a live process", async () => {
+    // Perturbing starttime rather than using a dead pid is deliberate: a dead
+    // pid is indistinguishable from "no record at all" and would pass even if
+    // the liveness check were deleted. A recycled pid is the case only the
+    // start-time comparison catches.
+    const table = tableOwning("hidden-from-menus");
+    for (const owned of table.entries()) owned.starttime = `${Number(owned.starttime) + 1}`;
+
+    const applications = await listing(
+      { visibility: "all", table, accessibility: layerReporting("enabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "hidden-from-menus").running).toBe("not-answering");
+  });
+
+  it("still reports answering when the census heard it, owned or not", async () => {
+    const applications = await listing(
+      { visibility: "all", table: tableOwning("ordinary"), accessibility: layerReporting("enabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "ordinary").running).toBe("answering");
+  });
+
+  it("asks under the names the entry could have been launched as, not the id alone", async () => {
+    // The entry is `hidden-from-menus`; the table recorded it under the `Name=`
+    // the machine wrote, `Hidden From Menus`, which is one of the candidates
+    // the census already derives. The same derivation answers the ownership
+    // question, rather than a second answer to the same question - that
+    // divergence is the whole subject of the segment after this one.
+    const applications = await listing(
+      { visibility: "all", table: tableOwning("Hidden From Menus"), accessibility: layerReporting("enabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(entry(applications, "hidden-from-menus").running).toBe("cannot-tell");
+    expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
+  });
+
+  it("asks the ownership table once for the whole listing, not once per application", async () => {
+    // ownsName does a synchronous readFileSync of /proc per matching record.
+    // Once per installed entry per candidate name would put dozens of blocking
+    // filesystem reads on the event loop inside a hot path.
+    const table = tableOwning("hidden-from-menus");
+    const applications = await listing(
+      { visibility: "all", table, accessibility: layerReporting("enabled") },
+      wholeDesk("ordinary"),
+    );
+
+    expect(applications.length).toBeGreaterThan(1);
+    // One question per distinct OWNED name - never a function of how many
+    // applications are installed.
+    expect(table.asks).toBe(1);
+  });
+});
