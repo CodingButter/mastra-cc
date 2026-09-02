@@ -136,10 +136,12 @@ if test -n "${MASTRA_CC_EXTRA_PERMITS:-}"; then
     GRANTS+=("$extra")
   done
 fi
-# Effect classes this session may perform. rawInput is DELIBERATELY absent: it is
-# off unless a person turns it on, and a demo that armed it by default would be
-# demonstrating the opposite of ADR-0046. Add --allow rawInput here on purpose.
-ALLOWS=(edit activate submit)
+# Effect classes this session may perform. rawInput is here ON PURPOSE, by a
+# person, which is the only way it ever arrives (ADR-0046): this desk now
+# demonstrates the fenced route - typeText into a field that publishes no
+# editable interface, such as a browser's address bar, read back afterwards
+# (ADR-0070) - rather than its absence. Remove it to demonstrate the refusal.
+ALLOWS=(edit activate submit rawInput)
 
 echo "== authority: ${#ENTRY_NAMES[@]} application(s), effects: ${ALLOWS[*]} =="
 echo "== building the daemon =="

@@ -168,13 +168,56 @@ Three rules, and they are not negotiable:
    version of the same act. Use it for keys that carry meaning no operation
    expresses: committing an inline rename with `Enter`, dismissing with
    `Escape`, moving a selection.
-2. **Never for text.** Typing is `setElementText`. A chord is for the keys that
-   are not characters.
+2. **Never for text.** Typing is `setElementText`, or `typeText` under the rules
+   in the next section. A chord is for the keys that are not characters.
 3. **The reply is not evidence.** The desk hands back success for a key that
    landed and for one that vanished into an unfocused window, so the call
    returns the element as it reads afterwards, and you compare. If nothing
    changed, the key did not arrive — say that, rather than assuming it worked
    and the application ignored it.
+
+## Typing where the field will not take a value
+
+Some fields publish a value you can read and no interface through which one can
+be set — a browser's address bar, a search box on a web page, an input in an
+Electron window. `setElementValue` and `setElementText` answer `not-exposed` for
+them, and that answer is correct: nothing was withheld, the application simply
+does not offer it. For those fields, and only those, there is `typeText`: it
+focuses the element you name and types the string at the keyboard, blind. It
+lives in the same raw-input class as `sendKeyChord`, is off unless an operator
+turned it on, and the refusal names the flag when it is off.
+
+The order is fixed, and you do not skip steps:
+
+1. **Try the field's own operation first.** `setElementText` for a text field,
+   `setElementValue` for a magnitude. If it succeeds, you are done, and you
+   verify it the way the section above says. The element you already hold
+   carries the answer too: its `operations` list names `setText` and `setValue`
+   (those are the list's entries for `setElementText` and `setElementValue`,
+   not methods you call) as `available` or `not-exposed`, and a `not-exposed`
+   read there is the same answer as the refusal — you need not make the call
+   just to be told.
+2. **Type blind only on `not-exposed`.** A refusal for any other reason — no
+   authority, a protected control, a value the field rejected — is an answer,
+   and `typeText` is not the way around it. If the operation was `not-exposed`,
+   focus is yours to borrow: call `typeText` with the element's id and the text.
+3. **Always read it back.** The reply is the element as it reads afterwards;
+   `readElementContent` it, or query it again, and compare the value against what
+   you typed. A key follows the window in front, not the element you named, so a
+   string can land somewhere else and the call will still return. If the value
+   does not match, say so — do not press on as though it did.
+
+A newline is not text; it is the chord `Enter`, sent separately with
+`sendKeyChord` after the read-back. The same goes for `Tab` and `Escape`. A
+string carrying one is refused by name before anything is typed. A text is at
+most 1024 characters: a field entry, not a document.
+
+Worked example — navigating a browser: open it, find the element named
+`Address and search bar`, see `setText` is `not-exposed` on it (or call
+`setElementText` and receive the same), call `typeText` with its id and the
+URL, read the bar back and see the URL in it, then `sendKeyChord` `Enter`, then
+query the `window` role and read the browser's title to learn what page you
+reached.
 
 ## Refusals
 

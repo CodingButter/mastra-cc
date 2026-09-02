@@ -303,6 +303,9 @@ describe("effect authority: every element method is refused before the backend i
     sendKeyChord: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
+    typeText: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
     close: async () => undefined,
   };
 

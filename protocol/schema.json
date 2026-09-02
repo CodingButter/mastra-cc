@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -958,6 +958,34 @@
           "type": "string",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the chord vocabulary when the name is not one of them, and what was observed when the element could not be focused or the machine has no way to deliver a key at all."
+        }
+      }
+    },
+    "typeText": {
+      "description": "Deliver a run of printable text to one element by typing it, one keystroke at a time, into whatever the machine is pointing at. This is RAW INPUT in the same class as sendKeyChord, and it exists for one reason: some fields publish a value to read but no interface to set it, so the only way through the machine's own accessibility layer is the keyboard. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying - nothing in this daemon falls back to typing - and a caller is expected to have been REFUSED by the element's own operation first, then to type, then to read the element back and compare. The text is printable only: a newline, a tab or an escape is refused by name, because those are chords (sendKeyChord) and a string that could carry them would be a chord vocabulary with no list. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element the text is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over."
+        },
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "The printable text to type, at most 1024 characters, containing no control characters. It is delivered as keystrokes, so it lands wherever the machine's focus is; the element is how it is aimed, not a guarantee of where it arrives."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the text was delivered; the element as it reads AFTERWARDS, read back from the desktop. It is evidence of what the element became, never a claim that the text arrived in it - the caller compares it against what it expected."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the character or the length when the text is not printable or too long, and what was observed when the element could not be focused or the machine has no way to deliver a key at all."
         }
       }
     }

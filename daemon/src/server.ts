@@ -394,8 +394,17 @@ export const SET_CARET_SCOPE_REFUSAL =
 export const REVEAL_SCOPE_REFUSAL =
   'refused by the scope gate: "revealElement" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method';
 
-export const RAW_INPUT_SCOPE_REFUSAL =
-  'refused by the scope gate: "sendKeyChord" is rawInput-class and this session holds no rawInput authority - a key is raw input even when it is addressed to one element, this session was started without the session flag --allow rawInput, and only a session started with it can perform this method';
+
+// The two raw-input methods share one refusal shape and differ in the name
+// they carry, because the name is what the caller reads back to know which
+// call was turned away (ADR-0070 admits typeText into the same class).
+function rawInputScopeSentence(method: "sendKeyChord" | "typeText"): string {
+  return (
+    `refused by the scope gate: "${method}" is rawInput-class and this session holds no rawInput authority - ` +
+    `${method === "typeText" ? "typed text is keystrokes, and keystrokes are" : "a key is"} raw input even when it is addressed to one element, ` +
+    "this session was started without the session flag --allow rawInput, and only a session started with it can perform this method"
+  );
+}
 
 // The two refusals that are NOT about authority, and the difference between
 // them is the difference the wire's vocabulary was built for. A chord this
@@ -414,6 +423,42 @@ export function unknownChordRefusal(chord: string): string {
 export const NO_KEY_ROUTE_REFUSAL =
   'refused before the call: "sendKeyChord" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
 
+export const NO_TYPE_ROUTE_REFUSAL =
+  'refused before the call: "typeText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
+
+// WHAT A STRING MAY CARRY (ADR-0070 clause 3). The bound and the character
+// class are the whole of what keeps typeText from being the free-form key
+// surface ADR-0067 refused: a control character is a chord with no name on the
+// list, and a string long enough to be a document is a payload, not a field
+// entry. Both are refused BY NAME - the offending character and its position,
+// or the length and the limit - so the caller knows which sentence to fix.
+// A newline in particular is refused with the chord that replaces it, because
+// that is the one a caller reaching for typeText to "submit" will have meant.
+export const TYPE_TEXT_MAX_LENGTH = 1024;
+
+export function typeTextRefusal(text: string): string | undefined {
+  if (text.length === 0) return 'refused before the call: "typeText" was given no text - an empty string types nothing, and a call that does nothing is refused rather than performed';
+  if (text.length > TYPE_TEXT_MAX_LENGTH) {
+    return `refused before the call: "typeText" was given ${text.length} characters and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;
+  }
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    // C0, DEL and C1: every code point a keyboard has no printable glyph for.
+    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) {
+      const which =
+        code === 0x0a || code === 0x0d
+          ? "a newline - a newline is not text, it is the chord Enter, sent separately through sendKeyChord"
+          : code === 0x09
+            ? "a tab - a tab is not text, it is the chord Tab, sent separately through sendKeyChord"
+            : code === 0x1b
+              ? "an escape - an escape is not text, it is the chord Escape, sent separately through sendKeyChord"
+              : `the control character U+${code.toString(16).toUpperCase().padStart(4, "0")}, which no field takes as text`;
+      return `refused before the call: "typeText" was given ${which}; found at position ${index} - the text this method types is printable only, and anything a keyboard sends that is not a printable character is a named chord or nothing`;
+    }
+  }
+  return undefined;
+}
+
 // BOTH FACTS, WHEN BOTH ARE TRUE. An unarmed session on a machine with no key
 // route is refused for want of authority first - ADR-0019's ordering, and the
 // gate that runs before a target is even named - but stopping there would hand
@@ -427,10 +472,11 @@ export const NO_KEY_ROUTE_REFUSAL =
 // says plainly that the flag alone is not enough here. The capability report
 // answers the same question with `not-exposed` and names no setting
 // (capabilityFor above), because a report has no room for a sequence.
-export function rawInputScopeRefusal(hasRoute: boolean): string {
-  if (hasRoute) return RAW_INPUT_SCOPE_REFUSAL;
+export function rawInputScopeRefusal(hasRoute: boolean, method: "sendKeyChord" | "typeText" = "sendKeyChord"): string {
+  const sentence = rawInputScopeSentence(method);
+  if (hasRoute) return sentence;
   return (
-    `${RAW_INPUT_SCOPE_REFUSAL} - and on this machine the flag alone would not be enough: ` +
+    `${sentence} - and on this machine the flag alone would not be enough: ` +
     "this build has no way to deliver a key here, and no setting on this daemon would change that"
   );
 }
@@ -1462,6 +1508,39 @@ function sendKeyChord(params: { id?: unknown; chord?: unknown }, backend: Backen
   );
 }
 
+// TYPING BLIND (ADR-0070). The same gate order as sendKeyChord above -
+// authority, reach, then what was given - and the same borrowed focus and read
+// back. The one thing that differs is the vocabulary check: a chord is one of
+// fourteen names, a text is any run of printable characters within a bound,
+// and the refusal names the character or the length that broke it.
+//
+// NOTHING CALLS THIS FUNCTION EXCEPT THE DISPATCH TABLE, and in particular
+// neither setElementValue nor setElementText does: a field that answered
+// `not-exposed` has told the CALLER to decide whether to type, and the daemon
+// deciding it for them would be the fallback ADR-0046 clause 3 forbids. The
+// test that pins it is type-blind-read-back.test.ts.
+function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  const text = typeof params.text === "string" ? params.text : "";
+  return performEffect(
+    "rawInput",
+    "typeText",
+    rawInputScopeRefusal(launch.keys !== undefined, "typeText"),
+    launch,
+    backend,
+    id,
+    async () => {
+      if (launch.keys === undefined) return { refusal: NO_TYPE_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
+      const malformed = typeTextRefusal(text);
+      if (malformed !== undefined) return { refusal: malformed, refusalClass: "MalformedParameter" as const };
+      const held = await focusBeforeEffect(backend);
+      const answer = await backend.typeText({ id, text });
+      const note = await restoreFocusAfterEffect(backend, held, "typing");
+      return answer.element === undefined ? answer : { element: withFocusNote(answer.element, note) };
+    },
+  );
+}
+
 // The dispatch table names every method the daemon serves, its effect class,
 // and WHEN its enforcement runs. B11 (tools/pins/b11.mjs, wired in this same
 // commit) reads this table from source and asserts every non-observe entry is
@@ -1487,6 +1566,7 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   setElementCaret: { effectClass: "edit", enforcement: "before-call", handler: (p, b, l) => setElementCaret((p ?? {}) as { id?: unknown; offset?: unknown }, b, l) },
   revealElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },
   sendKeyChord: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => sendKeyChord((p ?? {}) as { id?: unknown; chord?: unknown }, b, l) },
+  typeText: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => typeText((p ?? {}) as { id?: unknown; text?: unknown }, b, l) },
   listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
   describeAccessibility: { effectClass: "observe", enforcement: "at-result", handler: (_p, _b, l) => describeAccessibility(l) },
   // Its own effect class, not one of the five capability names, because it is

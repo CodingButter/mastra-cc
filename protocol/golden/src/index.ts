@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.12.0
+// Mastra CC protocol v1.13.0
 
-export const PROTOCOL_VERSION = "1.12.0";
-export const SCHEMA_DIGEST = "431cad1543a7eeded6ceb724aa50d348b86db7e2fa0e30cc2714f839ce65c215";
+export const PROTOCOL_VERSION = "1.13.0";
+export const SCHEMA_DIGEST = "00ed4ce0b3cb82fab02fed24097de36f70ab34fffd58ef1605c7787aa150cb8b";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -26,7 +26,7 @@ export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord"] as const;
+export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -473,6 +473,21 @@ export interface SendKeyChordResult {
   refusal?: string;
 }
 
+/** Deliver a run of printable text to one element by typing it, one keystroke at a time, into whatever the machine is pointing at. This is RAW INPUT in the same class as sendKeyChord, and it exists for one reason: some fields publish a value to read but no interface to set it, so the only way through the machine's own accessibility layer is the keyboard. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying - nothing in this daemon falls back to typing - and a caller is expected to have been REFUSED by the element's own operation first, then to type, then to read the element back and compare. The text is printable only: a newline, a tab or an escape is refused by name, because those are chords (sendKeyChord) and a string that could carry them would be a chord vocabulary with no list. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed. */
+export interface TypeTextParams {
+  /** The element the text is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
+  id: string;
+  /** The printable text to type, at most 1024 characters, containing no control characters. It is delivered as keystrokes, so it lands wherever the machine's focus is; the element is how it is aimed, not a guarantee of where it arrives. */
+  text: string;
+}
+
+export interface TypeTextResult {
+  /** Present when the text was delivered; the element as it reads AFTERWARDS, read back from the desktop. It is evidence of what the element became, never a claim that the text arrived in it - the caller compares it against what it expected. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the character or the length when the text is not printable or too long, and what was observed when the element could not be focused or the machine has no way to deliver a key at all. */
+  refusal?: string;
+}
+
 /** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */
 export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = {
   "queryElements": {
@@ -849,6 +864,28 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
       "required": [
         "id",
         "chord"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "typeText": {
+    "description": "Deliver a run of printable text to one element by typing it, one keystroke at a time, into whatever the machine is pointing at. This is RAW INPUT in the same class as sendKeyChord, and it exists for one reason: some fields publish a value to read but no interface to set it, so the only way through the machine's own accessibility layer is the keyboard. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying - nothing in this daemon falls back to typing - and a caller is expected to have been REFUSED by the element's own operation first, then to type, then to read the element back and compare. The text is printable only: a newline, a tab or an escape is refused by name, because those are chords (sendKeyChord) and a string that could carry them would be a chord vocabulary with no list. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element the text is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "text": {
+          "description": "The printable text to type, at most 1024 characters, containing no control characters. It is delivered as keystrokes, so it lands wherever the machine's focus is; the element is how it is aimed, not a guarantee of where it arrives.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
       ],
       "additionalProperties": false
     }

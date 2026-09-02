@@ -23,6 +23,8 @@ import type {
   SetElementCaretResult,
   SetElementTextParams,
   SetElementTextResult,
+  TypeTextParams,
+  TypeTextResult,
   SetElementValueParams,
   SetElementValueResult,
   SubmitElementParams,
@@ -444,6 +446,13 @@ export interface Backend {
   // of the evidence (ADR-0047).
   sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult>;
 
+  // The second raw-input method (ADR-0070): a run of printable text delivered
+  // as keystrokes to whatever holds focus, aimed by grabbing the element's
+  // focus first. Same authority, same fence, same read-back-is-the-evidence
+  // contract as sendKeyChord. What may be in the text is decided in the
+  // server before this is reached; the backend types what it is given.
+  typeText(params: TypeTextParams): Promise<TypeTextResult>;
+
   close(): Promise<void>;
 }
 
@@ -465,5 +474,6 @@ export const BACKEND_METHODS = [
   "setElementCaret",
   "revealElement",
   "sendKeyChord",
+  "typeText",
   "close",
 ] as const;

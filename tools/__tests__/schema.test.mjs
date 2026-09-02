@@ -15,7 +15,7 @@ const schemaText = readFileSync(join(repoRoot, "protocol", "schema.json"), "utf8
 const schema = JSON.parse(schemaText);
 
 describe("protocol/schema.json v1", () => {
-  it("declares exactly eighteen methods - the fourteen through ADR-0056, the two the desk answers about itself (ADR-0064), the restart the operator authorises (ADR-0065), and the one key it may be asked to press (ADR-0067)", () => {
+  it("declares exactly nineteen methods - the fourteen through ADR-0056, the two the desk answers about itself (ADR-0064), the restart the operator authorises (ADR-0065), the one key it may be asked to press (ADR-0067), and the text it may be asked to type blind (ADR-0070)", () => {
     expect(Object.keys(schema.methods)).toEqual([
       "queryElements",
       "attestElement",
@@ -35,6 +35,7 @@ describe("protocol/schema.json v1", () => {
       "acquireAccessibility",
       "restartApplication",
       "sendKeyChord",
+      "typeText",
     ]);
   });
 
@@ -67,7 +68,7 @@ describe("protocol/schema.json v1", () => {
   });
 
   it("requires one provider-neutral observable-content state, including value-free protected redaction (ADR-0056)", () => {
-    expect(schema.version).toBe("1.12.0");
+    expect(schema.version).toBe("1.13.0");
     expect(schema.types.semanticElement.fields.content).toMatchObject({
       type: "observableContent",
       required: true,
