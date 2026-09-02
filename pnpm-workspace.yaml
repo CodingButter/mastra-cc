@@ -5,6 +5,11 @@ packages:
   - daemon
   - packages/*
   - tools
+  # apps/ is the layout's home for an app (docs/01-ARCHITECTURE.md:108). Nothing
+  # here is published: the demo exists to be run against a real desk, and it is in
+  # the workspace so that a protocol change breaks it in CI rather than in a room
+  # full of people.
+  - apps/*
 
 catalog:
   typescript: ^7.0.2
