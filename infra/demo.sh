@@ -7,13 +7,14 @@
 #
 # It builds a desktop out of nothing - a virtual display (Xvfb), a private
 # session bus (dbus-run-session), the accessibility bus launched into it, and a
-# real GTK3 application (yad) showing a real button - then asks the daemon two
+# real GTK3 application (yad) showing a real button - then asks the daemon three
 # questions on that bus:
 #
-#   1. can it read a real element?      (one-shot --query, the readability arm)
-#   2. does the at-spi backend conform? (MASTRA_CC_LIVE=1 conformance suite)
+#   1. can it read a real element?         (one-shot --query, the readability arm)
+#   2. does the at-spi backend conform?    (MASTRA_CC_LIVE=1 conformance suite)
+#   3. does Collection agree with a walk? (live fast-path parity suite)
 #
-# Only when both answer yes does the last line print. That line is the lock:
+# Only when all three answer yes does the last line print. That line is the lock:
 # "a green run must be verified, not inferred from a lack of shouting"
 # (docs/05-TEST-STRATEGY.md). Every failure path above it exits non-zero
 # without printing it, so an absent PROOF: GREEN is exactly what a broken or
@@ -155,6 +156,19 @@ timeout --kill-after=30s 15m \
     # this lane is allowed to call itself green.
     grep -Eq "Tests +[1-9][0-9]* passed" "$REPORT" || {
       echo "demo: the live conformance suite passed no tests - it skipped itself" >&2
+      exit 1
+    }
+
+    # Collection is specific to at-spi, so it lives beside that backend rather
+    # than in the backend-agnostic conformance suite. Run it separately because
+    # the conformance name filter above would otherwise skip it silently.
+    REPORT="$(mktemp)"
+    NO_COLOR=1 MASTRA_CC_LIVE=1 pnpm --filter @mastra-cc/daemon exec vitest run \
+      src/backends/atspi/__tests__/collection-live.test.ts --reporter=dot 2>&1 | tee "$REPORT"
+    SUITE=${PIPESTATUS[0]}
+    [ "$SUITE" -eq 0 ] || exit "$SUITE"
+    grep -Eq "Tests +[1-9][0-9]* passed" "$REPORT" || {
+      echo "demo: the live Collection suite passed no tests - it skipped itself" >&2
       exit 1
     }
   ' demo "$ROOT" "$LAUNCHER" || STATUS=$?

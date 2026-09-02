@@ -85,18 +85,23 @@ export function roleBitfield(ids: readonly number[]): number[] {
 
 // One exchange, every descendant of this application carrying ANY of the
 // role's native ids (MATCH_ANY=2; MATCH_ALL would demand one node hold every
-// id at once and answer nothing). Every other clause is left empty and
-// unmatched (0), sorted in canonical tree order, uncapped, traversing into
-// embedded documents.
+// id at once and answer nothing). The state, attribute and interface clauses
+// are left EMPTY, and an empty clause is matched with MATCH_ALL=1 - matching
+// all of nothing is vacuously true, so the clause constrains nothing. Zero is
+// not that value: it is the enum's own INVALID member, which the matcher
+// rejects, and a rule carrying it answers NO node for any role. Measured on a
+// live bus, each of these four positions is independently fatal that way -
+// including the sort order, CANONICAL=1, whose INVALID answers nothing too.
+// Uncapped, traversing into embedded documents.
 export async function matchByRole(channel: CollectionChannel, ref: CollectionRef, role: Role): Promise<CollectionRef[]> {
-  const rule = [[0, 0], 0, [], 0, roleBitfield(NATIVE_ROLE_IDS[role]), 2, [], 0, false];
+  const rule = [[0, 0], 1, [], 1, roleBitfield(NATIVE_ROLE_IDS[role]), 2, [], 1, false];
   const [matches] = await channel.call({
     destination: ref.busName,
     path: ref.objectPath,
     iface: COLLECTION,
     member: "GetMatches",
     signature: "(aiia{ss}iaiiasib)uib",
-    body: [rule, 0, 0, true],
+    body: [rule, 1, 0, true],
   });
   if (!Array.isArray(matches)) return [];
   return matches.flatMap((match) => {
