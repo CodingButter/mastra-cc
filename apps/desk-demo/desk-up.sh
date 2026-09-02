@@ -77,6 +77,14 @@ if ! container_exec bash -lc 'command -v kcalc >/dev/null'; then
     echo "   could not install kcalc - the desk will simply not have one"
 fi
 
+# Chromium publishes its web content (and its first-run dialogs) to AT-SPI only
+# with --force-renderer-accessibility (measured 2026-09-02: without it the
+# daemon sees the application but no Accept button). Debian's /usr/bin/chromium
+# launcher resets CHROMIUM_FLAGS, so an environment variable cannot carry the
+# flag; it does source /etc/chromium.d/*, which is where the desk states it.
+# Desk preparation, like kcalc above - not the image, not the daemon.
+container_exec bash -lc 'printf "%s\n" "CHROMIUM_FLAGS=\"\$CHROMIUM_FLAGS --force-renderer-accessibility\"" >/etc/chromium.d/90-mcc-accessibility'
+
 # What this desk lets the agent do, stated in one place so a viewer can read the
 # demo's authority off the screen rather than guessing it. Everything absent from
 # these lists is refused by the daemon, and a refusal is part of the demo.
@@ -144,7 +152,9 @@ container_exec rm -rf "$DEPLOY/desk-demo"
 container_exec mkdir -p "$DEPLOY"
 docker cp "$ROOT/daemon/dist/." "$CONTAINER:$DEPLOY/desk-demo"
 
-ARGS="--backend atspi --socket '$DEMO_SOCKET' --ws-host 0.0.0.0 --ws-port $PORT"
+# --acquire-accessibility: a fresh desk boots with org.a11y.Status/IsEnabled
+# false, and Chromium only registers on the bus when that is true at launch.
+ARGS="--backend atspi --acquire-accessibility --socket '$DEMO_SOCKET' --ws-host 0.0.0.0 --ws-port $PORT"
 for name in "${PERMITS[@]}"; do ARGS="$ARGS --permit $name"; done
 for name in "${GRANTS[@]}"; do ARGS="$ARGS --grant $name"; done
 for name in "${ALLOWS[@]}"; do ARGS="$ARGS --allow $name"; done
