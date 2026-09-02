@@ -192,9 +192,11 @@ The order is fixed, and you do not skip steps:
 1. **Try the field's own operation first.** `setElementText` for a text field,
    `setElementValue` for a magnitude. If it succeeds, you are done, and you
    verify it the way the section above says. The element you already hold
-   carries the answer too: its `operations` list says `setText` is `available`
-   or `not-exposed`, and a `not-exposed` read there is the same answer as the
-   refusal — you need not make the call just to be told.
+   carries the answer too: its `operations` list names `setText` and `setValue`
+   (those are the list's entries for `setElementText` and `setElementValue`,
+   not methods you call) as `available` or `not-exposed`, and a `not-exposed`
+   read there is the same answer as the refusal — you need not make the call
+   just to be told.
 2. **Type blind only on `not-exposed`.** A refusal for any other reason — no
    authority, a protected control, a value the field rejected — is an answer,
    and `typeText` is not the way around it. If the operation was `not-exposed`,

@@ -665,7 +665,7 @@ export class AtspiBackend implements Backend {
   // refused semantic verb as a keystroke would escalate its own authority at
   // precisely the moment it had just been told no.
   async sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult> {
-    return this.aimedRawInput(params.id, () => emitChord(this.channel, params.chord));
+    return this.aimedRawInput(params.id, "key", () => emitChord(this.channel, params.chord));
   }
 
   // The second raw-input method (ADR-0070). Identical aim, identical doubt,
@@ -673,10 +673,10 @@ export class AtspiBackend implements Backend {
   // been grabbed. What may be in the text was decided in the server before this
   // was reached. Like the chord, nothing else in this file calls it.
   async typeText(params: TypeTextParams): Promise<TypeTextResult> {
-    return this.aimedRawInput(params.id, () => emitString(this.channel, params.text));
+    return this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
   }
 
-  private async aimedRawInput(id: string, emit: () => Promise<void>): Promise<SendKeyChordResult> {
+  private async aimedRawInput(id: string, sent: "key" | "text", emit: () => Promise<void>): Promise<SendKeyChordResult> {
     let doubt: string | undefined;
     const performed = await this.performing(id, async (ref) => {
       // Focus is grabbed, and then the key is sent WITHOUT a pre-flight claim
@@ -709,15 +709,15 @@ export class AtspiBackend implements Backend {
       const focused = await this.focusedElement().catch(() => null);
       if (!taken || focused === null || focused?.id !== id) {
         doubt =
-          "this element was not confirmed to hold the focus when the key was sent" +
+          `this element was not confirmed to hold the focus when the ${sent} was sent` +
           (focused === null
             ? ", and the desk could not be read to say what did"
             : focused === undefined
               ? ", and nothing on the desk claimed it"
               : `, and ${JSON.stringify(focused.name)} claimed it instead`) +
-          ". A key reaches an element only while that element's window is the front one, and this daemon does not " +
+          `. A ${sent} reaches an element only while that element's window is the front one, and this daemon does not ` +
           "raise windows. Neither signal is reliable enough to refuse on - both have been observed reading wrong for " +
-          "a key that arrived - so the key WAS sent. Compare the element above against what you expected before " +
+          `a key that arrived - so the ${sent} WAS sent. Compare the element above against what you expected before ` +
           "believing it landed here.";
       }
       await emit();

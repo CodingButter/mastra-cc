@@ -394,7 +394,6 @@ export const SET_CARET_SCOPE_REFUSAL =
 export const REVEAL_SCOPE_REFUSAL =
   'refused by the scope gate: "revealElement" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method';
 
-export const RAW_INPUT_SCOPE_REFUSAL = rawInputScopeSentence("sendKeyChord");
 
 // The two raw-input methods share one refusal shape and differ in the name
 // they carry, because the name is what the caller reads back to know which
@@ -444,7 +443,8 @@ export function typeTextRefusal(text: string): string | undefined {
   }
   for (let index = 0; index < text.length; index += 1) {
     const code = text.charCodeAt(index);
-    if (code < 0x20 || code === 0x7f) {
+    // C0, DEL and C1: every code point a keyboard has no printable glyph for.
+    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) {
       const which =
         code === 0x0a || code === 0x0d
           ? "a newline - a newline is not text, it is the chord Enter, sent separately through sendKeyChord"
@@ -1535,7 +1535,7 @@ function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, la
       if (malformed !== undefined) return { refusal: malformed, refusalClass: "MalformedParameter" as const };
       const held = await focusBeforeEffect(backend);
       const answer = await backend.typeText({ id, text });
-      const note = await restoreFocusAfterEffect(backend, held, "keypress");
+      const note = await restoreFocusAfterEffect(backend, held, "typing");
       return answer.element === undefined ? answer : { element: withFocusNote(answer.element, note) };
     },
   );

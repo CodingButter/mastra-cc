@@ -121,7 +121,16 @@ describe("text, typed blind at one element", () => {
     expect(refusalIn(bell)).toContain("position 2");
     const del = await type("\u007f", ARMED, backendThat({ typed }));
     expect(refusalIn(del)).toContain("U+007F");
-    expect(typed).toEqual([]);
+    // C1 is a control too - a next-line or a string terminator has no glyph,
+    // and "printable only" would be a lie if it stopped at ASCII.
+    const c1 = await type("x\u0085y", ARMED, backendThat({ typed }));
+    expect(refusalIn(c1)).toContain("U+0085");
+    expect(refusalIn(c1)).toContain("position 1");
+    const c1end = await type("\u009f", ARMED, backendThat({ typed }));
+    expect(refusalIn(c1end)).toContain("U+009F");
+    const above = await type("\u00a0\u00a1", ARMED, backendThat({ typed }));
+    expect(refusalIn(above)).toBe("");
+    expect(typed).toEqual([{ id: "el-1", text: "\u00a0\u00a1" }]);
   });
 
   it("refuses a text longer than the bound, naming the length and the limit, and takes one exactly at it", async () => {
@@ -170,7 +179,7 @@ describe("text, typed blind at one element", () => {
     });
     const answer = await type("example.com", ARMED, backend);
     const note = (answer.result as { element?: { diagnostic?: Record<string, string> } }).element?.diagnostic?.["mastra-cc/focus-preservation"];
-    expect(note ?? "").toContain("keypress");
+    expect(note ?? "").toContain("typing");
     expect(note ?? "").toContain("the document");
   });
 

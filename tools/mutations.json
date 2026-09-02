@@ -1094,7 +1094,14 @@
   {
     "name": "a-delete-character-is-printable",
     "file": "daemon/src/server.ts",
-    "find": " || code === 0x7f",
+    "find": " || (code >= 0x7f && code <= 0x9f)",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "everything-above-delete-is-a-control",
+    "file": "daemon/src/server.ts",
+    "find": " && code <= 0x9f",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
   },
