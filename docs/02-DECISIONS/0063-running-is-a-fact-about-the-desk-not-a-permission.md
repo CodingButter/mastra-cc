@@ -135,3 +135,54 @@ withhold running-state while leaving the far more revealing element reads switch
 **Read `/proc` or `ps`.** Answers a different question. Process liveness does not tell an
 agent whether it can act on an application, and it would put a second, platform-specific
 instrument behind a field the accessibility route already answers.
+
+## Amendment (2026-09-02): an unheard desk is ignorance, not absence
+
+Dogfooding the browser desk demo found this decision half-applied. A fresh demo container
+reports `org.a11y.Status/IsEnabled` as `false` — the machine's accessibility layer is simply
+switched off — and the daemon does not acquire it unless an operator armed that at startup.
+On that desk the census heard nothing, and the listing reported every one of the hundred-odd
+installed applications `not-answering`. Several of them were open on screen.
+
+That is exactly the failure this ADR exists to prevent, arriving through a door it did not
+close. The original decision refuses to manufacture a statement about the desk out of a fact
+about *permission*; it said nothing about manufacturing one out of a fact about the
+**machine's ears**. A desk that cannot hear has not told this daemon that an application is
+absent. It has told it nothing, about every application at once.
+
+So `runningFieldsFor` consults the accessibility layer before it is willing to conclude
+`not-answering`:
+
+| session may observe | census | layer | answer |
+|---|---|---|---|
+| no | — | — | `cannot-tell`, `OBSERVE_SETTING` (unchanged, asked first) |
+| yes | a name answers | anything | `answering` |
+| yes | ambiguous | anything | `cannot-tell`, no setting (unchanged) |
+| yes | silence | `disabled` | `cannot-tell`, `ACQUIRE_SETTING` |
+| yes | silence | `cannot-tell` | `cannot-tell`, **no setting** |
+| yes | silence | `enabled` | `not-answering` |
+
+Four properties are load-bearing, and each has a test:
+
+**Only `disabled` names the acquire flag.** `AccessibilityLayerState` has three values, and
+`cannot-tell` is what both a failed read and a platform with no adapter return. Naming the
+flag there would send an operator to switch on something that was never off — the precise
+error `accessibility/index.ts` was written to refuse. A bare `cannot-tell` is the honest
+answer, matching the precedent this ADR already set for an unreadable census.
+
+**Session authority is asked first.** Pointing an unpermitted caller at the acquire flag
+would point them at the wrong switch: acquiring the layer would not let them look.
+
+**A positive is never degraded.** The layer report and the census are read at different
+moments; an application that answered is not made mute by a stale reading. Only the negative
+conclusion needs qualifying.
+
+**The layer is read once per request.** It is a D-Bus round trip and a fact about the
+machine, identical for every entry — asked once for the listing, exactly as the census beside
+it already is. An inventory measured at 125 entries makes this a correctness property rather
+than a preference.
+
+No schema change: `runningUnknownBy` is the conditional field this ADR already introduced,
+and it now carries a second setting name. The reading itself is machine-wide — it names no
+application, answers no element, and needs no grant — which is why it is safe to consult from
+a per-application field without leaking anything about the desk.
