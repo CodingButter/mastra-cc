@@ -23,7 +23,12 @@ import { normalise } from "./backends/atspi/names.js";
 // line. Existence and permission are readable; content is not.
 
 export interface InventoryEntry {
-  /** the callable name, NFKC-normalised, case-folded: the desktop entry's id, which is what a launch recipe keys on */
+  /**
+   * the callable name: the desktop entry's id, NFKC-normalised but NOT case-folded.
+   * Case is kept so that two entries differing only by case stay two entries and
+   * fold into one contested candidate at comparison time (ADR-0069); comparisons
+   * go through `applicationName()`, never raw equality.
+   */
   readonly name: string;
   /** debug-only, never load-bearing (the wire contract's own words about diagnostics) */
   readonly diagnostic?: Record<string, string>;

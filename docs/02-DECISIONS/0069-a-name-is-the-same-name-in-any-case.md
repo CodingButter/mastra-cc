@@ -33,7 +33,13 @@ no missing capability; there was one comparison with the wrong idea of equality.
    candidate derivation, catalog recipe lookup, ownership records and `ownsName`, the
    census names each backend reports, the `application`-node filter in the tree walk, and
    configuration keyed per application (capability withholding, restart levels). The fold
-   is exactly `toLowerCase()` after NFKC — no locale-specific rule.
+   is exactly `toLowerCase()` after NFKC — no locale-specific rule. "Any case" therefore
+   means the simple default case mapping: `Chromium`/`CHROMIUM`/`chromium` are one name;
+   `STRASSE`/`straße` and Turkish dotted `İ`/`i` are not, and no measured desk has asked
+   for them. Per-application configuration keys and profile names are folded at load, so
+   two keys differing only by case collapse to one (last wins) — a `--grant` union is
+   harmless, but an operator writing both `Kate: false` and `kate: true` gets no warning
+   today; that is a known gap, not a promise.
 
 2. **Element names do not move.** `nameMatches()` and every `queryElements({ name })`
    filter stay NFKC-only. `OK` does not match `ok`. The distinction is by *what the

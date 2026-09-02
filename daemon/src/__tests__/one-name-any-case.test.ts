@@ -56,6 +56,29 @@ describe("an application's name is the same name in any case", () => {
     expect(elements.map((e) => e.name)).toEqual(["yad"]);
   });
 
+  it("T1b: folding widens nothing - an application nobody granted stays invisible in any case", async () => {
+    // The gate did not move, only the comparison. A grant for some other
+    // application does not reach `yad`, however either side is spelled.
+    const visibility = effectiveVisibility({ file: new Set(), flags: new Set(["Kate"]), permits: new Set() });
+    expect(isVisible(visibility, "yad")).toBe(false);
+    expect(isVisible(visibility, "YAD")).toBe(false);
+
+    const backend = new ReplayBackend("gtk-dialog", visibility);
+    const { elements } = await backend.queryElements({});
+    await backend.close();
+    expect(elements).toEqual([]);
+  });
+
+  it("T0: applicationName() is NFKC then lowercase - and nothing more", () => {
+    expect(applicationName("Chromium")).toBe("chromium");
+    expect(applicationName("CHROMIUM")).toBe("chromium");
+    // NFKC first: the fullwidth capital K folds to plain `k`, then lowercases.
+    expect(applicationName("\uFF2Bate")).toBe("kate");
+    expect(applicationName("ﬁrefox")).toBe("firefox"); // U+FB01 ligature -> "fi"
+    // Not a locale-aware fold: dotted capital I stays distinct from `i`. Scope is stated in ADR-0069.
+    expect(applicationName("\u0130")).not.toBe("i");
+  });
+
   it("T2: the census reports the entry `chromium` answering when the bus says `Chromium`", async () => {
     const backend = new AtspiBackend(busHolding(["Chromium"]), "all");
     const census = await backend.runningApplications();

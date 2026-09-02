@@ -176,17 +176,23 @@ function scanDirectory(directory: string): Map<string, LaunchRecipe> {
     }
     const recipe = recipeFrom(text);
     if (recipe === undefined) continue;
-    found.set(applicationName(fileName.slice(0, -".desktop".length)), recipe);
+    // Same first-wins rule as across directories: two files in one directory
+    // whose ids differ only by case fold to one key, and the first in sorted
+    // order keeps it. The permission resolver refuses that contested name
+    // anyway (ADR-0068/0069); this only makes which recipe survives predictable.
+    const id = applicationName(fileName.slice(0, -".desktop".length));
+    if (!found.has(id)) found.set(id, recipe);
   }
   return found;
 }
 
 /**
- * The machine's installed applications as a launch catalog, keyed by the same
- * normalised desktop entry id listApplications reports, in the same XDG
- * precedence order: the earlier directory wins, so a user's own copy of an
- * entry shadows the system one. A derived catalog that disagreed with the
- * reported inventory would be a lie about the same file.
+ * The machine's installed applications as a launch catalog, keyed by the
+ * case-folded form (`applicationName()`) of the desktop entry id that
+ * listApplications reports, in the same XDG precedence order: the earlier
+ * directory wins, so a user's own copy of an entry shadows the system one.
+ * The inventory keeps the id's case; the catalog folds it, because a recipe
+ * is looked up by name and names compare folded. Same file, one lookup rule.
  *
  * This function reads files and returns data. It spawns nothing.
  */
