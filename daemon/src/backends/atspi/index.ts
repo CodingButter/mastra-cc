@@ -660,16 +660,32 @@ export class AtspiBackend implements Backend {
   // comparing are two different acts, and this helper only ever did the first:
   // it produced a fresh, honest-looking element after an operation that may
   // have done nothing. The element below is the ANSWER, not the evidence.
-  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<void>): Promise<{ element: SemanticElement } & T> {
+  private unperformable(id: string): UnperformableElementError {
+    // Byte-identical for an unknown id and an answered element that is no
+    // longer exposed: the refusal must not become an existence oracle
+    // (ADR-0008 rule 6, ADR-0036).
+    return new UnperformableElementError(
+      `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+    );
+  }
+
+  private async performable(id: string, allowOffscreen = false): Promise<{ ref: NativeRef; element: SemanticElement }> {
     const ref = this.answered.get(id);
-    if (ref === undefined) {
-      // Byte-identical to the refusal for an element that does not exist: an id
-      // inside an application this session cannot see must not be told apart
-      // from one that was never real (ADR-0008 rule 6, ADR-0036).
-      throw new UnperformableElementError(
-        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
-      );
+    if (ref === undefined) throw this.unperformable(id);
+
+    const element = await this.readElement(ref).catch(() => undefined);
+    if (
+      element === undefined ||
+      !element.states.includes("visible") ||
+      (!allowOffscreen && element.states.includes("offscreen"))
+    ) {
+      throw this.unperformable(id);
     }
+    return { ref, element };
+  }
+
+  private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<void>): Promise<{ element: SemanticElement } & T> {
+    const { ref } = await this.performable(id);
     await effect(ref);
     return { element: await this.readElement(ref) } as { element: SemanticElement } & T;
   }
@@ -794,14 +810,7 @@ export class AtspiBackend implements Backend {
   // can check - and the daemon's own description is what makes the commit
   // reviewable (ADR-0008 rule 2, ADR-0021).
   async submitElement(params: SubmitElementParams): Promise<SubmitElementResult> {
-    const ref = this.answered.get(params.id);
-    if (ref === undefined) {
-      // Byte-identical to every other unperformable id (ADR-0008 rule 6).
-      throw new UnperformableElementError(
-        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
-      );
-    }
-    const element = await this.readElement(ref);
+    const { ref, element } = await this.performable(params.id);
     // Throws AttestationFailedError when the daemon cannot write the sentence.
     // Asked BEFORE the commit, because a description produced afterwards would
     // describe something that has already happened.
@@ -862,7 +871,15 @@ export class AtspiBackend implements Backend {
   }
 
   async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
-    return this.performing(params.id, (ref) => scrollIntoView(this.channel, ref));
+    const { ref } = await this.performable(params.id, true);
+    await scrollIntoView(this.channel, ref);
+    const element = await this.readElement(ref);
+    if (!element.states.includes("visible") || element.states.includes("offscreen")) {
+      throw new WriteNotObservedError(
+        `the element remained unexposed after it was revealed - the scroll was not observed`,
+      );
+    }
+    return { element };
   }
 
   async unsubscribeElement(subscriptionId: string): Promise<void> {

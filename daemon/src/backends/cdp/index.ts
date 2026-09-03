@@ -19,7 +19,6 @@ import type {
   SetElementTextResult,
   SetElementValueParams,
   SetElementValueResult,
-  Range,
   SubmitElementParams,
   SubmitElementResult,
 } from "@mastra-cc/protocol-types";
@@ -502,6 +501,25 @@ export class CdpBackend implements Backend {
     return { targetId: ref.targetId, backendDOMNodeId: ref.backendDOMNodeId, nodeId: ref.nodeId };
   }
 
+  private unperformable(id: string): UnperformableElementError {
+    return new UnperformableElementError(
+      `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+    );
+  }
+
+  private async performable(id: string, allowOffscreen = false): Promise<{ ref: NodeRef; element: SemanticElement }> {
+    const attested = await this.attestElement({ id });
+    const element = attested.element;
+    if (
+      element === undefined ||
+      !element.states.includes("visible") ||
+      (!allowOffscreen && element.states.includes("offscreen"))
+    ) {
+      throw this.unperformable(id);
+    }
+    return { ref: this.nodeRefFor(id), element };
+  }
+
   // The re-read after every effect. Finds the element as the tree publishes it
   // NOW, rather than returning the element as it was known before the write.
   private async reread(id: string): Promise<SemanticElement> {
@@ -514,18 +532,18 @@ export class CdpBackend implements Backend {
 
   async editElement(params: EditElementParams): Promise<EditElementResult> {
     this.assertPerformable("edit an element");
-    const ref = this.nodeRefFor(params.id);
+    const { ref } = await this.performable(params.id);
     await setValueOf(this.channel, ref, params.value);
     return { element: await this.reread(params.id) };
   }
 
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
     this.assertPerformable("perform an action");
-    const ref = this.nodeRefFor(params.id);
     // The action must be one the READER derived for this node, read fresh from
     // the tree rather than from anything remembered - matched verbatim, never
     // to the nearest name.
-    await performDerivedAction(this.channel, ref, params.action, await this.publishedActionsOf(params.id));
+    const { ref, element } = await this.performable(params.id);
+    await performDerivedAction(this.channel, ref, params.action, element.actions.map((action) => action.name));
     return { element: await this.reread(params.id) };
   }
 
@@ -547,8 +565,7 @@ export class CdpBackend implements Backend {
     // Asked as a tape before anything is resolved: a recording refuses as a
     // recording, not as an element it happens not to hold.
     this.assertPerformable("commit");
-    const ref = this.nodeRefFor(params.id);
-    const element = await this.reread(params.id);
+    const { ref, element } = await this.performable(params.id);
     commitDescription(element);
     await performDerivedAction(this.channel, ref, element.actions[0]!.name, [element.actions[0]!.name]);
     // The desktop route's reasoning applies here for the same reason, arrived
@@ -566,12 +583,12 @@ export class CdpBackend implements Backend {
 
   async setElementValue(params: SetElementValueParams): Promise<SetElementValueResult> {
     this.assertPerformable("set a value");
-    const ref = this.nodeRefFor(params.id);
     // The bounds come from the element, every time, immediately before the
     // write. Refused BEFORE the call: a page clamps a range input silently and
     // then reports success, so a check afterwards would be a report about a
     // value the element never held (ADR-0045 clause 4).
-    const published = await this.publishedRangeOf(params.id);
+    const { ref, element } = await this.performable(params.id);
+    const published = element.operations?.find((operation) => operation.operation === "setValue")?.range;
     if (published !== undefined && (params.value < published.minimum || params.value > published.maximum)) {
       throw new MagnitudeOutOfRangeError(
         `${params.value} is outside the range this element published (${published.minimum} to ${published.maximum}) - refused rather than clamped into a lie`,
@@ -588,17 +605,9 @@ export class CdpBackend implements Backend {
     return { element: await this.reread(params.id) };
   }
 
-  private async publishedRangeOf(id: string): Promise<Range | undefined> {
-    const attested = await this.attestElement({ id });
-    for (const operation of attested.element?.operations ?? []) {
-      if (operation.operation === "setValue") return operation.range;
-    }
-    return undefined;
-  }
-
   async setElementText(params: SetElementTextParams): Promise<SetElementTextResult> {
     this.assertPerformable("set text");
-    const ref = this.nodeRefFor(params.id);
+    const { ref } = await this.performable(params.id);
     if (params.offset === undefined) {
       await setValueOf(this.channel, ref, params.text);
       return { element: await this.reread(params.id) };
@@ -620,7 +629,7 @@ export class CdpBackend implements Backend {
 
   async setElementCaret(params: SetElementCaretParams): Promise<SetElementCaretResult> {
     this.assertPerformable("place the caret");
-    const ref = this.nodeRefFor(params.id);
+    const { ref } = await this.performable(params.id);
     if (params.offset !== undefined) {
       const length = await contentLength(this.channel, ref);
       if (params.offset < 0 || params.offset > length) {
@@ -635,9 +644,13 @@ export class CdpBackend implements Backend {
 
   async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
     this.assertPerformable("reveal an element");
-    const ref = this.nodeRefFor(params.id);
+    const { ref } = await this.performable(params.id, true);
     await revealIn(this.channel, ref);
-    return { element: await this.reread(params.id) };
+    const element = await this.reread(params.id);
+    if (!element.states.includes("visible") || element.states.includes("offscreen")) {
+      throw new WriteNotObservedError("the element remained offscreen after the application was asked to reveal it");
+    }
+    return { element };
   }
 
   // NO KEY ROUTE HERE, and this is a fact about the route rather than a gap

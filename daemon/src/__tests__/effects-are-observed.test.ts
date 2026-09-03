@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WriteNotObservedError } from "../backend.js";
+import { UnperformableElementError, WriteNotObservedError } from "../backend.js";
 import type { Channel, Exchange } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
 
@@ -42,7 +42,8 @@ interface Staged {
   value: number;
   caret: number;
   text: string;
-  /** Showing on screen. Visible-but-not-showing is what reads as offscreen. */
+  /** Visible to the current desktop session and showing on screen. */
+  visible: boolean;
   showing: boolean;
   /** What the platform does with a write: land it, or answer true and not. */
   obeys: boolean;
@@ -56,6 +57,7 @@ function stage(overrides: Partial<Staged> = {}): { channel: Channel; staged: Sta
     value: 0.25,
     caret: 0,
     text: "before",
+    visible: true,
     showing: true,
     obeys: true,
     performs: true,
@@ -64,7 +66,8 @@ function stage(overrides: Partial<Staged> = {}): { channel: Channel; staged: Sta
   };
 
   const bits = () => {
-    let mask = (1 << ENABLED_BIT) | (1 << VISIBLE_BIT);
+    let mask = 1 << ENABLED_BIT;
+    if (staged.visible) mask |= 1 << VISIBLE_BIT;
     if (staged.showing) mask |= 1 << SHOWING_BIT;
     return mask;
   };
@@ -141,6 +144,29 @@ async function subject(channel: Channel): Promise<{ backend: AtspiBackend; id: s
   expect(found, "the staged tree published no subject element").toBeDefined();
   return { backend, id: found!.id };
 }
+
+describe("a stale element is refused before an effect reaches the platform", () => {
+  it("refuses every element effect after the application stops exposing the answered element", async () => {
+    const { channel, staged } = stage();
+    const { backend, id } = await subject(channel);
+    staged.visible = false;
+    const before = { value: staged.value, caret: staged.caret, text: staged.text, showing: staged.showing };
+
+    const effects = [
+      backend.editElement({ id, value: "changed" }),
+      backend.activateElement({ id, action: "click" }),
+      backend.submitElement({ id, attestation: "submits the field" }),
+      backend.setElementValue({ id, value: 0.75 }),
+      backend.setElementText({ id, text: "changed" }),
+      backend.setElementCaret({ id, offset: 3 }),
+      backend.revealElement({ id }),
+    ];
+
+    for (const effect of effects) await expect(effect).rejects.toBeInstanceOf(UnperformableElementError);
+    expect({ value: staged.value, caret: staged.caret, text: staged.text, showing: staged.showing }).toEqual(before);
+    await backend.close();
+  });
+});
 
 describe("an operation whose write the platform did not perform is refused, not answered with an element", () => {
   it("refuses a magnitude the platform reported and did not move", async () => {
