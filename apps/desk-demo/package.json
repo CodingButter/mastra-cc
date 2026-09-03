@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "oxlint src",
     "typecheck": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@mastra-cc/desktop": "workspace:*",

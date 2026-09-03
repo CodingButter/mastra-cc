@@ -225,6 +225,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
   const terminate = (error: Error): TransportConnectionError => {
     if (terminalError) return terminalError;
     terminalError = connectionError(error);
+    helloResolve = null;
     if (helloReject) {
       helloReject(terminalError);
       helloReject = null;

@@ -163,7 +163,7 @@
   {
     "name": "desk-demo-pairs-tool-results-without-call-id",
     "file": "apps/desk-demo/src/lib/transcript.ts",
-    "find": "turn => turn.kind === \"tool\" && turn.callId === event.callId",
+    "find": " && turn.callId === event.callId",
     "cwd": "apps/desk-demo",
     "testFile": "src/lib/__tests__/transcript.test.ts"
   },
