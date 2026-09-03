@@ -30,10 +30,12 @@ import {
   type ChannelWatch,
   commitDescription,
   InventoryUnsupportedError,
+  EffectUnsupportedError,
   MagnitudeOutOfRangeError,
   mintSubscriptionId,
   OperationNotExposedError,
   RecordingNotPerformableError,
+  type RunningCensus,
   TextOffsetOutOfRangeError,
   UnknownSubscriptionError,
   UnperformableElementError,
@@ -43,7 +45,7 @@ import {
 import type { InventoryEntry } from "../../inventory.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
-import { nameMatches } from "../atspi/names.js";
+import { applicationName, nameMatches } from "../atspi/names.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
 import { needsProtectedClassification, readObservableContent } from "./content.js";
 import {
@@ -165,6 +167,33 @@ export class CdpBackend implements Backend {
     throw new InventoryUnsupportedError(
       "this session's backend speaks to one browser and cannot enumerate what this machine has installed - it would have to answer an empty list, which would say the machine has nothing",
     );
+  }
+
+  // WHAT IS ANSWERING RIGHT NOW (issue #53), for the one browser this route
+  // dials. It cannot enumerate the machine - installedApplications() above
+  // refuses for that reason - but it can answer the question about its own
+  // browser honestly, and a route that stayed silent about the one thing it
+  // does know would be as unhelpful as one that guessed about the rest.
+  //
+  // So the horizon is exactly that browser's name and nothing else. Every other
+  // application on the machine falls outside it and comes back cannot-tell
+  // rather than not-running: this route has no view of the desktop, and
+  // reporting the desktop closed because a browser could not see it is the
+  // empty-list falsehood ADR-0040 keeps visible instead of faking into parity.
+  //
+  // A browser that does not answer the version exchange leaves BOTH sets empty:
+  // with no reply there is no name to speak about, so the route can say nothing
+  // about anything, which is cannot-tell rather than a claim the browser is
+  // closed.
+  async runningApplications(): Promise<RunningCensus> {
+    let name: string;
+    try {
+      name = applicationName(productName(await this.version()));
+    } catch {
+      return { observable: new Set(), answersFor: new Set() };
+    }
+    if (name === "") return { observable: new Set(), answersFor: new Set() };
+    return { observable: new Set([name]), answersFor: new Set([name]) };
   }
 
   // WHAT HOLDS THE FOCUS, on the browser route (ADR-0044).
@@ -609,6 +638,28 @@ export class CdpBackend implements Backend {
     const ref = this.nodeRefFor(params.id);
     await revealIn(this.channel, ref);
     return { element: await this.reread(params.id) };
+  }
+
+  // NO KEY ROUTE HERE, and this is a fact about the route rather than a gap
+  // waiting to be filled by Input.dispatchKeyEvent. A page's own key event
+  // reaches that page and stops there, so a caller that pressed Enter through
+  // this backend and Enter through the other would be using one word for two
+  // different machines - and the first time that difference mattered, it would
+  // matter on somebody's unsaved work. `not-exposed` is the honest answer, and
+  // it is the answer the wire has a word for (protocol/schema.json:236).
+  async sendKeyChord(): Promise<never> {
+    throw new EffectUnsupportedError(
+      "this route reads a browser through its debugging protocol and has no way to deliver a key to the machine - " +
+        "no setting on this daemon would change that",
+    );
+  }
+
+  // Same fact, same reason: typed text is keystrokes, and this route has none.
+  async typeText(): Promise<never> {
+    throw new EffectUnsupportedError(
+      "this route reads a browser through its debugging protocol and has no way to type on the machine - " +
+        "no setting on this daemon would change that",
+    );
   }
 
   async unsubscribeElement(subscriptionId: string): Promise<void> {

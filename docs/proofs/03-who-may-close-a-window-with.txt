@@ -1,0 +1,23 @@
+daemon: websocket listening on 0.0.0.0:9978
+(node:2028897) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+the-restart-with-nothing-configured: {"route":"present","refusal":"refused by configuration: this daemon does not restart applications - restart.default is \"refuse\""}
+still-running-after-the-refusal: "answering"
+{"proof":"green","mode":"refuses","refused":{"route":"present","refusal":"refused by configuration: this daemon does not restart applications - restart.default is \"refuse\""}}
+== GREEN, part 2: this branch, with the operator's graceful level ==
+daemon: websocket listening on 0.0.0.0:9978
+(node:2029417) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+the-new-document: {"pressed":"pressed"}
+the-unsaved-work: {"surface":"el-75319ad0aee2","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-718f8e66429e","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-4d4c17025de0","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-a17382ce7c5a","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-4b54e9a93c9e","wrote":"written","editorSaysModified":false}
+the-unsaved-work: {"surface":"el-aefac8bde931","wrote":"written","editorSaysModified":true}
+the-restart-against-unsaved-work: {"route":"present","blockedBy":{"id":"win-2ba45221b017","role":"dialog","name":"Close Document — Kate","states":["enabled","visible"],"content":{"kind":"unavailable","reason":"not-exposed"},"actions":[],"operations":[{"operation":"setValue","availability":"not-exposed"},{"operation":"setText","availability":"not-exposed"},{"operation":"setCaret","availability":"not-exposed"},{"operation":"reveal","availability":"available"}],"diagnostic":{"mastra-cc/visibility-route":"accessibility-bus"}},"refusal":"the application was asked to close and did not: it put up \"Close Document — Kate\" instead, and this daemon does not answer that dialog - it is still running"}
+still-running-after-the-block: "answering"
+what-the-application-put-up: {"role":"dialog","name":"Close Document — Kate"}
+a-clean-application: {"opened":"org.kde.dolphin"}
+the-restart-with-nothing-to-lose: {"restarted":true}
+{"proof":"green","mode":"acts","blocked":{"route":"present","blockedBy":{"id":"win-2ba45221b017","role":"dialog","name":"Close Document — Kate","states":["enabled","visible"],"content":{"kind":"unavailable","reason":"not-exposed"},"actions":[],"operations":[{"operation":"setValue","availability":"not-exposed"},{"operation":"setText","availability":"not-exposed"},{"operation":"setCaret","availability":"not-exposed"},{"operation":"reveal","availability":"available"}],"diagnostic":{"mastra-cc/visibility-route":"accessibility-bus"}},"refusal":"the application was asked to close and did not: it put up \"Close Document — Kate\" instead, and this daemon does not answer that dialog - it is still running"},"survived":"answering","acted":{"restarted":true}}

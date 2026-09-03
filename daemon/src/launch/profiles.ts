@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
-import { normalise } from "../backends/atspi/names.js";
+import { applicationName } from "../backends/atspi/names.js";
 import { effectiveVisibility, type Visibility } from "../grants.js";
 import { CATALOG, DEFAULT_CHROME_PROFILE_DIR, GMAIL_PROFILE_DIR } from "./recipes.js";
 import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
@@ -29,7 +29,10 @@ export class MalformedProfilesFileError extends Error {}
 // Absent file -> no identities (the built-in chrome recipe is unaffected).
 // Every failure carries its own distinct message: a shared message would let a
 // mutation removing one check hide behind another.
-export function loadProfilesFile(path: string): readonly BrowserProfile[] {
+export function loadProfilesFile(
+  path: string,
+  base: LaunchCatalog = CATALOG,
+): readonly BrowserProfile[] {
   if (!existsSync(path)) {
     // Naming no identities composes none.
     return [];
@@ -60,7 +63,7 @@ export function loadProfilesFile(path: string): readonly BrowserProfile[] {
   // Normalisation precedes every comparison (the M0.5 math-bold lesson), so a
   // math-bold name collides with its plain form exactly as it should.
   const profiles: BrowserProfile[] = (entries as BrowserProfile[]).map((entry) => ({
-    name: normalise(entry.name),
+    name: applicationName(entry.name),
     directory: entry.directory,
   }));
 
@@ -81,6 +84,14 @@ export function loadProfilesFile(path: string): readonly BrowserProfile[] {
     if (findRecipe(profile.name, CATALOG) !== undefined) {
       throw new MalformedProfilesFileError(
         `the profiles file at ${path} names "${profile.name}", which is already a built-in launch recipe - an operator profile must not shadow one`,
+      );
+    }
+    // The base catalog now carries the machine's own applications too
+    // (ADR-0062). Assigning a profile over one of those would hand the
+    // operator a browser under the name of their real editor, silently.
+    if (findRecipe(profile.name, base) !== undefined) {
+      throw new MalformedProfilesFileError(
+        `the profiles file at ${path} names "${profile.name}", which is already a launch recipe this machine provides - an operator profile must not shadow an application the daemon can already start`,
       );
     }
     if (seenNames.has(profile.name)) {
@@ -142,9 +153,9 @@ export function expandThroughAppearsAs(
 ): ReadonlySet<string> {
   const expanded = new Set<string>();
   for (const name of names) {
-    expanded.add(normalise(name));
+    expanded.add(applicationName(name));
     const appearsAs = findRecipe(name, catalog)?.appearsAs;
-    if (appearsAs !== undefined) expanded.add(normalise(appearsAs));
+    if (appearsAs !== undefined) expanded.add(applicationName(appearsAs));
   }
   return expanded;
 }
@@ -177,7 +188,7 @@ export function composeBootNames({ permits, grants, flags, catalog }: BootNameSo
   // through appearsAs would turn --permit chrome-work into permission to
   // launch the built-in chrome on its own profile - a different identity, and
   // a silent authority leak.
-  const launchPermits: ReadonlySet<string> = new Set([...permits].map(normalise));
+  const launchPermits: ReadonlySet<string> = new Set([...permits].map(applicationName));
   // Observe is the opposite: the union law stays in grants.ts (ADR-0036,
   // including "all" winning outright), and every name a session may see is
   // then expanded to what actually answers in the tree - or a permitted launch

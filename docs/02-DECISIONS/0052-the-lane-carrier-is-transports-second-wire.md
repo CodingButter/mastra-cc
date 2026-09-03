@@ -1,6 +1,7 @@
 # ADR-0052 — The lane carrier is transport's second wire, not the hub's first socket
 
-**Status:** accepted
+**Status:** superseded by [ADR-0057](0057-mastra-cc-is-a-peripheral-not-an-assistant.md) (2026-08-28) — the lane had exactly one audience, a human face, and that audience was removed with the client surface. `packages/transport/src/lane.ts` is deleted. The reasoning below is kept as the record of why the wire lived in transport rather than the hub.
+**Was:** accepted
 **Date:** 2026-08-22
 
 **Relates to:** [ADR-0003](0003-one-shared-transport-package.md) (adds the fifth

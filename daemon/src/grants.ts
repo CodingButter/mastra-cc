@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { normalise } from "./backends/atspi/names.js";
+import { applicationName } from "./backends/atspi/names.js";
 
 // The observe-visibility model (M2.3). An application the operator has not
 // granted is ABSENT from every answer - not "blocked", absent
@@ -14,7 +14,7 @@ export type Visibility = ReadonlySet<string> | "all";
 export class MalformedGrantsFileError extends Error {}
 
 // The grants file: JSON, {"applications": ["name", ...]}. Entries are
-// NFKC-normalised AT LOAD, so the set itself is normalised and membership
+// NFKC-normalised, case-folded AT LOAD, so the set itself is normalised and membership
 // checks never see raw file bytes (a math-bold entry matches its plain form -
 // the M0.5 lesson). A file that cannot be parsed must NOT silently become
 // "no grants": the operator meant something, so the daemon fails startup
@@ -39,7 +39,7 @@ export function loadGrantsFile(path: string): ReadonlySet<string> {
       `the grants file at ${path} must be {"applications": ["name", ...]} - refusing to guess what was meant`,
     );
   }
-  return new Set(applications.map(normalise));
+  return new Set(applications.map(applicationName));
 }
 
 // The effective observe set = grants file ∪ --grant flags ∪ --permit names.
@@ -56,11 +56,11 @@ export function effectiveVisibility(parts: {
   if (components.includes("all")) return "all";
   const union = new Set<string>();
   for (const component of components) {
-    for (const name of component as ReadonlySet<string>) union.add(normalise(name));
+    for (const name of component as ReadonlySet<string>) union.add(applicationName(name));
   }
   return union;
 }
 
 export function isVisible(visibility: Visibility, name: string): boolean {
-  return visibility === "all" || visibility.has(normalise(name));
+  return visibility === "all" || visibility.has(applicationName(name));
 }

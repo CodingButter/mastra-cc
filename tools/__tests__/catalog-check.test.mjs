@@ -42,6 +42,34 @@ test("an empty watched set fails rather than passing vacuously", () => {
   expect(r.output).toContain("would pass vacuously");
 });
 
+// Named catalogs. The rule is asymmetric on purpose: we are accountable for every
+// named catalog WE define, and not for the destination's own escape hatches.
+const withTs6 = `${aligned}catalogs:\n  ts6:\n    typescript: ^6.0.3\n`;
+
+test("an aligned named catalog passes alongside an aligned default", () => {
+  const r = runCheck(withTs6, withTs6);
+  expect(r.status).toBe(0);
+});
+
+test("a diverging named catalog goes red, naming the catalog", () => {
+  const destination = withTs6.replace("    typescript: ^6.0.3", "    typescript: ^6.9.9");
+  const r = runCheck(withTs6, destination);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("typescript in catalog ts6 is ^6.0.3 here, ^6.9.9 in the destination");
+});
+
+test("a named catalog the destination has and we do not is not a divergence", () => {
+  const destination = `${withTs6}  legacy:\n    typescript: ^5.4.0\n`;
+  const r = runCheck(aligned, destination);
+  expect(r.status).toBe(0);
+});
+
+test("a named catalog WE define and the destination dropped is a divergence", () => {
+  const r = runCheck(withTs6, aligned);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("catalog ts6 is defined here, absent in the destination");
+});
+
 test("an unreadable destination is neither a pass nor a divergence", () => {
   const dir = mkdtempSync(join(tmpdir(), "catalog-test-"));
   const local = join(dir, "local.yaml");

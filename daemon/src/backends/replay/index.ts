@@ -24,6 +24,7 @@ import {
   InventoryUnsupportedError,
   RecordingNotPerformableError,
   replayWatch,
+  type RunningCensus,
 } from "../../backend.js";
 import type { InventoryEntry } from "../../inventory.js";
 import type { Visibility } from "../../grants.js";
@@ -121,6 +122,18 @@ export class ReplayBackend implements Backend {
     );
   }
 
+  // DELEGATED, unlike installedApplications() above, and the difference is the
+  // instrument each one reads. The catalogue is a fact about the machine this
+  // process happens to be running on and was never recorded; what was answering
+  // when the tape was cut IS on the tape - the recorded exchanges include the
+  // bus's own top level and the name of every application on it, because that
+  // is where the walk starts. So the recording answers, and an exchange the
+  // tape never captured surfaces as an unrecorded read rather than as a quiet
+  // "not running" (backends/atspi/index.ts makes that distinction).
+  runningApplications(): Promise<RunningCensus> {
+    return this.inner.runningApplications();
+  }
+
   unsubscribeElement(subscriptionId: string): Promise<void> {
     return this.inner.unsubscribeElement(subscriptionId);
   }
@@ -186,6 +199,17 @@ export class ReplayBackend implements Backend {
 
   async revealElement(): Promise<RevealElementResult> {
     this.refuseToPerform("reveal an element");
+  }
+
+  // A recording has no keyboard. Refusing is not a limitation to be lifted
+  // later: a tape that "delivered" a key would be replaying a desktop that
+  // never received one.
+  async sendKeyChord(): Promise<never> {
+    this.refuseToPerform("send a key chord");
+  }
+
+  async typeText(): Promise<never> {
+    this.refuseToPerform("type text");
   }
 
   close(): Promise<void> {

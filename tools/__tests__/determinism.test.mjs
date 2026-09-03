@@ -1,11 +1,11 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 
-// The determinism check's four cases, against a scratch copy. The check
+// The determinism check's five cases, against a scratch copy. The check
 // generates into a TEMP directory (never in place): regenerating in place
 // silently corrects a hand-edited generated file - the exact tampering
 // docs/07-ROADMAP.md:78 requires this check to go red on.
@@ -45,8 +45,19 @@ beforeAll(() => {
 describe("the determinism check", () => {
   it("exits 0 on a clean tree, comparing a non-empty file set", () => {
     const r = runCheck();
-    expect(r.stdout).toContain("2 generated file(s) compared, 0 problem(s)");
+    expect(r.stdout).toContain("3 generated file(s) compared, 0 problem(s)");
     expect(r.status).toBe(0);
+  });
+
+  it("covers the emitted tsconfig, so a generator that stops emitting it goes red", () => {
+    const generatedTsconfig = join(root, "packages", "protocol-types", "tsconfig.json");
+    const original = readFileSync(generatedTsconfig, "utf8");
+    rmSync(generatedTsconfig);
+    const r = runCheck();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("packages/protocol-types/tsconfig.json is missing");
+    writeFileSync(generatedTsconfig, original);
+    expect(runCheck().status).toBe(0);
   });
 
   it("goes red on a hand-edited GENERATED file, naming it", () => {

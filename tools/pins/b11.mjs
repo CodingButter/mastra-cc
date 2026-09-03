@@ -12,8 +12,10 @@ import { fail, rootFromArgs, stripComments } from "./lib.mjs";
 // Honesty note: the source marking pins the DECLARATION. The enforcement
 // TIMING - that authority is consulted before capability, before the tree,
 // before the spawn - is pinned by the ordering test in
-// daemon/src/__tests__/launch-authority.test.ts. The pin and the test
-// together are B11.
+// daemon/src/__tests__/launch-authority.test.ts for the element-scoped
+// methods, and by daemon/src/__tests__/can-the-desk-be-heard.test.ts for
+// acquireAccessibility, whose gate is the operator flag rather than a
+// per-application permit. The pin and those tests together are B11.
 
 const root = rootFromArgs(process.argv);
 const serverPath = join(root, "daemon", "src", "server.ts");
@@ -31,7 +33,7 @@ if (!block) fail("pin-b11: no dispatch table found - the pin would pass vacuousl
 const entries = [];
 for (const match of block[1].matchAll(/(\w+):\s*\{([^\n]*)\}/g)) {
   const [, method, body] = match;
-  const effectClass = body.match(/effectClass:\s*"([a-z]+)"/)?.[1];
+  const effectClass = body.match(/effectClass:\s*"([a-zA-Z]+)"/)?.[1];
   const enforcement = body.match(/enforcement:\s*"([a-z-]+)"/)?.[1];
   if (effectClass !== undefined) entries.push({ method, effectClass, enforcement });
 }
@@ -64,6 +66,21 @@ const REQUIRED = {
   setElementText: "edit",
   setElementCaret: "edit",
   revealElement: "activate",
+  // Machine-scoped, and named here for the same reason the rest are: the loop
+  // below iterates THIS map, not the dispatch table, so a method absent from it
+  // is not checked at all - the pin would pass while the guarantee went
+  // missing. acquireAccessibility changes the operator's machine, which is the
+  // least deniable effect this daemon has.
+  acquireAccessibility: "acquire",
+  // Ends a program the person may be using, then starts it again. Its own
+  // class because restart authority is four operator-chosen levels, not a
+  // capability boolean (ADR-0065 clause 3).
+  restartApplication: "restart",
+  // A key, addressed to one element (ADR-0046). Its own class because a
+  // synthesised keystroke is raw input even when it names an element, and the
+  // whole point of ADR-0046 is that it is decided separately from the semantic
+  // verbs rather than folded into one of them.
+  sendKeyChord: "rawInput",
 };
 for (const [method, effectClass] of Object.entries(REQUIRED)) {
   const entry = entries.find((e) => e.method === method);

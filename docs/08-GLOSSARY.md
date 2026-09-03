@@ -44,6 +44,8 @@
 
 **Ownership** — an element is *owned while it is being written*. A human reaching for a field the agent is working in takes it.
 
+**Answering** — the state of an application that is published on the machine's accessibility layer right now, as opposed to merely installed. It is what `listApplications` reports as `running: "answering"`, and it is deliberately a statement about reachability rather than about processes: an application whose process is alive but publishes nothing is `not-answering`, because for a caller that is the same wall. The third state, `cannot-tell`, is ignorance and never a no. → [ADR-0063](02-DECISIONS/0063-running-is-a-fact-about-the-desk-not-a-permission.md)
+
 **Curing** — *retired term.* It named making an application readable when it is not by default, and the prototype's mechanism was desktop-entry overrides plus a renderer flag. Readability is decided at process start and cannot be changed afterwards, so there is nothing to cure and nothing on the user's system to rewrite: the assistant opens the application itself, with the right conditions, or asks to restart one that is already running. → [ADR-0027](02-DECISIONS/0027-the-assistant-opens-the-application-itself.md), which retires [ADR-0020](02-DECISIONS/0020-granting-an-application-is-a-transaction-with-a-rollback.md)
 
 ---

@@ -1,0 +1,57 @@
+{
+  "name": "@mastra-cc/desktop",
+  "version": "0.1.0",
+  "description": "The installable half of mastra-cc: the daemon's operations, and the instructions an agent needs to use them.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./mastra": {
+      "types": "./dist/mastra.d.mts",
+      "default": "./dist/mastra.mjs"
+    },
+    "./instructions": "./instructions/AGENT-INSTRUCTIONS.md",
+    "./instructions/learn": "./instructions/LEARN-INSTRUCTIONS.md",
+    "./instructions/curate": "./instructions/CURATE-INSTRUCTIONS.md",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "instructions"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "oxlint": "^1.77.0",
+    "tsdown": "^0.22.14",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "^24.10.1",
+    "@mastra-cc/daemon": "workspace:*",
+    "@mastra/core": "^1.63.2"
+  },
+  "dependencies": {
+    "@mastra-cc/transport": "workspace:*",
+    "@mastra-cc/protocol-types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@mastra/core": ">=1.63.0 <2"
+  },
+  "peerDependenciesMeta": {
+    "@mastra/core": {
+      "optional": true
+    }
+  }
+}

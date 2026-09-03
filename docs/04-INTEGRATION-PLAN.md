@@ -35,7 +35,7 @@ That is the single most important fact for this plan: **a new capability area ge
 
 | Dependency | Monorepo catalog | Prototype used |
 |---|---|---|
-| `typescript` | `^6.0.3` | `^7.0.2` |
+| `typescript` | `^6.0.3` (snapshot 2026-08-08; the destination's default catalog said `^7.0.2` when re-read 2026-08-29, and we followed — see the note on C5 below) | `^7.0.2` |
 | `vitest` | `4.1.10` | `4.1.10` ✅ |
 | `zod` | `^4.4.3` | `3.25.76` ❌ major-line gap |
 | `react` / `react-dom` | `^19.2.5` | `19.2.8` ✅ compatible |
@@ -50,17 +50,13 @@ That is the single most important fact for this plan: **a new capability area ge
 
 Mastra CC becomes a **top-level directory named `desktop/`, a sibling of `mastracode/`** — a peer product, not a package domain beneath one.
 
-> **Corrected 2026-08-09, and the distinction is not cosmetic.** This section originally read `desktop/` as a domain directory in the `voice/` and `signals/` mould: a group of packages. It is a sibling of `mastracode/` instead, because Mastra CC is a *product* built on the same coding-agent runtime rather than a library family. The practical consequence is that everything `mastracode` can do is available to the hub — its tools coexist with the accessibility-tree surface rather than being replaced by it. Q12 in [09-QUESTIONS.md](09-QUESTIONS.md) records the choice and its cost: a sibling does not inherit a plugin host's lifecycle, so process supervision and configuration are ours.
+> **Corrected 2026-08-09, and the distinction is not cosmetic.** This section originally read `desktop/` as a domain directory in the `voice/` and `signals/` mould: a group of packages. It is a sibling of `mastracode/` instead, because Mastra CC is a *product* built on the same coding-agent runtime rather than a library family. The practical consequence is that everything `mastracode` can do is available to a consumer of the daemon — its tools coexist with the accessibility-tree surface rather than being replaced by it. Q12 in [09-QUESTIONS.md](09-QUESTIONS.md) records the choice and its cost: a sibling does not inherit a plugin host's lifecycle, so process supervision and configuration are ours.
 
 ```
 mastra/
 ├── desktop/
 │   ├── protocol/            # @mastra/desktop-protocol   — schema, generator, golden fixtures
 │   ├── transport/           # @mastra/desktop-transport  — the one daemon client
-│   ├── voice-gate/          # @mastra/desktop-voice-gate — wake fingerprinting, capture, session dial
-│   ├── hub/                 # @mastra/desktop-hub        — the brain
-│   ├── widget/              # @mastra/desktop-widget     — Electron tray face
-│   ├── dashboard/           # @mastra/desktop-dashboard  — Vite config surface
 │   └── daemon/              # @mastra/desktop-daemon      — Node; an ordinary workspace package (see §4)
 └── pnpm-workspace.yaml      # one added line: `- desktop/*`
 ```
@@ -70,17 +66,13 @@ Our development repository is laid out so this is a `git mv` of one directory:
 ```
 mastra-cc/                        →  mastra/desktop/
 ├── packages/transport/           →  desktop/transport/
-├── packages/voice/               →  desktop/voice-gate/
 ├── protocol/                     →  desktop/protocol/
-├── apps/hub/                     →  desktop/hub/
-├── apps/widget/                  →  desktop/widget/
-├── apps/dashboard/               →  desktop/dashboard/
 ├── daemon/                       →  desktop/daemon/
 ├── infra/                        →  desktop/infra/
 └── docs/                         →  desktop/docs/
 ```
 
-**Note the one honest wrinkle:** our development layout uses `apps/` and `packages/`, and the destination flattens those into `desktop/*`. That is a *move of six directories one level*, mechanically trivial and history-preserving with `git mv`, and it is a deliberate choice — `apps/` and `packages/` are the right shape for a standalone repository, and collapsing them at integration time is a five-minute operation. What matters is that no package is *renamed* and no import path inside a package changes, because every cross-package import already goes through a scoped package name rather than a relative path.
+**Note the one honest wrinkle:** our development layout nests the shipped packages under `packages/`, and the destination flattens that into `desktop/*`. That is a *move of two directories one level*, mechanically trivial and history-preserving with `git mv`, and it is a deliberate choice — `packages/` is the right shape for a standalone repository, and collapsing them at integration time is a five-minute operation. What matters is that no package is *renamed* and no import path inside a package changes, because every cross-package import already goes through a scoped package name rather than a relative path.
 
 **Package naming** is fixed now, at the start, so imports never change: `@mastra/desktop-*`. Chosen over `@mastra/cc-*` because the destination names things after what they do (`@mastra/voice-openai`, `@mastra/client-js`), and "cc" means nothing to a reader who was not in the room.
 
@@ -96,7 +88,7 @@ Each rule below is a thing the destination requires. Adopting them now costs not
 | C2 | Every package exposes `build`, `test`, `lint`, `typecheck`, `clean` | the shared task graph |
 | C3 | `vitest` at the catalog version, `4.1.10` | already aligned |
 | C4 | **`zod` v4**, not v3 | catalog is `^4.4.3`; the prototype's v3 usage would be a migration |
-| C5 | TypeScript compatible with the catalog's `^6.0.3` line | the prototype's `^7.0.2` would need reconciling |
+| C5 | TypeScript compatible with the catalog's `^7.0.2` line | the destination's default catalog moved to TypeScript 7; we followed it (issue #67) |
 | C6 | `oxlint` + `eslint` clean, `oxfmt` + `prettier` formatted | matches the destination's lint tasks |
 | C7 | Apache-2.0 headers and license | the monorepo's default |
 | C8 | Changesets on every user-visible change | how the monorepo releases |
@@ -104,9 +96,11 @@ Each rule below is a thing the destination requires. Adopting them now costs not
 | C10 | No package depends on repository-root position | the keeper-shim class of bug ([03-LESSONS §1.4](03-LESSONS.md)) |
 | C11 | `react` / `react-dom` from the catalog line | dashboard and any UI package |
 
-**C4 and C5 are the two real pieces of work**, and they are the reason this document exists before the code. Writing the hub against zod v3 and TypeScript 7 and then discovering the destination is on zod v4 and TypeScript 6 is exactly the day-seven surprise this plan is designed to prevent. **Start on the catalog versions.**
+**C4 and C5 are the two real pieces of work**, and they are the reason this document exists before the code. Writing the hub against zod v3 and one TypeScript line and then discovering the destination is on zod v4 and another is exactly the day-seven surprise this plan is designed to prevent. **Start on the catalog versions.**
 
-**A note on C5.** The version lines here move; the catalog was read on 2026-08-08. The rule is not "use TypeScript 6 forever" — it is *pin to whatever the destination's catalog says, re-check before each milestone, and never let the gap become a migration.*
+**A note on C5.** The version lines here move, and they did: the catalog was read on 2026-08-08 at TypeScript `^6.0.3`, and by 2026-08-29 the destination's default catalog said `^7.0.2`. The rule was never "use TypeScript 6 forever" — it is *pin to whatever the destination's catalog says, re-check before each milestone, and never let the gap become a migration.* That is what `tools/catalog-check.mjs` automates, and following it is what issue #67 did.
+
+**A note on the destination's second catalog.** The destination now carries *two*: a default `catalog:` and a named `catalogs:` block whose `ts6` entry pins `typescript: ^6.0.3` for roughly a dozen of its own packages that cannot move yet. We follow the **default** — that is the honest end state, and reaching for the escape hatch would leave the default pin diverged while looking aligned. `tools/catalog-check.mjs` compares both blocks, asymmetrically: a named catalog *we* define and the destination dropped is a divergence, one *they* define and we lack is theirs to keep.
 
 ---
 
@@ -169,7 +163,7 @@ tools/dry-run-integration.sh
 **It must:**
 
 1. Clone or copy a pristine `mastra-ai/mastra` checkout to a scratch directory.
-2. Copy our tree into `desktop/`, flattening `apps/` and `packages/` one level.
+2. Copy our tree into `desktop/`, flattening `packages/` one level.
 3. Add `- desktop/*` to `pnpm-workspace.yaml`.
 4. Run `pnpm install`, then `turbo run build lint typecheck test --filter='./desktop/*'`.
 5. Diff our declared dependency versions against the destination's catalog and **fail on any divergence**, naming each one.
@@ -187,7 +181,7 @@ Point 5 is the one that earns its keep. It is how the zod-v3-versus-v4 gap gets 
 |---|---|
 | workspace globs incl. `voice/*`, `signals/*`, `mastracode/*` | `/home/codingbutter/mastra/pnpm-workspace.yaml`, read 2026-08-08 |
 | turbo tasks: build, lint, lint:fix, typecheck, clean, dev, validate:package (seven) | `/home/codingbutter/mastra/turbo.json` |
-| catalog: typescript `^6.0.3`, vitest `4.1.10`, zod `^4.4.3`, react `^19.2.5` | the destination's `/home/codingbutter/mastra/pnpm-workspace.yaml` catalog block — not this repository's, which pins no react (corrected 2026-08-21; the two rows above name their tree and this one did not) |
+| catalog: typescript `^7.0.2` (default) and `^6.0.3` (named `ts6`), vitest `4.1.10`, zod `^4.4.3`, react `^19.2.5` | the destination's `/home/codingbutter/mastra/pnpm-workspace.yaml` catalog block (typescript re-read 2026-08-29; it was `^6.0.3` on 2026-08-08) — not this repository's, which pins no react (corrected 2026-08-21; the two rows above name their tree and this one did not) |
 | tsdown builds, oxlint+eslint, oxfmt+prettier, changesets | root `package.json`; `voice/openai/package.json` |
 | Apache-2.0 with an `ee/` carve-out | `LICENSE.md` |
 | no Python / Rust / Go anywhere outside `node_modules` | `find` for `*.py`, `pyproject.toml`, `Cargo.toml`, `go.mod` |

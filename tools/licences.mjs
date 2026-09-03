@@ -75,8 +75,7 @@ const ALLOWED = new Set([
 const root = fileURLToPath(new URL("..", import.meta.url));
 
 const manifests = ["package.json", "daemon/package.json", "tools/package.json"];
-for (const group of ["packages", "apps"]) {
-  if (!existsSync(join(root, group))) continue;
+for (const group of ["packages"]) {
   for (const name of readdirSync(join(root, group))) {
     manifests.push(join(group, name, "package.json"));
   }
@@ -190,7 +189,7 @@ let checked = 0;
 // This was not theoretical, and the first version of this comment said it was.
 // Measured across the split: `@types/node` is a dev dependency of the root
 // manifest AND a hard runtime dependency of `protobufjs` (`@google/genai` pulls
-// it in under apps/hub), so the shared map recorded it as dev first and the
+// it in under daemon), so the shared map recorded it as dev first and the
 // runtime walk then stopped there - never reaching `undici-types`, which the
 // split now licences. One package, MIT either way, and it would have been any
 // package with that shape.

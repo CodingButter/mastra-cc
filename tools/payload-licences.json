@@ -1,27 +1,4 @@
 {
-  "packages": {
-    "electron": {
-      "file": "dist/LICENSES.chromium.html",
-      "digest": "4fc0507a046b9ecd0738b2dd64119b5ec8bc29ac0221b63edb693fd5fd497c87",
-      "reviewed": "2026-08-22",
-      "components": 773,
-      "reason": "The npm package declares MIT and that is true of its JavaScript. Its postinstall downloads a 221MB Chromium build, and this file is that build's credits. Reviewed at this digest: of 773 components, 56 blocks quote LGPL or MPL text. All but one are either dynamically linked system libraries the user already has (glibc, gtk, libsecret, libusbx, liblouis and libbrlapi via Speech Dispatcher and the braille stack, plasma-wayland-protocols) or code compiled out of a desktop Linux build (the play-services and Android NDK blocks are Chromium's Android targets; Checker Qual is a Java annotation library). The exception is libffmpeg.so, shipped in dist/ under LGPL-2.1-or-later: it is a separate shared object the user can replace with their own build, which is the condition that licence attaches, and Electron ships it separately for exactly that reason. Nothing here is relicensed by inclusion and nothing obliges this repository to publish its own source. The keyword scan that produced the first version of this list called Node.js and ICU copyleft because their notices quote other licences - that is why this is a reviewed digest rather than a rule, and why a changed digest is a payload nobody has read."
-    }
-  },
-  "files": {
-    "packages/voice/models/speech-embedding.onnx": {
-      "digest": "e6d1aaf9f052a340ee1a006103f4de4897ad9894c880b74afc90571e6596a18e",
-      "license": "Apache-2.0",
-      "source": "google-research@e20eb00d074cdb569ee27318f112ea1e85bbb98f; official Google speech_embedding SavedModel archive sha256 0f626c42009c1eb916401b7b2800229a211e43100115bc591b9afbf1b60da27f",
-      "reviewed": "2026-08-23",
-      "reason": "Converted from Google's official speech_embedding SavedModel with tf2onnx 1.16.1, TensorFlow 2.18.1, ONNX 1.17.0, opset 17. Google Research's pinned repository carries Apache-2.0 licence text sha256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30. The downloaded archive has no embedded licence file; Jamie explicitly accepted the pinned official source evidence for this named payload on 2026-08-23. Numerical parity max absolute error was 3.8147e-05. This exception does not cover openWakeWord's CC BY-NC-SA pretrained payloads."
-    },
-    "packages/voice/models/hey-mastra-keyword.onnx": {
-      "digest": "4bfc990f9dcc65444b3b93ed1cd22d180487ffec2e835a52327aa26f7427fa80",
-      "license": "Apache-2.0",
-      "source": "repository training result packages/voice/training/candidate-result.json sha256 954f1eb79cbd2f78e04e73930c0b631ed60aa21d3641d500928031326a942a65",
-      "reviewed": "2026-08-23",
-      "reason": "Repository-trained hey-mastra classifier over the pinned speech embedding. Inputs are commercially usable Piper LibriTTS synthetic positives and CC BY 4.0 LibriSpeech negatives, frozen in candidate-bank.json sha256 8644943b1c829230890ca2976ca480f11b273866b98f4dd583e07254fad687f7. Jamie amended the plan after the first threshold freeze: the two observed shipping false positives remain in the unchanged shipping bank and were also added as explicit hard-negative training rows with their original source paths and SHA-256 digests. The unchanged candidate test measured 99/100 recall and zero false accepts across 1,000 negatives from 20 speakers."
-    }
-  }
+  "packages": {},
+  "files": {}
 }

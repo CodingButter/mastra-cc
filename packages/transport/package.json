@@ -1,10 +1,17 @@
 {
   "name": "@mastra-cc/transport",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "The one client that dials the mastra-cc daemon, over a unix socket or a websocket.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "lint": "oxlint src",
@@ -17,6 +24,8 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/node": "^24.10.1",
+    "@types/ws": "^8.5.14",
+    "ws": "^8.18.0",
     "@mastra-cc/daemon": "workspace:*"
   },
   "dependencies": {

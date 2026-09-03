@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { composeBootNames } from "../launch/profiles.js";
@@ -18,6 +18,35 @@ describe("the built daemon remains location-transparent", () => {
     expect(daemon).toContain('join(process.env.XDG_RUNTIME_DIR ?? "/tmp", "mastra-cc", "daemon.sock")');
     expect(transport).toContain('const runtimeDir = process.env.XDG_RUNTIME_DIR ?? "/tmp"');
     expect(transport).toContain('join(runtimeDir, "mastra-cc", "daemon.sock")');
+  });
+
+  // infra/apply.sh copies dist/ and nothing else, so any bare specifier left in
+  // the output is a package the installed daemon cannot resolve. Adding `ws`
+  // reached that trap: the flag worked in the repo, where resolution walks up to
+  // the workspace node_modules, and died on a copied tree.
+  // Scope: static ESM imports only. `require()` forms survive bundling too — probe.ts
+  // reads dbus-native's manifest that way, and ws carries optional native accelerators —
+  // but those are guarded at their call sites, and matching them would drag in the
+  // unprefixed builtins the bundler emits.
+  it("leaves no static package import the copied tree cannot resolve", () => {
+    const dist = join(root, "daemon", "dist");
+    const bundles = readdirSync(dist).filter((name) => name.endsWith(".mjs"));
+    // Vacuity guard: an absent or empty dist would make the scan below pass while
+    // reading nothing at all.
+    expect(bundles.length).toBeGreaterThan(0);
+    const specifiers = new Map<string, string>();
+    for (const file of bundles) {
+      const source = readFileSync(join(dist, file), "utf8");
+      for (const match of source.matchAll(/(?:^|[\s;}])(?:from|import\s*\()\s*["']([^"'.][^"']*)["']/gm)) {
+        specifiers.set(match[1]!, file);
+      }
+    }
+    // The matcher must actually be finding imports; node: builtins are always there.
+    expect([...specifiers.keys()].some((specifier) => specifier.startsWith("node:"))).toBe(true);
+    const unresolvable = [...specifiers]
+      .filter(([specifier]) => !specifier.startsWith("node:"))
+      .map(([specifier, file]) => `${specifier} (${file})`);
+    expect(unresolvable).toEqual([]);
   });
 
   it("keeps launch identity mapping provider-neutral", () => {

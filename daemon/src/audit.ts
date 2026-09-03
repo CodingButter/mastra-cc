@@ -117,6 +117,8 @@ export const REFUSAL_CLASSES = [
   "UnpublishedActionError",
   "WriteNotObservedError",
   // the server's own refusals, which are sentences and not classes
+  "AccessibilityNotAcquirable",
+  "AccessibilityNotAcquired",
   "AlreadyRunning",
   "BackendUnreadable",
   "CouldNotStart",
@@ -129,6 +131,9 @@ export const REFUSAL_CLASSES = [
   "MalformedParameter",
   "NoConnection",
   "NoMatch",
+  "RestartNotConfirmed",
+  "RestartNotOurs",
+  "RestartRefusedByApplication",
   "NoRecipe",
   "NotReadableInTime",
   "OneBrowserIdentity",

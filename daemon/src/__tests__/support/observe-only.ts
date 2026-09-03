@@ -26,6 +26,7 @@ import { EffectUnsupportedError, FocusUnsupportedError, InventoryUnsupportedErro
 export const observeOnlyEffects: Pick<
   Backend,
   | "installedApplications"
+  | "runningApplications"
   | "focusedElement"
   | "restoreFocus"
   | "editElement"
@@ -35,10 +36,19 @@ export const observeOnlyEffects: Pick<
   | "setElementText"
   | "setElementCaret"
   | "revealElement"
+  | "sendKeyChord"
+  | "typeText"
 > = {
   installedApplications: async () => {
     throw new InventoryUnsupportedError("this test double has no machine behind it and cannot enumerate what is installed");
   },
+  // Not a throw, unlike the inventory above, because this question has a place
+  // to put "I cannot look" IN THE ANSWER: an empty horizon says this double can
+  // speak about no application at all, so every name it is asked about comes
+  // back cannot-tell. An empty observable set with a whole-machine horizon
+  // would be the "nothing is running" falsehood - the same collapse, one
+  // question later.
+  runningApplications: async () => ({ observable: new Set<string>(), answersFor: new Set<string>() }),
   focusedElement: async () => {
     throw new FocusUnsupportedError("this test double has no desktop behind it and cannot say what holds the focus");
   },
@@ -64,6 +74,15 @@ export const observeOnlyEffects: Pick<
     throw new EffectUnsupportedError("this test double observes only");
   },
   revealElement: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  // Refusing matters most here of all: a double that answered a keystroke with
+  // a plausible element would let a suite record a key as delivered on a
+  // machine with no keyboard, no desktop and no witness.
+  sendKeyChord: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  typeText: async () => {
     throw new EffectUnsupportedError("this test double observes only");
   },
 };

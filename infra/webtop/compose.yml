@@ -5,6 +5,10 @@ services:
     shm_size: 1gb
     security_opt:
       - seccomp=unconfined
+      # GTK on this image decodes icons through glycin, which reruns the decode
+      # inside bubblewrap. The default AppArmor profile denies the mount
+      # propagation change bwrap needs, so every GTK application aborts.
+      - apparmor=unconfined
     environment:
       PUID: "1000"
       PGID: "1000"

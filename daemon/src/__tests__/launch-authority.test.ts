@@ -257,6 +257,9 @@ describe("effect authority: every element method is refused before the backend i
     installedApplications: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
+    runningApplications: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
     attestElement: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
@@ -295,6 +298,12 @@ describe("effect authority: every element method is refused before the backend i
       throw new Error("the effect authority gate touched the backend");
     },
     revealElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    sendKeyChord: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
+    typeText: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
     close: async () => undefined,
@@ -344,6 +353,18 @@ describe("effect authority: every element method is refused before the backend i
       const result = await call(method, params, editOnly);
       expect(result.refusal).toBe(refusal);
     }
+  });
+
+  it("restartApplication and acquireAccessibility are refused before the call too - the whole non-observe table, not just the element half", async () => {
+    // B11 pins that every non-observe route DECLARES before-call enforcement;
+    // this is where the declaration is made true. The two machine-lifecycle
+    // routes are not in `cases` because their authority is not a --allow class
+    // - one needs a launch permit, the other an operator flag - but the
+    // ordering property is identical: no authority, no backend touched.
+    const restart = await call("restartApplication", { name: "kate" }, launch({ permits: new Set() }));
+    expect(restart.refusal).toBe(UNAVAILABLE_REFUSAL);
+    const acquire = await call("acquireAccessibility", {}, launch({ mayAcquireAccessibility: false }));
+    expect(acquire.refusal).toContain("--acquire-accessibility");
   });
 
   it("holding the class gets past the gate and reaches the backend", async () => {

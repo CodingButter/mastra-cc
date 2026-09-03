@@ -15,7 +15,7 @@ const schemaText = readFileSync(join(repoRoot, "protocol", "schema.json"), "utf8
 const schema = JSON.parse(schemaText);
 
 describe("protocol/schema.json v1", () => {
-  it("declares exactly fourteen methods, including the bounded content reader introduced by ADR-0056", () => {
+  it("declares exactly nineteen methods - the fourteen through ADR-0056, the two the desk answers about itself (ADR-0064), the restart the operator authorises (ADR-0065), the one key it may be asked to press (ADR-0067), and the text it may be asked to type blind (ADR-0070)", () => {
     expect(Object.keys(schema.methods)).toEqual([
       "queryElements",
       "attestElement",
@@ -31,6 +31,11 @@ describe("protocol/schema.json v1", () => {
       "setElementCaret",
       "revealElement",
       "listApplications",
+      "describeAccessibility",
+      "acquireAccessibility",
+      "restartApplication",
+      "sendKeyChord",
+      "typeText",
     ]);
   });
 
@@ -53,12 +58,17 @@ describe("protocol/schema.json v1", () => {
 
   it("lets the listing report an application without reporting anything inside it (ADR-0042)", () => {
     const fields = Object.keys(schema.types.installedApplication.fields);
-    expect(fields).toEqual(["name", "capabilities", "launchable", "diagnostic"]);
+    // `running` and `runningUnknownBy` joined in 1.7.0 (ADR-0063). They are
+    // still facts ABOUT the application rather than from inside it: whether it
+    // answers the accessibility layer, and which setting withholds the answer.
+    expect(fields).toEqual(["name", "capabilities", "launchable", "running", "runningUnknownBy", "diagnostic"]);
+    expect(schema.runningStates).toEqual(["answering", "not-answering", "cannot-tell"]);
+    expect(schema.types.installedApplication.fields.running.required).toBe(true);
     expect(schema.types.capability.fields.disabledBy).toBeDefined();
   });
 
   it("requires one provider-neutral observable-content state, including value-free protected redaction (ADR-0056)", () => {
-    expect(schema.version).toBe("1.6.1");
+    expect(schema.version).toBe("1.13.0");
     expect(schema.types.semanticElement.fields.content).toMatchObject({
       type: "observableContent",
       required: true,

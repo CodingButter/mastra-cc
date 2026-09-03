@@ -223,6 +223,8 @@ Expected modes are `700` for the config and state directories and `600` for both
 | audit destination | unit `--audit` | explicit `audit.jsonl` path |
 | browser profiles | absent | built-in `gmail` identity only |
 
+Since schema 1.7.0, the grants file also decides who is told what is **open**. Every inventory entry carries a three-state `running`, and an application this session may not observe reports `cannot-tell` naming the grants file rather than `not-answering` — a machine's owner withholding observation withholds the running state with it, and no reader is handed a false statement about a desktop it is not allowed to watch ([ADR-0063](02-DECISIONS/0063-running-is-a-fact-about-the-desk-not-a-permission.md)). Nothing new to configure: it is the file that is already there.
+
 The built-in Gmail recipe publishes its tree as `chrome`. Effective observe visibility is therefore exactly `{gmail, chrome}`: a separately running built-in Chrome tree is observable. Launch authority does **not** follow that join and remains exactly `{gmail}`. Every non-Gmail inventory entry reports `defaults.launch` as the setting withholding launch.
 
 The hub and model cannot enumerate or change the permit list, and the model receives no launch tool. The existing `hub --open` command remains a human-invoked diagnostic. Stage 3 adds a separate trusted orchestration seam that delegates one named request to the same daemon gate; it neither lists nor changes authority.
@@ -253,7 +255,7 @@ systemctl --user restart mastra-desktop-daemon.service
 
 A restart is the revocation boundary. If the unit is not running, no restart is needed. For complete rollback, stop and disable it if an operator enabled it, remove the two operator files only after preserving any desired local policy, and re-apply a previously approved repository revision. Do not edit the installed unit or daemon tree in place; `infra/apply.sh` replaces repository-owned artifacts on the next apply.
 
-A refusal before daemon dispatch is the hub's not-permitted result. A refusal returned by the daemon remains the daemon's byte-owned refusal and must not be re-derived into a prettier cause. Unavailable or unreachable Gmail must not be called *uninstalled* without inventory evidence. These are references to the frozen R7 ordering in [the north-star contract](10-NORTH-STAR-CONTRACT.md), not new refusal semantics.
+A refusal returned by the daemon is the daemon's byte-owned refusal and must not be re-derived into a prettier cause. Unavailable or unreachable Gmail must not be called *uninstalled* without inventory evidence. These restate the R7 ordering recorded in [the retired north-star contract](10-NORTH-STAR-CONTRACT.md); the caller-side half of that ordering left with the hub ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)), and what remains is the daemon's own refusal discipline, not new semantics.
 
 ### Manual Gmail sign-in
 

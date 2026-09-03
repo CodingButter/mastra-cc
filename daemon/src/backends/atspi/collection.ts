@@ -85,11 +85,21 @@ export function roleBitfield(ids: readonly number[]): number[] {
 
 // One exchange, every descendant of this application carrying ANY of the
 // role's native ids (MATCH_ANY=2; MATCH_ALL would demand one node hold every
-// id at once and answer nothing). Every other clause is left empty and
-// unmatched (0), sorted in canonical tree order, uncapped, traversing into
-// embedded documents.
+// id at once and answer nothing), sorted in canonical tree order, uncapped,
+// traversing into embedded documents.
+//
+// The three clauses this rule does NOT ask about - states, attributes,
+// interfaces - are sent EMPTY with match type MATCH_ALL (1), not 0. Zero is
+// the bridge's INVALID, and an invalid match type does not mean "ignore this
+// clause": it makes the whole rule match nothing, successfully. Measured on a
+// live GTK application (galculator, 27 toggle buttons): the same rule answered
+// 0 with 0s and 27 with 1s. Empty-with-MATCH_ALL is vacuously true, which is
+// the "do not care" this rule wants.
+const MATCH_ALL = 1;
+const MATCH_ANY = 2;
+
 export async function matchByRole(channel: CollectionChannel, ref: CollectionRef, role: Role): Promise<CollectionRef[]> {
-  const rule = [[0, 0], 0, [], 0, roleBitfield(NATIVE_ROLE_IDS[role]), 2, [], 0, false];
+  const rule = [[0, 0], MATCH_ALL, [], MATCH_ALL, roleBitfield(NATIVE_ROLE_IDS[role]), MATCH_ANY, [], MATCH_ALL, false];
   const [matches] = await channel.call({
     destination: ref.busName,
     path: ref.objectPath,

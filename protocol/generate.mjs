@@ -50,8 +50,16 @@ const VOCABULARIES = [
   { key: "roles", constant: "ROLES", type: "Role", base: "role" },
   { key: "states", constant: "STATES", type: "State", base: "state" },
   { key: "availabilityStates", constant: "AVAILABILITY_STATES", type: "AvailabilityState", base: "availabilityState" },
+  { key: "runningStates", constant: "RUNNING_STATES", type: "RunningState", base: "runningState" },
+  { key: "accessibilityStates", constant: "ACCESSIBILITY_STATES", type: "AccessibilityState", base: "accessibilityState" },
   { key: "operationNames", constant: "OPERATION_NAMES", type: "OperationName", base: "operationName" },
   { key: "capabilityNames", constant: "CAPABILITY_NAMES", type: "CapabilityName", base: "capabilityName" },
+  // The chord list is closed for a reason the others are not: every vocabulary
+  // above closes a word the DAEMON decides, while this one closes what a
+  // CALLER may send. An open key string would be an arbitrary-input surface
+  // wearing a chord's clothes, so the emitted validator refusing an unlisted
+  // name is part of the containment rather than tidiness (ADR-0046 clause 1).
+  { key: "keyChordNames", constant: "KEY_CHORD_NAMES", type: "KeyChordName", base: "keyChordName" },
   { key: "priorities", constant: "PRIORITIES", type: "Priority", base: "priority" },
   { key: "changeKinds", constant: "CHANGE_KINDS", type: "ChangeKind", base: "changeKind" },
   { key: "attributions", constant: "ATTRIBUTIONS", type: "Attribution", base: "attribution" },
@@ -118,6 +126,50 @@ for (const [method, spec] of Object.entries(schema.methods)) {
   parts.push(emitInterface(`${method}Result`, spec.returns));
   parts.push("");
 }
+function paramJsonSchema(spec) {
+  const property = { description: spec.description };
+  const vocabulary = vocabularyFor(spec.type);
+  if (vocabulary) {
+    property.type = "string";
+    property.enum = schema[vocabulary.key];
+  } else if (spec.type === "string" || spec.type === "number" || spec.type === "boolean") {
+    property.type = spec.type === "boolean" ? "boolean" : spec.type;
+  } else {
+    throw new Error(`generate: no JSON Schema mapping for param type "${spec.type}"`);
+  }
+  if (spec.pattern === "idPattern") property.pattern = schema.idPattern;
+  return property;
+}
+
+const methodDescriptors = Object.fromEntries(
+  Object.entries(schema.methods).map(([method, spec]) => [
+    method,
+    {
+      description: spec.description,
+      params: {
+        type: "object",
+        properties: Object.fromEntries(
+          Object.entries(spec.params).map(([field, field_spec]) => [field, paramJsonSchema(field_spec)]),
+        ),
+        required: Object.entries(spec.params)
+          .filter(([, field_spec]) => field_spec.required === true)
+          .map(([field]) => field),
+        additionalProperties: false,
+      },
+    },
+  ]),
+);
+parts.push(
+  "/** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */",
+);
+parts.push(
+  `export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = ${JSON.stringify(
+    methodDescriptors,
+    null,
+    2,
+  )};`,
+);
+parts.push("");
 const runtimeFieldSpecs = (fields) =>
   Object.fromEntries(
     Object.entries(fields).map(([field, spec]) => [
@@ -306,18 +358,62 @@ const indexTs = parts.join("\n");
 const packageJson = `${JSON.stringify(
   {
     name: "@mastra-cc/protocol-types",
+    // The protocol's own version is this package's version: a consumer that
+    // resolves @mastra-cc/protocol-types@1.6.1 is holding schema v1.6.1 and
+    // nothing else. It is deliberately NOT the daemon's version (ADR-0057).
     version: schema.version,
-    private: true,
+    license: "MIT",
+    publishConfig: { access: "public" },
+    // This package carries runtime values as well as types - METHOD_NAMES,
+    // TYPE_SPECS, METHOD_DESCRIPTORS - so it is compiled, and the entry point is
+    // the compiled module. Pointing main at src/index.ts would work everywhere
+    // in this workspace and nowhere in a consumer's node_modules, where node
+    // will not strip types for a dependency.
+    files: ["dist", "src"],
     type: "module",
-    main: "./src/index.ts",
-    types: "./src/index.ts",
+    main: "./dist/index.js",
+    // Declarations come from a real emit step: a consumer's dts bundler cannot reach into
+    // a source file that belongs to no project, and TypeScript 7's tsgo refuses to try.
+    types: "./dist/index.d.ts",
     description: "GENERATED from protocol/schema.json - do not edit (ADR-0009).",
+    scripts: {
+      build: "tsc -p tsconfig.json",
+    },
+    devDependencies: {
+      // Without this the compiler is absent from this package's .bin path under pnpm's
+      // isolated node_modules and the build script cannot run.
+      typescript: "catalog:",
+    },
+  },
+  null,
+  2,
+)}\n`;
+
+const tsconfigJson = `${JSON.stringify(
+  {
+    compilerOptions: {
+      rootDir: "src",
+      outDir: "dist",
+      declaration: true,
+      module: "NodeNext",
+      moduleResolution: "NodeNext",
+      target: "ES2022",
+      strict: true,
+      skipLibCheck: true,
+    },
+    include: ["src"],
   },
   null,
   2,
 )}\n`;
 
 mkdirSync(join(outDir, "src"), { recursive: true });
-writeFileSync(join(outDir, "package.json"), packageJson);
-writeFileSync(join(outDir, "src", "index.ts"), `${indexTs}\n`);
-console.log(`generate: 2 file(s) emitted to ${outDir} (schema v${schema.version}, digest ${digest.slice(0, 12)}...)`);
+const emitted = [
+  ["package.json", packageJson],
+  ["tsconfig.json", tsconfigJson],
+  [join("src", "index.ts"), `${indexTs}\n`],
+];
+for (const [relative, contents] of emitted) writeFileSync(join(outDir, relative), contents);
+console.log(
+  `generate: ${emitted.length} file(s) emitted to ${outDir} (schema v${schema.version}, digest ${digest.slice(0, 12)}...)`,
+);

@@ -27,15 +27,9 @@ function plant(relPath, content, alongside = {}) {
   return root;
 }
 
-// B2 scans two subjects, so its planted tree needs both present: a source file
-// to scan and a manifest to read. A tree with only the source would fail on the
-// unreadable manifest, which is a true failure for the wrong reason.
-const CLEAN_HUB_MANIFEST = JSON.stringify({ name: "@mastra-cc/hub", dependencies: { "@mastra-cc/transport": "workspace:*" } });
-const CLEAN_WIDGET_MANIFEST = JSON.stringify({ name: "@mastra-cc/widget", dependencies: { "@mastra-cc/transport": "workspace:*" } });
-
 // `vacuity` is each pin's OWN vacuous-pass sentence, not the shared tail of it.
-// Asserting only "would pass vacuously" let B2's source-half guard be deleted
-// with this test still green, because its manifest guard says the same words -
+// Asserting only "would pass vacuously" lets a pin with two guards have one of
+// them deleted with this test still green, because both say the same words -
 // the mutation runner found that, and the fix is to name the guard expected.
 const VACUOUS_FILE_SET = "no files matched - the pin would pass vacuously";
 
@@ -45,33 +39,14 @@ const cases = [
     plantPath: "packages/leak/src/leak.ts",
     plantSource: 'import dbus from "dbus-native";\n',
     expectedMessage: 'D-Bus binding "dbus-native"',
-  },
-  {
-    pin: "b2",
-    plantPath: "apps/hub/src/ears.ts",
-    plantSource: "export const stream = await navigator.mediaDevices.getUserMedia({ audio: true });\n",
-    expectedMessage: 'audio API "getUserMedia" in the hub',
-    alongside: { "apps/hub/package.json": CLEAN_HUB_MANIFEST },
-  },
-  {
-    pin: "b3",
-    plantPath: "apps/widget/src/provider.ts",
-    plantSource: "export const key = process.env.OPENAI_API_KEY;\n",
-    expectedMessage: 'provider credential "OPENAI_API_KEY"',
-    alongside: { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
-  },
-  {
-    pin: "b9",
-    plantPath: "apps/widget/src/transcriber.ts",
-    plantSource: 'import { pipeline } from "@huggingface/transformers";\n',
-    expectedMessage: 'transcriber "@huggingface/transformers"',
-    alongside: { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
+    scanRoots: ["packages", "tools", "scripts"],
   },
   {
     pin: "b5",
-    plantPath: "apps/rogue/src/socket.ts",
+    plantPath: "packages/rogue/src/socket.ts",
     plantSource: 'import net from "node:net";\n',
     expectedMessage: "socket implementation outside packages/transport",
+    scanRoots: ["packages", "tools", "scripts", "infra"],
   },
   {
     pin: "b8",
@@ -96,6 +71,9 @@ const cases = [
       '  setElementText: { effectClass: "edit", enforcement: "before-call" },\n' +
       '  setElementCaret: { effectClass: "edit", enforcement: "before-call" },\n' +
       '  revealElement: { effectClass: "activate", enforcement: "before-call" },\n' +
+      '  acquireAccessibility: { effectClass: "acquire", enforcement: "before-call" },\n' +
+      '  restartApplication: { effectClass: "restart", enforcement: "before-call" },\n' +
+      '  sendKeyChord: { effectClass: "rawInput", enforcement: "before-call" },\n' +
       "};\n",
     expectedMessage: 'not marked enforcement "before-call"',
     // b11 reads one table rather than a file set, so its empty-subject sentence
@@ -104,7 +82,7 @@ const cases = [
   },
 ];
 
-for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = VACUOUS_FILE_SET } of cases) {
+for (const { pin, plantPath, plantSource, expectedMessage, alongside, scanRoots, vacuity = VACUOUS_FILE_SET } of cases) {
   test(`${pin}: the clean tree passes`, () => {
     const r = runPin(pin);
     expect(r.output).toContain(`pin-${pin}: ok`);
@@ -112,7 +90,9 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = 
   });
 
   test(`${pin}: a planted violation fails with the offending path named`, () => {
-    const r = runPin(pin, ["--root", plant(plantPath, plantSource, alongside)]);
+    const root = plant(plantPath, plantSource, alongside);
+    for (const dir of scanRoots ?? []) mkdirSync(join(root, dir), { recursive: true });
+    const r = runPin(pin, ["--root", root]);
     expect(r.status).toBe(1);
     expect(r.output).toContain(expectedMessage);
     expect(r.output).toContain(plantPath);
@@ -120,11 +100,13 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = 
 
   test(`${pin}: an empty file set fails rather than passing vacuously`, () => {
     // The tree is empty of the pin's SUBJECT while whatever else the pin needs
-    // to run is present. B2 taught this distinction: it scans a source tree and
-    // reads a manifest, and a tree missing both fails on the manifest, so the
-    // source half's guard could be deleted with this test still green. An empty
-    // set has to be empty of exactly one thing at a time.
+    // to run is present. A pin that scans a source tree AND reads a manifest
+    // would otherwise fail on the manifest when both are missing, hiding a
+    // deleted source-half guard. An empty set is empty of one thing at a time.
     const root = mkdtempSync(join(tmpdir(), "pin-empty-"));
+    // A pin that asserts its scan roots exist needs them present-but-empty here,
+    // or the roots guard fires first and hides a deleted vacuity guard.
+    for (const dir of scanRoots ?? []) mkdirSync(join(root, dir), { recursive: true });
     for (const [path, body] of Object.entries(alongside ?? {})) {
       const file = join(root, path);
       mkdirSync(dirname(file), { recursive: true });
@@ -136,17 +118,115 @@ for (const { pin, plantPath, plantSource, expectedMessage, alongside, vacuity = 
   });
 }
 
+// The daemon grew a second front door (ADR-0058), so the pin watches the
+// websocket server library the same way it watches node:net. Nothing under the
+// scanned roots imports `ws` today and nothing is meant to - the transport
+// dials with the global WebSocket - so these two plants are the only evidence
+// that half of the matcher does anything at all.
+test("b5: a ws import outside packages/transport fails with the offending path named", () => {
+  const root = plant("tools/rogue/dial.mjs", 'import WebSocket from "ws";\n');
+  for (const dir of ["packages", "tools", "scripts", "infra"]) mkdirSync(join(root, dir), { recursive: true });
+  const r = runPin("b5", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("websocket client outside packages/transport");
+  expect(r.output).toContain("tools/rogue/dial.mjs");
+});
+
+test("b5: the same ws import inside packages/transport passes", () => {
+  const root = plant("packages/transport/src/dial.ts", 'import WebSocket from "ws";\n', {
+    "tools/keep.mjs": "export {};\n",
+  });
+  for (const dir of ["packages", "tools", "scripts", "infra"]) mkdirSync(join(root, dir), { recursive: true });
+  const r = runPin("b5", ["--root", root]);
+  expect(r.output).toContain("pin-b5: ok");
+  expect(r.status).toBe(0);
+});
+
+test("b5: a dial hand-rolled inside a proof harness under infra/ is caught", () => {
+  // The proof scripts are the tempting exception - they are throwaway, they run
+  // against a container, nobody reviews them like shipped code. A harness that
+  // reaches the daemon its own way proves nothing about the client we ship, so
+  // infra/ is scanned on the same terms as everything else.
+  const root = plant("infra/webtop/harness.mjs", 'import WebSocket from "ws";\n', {
+    "packages/keep/src/a.ts": "export {};\n",
+  });
+  for (const dir of ["packages", "tools", "scripts", "infra"]) mkdirSync(join(root, dir), { recursive: true });
+  const r = runPin("b5", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("websocket client outside packages/transport");
+  expect(r.output).toContain("infra/webtop/harness.mjs");
+});
+
 test("b8: the raw-input class it contains is stated, not assumed", () => {
   // ADR-0046 struck the outright ban and re-specified this pin as containment:
   // the tool names appear ONLY inside the raw-input class implementation. The
-  // class does not exist yet, so the contained set is empty - and an empty set
-  // has to SAY so rather than let a reader assume the pin still bans outright.
-  // Without this, the pin's report is identical whether containment was
-  // implemented or forgotten, which is the shape of a gate that cannot fail.
+  // class now EXISTS (ADR-0067), so the pin has to name where it lives - a
+  // report identical whether containment was implemented or forgotten is the
+  // shape of a gate that cannot fail. This assertion is against the real root,
+  // so emptying the set reds it rather than merely changing a temp tree.
   const r = runPin("b8");
   expect(r.status).toBe(0);
   expect(r.output).toContain("outside the raw-input class");
-  expect(r.output).toContain("no raw-input class exists yet");
+  expect(r.output).toContain("daemon/src/backends/atspi/rawinput");
+  expect(r.output).not.toContain("no raw-input class exists yet");
+});
+
+test("b8: the class may hold a raw-input tool and its neighbours may not", () => {
+  // The whole of containment in one pair. The same file content is legal at the
+  // class's path and illegal one directory up, which is what distinguishes
+  // "raw input lives in exactly one place" from "raw input is banned" and from
+  // "raw input is allowed" - two rules this pin must never be mistaken for.
+  const inside = plant("daemon/src/backends/atspi/rawinput/xtest.ts", 'const route = "uinput";\n');
+  expect(runPin("b8", ["--root", inside]).status).toBe(0);
+
+  const outside = plant("daemon/src/backends/atspi/xtest.ts", 'const route = "uinput";\n');
+  const r = runPin("b8", ["--root", outside]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("daemon/src/backends/atspi/xtest.ts");
+});
+
+test("b8: the human stand-in exemption is one named file, not a directory", () => {
+  // The proof harness types at the desk so a change arrives attributed
+  // `external` - the pin lets exactly that file through, and nothing near it.
+  // A prefix exemption would let anyone drop a raw-input script beside the
+  // harness and inherit its permission, which is how a contained rule becomes
+  // an uncontained one without a diff anybody notices.
+  const clean = runPin("b8");
+  expect(clean.status).toBe(0);
+  expect(clean.output).toContain("infra/webtop/signals/proof.sh");
+  // The delivery measurement, whose one control keystroke is the reason the
+  // product ships no key route at all.
+  expect(clean.output).toContain("04-a-key-addressed-to-one-element/measure-delivery.sh");
+
+  const root = plant("infra/webtop/signals/sneak.sh", 'xdotool type "hello"\n');
+  const r = runPin("b8", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("infra/webtop/signals/sneak.sh");
+});
+
+test("b8: the errand harness is a named stand-in, and the list is counted not sampled", () => {
+  // Asserted against the REAL root, not a planted one: a test written against a
+  // temp tree would stay green with the exemption string deleted, and the
+  // mutation on it would report survived rather than killed.
+  const clean = runPin("b8");
+  expect(clean.status).toBe(0);
+  expect(clean.output).toContain("infra/webtop/errands/run-errands.sh");
+
+  // The COUNT, not just membership: a toContain on one path cannot tell two
+  // exemptions from five, and quiet growth is the failure this pin exists to
+  // catch. Counted from the listed paths rather than parsed out of the sentence,
+  // so rewording the success line does not break the assertion.
+  const listed = clean.output.slice(clean.output.indexOf("standing in for a human:"));
+  expect(listed.match(/infra\/\S+?\.sh/g)).toHaveLength(3);
+});
+
+test("b8: a sibling of the errand harness is still refused", () => {
+  // The errand harness is an exact file. Its neighbours inherit nothing - if this
+  // ever passes, the entry has widened into a prefix.
+  const root = plant("infra/webtop/errands/sneak.sh", 'xdotool type "hello"\n');
+  const r = runPin("b8", ["--root", root]);
+  expect(r.status).toBe(1);
+  expect(r.output).toContain("infra/webtop/errands/sneak.sh");
 });
 
 test("b8: a comment mentioning a banned tool is not a violation", () => {
@@ -154,114 +234,6 @@ test("b8: a comment mentioning a banned tool is not a violation", () => {
   const r = runPin("b8", ["--root", root]);
   expect(r.output).toContain("pin-b8: ok");
   expect(r.status).toBe(0);
-});
-
-test("b2: an audio dependency declared but never imported still fails", () => {
-  // THE HALF THAT SLIPPED THROUGH BEFORE. The prototype deleted a transcriber's
-  // seven files and eighty megabytes and left the dependency declared; the
-  // source scan below sees a clean tree, and the manifest is what catches it.
-  const root = plant(
-    "apps/hub/src/index.ts",
-    "export const hub = true;\n",
-    { "apps/hub/package.json": JSON.stringify({ name: "@mastra-cc/hub", dependencies: { "node-speaker": "^0.5.5" } }) },
-  );
-  const r = runPin("b2", ["--root", root]);
-  expect(r.status).toBe(1);
-  expect(r.output).toContain('audio dependency "node-speaker"');
-  expect(r.output).toContain("imported or not");
-});
-
-test("b2: a comment explaining why the hub holds no audio is not a violation", () => {
-  const root = plant(
-    "apps/hub/src/why.ts",
-    "// The hub never calls getUserMedia and never holds an AudioBuffer (ADR-0006).\nexport {};\n",
-    { "apps/hub/package.json": CLEAN_HUB_MANIFEST },
-  );
-  const r = runPin("b2", ["--root", root]);
-  expect(r.output).toContain("pin-b2: ok");
-  expect(r.status).toBe(0);
-});
-
-test("b2: an unreadable manifest fails rather than passing the manifest half vacuously", () => {
-  // A source tree with no manifest is not a hub that declares no audio - it is
-  // a hub whose declarations were never read. One level up from an empty file
-  // set, and the same failure mode.
-  const root = plant("apps/hub/src/index.ts", "export const hub = true;\n");
-  const r = runPin("b2", ["--root", root]);
-  expect(r.status).toBe(1);
-  expect(r.output).toContain("would pass vacuously");
-});
-
-for (const [pin, dependency, expected] of [
-  ["b3", "openai", 'provider SDK "openai"'],
-  ["b9", "@huggingface/transformers", 'transcriber "@huggingface/transformers"'],
-]) {
-  test(`${pin}: a forbidden dependency declared but never imported still fails`, () => {
-    const root = plant(
-      "apps/widget/src/index.ts",
-      "export const widget = true;\n",
-      { "apps/widget/package.json": JSON.stringify({ name: "@mastra-cc/widget", dependencies: { [dependency]: "1.0.0" } }) },
-    );
-    const r = runPin(pin, ["--root", root]);
-    expect(r.status).toBe(1);
-    expect(r.output).toContain(expected);
-    expect(r.output).toContain("apps/widget/package.json");
-  });
-}
-
-test("b9: its own transcriber-removal explanation is not a violation", () => {
-  const root = plant(
-    "apps/widget/src/why.ts",
-    '// @huggingface/transformers was removed; transcription does not belong here (ADR-0005).\nexport {};\n',
-    { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
-  );
-  const r = runPin("b9", ["--root", root]);
-  expect(r.status).toBe(0);
-  expect(r.output).toContain("pin-b9: ok");
-});
-
-test("b4: zero microphone consumers is green and visible", () => {
-  const root = plant("apps/widget/src/index.ts", "export const widget = true;\n", { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST });
-  const r = runPin("b4", ["--root", root]);
-  expect(r.status).toBe(0);
-  expect(r.output).toContain("0 microphone consumer(s)");
-});
-
-test("b4: exactly one microphone consumer is the shape M5 will add", () => {
-  const root = plant("apps/widget/src/microphone.ts", "navigator.mediaDevices.getUserMedia({ audio: true });\n", { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST });
-  const r = runPin("b4", ["--root", root]);
-  expect(r.status).toBe(0);
-  expect(r.output).toContain("1 microphone consumer(s)");
-});
-
-test("b4: the selected voice capture boundary is a microphone consumer", () => {
-  const root = plant(
-    "apps/widget/src/microphone.ts",
-    'import { createMicrophoneCapture } from "@mastra-cc/voice/node";\ncreateMicrophoneCapture();\n',
-    { "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
-  );
-  const r = runPin("b4", ["--root", root]);
-  expect(r.status).toBe(0);
-  expect(r.output).toContain("1 microphone consumer(s)");
-});
-
-test("b4: two microphone consumers fail with both paths named", () => {
-  const root = plant(
-    "apps/widget/src/first.ts",
-    "navigator.mediaDevices.getUserMedia({ audio: true });\n",
-    { "apps/widget/src/second.ts": "new MediaRecorder(stream);\n", "apps/widget/package.json": CLEAN_WIDGET_MANIFEST },
-  );
-  const r = runPin("b4", ["--root", root]);
-  expect(r.status).toBe(1);
-  expect(r.output).toContain("2 microphone consumers");
-  expect(r.output).toContain("apps/widget/src/first.ts");
-  expect(r.output).toContain("apps/widget/src/second.ts");
-});
-
-test("b4: an empty client file set fails rather than reporting zero", () => {
-  const r = runPin("b4", ["--root", mkdtempSync(join(tmpdir(), "pin-empty-"))]);
-  expect(r.status).toBe(1);
-  expect(r.output).toContain(VACUOUS_FILE_SET);
 });
 
 test("b11: an observe-only dispatch table fails rather than passing vacuously", () => {
@@ -273,3 +245,17 @@ test("b11: an observe-only dispatch table fails rather than passing vacuously", 
   expect(r.status).toBe(1);
   expect(r.output).toContain("would pass vacuously");
 });
+
+for (const pin of ["b1", "b5"]) {
+  test(`${pin}: a missing scan root fails rather than guarding the wrong population`, () => {
+    // The amputation of apps/ (ADR-0057) is exactly this hazard: delete a root
+    // and the pin still finds files in the roots that remain, so the non-empty
+    // guard goes green over a population the pin was never written to defend.
+    const root = plant("packages/kept/src/a.ts", "export {};\n");
+    mkdirSync(join(root, "tools"), { recursive: true });
+    const r = runPin(pin, ["--root", root]);
+    expect(r.status).toBe(1);
+    expect(r.output).toContain("scan root(s) missing");
+    expect(r.output).toContain("scripts");
+  });
+}

@@ -1,5 +1,19 @@
 [
   {
+    "name": "catalog-check-named-catalog-comparison-removed",
+    "file": "tools/catalog-check.mjs",
+    "find": "  for (const key of WATCHED.filter((k) => k in pins)) {\n    const there = destNamed[name][key];\n    if (there === undefined) {\n      divergences.push(`catalog-check: ${key} in catalog ${name} is ${pins[key]} here, absent in the destination`);\n    } else if (there !== pins[key]) {\n      divergences.push(`catalog-check: ${key} in catalog ${name} is ${pins[key]} here, ${there} in the destination`);\n    }\n  }",
+    "cwd": "tools",
+    "testFile": "__tests__/catalog-check.test.mjs"
+  },
+  {
+    "name": "catalog-check-local-only-named-catalog-check-removed",
+    "file": "tools/catalog-check.mjs",
+    "find": "    divergences.push(`catalog-check: catalog ${name} is defined here, absent in the destination`);",
+    "cwd": "tools",
+    "testFile": "__tests__/catalog-check.test.mjs"
+  },
+  {
     "name": "b1-vacuous-guard-removed",
     "file": "tools/pins/b1.mjs",
     "find": "if (files.length === 0) fail(\"pin-b1: no files matched - the pin would pass vacuously\");",
@@ -7,23 +21,9 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
-    "name": "b2-vacuous-guard-removed",
-    "file": "tools/pins/b2.mjs",
-    "find": "if (files.length === 0) fail(\"pin-b2: no files matched - the pin would pass vacuously\");",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "b2-source-half-removed",
-    "file": "tools/pins/b2.mjs",
-    "find": "      violations.push(`pin-b2: audio API \"${api}\" in the hub at ${relative(root, file)} - audio never enters the hub process (ADR-0006)`);\n",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "b2-manifest-half-removed",
-    "file": "tools/pins/b2.mjs",
-    "find": "    violations.push(`pin-b2: audio dependency \"${name}\" declared in apps/hub/package.json - a declared package is a package, imported or not (ADR-0006)`);\n",
+    "name": "b1-scan-roots-guard-removed",
+    "file": "tools/pins/b1.mjs",
+    "find": "assertRoots(root, SCAN_ROOTS, \"pin-b1\");",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
@@ -31,6 +31,20 @@
     "name": "b5-vacuous-guard-removed",
     "file": "tools/pins/b5.mjs",
     "find": "if (files.length === 0) fail(\"pin-b5: no files matched - the pin would pass vacuously\");",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b5-ws-matcher-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "  if (WS_IMPORT.test(source)) {\n    violations.push(`pin-b5: websocket client outside packages/transport at ${relative(root, file)}`);\n  }",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b5-scan-roots-guard-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "assertRoots(root, SCAN_ROOTS, \"pin-b5\");",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
@@ -128,16 +142,30 @@
   {
     "name": "server-swallows-a-malformed-post-hello-line",
     "file": "daemon/src/server.ts",
-    "find": "              refusal: 'daemon: a message after hello must be {type:\"request\", id:number, method:string} - refusing a malformed line',\n",
+    "find": "            refusal: 'daemon: a message after hello must be {type:\"request\", id:number, method:string} - refusing a malformed line',\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-malformed-lines.test.ts"
   },
   {
     "name": "transport-dies-on-a-non-json-line",
     "file": "packages/transport/src/index.ts",
-    "find": "        failAll(new Error(`transport: peer at ${socketPath} sent a non-JSON line - refusing to continue`));\n        socket.destroy();\n        return;\n",
+    "find": "        terminate(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));\n        wire.drop();\n        return;\n",
     "cwd": "packages/transport",
     "testFile": "src/__tests__/digest-agreement.test.ts"
+  },
+  {
+    "name": "transport-writes-a-request-after-terminal-close",
+    "file": "packages/transport/src/index.ts",
+    "find": "    if (terminalError) return Promise.reject(terminalError);\n",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/terminal-connection.test.ts"
+  },
+  {
+    "name": "desk-demo-pairs-tool-results-without-call-id",
+    "file": "apps/desk-demo/src/lib/transcript.ts",
+    "find": " && turn.callId === event.callId",
+    "cwd": "apps/desk-demo",
+    "testFile": "src/lib/__tests__/transcript.test.ts"
   },
   {
     "name": "atspi-ambiguity-refusal-takes-first-match",
@@ -163,7 +191,7 @@
   {
     "name": "launch-skips-the-permit-check",
     "file": "daemon/src/server.ts",
-    "find": "  if (!launch.permits.has(normalise(name))) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
   },
@@ -261,21 +289,21 @@
   {
     "name": "second-identity-conflict-never-checked",
     "file": "daemon/src/server.ts",
-    "find": "  for (const key of Object.keys(launch.catalog)) {\n    if (normalise(key) === normalise(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
+    "find": "  for (const key of contending) {\n    if (applicationName(key) === applicationName(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/profile-launch.test.ts"
   },
   {
     "name": "boot-composition-expands-launch-authority",
     "file": "daemon/src/launch/profiles.ts",
-    "find": "  const launchPermits: ReadonlySet<string> = new Set([...permits].map(normalise));\n",
+    "find": "  const launchPermits: ReadonlySet<string> = new Set([...permits].map(applicationName));\n",
     "cwd": "daemon",
     "testFile": "src/launch/__tests__/profiles.test.ts"
   },
   {
     "name": "permit-implies-observe-skips-appears-as",
     "file": "daemon/src/launch/profiles.ts",
-    "find": "    const appearsAs = findRecipe(name, catalog)?.appearsAs;\n    if (appearsAs !== undefined) expanded.add(normalise(appearsAs));\n",
+    "find": "    const appearsAs = findRecipe(name, catalog)?.appearsAs;\n    if (appearsAs !== undefined) expanded.add(applicationName(appearsAs));\n",
     "cwd": "daemon",
     "testFile": "src/launch/__tests__/profiles.test.ts"
   },
@@ -289,7 +317,7 @@
   {
     "name": "connection-close-leaks-subscriptions",
     "file": "daemon/src/server.ts",
-    "find": "    const teardown = () => {\n      void book.closeAll();\n    };\n    socket.on(\"close\", teardown);\n",
+    "find": "  const teardown = () => {\n    void book.closeAll();\n  };\n  pipe.onClose(teardown);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-lifetime.test.ts"
   },
@@ -346,7 +374,6 @@
     "name": "an-ancestry-climb-that-stops-at-the-first-step",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
     "find": "      climbed.push(here);\n      const parent = await anchor.parentOf(anchor.busName, here);\n",
-    "replace": "      climbed.push(here);\n      const parent = undefined as { busName: string; objectPath: string } | undefined;\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
@@ -395,14 +422,14 @@
   {
     "name": "the-listing-answers-from-its-own-table-not-the-gate",
     "file": "daemon/src/server.ts",
-    "find": "  const withheld = configurationWithholding(launch, capability, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
+    "find": "  const withheld = configurationWithholdingFor(launch, capability, resolved, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
   },
   {
     "name": "a-launch-takes-the-focus-and-never-gives-it-back",
     "file": "daemon/src/server.ts",
-    "find": "    held = await focusBeforeLaunch(backend);\n",
+    "find": "    held = await focusBeforeEffect(backend);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/focus-preservation.test.ts"
   },
@@ -423,7 +450,7 @@
   {
     "name": "the-listing-forgets-what-this-daemon-can-launch",
     "file": "daemon/src/server.ts",
-    "find": "if (!byName.has(normalise(key))) byName.set(normalise(key), { name: key });",
+    "find": "    if (!claimed.has(applicationName(key))) {\n      claimed.add(applicationName(key));\n      entries.push({ name: key });\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
   },
@@ -521,7 +548,7 @@
   {
     "name": "the-failed-launch-that-leaves-no-receipt",
     "file": "daemon/src/server.ts",
-    "find": "    recordAudit({ application: normalise(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome: FAILED });\n",
+    "find": "    recordAudit({ application: applicationName(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome: FAILED });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
@@ -545,153 +572,6 @@
     "find": ", ...(watched === undefined ? {} : { auditElement: [{ id: watched }] })",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
-  },
-  {
-    "name": "the-tool-that-was-never-enumerated",
-    "file": "apps/hub/src/tools/mint.ts",
-    "find": "  \"attestElement\",\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
-  },
-  {
-    "name": "the-granted-verb-that-was-never-enumerated",
-    "file": "apps/hub/src/tools/mint.ts",
-    "find": ", \"revealElement\"",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
-  },
-  {
-    "name": "the-verb-that-needs-no-capability",
-    "file": "apps/hub/src/tools/mint.ts",
-    "find": "    if (!capabilities.includes(capability)) continue;\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-tools-are-minted-and-counted.test.ts"
-  },
-  {
-    "name": "the-role-that-falls-back-to-a-model-nobody-chose",
-    "file": "apps/hub/src/models/configure.ts",
-    "find": "  if (specifier === undefined) return { refusal: unconfiguredRole(role) };\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
-  },
-  {
-    "name": "the-answer-that-throws-past-the-union",
-    "file": "apps/hub/src/models/configure.ts",
-    "find": ".catch(() => UNREADABLE)",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
-  },
-  {
-    "name": "the-model-that-resolves-without-a-credential",
-    "file": "apps/hub/src/models/configure.ts",
-    "find": "  if (credentials.credentialFor(account) === undefined) return { refusal: noCredential(account, role) };\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
-  },
-  {
-    "name": "the-provider-error-that-is-relayed-word-for-word",
-    "file": "apps/hub/src/models/configure.ts",
-    "find": "        if (!response.ok) return { ok: false, refusal: upstreamRefusal(provider, model, response.status) };\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
-  },
-  {
-    "name": "the-memory-that-keeps-the-content",
-    "file": "apps/hub/src/memory/stripped.ts",
-    "find": ".map(identityOf)",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
-  },
-  {
-    "name": "the-provider-that-vanishes-and-is-not-answered-for",
-    "file": "apps/hub/src/models/configure.ts",
-    "find": "          return { ok: false, refusal: unreachableRefusal(provider, model) };\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-model-is-configured-not-guessed.test.ts"
-  },
-  {
-    "name": "the-memory-that-was-never-given-the-store",
-    "file": "apps/hub/src/memory/subconscious.ts",
-    "find": "      options: { observationalMemory: { experimental_subconscious: subconscious } },\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-subconscious-keeps-a-stripped-view.test.ts"
-  },
-  {
-    "name": "the-token-that-outlives-its-dial",
-    "file": "apps/hub/src/voice/mint.ts",
-    "find": "              uses: SINGLE_USE,\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
-  },
-  {
-    "name": "the-credential-rejection-that-gets-retried",
-    "file": "apps/hub/src/voice/mint.ts",
-    "find": "        if (!transient(response.status)) break;\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
-  },
-  {
-    "name": "the-refusal-that-blames-the-credential-for-everything",
-    "file": "apps/hub/src/voice/mint.ts",
-    "find": "      if (!credentialWasRejected(lastStatus)) return mintRefused(log, model, lastStatus);\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
-  },
-  {
-    "name": "the-two-hundred-that-is-not-json",
-    "file": "apps/hub/src/voice/mint.ts",
-    "find": ".catch(() => UNREADABLE_BODY)",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
-  },
-  {
-    "name": "the-two-causes-that-tell-one-story",
-    "file": "apps/hub/src/voice/mint.ts",
-    "find": "            if (body === UNREADABLE_BODY) saw = \"a body this lane could not read\";\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
-  },
-  {
-    "name": "the-empty-name-that-passes-for-a-token",
-    "file": "apps/hub/src/voice/mint.ts",
-    "find": " || body.name.length === 0",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
-  },
-  {
-    "name": "the-dial-that-needs-no-account",
-    "file": "apps/hub/src/voice/mint.ts",
-    "find": "      if (credential === undefined) return noGoogleAccount(log, model);\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-voice-lane-mints-one-token.test.ts"
-  },
-  {
-    "name": "the-late-joiner-hears-silence",
-    "file": "apps/hub/src/lanes/lanes.ts",
-    "find": "      if (sessions.size > 0) deliver({ event: \"voice_opened\" });\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
-  },
-  {
-    "name": "the-heartbeat-that-counts-as-speech",
-    "file": "apps/hub/src/lanes/lanes.ts",
-    "find": "        if (kind === \"pong\") return;\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
-  },
-  {
-    "name": "the-voice-closed-that-is-not-the-last",
-    "file": "apps/hub/src/lanes/lanes.ts",
-    "find": "    if (sessions.size === 0) broadcast({ event: \"voice_closed\" });\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
-  },
-  {
-    "name": "the-connection-that-is-never-hung-up",
-    "file": "apps/hub/src/lanes/lanes.ts",
-    "find": "        if (peer.awaitingPong) {\n          hangUp(peer);\n          continue;\n        }\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-four-lanes-say-exactly-four-things.test.ts"
   },
   {
     "name": "the-exemption-that-darkens-a-whole-table",
@@ -750,42 +630,6 @@
     "testFile": "__tests__/check-docs-citations.test.mjs"
   },
   {
-    "name": "the-harness-whose-exit-code-ignores-its-own-verdicts",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "  return measurements.some((m) => m.verdict.includes(\"FAIL\")) ? 6 : 0;",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-artifact-that-renders-an-empty-table",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "    throw new Error(\"window-model: no measurements, so there is nothing to write\");",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-overclaim-check-that-never-looks-at-a-table-row",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "    .split(/(?<=\\.)\\s+|\\n/)",
-    "replace": "    .split(/(?<=\\.)\\s+/)",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-shape-that-has-quietly-become-the-whole-rectangle",
-    "file": "apps/widget/src/layout.ts",
-    "find": " - dy * dy",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/clicks-land-only-on-the-face.test.ts"
-  },
-  {
-    "name": "the-renderer-that-paints-where-the-shape-is-not",
-    "file": "apps/widget/src/layout.ts",
-    "find": "    `#orb { position: absolute; left: ${orb.cx - orb.r}px; top: ${orb.cy - orb.r}px;`,",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/clicks-land-only-on-the-face.test.ts"
-  },
-  {
     "name": "the-record-that-was-never-written",
     "file": "scripts/check-docs.mjs",
     "find": "          problems.push(`${relative(ROOT, path)}:${index + 1}: names \\`${match[0]}\\`, and there is no such record in docs/02-DECISIONS`);",
@@ -821,234 +665,6 @@
     "testFile": "__tests__/licences.test.mjs"
   },
   {
-    "name": "the-overclaim-check-that-only-knows-the-word-full-screen",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "  if (NEGATED_SUBJECT.test(sentence)) return true;",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-disclosure-escape-that-accepts-a-denial",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "  return !/\\b(?:regardless|whatever|no matter|irrespective|either way)\\b/i.test(sentence);",
-    "replace": "  return true;",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-harness-that-blames-the-widget-for-an-unbuilt-checkout",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "  if (existsSync(bundle)) return null;",
-    "replace": "  if (true) return null;",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-widget-that-remembers-nothing-it-was-told",
-    "file": "apps/widget/src/placement-store.ts",
-    "find": "  writeFileSync(file, JSON.stringify({ x: position.x, y: position.y }));",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
-  },
-  {
-    "name": "the-placement-that-records-where-the-drag-was-let-go-not-where-it-settled",
-    "file": "apps/widget/src/placement-store.ts",
-    "find": "  const snapped = snapToEdges(bounds, display);",
-    "replace": "  const snapped = { x: bounds.x, y: bounds.y };",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
-  },
-  {
-    "name": "the-reader-that-accepts-a-position-it-cannot-use",
-    "file": "apps/widget/src/placement-store.ts",
-    "find": "    Number.isFinite((raw as Point).x) &&",
-    "replace": "    true &&",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/the-face-writes-down-where-it-was-put.test.ts"
-  },
-  {
-    "name": "the-active-window-guard-that-never-checks-it-cleared",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "  if (activeBefore === null) return null;\n",
-    "replace": "  if (false) {",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-display-that-is-taken-only-one-way",
-    "file": "tools/proofs/window-model.mjs",
-    "find": "  const number = value === undefined ? \"\" : value.replace(/^:/, \"\");",
-    "replace": "  const number = value === undefined ? \"\" : value;",
-    "cwd": "tools",
-    "testFile": "proofs/__tests__/window-model.test.mjs"
-  },
-  {
-    "name": "the-late-joiner-hears-silence",
-    "file": "packages/transport/src/lane.ts",
-    "find": "      (frame) => socket.write(`${JSON.stringify(frame)}\\n`),",
-    "replace": "      (frame) => void frame,",
-    "cwd": "packages/transport",
-    "testFile": "src/__tests__/the-lane-wire.test.ts"
-  },
-  {
-    "name": "the-progress-that-does-not-bring-the-face-back",
-    "file": "apps/widget/src/hiding-model.ts",
-    "find": "      return { ...state, visible: true, working: true, caption: frame.detail };",
-    "replace": "      return { ...state, working: true, caption: frame.detail };",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/the-face-hides-when-told.test.ts"
-  },
-  {
-    "name": "the-timer-that-recreates-the-auto-hide-bug",
-    "file": "apps/widget/src/hiding-model.ts",
-    "find": "      return { ...state, visible: true, working: true, caption: frame.detail };",
-    "replace": "      setTimeout(() => dismissFace(state), 0);\n      return { ...state, visible: true, working: true, caption: frame.detail };",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/the-face-hides-when-told.test.ts"
-  },
-  {
-    "name": "b3-provider-credential-allowed",
-    "file": "tools/pins/b3.mjs",
-    "find": "  \"OPENAI_API_KEY\",\n",
-    "replace": "",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "b3-vacuous-guard-removed",
-    "file": "tools/pins/b3.mjs",
-    "find": "if (files.length === 0) fail(\"pin-b3: no files matched - the pin would pass vacuously\");\n",
-    "replace": "",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "b9-transcriber-allowed",
-    "file": "tools/pins/b9.mjs",
-    "find": "  \"@huggingface/transformers\",\n",
-    "replace": "",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "b9-vacuous-guard-removed",
-    "file": "tools/pins/b9.mjs",
-    "find": "if (files.length === 0) fail(\"pin-b9: no files matched - the pin would pass vacuously\");\n",
-    "replace": "",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "b4-second-microphone-consumer-allowed",
-    "file": "tools/pins/b4.mjs",
-    "find": "if (consumers.length > 1) {",
-    "replace": "if (consumers.length < 0) {",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "b4-vacuous-guard-removed",
-    "file": "tools/pins/b4.mjs",
-    "find": "if (files.length === 0) fail(\"pin-b4: no files matched - the pin would pass vacuously\");\n",
-    "replace": "",
-    "cwd": "tools",
-    "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "the-renderer-that-never-says-it-is-ready",
-    "file": "apps/widget/src/preload.cjs",
-    "find": "    ipcRenderer.send(\"face:ready\");\n",
-    "replace": "",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/the-face-hears-the-hub.test.ts"
-  },
-  {
-    "name": "the-current-state-that-is-never-replayed",
-    "file": "apps/widget/src/main.ts",
-    "find": "ipcMain.on(\"face:ready\", () => render(state));\n",
-    "replace": "",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/the-face-hears-the-hub.test.ts"
-  },
-  {
-    "name": "wake-gate-bypasses-keyword-validation",
-    "file": "packages/voice/src/gate.ts",
-    "find": "    modelState === \"ready\" &&\n",
-    "replace": "",
-    "cwd": "packages/voice",
-    "testFile": "src/__tests__/wake-gate.test.ts"
-  },
-  {
-    "name": "live-wake-ignores-session-exclusivity",
-    "file": "apps/widget/src/live-wake.ts",
-    "find": " || options.state().microphoneGateOpen",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/live-wake.test.ts"
-  },
-  {
-    "name": "live-wake-retries-device-loss-forever",
-    "file": "apps/widget/src/live-wake.ts",
-    "find": "      unavailable = true;\n",
-    "cwd": "apps/widget",
-    "testFile": "src/__tests__/live-wake.test.ts"
-  },
-  {
-    "name": "contract-row-deleted",
-    "file": "docs/10-NORTH-STAR-CONTRACT.md",
-    "find": "| S-EMPTY-INBOX | The selected visible mailbox is explicitly empty | Gmail publishes an explicit empty-state element for the selected view (R7d) | R7d refusal: the selected visible mailbox has no messages | open; awaiting follow-up, wake armed | completed — spoken | 0 | select another mailbox or category, then ask again | yes |\n",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
-    "name": "contract-zero-audit-cell-deleted",
-    "file": "docs/10-NORTH-STAR-CONTRACT.md",
-    "find": "| 0 | sign in, then ask again |",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
-    "name": "contract-required-cell-emptied",
-    "file": "docs/10-NORTH-STAR-CONTRACT.md",
-    "find": "select another mailbox or category, then ask again",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
-    "name": "contract-denylist-paragraph-deleted",
-    "file": "docs/10-NORTH-STAR-CONTRACT.md",
-    "find": "DOM/tree traversal order; ",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
-    "name": "contract-check-vacuous-guard-removed",
-    "file": "tools/contract-check.mjs",
-    "find": "if (!existsSync(path)) {\n  console.error(`contract-check: ${DOC} not found under ${root} - the check would pass vacuously`);\n  process.exit(1);\n}\n",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
-    "name": "contract-header-uniqueness-check-removed",
-    "file": "tools/contract-check.mjs",
-    "find": "if (header.length !== COLUMNS.length) {\n  fail(`contract-check: matrix header has ${header.length} columns, expected exactly ${COLUMNS.length}`);\n}\nfor (const [i, name] of header.entries()) {\n  if (header.indexOf(name) !== i) fail(`contract-check: matrix header repeats the \"${name}\" column`);\n}\n",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
-    "name": "contract-row-width-check-removed",
-    "file": "tools/contract-check.mjs",
-    "find": "  if (row._width !== COLUMNS.length) {\n    fail(`contract-check: ${id} has ${row._width} cells, expected exactly ${COLUMNS.length}`);\n  }\n\n",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
-    "name": "contract-r7g-citation-deleted",
-    "file": "docs/10-NORTH-STAR-CONTRACT.md",
-    "find": "R7g failure: the voice session failed; no desktop",
-    "cwd": "tools",
-    "testFile": "__tests__/contract-check.test.mjs"
-  },
-  {
     "name": "m6-gmail-permit-removed",
     "file": "infra/units/mastra-desktop-daemon.service",
     "find": " --permit gmail",
@@ -1061,20 +677,6 @@
     "find": " --grants %h/.config/mastra-cc/gmail-grants.json",
     "cwd": "daemon",
     "testFile": "src/__tests__/m6-gmail-startup-composition.test.ts"
-  },
-  {
-    "name": "m6-stage3-daemon-launch-delegation-removed",
-    "file": "apps/hub/src/orchestrator/launch.ts",
-    "find": "  return await client.openApplication({ name });\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-orchestrator-launches-only-through-the-daemon-gate.test.ts"
-  },
-  {
-    "name": "m6-stage3-observe-floor-entry-removed",
-    "file": "apps/hub/src/tools/mint.ts",
-    "find": "  \"queryElements\",\n",
-    "cwd": "apps/hub",
-    "testFile": "src/__tests__/the-orchestrator-launches-only-through-the-daemon-gate.test.ts"
   },
   {
     "name": "semantic-observable-content-field-removed",
@@ -1103,5 +705,453 @@
     "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"string\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
     "cwd": "tools",
     "testFile": "__tests__/schema.test.mjs"
+  },
+  {
+    "name": "release-check-forgotten-package-guard-removed",
+    "file": "tools/release-check.mjs",
+    "find": "  if (PUBLISHABLE.includes(`packages/${name.name}`)) continue;\n  problems.push(`packages/${name.name}: publishable but absent from the release check's list`);",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "release-check-entry-point-existence-removed",
+    "file": "tools/release-check.mjs",
+    "find": "      if (!existsSync(join(unpacked, point))) {\n        problems.push(`${relative}: entry point ${point} is declared but absent from the tarball`);\n      }",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "release-check-source-entry-import-guard-removed",
+    "file": "tools/release-check.mjs",
+    "find": "          if (specifier === name || specifier.startsWith(`${name}/`)) {",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "adapter-description-invented-instead-of-generated",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "      description: descriptor.description,",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
+  },
+  {
+    "name": "adapter-schema-dropped",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "      inputSchema: descriptor.params,",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
+  },
+  {
+    "name": "instance-dials-more-than-once",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    this.#dial ??= connect(this.#options);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
+  },
+  {
+    "name": "release-check-source-entry-of-its-own-removed",
+    "file": "tools/release-check.mjs",
+    "find": "      if (point.endsWith(\".ts\") && !point.endsWith(\".d.ts\")) {",
+    "cwd": "tools",
+    "testFile": "__tests__/release-check.test.mjs"
+  },
+  {
+    "name": "b5-infra-scan-root-removed",
+    "file": "tools/pins/b5.mjs",
+    "find": "const SCAN_ROOTS = [\"packages\", \"tools\", \"scripts\", \"infra\"];",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "desktop-connect-swallows-the-refusal",
+    "file": "packages/desktop/src/index.ts",
+    "find": "  if (explicit) return dial(options);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-refusal-survives-the-wrapper.test.ts"
+  },
+  {
+    "name": "signals-attribution-allowlist-emptied",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "\"external\"",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-throttle-window-opened",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "      if (last !== undefined && event.at - last < this.#dedupeWindowMs) return;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-priority-rewritten-on-the-way-through",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "        priority: event.priority,",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-never-attaches-the-listener",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "    this.#detach = client.onChangeEvent((event) => {\n      void this.#onChange(event);\n    });",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-summary-carries-the-elements-content",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "  return `desktop ${event.kind}: ${event.role} ${event.id} (watch ${event.subscriptionId})`;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-stop-abandons-the-listener",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "    this.#detach?.();\n    this.#detach = undefined;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "signals-let-the-idle-thread-sleep",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "      ifIdle: deps.target.ifIdle ?? { behavior: \"wake\" },",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+  },
+  {
+    "name": "b8-forgets-the-proof-harness-is-exempt",
+    "file": "tools/pins/b8.mjs",
+    "find": "\"infra/webtop/signals/proof.sh\"",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b8-forgets-the-errand-harness-is-exempt",
+    "file": "tools/pins/b8.mjs",
+    "find": "\"infra/webtop/errands/run-errands.sh\"",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "instance-redials-after-close",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    this.#closed = true;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
+  },
+  {
+    "name": "derived-launch-keeps-the-file-placeholder",
+    "file": "daemon/src/launch/derived.ts",
+    "find": "\"%f\", ",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/derived.test.ts"
+  },
+  {
+    "name": "derived-launch-mishandles-the-terminal-key",
+    "file": "daemon/src/launch/derived.ts",
+    "find": " === \"true\"",
+    "cwd": "daemon",
+    "testFile": "src/launch/__tests__/derived.test.ts"
+  },
+  {
+    "name": "derived-catalog-shadows-the-built-in-browser",
+    "file": "daemon/src/launch/derived.ts",
+    "find": "...CATALOG",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
+  },
+  {
+    "name": "derived-launch-skips-the-permit-check",
+    "file": "daemon/src/server.ts",
+    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
+  },
+  {
+    "name": "browser-identity-guard-catches-ordinary-derived-apps",
+    "file": "daemon/src/server.ts",
+    "find": " && contendsForBrowserEndpoint(requested)",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
+  },
+  {
+    "name": "shipped-instructions-drift-from-the-reviewed-copy",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "button commonly offers nothing but `focus`, and ",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-instructions-ship-with-it.test.ts"
+  },
+  {
+    "name": "prose-names-a-verb-the-protocol-does-not-have",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "`submitElement` sends the form",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-names-real-verbs.test.ts"
+  },
+  {
+    "name": "running-state-escapes-the-observe-grant",
+    "file": "daemon/src/server.ts",
+    "find": "  if (!entryVisible(launch, entry, index)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "a-failed-census-reports-the-desk-closed",
+    "file": "daemon/src/server.ts",
+    "find": "    census = { observable: new Set(), answersFor: new Set() };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "an-unread-name-still-claims-the-whole-desk-was-seen",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    return { observable, answersFor: read ? \"every-application\" : observable };",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/running-applications.test.ts"
+  },
+  {
+    "name": "the-daemon-switches-the-desk-on-without-being-asked",
+    "file": "daemon/src/server.ts",
+    "find": "  if (launch.mayAcquireAccessibility !== true) {\n    return { refusal: ACQUIRE_WITHHELD_REFUSAL, refusalClass: \"DisabledByConfiguration\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
+  },
+  {
+    "name": "an-unacquirable-platform-is-asked-to-acquire-anyway",
+    "file": "daemon/src/server.ts",
+    "find": "  if (layer === undefined || !layer.acquirable) {\n    return { refusal: ACQUIRE_NOT_EXPOSED_REFUSAL, refusalClass: \"AccessibilityNotAcquirable\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
+  },
+  {
+    "name": "the-restart-gate-lets-a-refusing-level-out-as-a-level",
+    "file": "daemon/src/server.ts",
+    "find": "  if (level === \"refuse\" || level === \"ask\") return restartRefusal(level, setting);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/restart-authority.test.ts"
+  },
+  {
+    "name": "restart-signals-a-process-it-does-not-own",
+    "file": "daemon/src/server.ts",
+    "find": "const owned = launch.table.ownsName(name);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "graceful-restart-escalates-to-a-kill",
+    "file": "daemon/src/server.ts",
+    "find": "authority.level === \"force\" ? \"SIGKILL\" : \"SIGTERM\"",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "a-dialog-in-the-same-instant-counts-as-a-refusal",
+    "file": "daemon/src/server.ts",
+    "find": " || looked < 2",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "restart-never-checks-whether-the-process-ended",
+    "file": "daemon/src/server.ts",
+    "find": "if (launch.table.owns(owned.pid) !== true) break;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
+  },
+  {
+    "name": "raw-input-is-available-to-a-session-nobody-armed",
+    "file": "daemon/src/server.ts",
+    "find": "if (allows.has(effectClass) !== true) return false;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/raw-input-authority.test.ts"
+  },
+  {
+    "name": "the-key-route-forgets-the-chord-list-is-closed",
+    "file": "daemon/src/server.ts",
+    "find": "if (!(KEY_CHORD_NAMES as readonly string[]).includes(chord)) return { refusal: unknownChordRefusal(chord), refusalClass: \"MalformedParameter\" as const };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
+  },
+  {
+    "name": "the-key-route-claims-a-machine-that-has-none",
+    "file": "daemon/src/server.ts",
+    "find": "if (launch.keys === undefined) return { refusal: NO_KEY_ROUTE_REFUSAL, refusalClass: \"EffectUnsupportedError\" as const };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
+  },
+  {
+    "name": "b8-lets-the-raw-input-class-leak-past-its-fence",
+    "file": "tools/pins/b8.mjs",
+    "find": "if (CONTAINMENT_HOME.some((home) => path === home || path.startsWith(`${home}/`))) continue;",
+    "cwd": ".",
+    "testFile": "tools/pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "b8-forgets-the-delivery-measurement-is-exempt",
+    "file": "tools/pins/b8.mjs",
+    "find": "\"infra/webtop/04-a-key-addressed-to-one-element/measure-delivery.sh\",",
+    "cwd": "tools",
+    "testFile": "pins/__tests__/pins.test.mjs"
+  },
+  {
+    "name": "an-unarmed-session-is-told-only-the-flattering-half",
+    "file": "daemon/src/server.ts",
+    "find": "  if (hasRoute) return sentence;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
+  },
+  {
+    "name": "an-empty-fast-answer-is-believed-instead-of-walked",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": " && collected.length > 0",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/collection.test.ts"
+  },
+  {
+    "name": "the-match-rule-goes-back-to-the-invalid-match-type",
+    "file": "daemon/src/backends/atspi/collection.ts",
+    "find": "const MATCH_ALL = 1;",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/collection.test.ts"
+  },
+  {
+    "name": "the-listing-believes-a-desk-that-cannot-hear",
+    "file": "daemon/src/server.ts",
+    "find": "if (heard === \"disabled\") return { running: \"cannot-tell\", runningUnknownBy: ACQUIRE_SETTING };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "an-unread-layer-is-treated-as-proof-the-ears-are-on",
+    "file": "daemon/src/server.ts",
+    "find": "if (heard === \"cannot-tell\") return { running: \"cannot-tell\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "the-listing-forgets-it-launched-the-thing-itself",
+    "file": "daemon/src/server.ts",
+    "find": "if ([...names].some((name) => ownedAndLive.has(name))) return { running: \"cannot-tell\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "ownership-stops-checking-the-process-is-still-the-same-one",
+    "file": "daemon/src/launch/table.ts",
+    "find": " && stat.starttime === entry.starttime",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/what-is-running.test.ts"
+  },
+  {
+    "name": "the-gate-picks-a-claimant-instead-of-refusing-ambiguity",
+    "file": "daemon/src/server.ts",
+    "find": "  if (entry === undefined && claimants.length > 1) return { kind: \"ambiguous\" };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "a-contested-name-starts-carrying-permission-for-everyone",
+    "file": "daemon/src/server.ts",
+    "find": "  return claimants.length === 1;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "an-enumerated-desk-that-claims-nothing-still-consults-the-permits",
+    "file": "daemon/src/server.ts",
+    "find": "  if (entry === undefined) return { kind: \"unpermitted\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "an-explicit-false-under-a-sibling-name-is-ignored",
+    "file": "daemon/src/capabilities.ts",
+    "find": "    if (answer === false) return settingName(applicationName(application), capability, true);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "the-first-configured-restart-spelling-wins-not-the-restrictive-one",
+    "file": "daemon/src/capabilities.ts",
+    "find": " || RESTRICTIVENESS[named] < RESTRICTIVENESS[chosen.level]",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-entry-several-names.test.ts"
+  },
+  {
+    "name": "a-restart-with-no-permits-at-all-still-touches-the-backend",
+    "file": "daemon/src/server.ts",
+    "find": "  if (launch.permits.size === 0) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/launch-authority.test.ts"
+  },
+  {
+    "name": "an-application-name-is-only-the-same-name-in-one-case",
+    "file": "daemon/src/backends/atspi/names.ts",
+    "find": ".toLowerCase()",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-name-any-case.test.ts"
+  },
+  {
+    "name": "the-typing-route-claims-a-machine-that-has-none",
+    "file": "daemon/src/server.ts",
+    "find": "if (launch.keys === undefined) return { refusal: NO_TYPE_ROUTE_REFUSAL, refusalClass: \"EffectUnsupportedError\" as const };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-malformed-text-is-typed-anyway",
+    "file": "daemon/src/server.ts",
+    "find": "      if (malformed !== undefined) return { refusal: malformed, refusalClass: \"MalformedParameter\" as const };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-delete-character-is-printable",
+    "file": "daemon/src/server.ts",
+    "find": " || (code >= 0x7f && code <= 0x9f)",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "everything-above-delete-is-a-control",
+    "file": "daemon/src/server.ts",
+    "find": " && code <= 0x9f",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-text-of-any-length-is-a-field-entry",
+    "file": "daemon/src/server.ts",
+    "find": "  if (text.length > TYPE_TEXT_MAX_LENGTH) {\n    return `refused before the call: \"typeText\" was given ${text.length} characters and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/type-blind-read-back.test.ts"
+  },
+  {
+    "name": "a-bottomless-tree-is-walked-forever",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "          if (depth >= this.limits.maxDepth && kids.length > 0) {\n            throw new IncompleteObservationError(\n              `depth budget reached inside \"${applicationName}\" above a node that still has children - the subtree below it was never observed`,\n            );\n          }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/a-deep-application-does-not-silence-the-desk.test.ts"
+  },
+  {
+    "name": "a-runaway-tree-is-never-refused",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "        if (inThisApp >= this.limits.maxNodesPerApp || total >= this.limits.maxNodesTotal) {\n          throw new IncompleteObservationError(\n            `walk budget exhausted inside \"${applicationName}\" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,\n          );\n        }\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/a-deep-application-does-not-silence-the-desk.test.ts"
+  },
+  {
+    "name": "any-role-reaches-the-backend",
+    "file": "daemon/src/server.ts",
+    "find": "  if (role !== undefined && !(ROLES as readonly string[]).includes(role as string)) {\n    return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: \"MalformedParameter\" as const };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-bad-role-is-a-refusal.test.ts"
+  },
+  {
+    "name": "a-backend-failure-is-silent-on-the-operators-side",
+    "file": "daemon/src/server.ts",
+    "find": "    console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-bad-role-is-a-refusal.test.ts"
   }
 ]

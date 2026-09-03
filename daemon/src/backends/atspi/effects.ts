@@ -332,14 +332,21 @@ export async function setValue(seam: CallSeam, ref: NativeRef, value: number): P
 // nothing, so a GrabFocus that returns true has claimed something rather than
 // shown it. Whether focus actually moved is decided by the caller reading the
 // focused element back out of the tree, never here.
-export async function grabFocus(seam: CallSeam, ref: NativeRef): Promise<void> {
+export async function grabFocus(seam: CallSeam, ref: NativeRef): Promise<boolean> {
   await requireInterface(seam, ref, COMPONENT_IFACE, "being given the focus");
-  await seam.call({
+  // The reply is returned rather than dropped. An element may simply decline the
+  // focus - a control in a window the display server is not pointing at cannot
+  // take it - and a caller that is about to emit a global keystroke needs to
+  // know that BEFORE it presses anything, because the key would land in whatever
+  // window does hold the focus. Callers that only want the focus moved may
+  // ignore it; the one that presses a key may not.
+  const [taken] = await seam.call({
     destination: ref.busName,
     path: ref.objectPath,
     iface: COMPONENT_IFACE,
     member: "GrabFocus",
   });
+  return taken === true;
 }
 
 // BRINGING AN ELEMENT INTO VIEW. The enum stays here; the wire asked only to

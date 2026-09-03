@@ -1,6 +1,7 @@
 # 01 — Architecture
 
 **Status:** normative for the skeleton. Changing anything in §3 (the repository layout) or §5 (the boundaries) requires an ADR in [02-DECISIONS/](02-DECISIONS/).
+**Amended 2026-08-28 ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)):** the hub, widget, dashboard and voice packages were removed. §1–§5 describe the peripheral as it stands; §6 is kept as a historical trace of the retired assistant and is no longer normative.
 **Companion:** [00-PRODUCT.md](00-PRODUCT.md) says what we are building; this says where each part lives and who owns it.
 
 ---
@@ -9,20 +10,17 @@
 
 ```
                        ┌──────────────────────────────────┐
-   the person  ──────► │  CLIENTS                         │
-   (voice, tray,       │  widget · phone page · dashboard │
-    browser)           └───────────────┬──────────────────┘
-                                       │  one transport package,
-                                       │  spoken by every client
-                                       ▼
-                       ┌──────────────────────────────────┐
-                       │  HUB  (the brain)                │
-                       │  agents · tools · memory         │
-                       │  credentials · audit · lanes     │
-                       │  ZERO audio bytes                │
+   an agent runtime ──►│  CONSUMER  (installable package) │
+   (Mastra, or any     │  the tool surface · the skills   │
+    other caller)      │  ZERO desktop access of its own  │
                        └───────────────┬──────────────────┘
-                                       │  JSON-RPC 2.0 over a unix socket,
-                                       │  keyed on the protocol schema digest
+                                       │  one transport package
+                                       │
+                                       │  JSON-RPC 2.0, keyed on the protocol
+                                       │  schema digest, over EITHER
+                                       │    · a unix socket (default), or
+                                       │    · a websocket, when the daemon is
+                                       │      not on this filesystem
                                        ▼
                        ┌──────────────────────────────────┐
                        │  DAEMON  (the hands)             │
@@ -33,19 +31,17 @@
                               the desktop session
 ```
 
-And one flow that does *not* pass through the hub:
+The two addresses are two front doors onto one protocol, not two protocols: a
+single per-connection handler serves both, and the bytes are identical down to
+the trailing newline. The websocket door is off unless `--ws-port` opens it, and
+binds loopback unless `--ws-host` widens it
+([ADR-0058](02-DECISIONS/0058-the-daemon-serves-one-protocol-through-two-front-doors.md)).
 
-```
-   device microphone ──► on-device wake gate ──► voice provider
-                                  ▲
-                                  │ short-lived minted token
-                                  │ (the key stays in the hub)
-                                HUB
-```
+There is no third process. A face, a voice, a phone page — any of those is a
+*consumer* built on top of this, in somebody else's repository, and none of them
+is our concern ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)).
 
-That second diagram is the whole reason the first one says "ZERO audio bytes". See [ADR-0006](02-DECISIONS/0006-hub-holds-no-audio.md).
-
-## 2. The three processes, and what each one is allowed to know
+## 2. The two halves, and what each one is allowed to know
 
 ### Daemon — *the only thing that touches the desktop*
 
@@ -56,26 +52,30 @@ That second diagram is the whole reason the first one says "ZERO audio bytes". S
 - Writes the audit log ([ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md), M3). Every read and every effect it performs against the desktop leaves one append-only entry naming the application, the element's **identity**, the scope it was permitted under, the cause, the attestation where one was required, and the outcome. The entry never carries element content: permitted ordinary observations are returned only in semantic element results, protected observations are redacted, and audit remains a record of access rather than application data ([ADR-0056](02-DECISIONS/0056-permitted-content-is-observable-protected-content-is-redacted.md)).
 - Attributes every effect, with exactly three values. A change is `self` (this daemon's open verb caused it — carries that cause id), `external` (nothing was in flight; a human or another program did it), or `unattributed` (a verb was in flight but does not bind to the changed element's application — the daemon abstains instead of guessing, [ADR-0032](02-DECISIONS/0032-the-page-layer-is-an-instrument-not-a-gate.md) clause 5). An unmatched effect is recorded as news, never flagged as an alarm. This is what makes "the human outranks the agent" (issue #25) enforceable.
 - Knows nothing about models, credentials, users, or voice.
+- Owns where it can be reached from, and nothing about who reaches it. A unix socket always; a
+  websocket as well when `--ws-port` asks for one, bound to loopback unless `--ws-host` widens
+  it ([ADR-0058](02-DECISIONS/0058-the-daemon-serves-one-protocol-through-two-front-doors.md)).
+  Both doors run the same per-connection handler over the same bytes, so no capability, refusal
+  or scope check differs by address. Authentication is deliberately absent: the daemon states
+  its posture and leaves who-may-connect to whoever composes a product on top.
 
 **Runtime:** Node, single-threaded, one process ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md)). The **single-thread rule survives, and the reason it survives changed** — the prototype recorded it as a docstring claiming *silent corruption*; M0.5 measured a deterministic `SIGTRAP` abort at two or more concurrent threads, eight runs on the first machine and a control plus two repeats on a second ([is the accessibility binding thread-safe](proofs/is-the-accessibility-binding-thread-safe.md)). **That receipt was taken through `libatspi`, which this daemon does not load** — the raw D-Bus route is unmeasured under concurrency, and M1 owes the measurement ([ADR-0030](02-DECISIONS/0030-the-daemon-is-one-node-process.md) clause 3). The rule is kept on its own merits meanwhile: one owner for accessibility access is what makes an audit record attributable. The *language* did not survive: AT-SPI is plain D-Bus underneath, and Node reached read, write and events without a Python binding. There is no venv and no GLib main context, so `--system-site-packages` no longer applies.
 
-### Hub — *the brain, and the only place secrets live*
+### Consumer — *the caller, and the only place judgment lives*
 
-- Runs the agents and owns the tool surface handed to them.
-- Holds credentials. Mints short-lived tokens for devices that need to dial a provider directly. The key itself never leaves.
-- Owns the lanes (§4) and the session/turn state machine. It also owns launch request timing but no launch authority: `apps/hub/src/orchestrator/launch.ts` is a trusted non-model caller that submits one orchestration-selected application identity to the daemon and returns its answer unchanged. Startup composition decides which names may launch, capability configuration decides whether launch is enabled, and the daemon owns catalog lookup, process start, ownership, audit, and refusal bytes. The model receives no launch tool ([ADR-0055](02-DECISIONS/0055-orchestration-requests-launch-the-daemon-decides-it.md)).
-- Writes the episode graph. It does **not** write the audit log: that record is written by the daemon, at the point of effect, because a record of what the desktop was asked to do belongs where the asking happens ([ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md)). The two artifacts are deliberately separate — the audit log is an append-only access record, the episode graph is a rewritable narrative, and if the graph were the record then every rewrite would rewrite the evidence.
-- Holds no provisional or realtime conversation audio. It mints a short-lived provider dial; the client sends the bounded opening directly to the constrained realtime session, where admission is decided before audio output or live continuation ([ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md)).
+- Speaks the protocol through `packages/transport` and nothing else. It holds no
+  accessibility binding, opens no second socket, and has no authority the daemon did not
+  already grant its session.
+- Owns the tool surface handed to a model, and the instructions that say how to read an
+  application, walk a tree, and recognise the footguns. That is taste, and it drifts with
+  models; the daemon is engineering, and it is done per release. They version separately.
+- Holds credentials for whatever *it* talks to. The daemon holds none and wants none.
+- The daemon writes the audit log — at the point of effect, because a record of what the
+  desktop was asked to do belongs where the asking happens
+  ([ADR-0026](02-DECISIONS/0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md)).
+  A consumer cannot write it, edit it, or turn it off.
 
-**Runtime:** TypeScript on Node, Mastra agents and tools.
-
-### Clients — *faces, ears, and mouths*
-
-- The **widget** is the resident tray face: a small always-on-top window that detects the wake phrase, owns provisional and active audio, shows who is talking, and speaks answers.
-- The **phone page** is the same conversation from the couch.
-- The **dashboard** is configuration, permissions, paired devices, and the audit view.
-
-Clients hold no authority. A client asks; the hub decides; the daemon acts. A client that wants to know what is going on subscribes to a lane.
+**Runtime:** TypeScript on Node, published as an ordinary npm dependency.
 
 ## 3. Repository layout
 
@@ -97,14 +97,9 @@ mastra-cc/
 │   ├── src/
 │   └── tests/
 ├── packages/
-│   ├── transport/            # the daemon client every client speaks (ADR-0003)
-│   ├── protocol-types/       # generated bindings; build output, not committed
-│   └── voice/                # phrase wake, utterance boundaries, shared audio contracts
-├── apps/
-│   ├── hub/                  # the brain
-│   ├── widget/               # Electron tray face
-│   ├── dashboard/            # Vite + React config surface
-│   └── phone/                # the couch client
+│   ├── transport/            # the daemon client every consumer speaks (ADR-0003)
+│   └── protocol-types/       # generated bindings incl. their own tsconfig; builds its
+│                             #   declarations into dist/; build output, not committed
 └── tools/                    # repo scripts: proofs, generators, gates
 ```
 
@@ -116,21 +111,17 @@ mastra-cc/
 
 **Generated code is build output.** The prototype committed its generated bindings, so `schemas.generated.ts` (24 revisions) and `protocol_generated.py` (23) churned in lockstep with `schema.json` (23) — every protocol change produced a three-file diff of which two files were noise. Generate at build time; check the *generator* and the *golden fixtures* in; verify determinism in CI (§7).
 
-## 4. The lanes
+## 4. The lanes — *removed*
 
-A lane is a named stream between hub and clients. The vocabulary is exact and is not to be paraphrased — the prototype's bugs in this area were all vocabulary drift.
-
-| Lane event | Meaning |
-|---|---|
-| `progress` | the agent is working; here is what it is doing |
-| `answer` | the agent has something to say to the person |
-| `voice_opened` | a voice session became active somewhere |
-| `voice_closed` | the last voice session ended |
-
-Two rules the prototype learned the hard way, both of which cost a real bug:
-
-1. **`voice_opened` / `voice_closed` are edges, so a joining client must be told the current state.** A widget that connects after the edge fired can never learn the state and sits in the wrong mode forever. Fix: on connect, the hub sends the current voice state to that client alone (PR #230).
-2. **A connection that dies quietly must be counted down anyway.** A suspended laptop leaves a socket open to the kernel; the edge never fires; a machine stays deaf. Fix: the lane asks — every connection is pinged on an interval, and a peer that still owes an answer at the next sweep is hung up through the existing cleanup path (PR #230). The heartbeat deliberately does **not** count as the session having said something, because pongs are answered by the transport, not by page code — counting them would report a frozen face as freshly active.
+A lane was a named stream from the hub to a human face: `progress`, `answer`, `voice_opened`,
+`voice_closed`. Every consumer of it was amputated with the client surface, so
+`packages/transport/src/lane.ts` went with them
+([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md), superseding
+[ADR-0052](02-DECISIONS/0052-the-lane-carrier-is-transports-second-wire.md)). A four-word
+vocabulary with nobody listening is a ghost, not an interface. The two lessons it cost —
+that an edge event must be replayed to a joining peer, and that a quietly dead connection
+must still be counted down (PR #230) — are recorded here so the next streaming surface does
+not relearn them.
 
 ## 5. The boundaries
 
@@ -139,21 +130,25 @@ Each boundary below is a rule, a reason, and a test. If it has no test, it is a 
 | # | Boundary | Enforced by |
 |---|---|---|
 | B1 | Only the daemon imports accessibility bindings | source-level test over every non-daemon package |
-| B2 | The hub imports no audio API and holds no audio buffer | source-level test over the hub package |
-| B3 | Clients hold no provider credential; they receive minted tokens only | source-level test + a runtime test that a client-side key is refused |
-| B4 | Exactly one microphone consumer per client process | source-level test per client package |
-| B5 | Every client reaches the daemon through `packages/transport` | source-level test: no second socket implementation anywhere |
+| B5 | Every consumer reaches the daemon through `packages/transport` | source-level test: no second client implementation anywhere, neither a `node:net` socket nor the `ws` server library (ADR-0058); import-scoped, so a global-`WebSocket` dial is outside its reach |
 | B6 | The protocol schema changes only through a reviewed gate | CI job (ADR-0002) |
 | B7 | Generated bindings are reproducible from the schema | CI regenerates and diffs |
 | B8 | `xdotool`, `wmctrl` and `uinput` only inside the raw-input operation class | source-level test over the whole tree (ADR-0046) |
-| B9 | No transcriber in any client | source-level test (ADR-0005) |
 | B10 | No platform-specific vocabulary in `protocol/schema.json` | source-level test over the schema (ADR-0018) |
 | B11 | No effect-class operation relies solely on post-hoc enforcement | source-level test over the daemon's dispatch table |
 | B12 | Every dependency carries a permissive licence | CI job over the shipped runtime closure and every declared development dependency, against an allowlist |
 
-**Which of these exist:** all nine source pins are wired — B1–B5 and B8–B11 — plus B6 and B7 as CI steps and B12 as its own CI job. B11 arrived with M2.1's `openApplication`, in the same commit as the first effect-class dispatch entry, as required. **B2 was wired in M3**, when the hub gained a voice lane and therefore a subject: it scans the hub's source for an audio API and the hub's manifest for an audio dependency, because the prototype's transcriber removal was only half a removal — the source went and the dependency stayed declared.
+**Which of these exist:** five source pins are wired — B1, B5, B8, B10 and B11 — plus B6 and
+B7 as CI steps and B12 as its own CI job. B11 arrived with M2.1's `openApplication`, in the
+same commit as the first effect-class dispatch entry, as required.
 
-**B3, B4 and B9 were wired in M4**, when the widget became the first client. B3's source half scans client source and manifests for provider credential machinery; its runtime half refuses a credential a caller presents ([ADR-0007](02-DECISIONS/0007-identity-is-derived-credentials-are-minted.md)), tested in `apps/hub/src/__tests__/the-voice-lane-mints-one-token.test.ts`. B9 likewise scans both source and manifests because deleting transcriber code does not delete its dependency. B4 reports the microphone-consumer count: M4's correct zero is visible, M5's first consumer will move it to one, and two or more is red. [tools/pins/README.md](../tools/pins/README.md) records the exact wiring and why zero is not hidden behind a boolean pass.
+**B2, B3, B4 and B9 were retired on 2026-08-28.** All four were rules about a client
+surface — no audio in the hub, no provider credential in a client, one microphone consumer
+per client, no transcriber in a client — and that surface no longer exists
+([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). They were
+deleted rather than left scanning an empty tree, because a pin over zero files is a green
+light that means nothing. [tools/pins/README.md](../tools/pins/README.md) records the
+surviving wiring.
 
 **B10** keeps a platform's words out of the wire. Each backend owns its own native→neutral
 map, so a role named after one toolkit's widget set cannot leak into a protocol that three
@@ -181,6 +176,14 @@ Two notes on how to write these, from prototype experience:
 - **A source-level test must strip comments before grepping.** Otherwise a paragraph explaining why the transcriber is gone fails the test that says the transcriber is gone.
 
 ## 6. Data flow: the north star sentence, end to end
+
+> **Retired 2026-08-28 — historical record, not normative.** Every actor above the daemon in
+> this trace (widget, hub, voice gate) was removed by
+> [ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md). Steps 7 and 8
+> — semantic resolution and scoped reading — are still exactly what the daemon does, and are
+> the only part of this section that still describes shipped code. The rest is kept because
+> [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md) and
+> [ADR-0054](02-DECISIONS/0054-gmail-authority-is-composed-by-the-operator-unit.md) cite it.
 
 Tracing *"tell me my most recent email"* through the boundaries, because a diagram that cannot survive one real sentence is decoration.
 
@@ -216,14 +219,13 @@ Named here so nobody re-derives them as new ideas. All four are recorded in the 
 - **App-native integration** — talking to an application's own API instead of its accessibility tree.
 - **Compositor-level access** — Wayland-native protocols beyond what the accessibility layer offers.
 - **Vision** — pixels as a *reasoning* input rather than a last-resort addressed capture.
-- **Raw input synthesis** — explicitly out of scope, not merely deferred (B8).
+- **Raw input synthesis** — *was* explicitly out of scope; as of 2026-09-01 a strictly bounded form is in, and B8 is what bounds it. One named chord from a closed list, addressed to one element, under a capability that is off until an operator passes `--allow rawInput`, never reachable from a refused semantic verb, and contained by B8 to a single directory rather than forbidden everywhere ([ADR-0046](02-DECISIONS/0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md), [ADR-0067](02-DECISIONS/0067-a-chord-is-a-closed-list-and-the-desk-is-read-back-afterwards.md)). Everything else the phrase covers stays out: no pointer, no free-form key stream, no window raising, no coordinate anywhere.
 
 ## 9. Open architectural questions
 
 Real, unresolved, and each one needs a decision before the code that depends on it:
 
-1. **Where the phone client's transport terminates.** Direct to hub, or through a relay when the person is off their network.
-2. **Episode storage.** Episodes-as-git was right; whether the graph lives beside the audit log or inside it was never settled. Whichever way it goes decides whether redaction happens at write time or at read time — see [ADR-0013](02-DECISIONS/0013-episodes-are-a-git-graph.md).
+1. **Episode storage.** Episodes-as-git was right; whether the graph lives beside the audit log or inside it was never settled. Whichever way it goes decides whether redaction happens at write time or at read time — see [ADR-0013](02-DECISIONS/0013-episodes-are-a-git-graph.md).
 
 **Superseded, 2026-08-25 — biometric wake admission.** The enrolment-first measurements remain useful evidence, including their failure to generalize reliably to live speakers. M5 replaced speaker-specific admission with local phrase wake, bounded provisional capture, and a constrained client-owned realtime admission session. The old measurements and rationale remain in [ADR-0005](02-DECISIONS/0005-wake-is-enrolment-first-fingerprinting.md); the current ownership and privacy boundaries are [ADR-0053](02-DECISIONS/0053-phrase-wake-gates-a-client-owned-voice-session.md).
 
@@ -231,7 +233,25 @@ Real, unresolved, and each one needs a decision before the code that depends on 
 
 ## M6 boot composition
 
-For M6, `infra/units/mastra-desktop-daemon.service` is the boot-composition owner ([ADR-0054](02-DECISIONS/0054-gmail-authority-is-composed-by-the-operator-unit.md)). It joins four authorities without merging their ownership: unit `--permit` supplies session launch authority; the operator grants file records explicit observe intent; the operator capabilities file subtracts durable per-application launch capability; and the unit supplies the audit destination because the daemon deliberately has no default. `infra/apply.sh` installs the complete repository-owned daemon module tree, but only seeds missing operator files under `%h/.config/mastra-cc/`; later edits remain the operator's bytes. The hub and model own none of this composition.
+For M6, `infra/units/mastra-desktop-daemon.service` is the boot-composition owner ([ADR-0054](02-DECISIONS/0054-gmail-authority-is-composed-by-the-operator-unit.md)). It joins four authorities without merging their ownership: unit `--permit` supplies session launch authority; the operator grants file records explicit observe intent; the operator capabilities file subtracts durable per-application launch capability; and the unit supplies the audit destination because the daemon deliberately has no default. `infra/apply.sh` installs the complete repository-owned daemon module tree, but only seeds missing operator files under `%h/.config/mastra-cc/`; later edits remain the operator's bytes. No consumer and no model owns any of this composition.
+
+---
+
+## The accessibility layer is a machine-scoped authority
+
+A desktop whose accessibility layer is switched off answers every query with nothing, which reads
+exactly like an empty desktop. `describeAccessibility` makes that state a reported fact — `enabled`,
+`disabled`, or `cannot-tell` with a reason — behind a platform adapter, so no platform's vocabulary
+reaches a caller ([ADR-0064](02-DECISIONS/0064-the-desk-says-whether-it-can-be-heard.md)).
+
+Switching the layer on changes the operator's machine rather than one application, so it is **not** a
+capability: `capabilityNames` is answered once per application, and a per-application key for a
+machine-wide switch would say one application can be made audible and another not. It is held by the
+`--acquire-accessibility` launch flag instead, default off, in the shape the grants file already uses
+for `observe`. Without the flag `acquireAccessibility` refuses as `disabled-by-configuration` naming
+the flag; on a platform with no adapter it refuses as not-acquirable. Nothing the agent sends reaches
+either decision, and the state reported after an acquire is re-read from the layer rather than
+asserted from the attempt.
 
 ---
 

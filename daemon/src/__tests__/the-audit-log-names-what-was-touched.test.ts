@@ -537,6 +537,12 @@ describe("the refusal vocabulary is closed", () => {
     // class is a deliberate act with an ADR behind it, not a quiet append.
     expect([...REFUSAL_CLASSES].sort()).toEqual(
       [
+        // The two acquire refusals (ADR-0064): the machine's accessibility
+        // layer cannot be switched on by this build, and an attempt that was
+        // permitted and did not take. Named rather than folded into an
+        // existing class because an operator's remedy differs for each.
+        "AccessibilityNotAcquirable",
+        "AccessibilityNotAcquired",
         "AlreadyRunning",
         "AttestationFailedError",
         "BackendUnreadable",
@@ -557,6 +563,13 @@ describe("the refusal vocabulary is closed", () => {
         "OneBrowserIdentity",
         "OperationNotExposedError",
         "RecordingNotPerformableError",
+        // The three restart refusals (ADR-0065). Separate classes because the
+        // remedies are three different things: nothing this daemon opened,
+        // the application itself said no and put up a dialog, and it neither
+        // closed nor said anything within the wait.
+        "RestartNotConfirmed",
+        "RestartNotOurs",
+        "RestartRefusedByApplication",
         "TextOffsetOutOfRangeError",
         "UnknownElement",
         "UnknownMethod",

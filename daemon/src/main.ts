@@ -2,13 +2,16 @@ import { join } from "node:path";
 import { CAPABILITY_NAMES, SCHEMA_DIGEST, type CapabilityName } from "@mastra-cc/protocol-types";
 import { openAuditLog, useAuditLog } from "./audit.js";
 import { registry } from "./backends/registry.js";
+import { desktopEntryDirectories } from "./inventory.js";
 import {
   loadCapabilitiesFile,
   MalformedCapabilitiesFileError,
   WITHHOLDS_NOTHING,
 } from "./capabilities.js";
-import { normalise } from "./backends/atspi/names.js";
+import { applicationName } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
+import { selectAccessibilityLayer } from "./accessibility/select.js";
+import { selectKeyDelivery } from "./rawinput/select.js";
 import { loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
 import {
   composeBootNames,
@@ -16,10 +19,11 @@ import {
   loadProfilesFile,
   MalformedProfilesFileError,
 } from "./launch/profiles.js";
-import { CATALOG } from "./launch/recipes.js";
+import { baseLaunchCatalog } from "./launch/derived.js";
+import type { LaunchCatalog } from "./launch/recipes.js";
 import { terminateOwned } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
-import { startServer } from "./server.js";
+import { startServer, startWebSocketServer } from "./server.js";
 
 // The daemon: one Node process, single-threaded (ADR-0030). --backend selects
 // from the registry; this is a LOCAL OPERATOR FLAG on the daemon's own command
@@ -78,10 +82,23 @@ const fixture = arg("--fixture") ?? undefined;
 // (ADR-0038). A malformed profiles file fails startup loudly, like grants.
 // This runs BEFORE the name composition below, which needs the composed
 // catalog to know what each identity appears as in the tree.
+// The machine's own desktop entries are the base of the catalog (ADR-0062),
+// derived ONCE here at boot and never on a request path. Three orderings are
+// load-bearing:
+//   - inside baseLaunchCatalog, CATALOG spreads LAST over the derived
+//     entries, so a google-chrome
+//     desktop entry can never displace the hand-written chrome/gmail recipes
+//     and their profile directories (ADR-0038).
+//   - composeCatalog runs after that, so operator profiles still clone the
+//     built-in browser recipe exactly as they do today.
+//   - the whole expression stays BEFORE the name composition below, which
+//     needs the composed catalog to expand derived appearsAs names.
 const catalog = (() => {
   try {
-    const profiles = arg("--profiles") !== null ? loadProfilesFile(arg("--profiles") as string) : [];
-    return composeCatalog(CATALOG, profiles);
+    const base: LaunchCatalog = baseLaunchCatalog(desktopEntryDirectories());
+    const profiles =
+      arg("--profiles") !== null ? loadProfilesFile(arg("--profiles") as string, base) : [];
+    return composeCatalog(base, profiles);
   } catch (error) {
     if (error instanceof MalformedProfilesFileError) {
       console.error(`daemon: ${error.message}`);
@@ -100,9 +117,9 @@ const { launchPermits, visibility } = (() => {
   try {
     const file = arg("--grants") !== null ? loadGrantsFile(arg("--grants") as string) : new Set<string>();
     return composeBootNames({
-      permits: new Set(argAll("--permit").map(normalise)),
+      permits: new Set(argAll("--permit").map(applicationName)),
       grants: file,
-      flags: new Set(argAll("--grant").map(normalise)),
+      flags: new Set(argAll("--grant").map(applicationName)),
       catalog,
     });
   } catch (error) {
@@ -143,11 +160,27 @@ const allows = new Set(argAll("--allow")) as Set<CapabilityName>;
 for (const cls of allows) {
   if (!CAPABILITY_NAMES.includes(cls) || cls === "observe" || cls === "launch") {
     console.error(
-      `daemon: --allow must name one of the element-effect classes: edit, activate, submit (got ${JSON.stringify(cls)})`,
+      `daemon: --allow must name one of the effect classes: edit, activate, submit, rawInput (got ${JSON.stringify(cls)})`,
     );
     process.exit(2);
   }
 }
+
+// --acquire-accessibility: the OPERATOR's permission for the daemon to switch
+// this machine's accessibility layer on (ADR-0064). Off unless it is present,
+// and present only in the argv this process started with - nothing a client
+// sends reaches here, which is the point: a session cannot grant itself
+// authority to reconfigure the machine it is running on. It is a flag rather
+// than a capability because the layer is machine-scoped and the capability list
+// is per-application and exhaustive; the flag IS the setting, and refusals name
+// it (ACQUIRE_SETTING).
+const mayAcquireAccessibility = process.argv.includes("--acquire-accessibility");
+const accessibility = selectAccessibilityLayer();
+// Whether this build has ANY route to deliver a key here, decided from the
+// platform and nothing else. It is not authority and does not grant anything:
+// a machine with a route and no --allow rawInput still presses no keys
+// (ADR-0066 clause 2).
+const keys = selectKeyDelivery();
 
 const backend = registry[backendName]({ capture, fixture, visibility });
 
@@ -213,7 +246,22 @@ const table = new OwnershipTable();
 // table.owns and never signals a pid it no longer owns. SIGKILL and a crash
 // still skip cleanup by definition; that residue is a named limitation, not a
 // promise.
+// --ws-port <n> / --ws-host <addr>: the second pipe (ADR-0058). ABSENT MEANS
+// ABSENT - no flag, no listener, no port. The bind address defaults to
+// loopback; widening it is always a visible act on a command line, which is
+// what a container publishing a port has to do (--ws-host 0.0.0.0), because
+// Docker's proxy cannot reach the container's own loopback. Port 0 lets the
+// kernel choose and the daemon prints what it got.
+const wsPortArg = arg("--ws-port");
+const wsPort = wsPortArg === null ? null : Number(wsPortArg);
+if (wsPort !== null && (!Number.isInteger(wsPort) || wsPort < 0 || wsPort > 65535)) {
+  console.error(`daemon: --ws-port wants a port number, got ${JSON.stringify(wsPortArg)}`);
+  process.exit(1);
+}
+const wsHost = arg("--ws-host") ?? "127.0.0.1";
+
 let server: Awaited<ReturnType<typeof startServer>> | undefined;
+let wsServer: Awaited<ReturnType<typeof startWebSocketServer>> | undefined;
 let shuttingDown = false;
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   process.on(signal, () => {
@@ -225,6 +273,7 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     shuttingDown = true;
     terminateOwned(table);
     server?.close();
+    wsServer?.close();
     backend.close().then(
       () => process.exit(0),
       () => process.exit(1)
@@ -239,9 +288,23 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
 server = await startServer({
   socketPath,
   backend,
-  launch: { permits: launchPermits, allows, capabilities, catalog, table },
+  launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility, keys },
   visibility,
 });
 server.on("close", () => terminateOwned(table));
+
+if (wsPort !== null) {
+  wsServer = await startWebSocketServer({
+    port: wsPort,
+    host: wsHost,
+    backend,
+    launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility, keys },
+    visibility,
+  });
+  // Belt and braces for a close that arrives without a signal. The signal path
+  // does NOT rely on this: ws only fires "close" once every client has gone.
+  wsServer.on("close", () => terminateOwned(table));
+  console.log(`daemon: websocket listening on ${wsServer.host}:${wsServer.port}`);
+}
 
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);

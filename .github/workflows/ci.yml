@@ -48,6 +48,12 @@ jobs:
         run: node tools/mutations.mjs
       - name: "step 9: integration dry run (catalog divergence)"
         run: bash tools/dry-run-integration.sh
+      # A tarball is the only artefact a consumer sees. Pack every publishable
+      # package, unpack it outside the workspace, and read what actually landed
+      # (no workspace protocol, entry points present, dependencies resolvable).
+      # Runs after build, because it inspects dist.
+      - name: "release check (publishable tarballs; not one of the nine steps)"
+        run: node tools/release-check.mjs
       - name: "lint (workspace hygiene; not one of the nine steps)"
         run: pnpm turbo run lint
 
@@ -127,15 +133,5 @@ jobs:
       - name: "generate protocol-types (build output, ADR-0009)"
         run: node protocol/generate.mjs
       - run: pnpm install --frozen-lockfile
-      # The gate audits what a user receives, and what a user receives includes
-      # payloads that arrive after the package manager finishes. Electron's
-      # ~300MB runtime is fetched by its own installer rather than unpacked from
-      # the tarball, so a checkout that only installs manifests has nothing to
-      # audit and the gate refuses - correctly, since the review is recorded
-      # against a digest of a file that is not there. Fetching it here is what
-      # makes the job's answer about the shipped article rather than about the
-      # wrapper. The installer exits 0 when the payload is already present.
-      - name: "fetch the payloads the gate audits"
-        run: pnpm --filter @mastra-cc/widget exec install-electron
       - name: "B12: permissive-licence check over every manifest"
         run: node tools/licences.mjs

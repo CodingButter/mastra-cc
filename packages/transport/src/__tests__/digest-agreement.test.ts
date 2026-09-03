@@ -3,6 +3,7 @@ import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { WebSocketServer } from "ws";
 import { SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
 import { connect } from "../index.js";
 
@@ -10,7 +11,7 @@ import { connect } from "../index.js";
 // server. The mock lives INSIDE packages/transport on purpose: B5 forbids
 // socket code anywhere else, and this package is the one place a socket
 // counterpart may exist. The daemon's side of the same handshake is exercised
-// end-to-end in apps/hub's test and in the Phase 3 verification gate.
+// end-to-end in the Phase 3 verification gate.
 
 const WRONG_DIGEST = "f".repeat(64);
 
@@ -31,6 +32,51 @@ function mockServer(onLine: (socket: Socket, line: string) => void): { server: S
   });
   return { server, socketPath };
 }
+
+describe("the digest handshake is the same handshake over a websocket", () => {
+  // The dial is the only wire-specific code in connect(); everything after it -
+  // framing, hello, digest check - is shared. This proves that by driving the
+  // same refusal down the other pipe. `ws` is a devDependency here because a
+  // mock SERVER needs one; the transport's own dial still uses Node's global
+  // WebSocket and takes no runtime dependency.
+  let wss: WebSocketServer | null = null;
+  afterEach(() => {
+    wss?.close();
+    wss = null;
+  });
+
+  async function mockWebSocketServer(onLine: (send: (line: string) => void, line: string) => void): Promise<string> {
+    const server = new WebSocketServer({ host: "127.0.0.1", port: 0 });
+    wss = server;
+    await new Promise<void>((resolve) => server.on("listening", resolve));
+    server.on("connection", (socket) => {
+      const send = (line: string) => socket.send(line);
+      socket.on("message", (data) => {
+        for (const line of data.toString("utf8").split("\n")) if (line.trim()) onLine(send, line);
+      });
+    });
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    return `ws://127.0.0.1:${port}`;
+  }
+
+  it("refuses when the server's hello names a different digest, naming both digests", async () => {
+    const url = await mockWebSocketServer((send) => {
+      send(`${JSON.stringify({ type: "hello", digest: WRONG_DIGEST })}\n`);
+    });
+
+    await expect(connect({ url })).rejects.toThrow(new RegExp(`${SCHEMA_DIGEST}[\\s\\S]*${WRONG_DIGEST}`));
+  });
+
+  it("surfaces a server-side refusal line as the connect error, verbatim", async () => {
+    const refusal = `daemon: refused at connect - this daemon speaks schema digest ${WRONG_DIGEST} but the transport was built against schema digest ${SCHEMA_DIGEST} (digest-agreement check)`;
+    const url = await mockWebSocketServer((send) => {
+      send(`${JSON.stringify({ type: "refusal", refusal })}\n`);
+    });
+
+    await expect(connect({ url })).rejects.toThrow(refusal);
+  });
+});
 
 describe("a transport built against a different schema digest than the daemon's is refused at connect", () => {
   let server: Server | null = null;
