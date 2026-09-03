@@ -4,7 +4,7 @@ export type Turn =
   | { kind: "you"; text: string }
   | { kind: "agent"; text: string }
   | { kind: "notice"; text: string }
-  | { kind: "tool"; name: string; params: unknown; summary?: string }
+  | { kind: "tool"; callId: string; name: string; params: unknown; summary?: string }
   | { kind: "handover"; reason: string; requestId: string; answered: boolean };
 
 export function reduceTurn(prior: Turn[], event: DemoEvent): Turn[] {
@@ -16,17 +16,22 @@ export function reduceTurn(prior: Turn[], event: DemoEvent): Turn[] {
       else turns.push({ kind: "agent", text: event.text });
       return turns;
     case "tool":
-      turns.push({ kind: "tool", name: event.name, params: event.params });
+      turns.push({ kind: "tool", callId: event.callId, name: event.name, params: event.params });
       return turns;
-    case "tool-result":
-      for (let i = turns.length - 1; i >= 0; i -= 1) {
-        const turn = turns[i];
-        if (turn.kind === "tool" && turn.name === event.name && turn.summary === undefined) {
-          turns[i] = { ...turn, summary: event.summary };
-          break;
-        }
+    case "tool-result": {
+      const index = turns.findIndex(turn => turn.kind === "tool" && turn.callId === event.callId);
+      const turn = turns[index];
+      if (!turn || turn.kind !== "tool") {
+        turns.push({ kind: "notice", text: `ignored result for unknown call ${event.callId}` });
+      } else if (turn.summary !== undefined) {
+        turns.push({ kind: "notice", text: `ignored duplicate result for call ${event.callId}` });
+      } else if (turn.name !== event.name) {
+        turns.push({ kind: "notice", text: `ignored mismatched result for call ${event.callId}` });
+      } else {
+        turns[index] = { ...turn, summary: event.summary };
       }
       return turns;
+    }
     case "control":
       if (event.mode === "interact" && event.requestId) {
         turns.push({

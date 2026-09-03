@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { Agent } from "@mastra/core/agent";
 import { createTool } from "@mastra/core/tools";
 import { MastraCC, INSTRUCTIONS, isTransportConnectionError } from "@mastra-cc/desktop/mastra";
@@ -9,6 +11,8 @@ import type { DemoEvent } from "./events";
 const DESK_URL = process.env.MASTRA_CC_URL ?? "ws://127.0.0.1:8787";
 const MODEL = process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash";
 const HANDOVER_TIMEOUT_MS = Number(process.env.MASTRA_CC_HANDOVER_TIMEOUT_MS ?? 10 * 60 * 1000);
+const CALL_ID_PREFIX = randomUUID();
+let callIdCounter = 0;
 
 // ONE HEALTHY DESK, ONE CONNECTION, for the life of the process. A terminally
 // disconnected MastraCC is discarded, but never reconnects itself (ADR-0060).
@@ -99,13 +103,14 @@ export function wiredDeskTools(
         ...tool,
         execute: async (...args: Parameters<NonNullable<typeof tool.execute>>) => {
           const params = argumentsOf(args[0]);
-          emit({ type: "tool", name, params });
+          const callId = `${CALL_ID_PREFIX}:${++callIdCounter}`;
+          emit({ type: "tool", callId, name, params });
           try {
             const result = await tool.execute!(...args);
-            emit({ type: "tool-result", name, summary: summarise(result) });
+            emit({ type: "tool-result", callId, name, summary: summarise(result) });
             return result;
           } catch (error) {
-            emit({ type: "tool-result", name, summary: message(error) });
+            emit({ type: "tool-result", callId, name, summary: message(error) });
             if (isTerminal(error)) {
               cache.invalidate(desk);
               onTerminalConnection(error as Error);

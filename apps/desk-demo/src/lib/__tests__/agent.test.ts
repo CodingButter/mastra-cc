@@ -40,6 +40,27 @@ describe("wiredDeskTools", () => {
     expect(abort).toHaveBeenCalledExactlyOnceWith(terminal);
     expect(cache.get()).toBe(second);
     expect(events.map((event) => event.type)).toEqual(["tool", "tool-result"]);
+    expect(events[0]?.type === "tool" && events[0].callId).toBeTruthy();
+    expect(events[1]?.type === "tool-result" && events[1].callId).toBe(
+      events[0]?.type === "tool" ? events[0].callId : undefined,
+    );
+  });
+
+  it("gives each invocation one unique call id shared by its result", async () => {
+    const desk = fakeDesk(async () => "ok");
+    const cache = new DeskCache<MastraCC>(() => desk);
+    const events: DemoEvent[] = [];
+    const wired = wiredDeskTools(cache.get(), cache, event => events.push(event), () => {});
+
+    await wired.queryElements.execute!({ role: "button" } as never, {} as never);
+    await wired.queryElements.execute!({ role: "window" } as never, {} as never);
+
+    const calls = events.filter(event => event.type === "tool");
+    const results = events.filter(event => event.type === "tool-result");
+    expect(calls).toHaveLength(2);
+    expect(results).toHaveLength(2);
+    expect(calls[0]!.callId).not.toBe(calls[1]!.callId);
+    expect(results.map(event => event.callId)).toEqual(calls.map(event => event.callId));
   });
 
   it("keeps a healthy desk after an ordinary refusal", async () => {

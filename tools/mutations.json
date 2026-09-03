@@ -161,6 +161,13 @@
     "testFile": "src/__tests__/terminal-connection.test.ts"
   },
   {
+    "name": "desk-demo-pairs-tool-results-without-call-id",
+    "file": "apps/desk-demo/src/lib/transcript.ts",
+    "find": "turn => turn.kind === \"tool\" && turn.callId === event.callId",
+    "cwd": "apps/desk-demo",
+    "testFile": "src/lib/__tests__/transcript.test.ts"
+  },
+  {
     "name": "atspi-ambiguity-refusal-takes-first-match",
     "file": "daemon/src/backends/atspi/resolve.ts",
     "find": "  if (candidates.length > 1) return { refusal: ambiguityRefusal(candidates, query) };",
