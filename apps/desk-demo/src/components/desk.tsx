@@ -6,13 +6,9 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { cn } from "../lib/utils";
-import type { ControlMode, DemoEvent } from "../lib/events";
-
-type Turn =
-  | { kind: "you"; text: string }
-  | { kind: "agent"; text: string }
-  | { kind: "tool"; name: string; params: unknown; summary?: string }
-  | { kind: "handover"; reason: string; requestId: string; answered: boolean };
+import type { ControlMode } from "../lib/events";
+import { consumeDemoStream } from "../lib/stream";
+import { historyFromTurns, overlayLabel, reduceTurn, type Turn } from "../lib/transcript";
 
 export function Desk({ desktopUrl }: { desktopUrl: string }) {
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -59,34 +55,26 @@ export function Desk({ desktopUrl }: { desktopUrl: string }) {
     setBusy(true);
     const history = [...turns, { kind: "you" as const, text }];
     setTurns(history);
+    let serverErrorSeen = false;
 
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        messages: history
-          .filter((turn): turn is Extract<Turn, { kind: "you" | "agent" }> =>
-            turn.kind === "you" || turn.kind === "agent",
-          )
-          .map((turn) => ({ role: turn.kind === "you" ? "user" : "assistant", content: turn.text })),
-      }),
-    });
-
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    while (reader) {
-      const { value, done: finished } = await reader.read();
-      if (finished) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        apply(setTurns, JSON.parse(line) as DemoEvent);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages: historyFromTurns(history) }),
+      });
+      ({ serverErrorSeen } = await consumeDemoStream(response, (event) => {
+        if (event.type === "error") serverErrorSeen = true;
+        setTurns((prior) => reduceTurn(prior, event));
+      }));
+    } catch (error) {
+      if (!serverErrorSeen) {
+        const message = error instanceof Error ? error.message : String(error);
+        setTurns((prior) => [...prior, { kind: "notice", text: message }]);
       }
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }, [draft, busy, turns]);
 
   const yours = mode === "interact";
@@ -117,7 +105,7 @@ export function Desk({ desktopUrl }: { desktopUrl: string }) {
           />
           {!yours && (
             <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-background/85 px-3 py-1 text-xs text-muted-foreground">
-              the agent is working — your input is blocked
+              {overlayLabel(mode, busy)}
             </div>
           )}
           {yours && reason && (
@@ -179,6 +167,9 @@ function Bubble({ turn, onDone }: { turn: Turn; onDone: (requestId: string) => v
   if (turn.kind === "agent") {
     return <div className="whitespace-pre-wrap text-sm text-foreground">{turn.text}</div>;
   }
+  if (turn.kind === "notice") {
+    return <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm">— {turn.text}</div>;
+  }
   if (turn.kind === "tool") {
     return (
       <details className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
@@ -203,48 +194,4 @@ function Bubble({ turn, onDone }: { turn: Turn; onDone: (requestId: string) => v
       </Button>
     </div>
   );
-}
-
-function apply(setTurns: React.Dispatch<React.SetStateAction<Turn[]>>, event: DemoEvent) {
-  setTurns((prior) => {
-    const turns = [...prior];
-    const last = turns[turns.length - 1];
-    switch (event.type) {
-      case "text":
-        // Deltas append to the agent's current bubble; anything else - a tool
-        // call, a handover - closes it, so the transcript reads in the order it
-        // happened rather than collecting all prose at the bottom.
-        if (last?.kind === "agent") turns[turns.length - 1] = { ...last, text: last.text + event.text };
-        else turns.push({ kind: "agent", text: event.text });
-        return turns;
-      case "tool":
-        turns.push({ kind: "tool", name: event.name, params: event.params });
-        return turns;
-      case "tool-result": {
-        for (let i = turns.length - 1; i >= 0; i -= 1) {
-          const turn = turns[i];
-          if (turn.kind === "tool" && turn.name === event.name && turn.summary === undefined) {
-            turns[i] = { ...turn, summary: event.summary };
-            break;
-          }
-        }
-        return turns;
-      }
-      case "control":
-        if (event.mode === "interact" && event.requestId) {
-          turns.push({
-            kind: "handover",
-            reason: event.reason ?? "your turn",
-            requestId: event.requestId,
-            answered: false,
-          });
-        }
-        return turns;
-      case "error":
-        turns.push({ kind: "agent", text: `— ${event.message}` });
-        return turns;
-      default:
-        return turns;
-    }
-  });
 }
