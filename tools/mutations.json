@@ -149,9 +149,23 @@
   {
     "name": "transport-dies-on-a-non-json-line",
     "file": "packages/transport/src/index.ts",
-    "find": "        failAll(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));\n        wire.drop();\n        return;\n",
+    "find": "        terminate(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));\n        wire.drop();\n        return;\n",
     "cwd": "packages/transport",
     "testFile": "src/__tests__/digest-agreement.test.ts"
+  },
+  {
+    "name": "transport-writes-a-request-after-terminal-close",
+    "file": "packages/transport/src/index.ts",
+    "find": "    if (terminalError) return Promise.reject(terminalError);\n",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/terminal-connection.test.ts"
+  },
+  {
+    "name": "desk-demo-pairs-tool-results-without-call-id",
+    "file": "apps/desk-demo/src/lib/transcript.ts",
+    "find": " && turn.callId === event.callId",
+    "cwd": "apps/desk-demo",
+    "testFile": "src/lib/__tests__/transcript.test.ts"
   },
   {
     "name": "atspi-ambiguity-refusal-takes-first-match",

@@ -68,6 +68,23 @@ export function defaultSocketPath(): string {
   return join(runtimeDir, "mastra-cc", "daemon.sock");
 }
 
+export class TransportConnectionError extends Error {
+  readonly code = "MASTRA_CC_TRANSPORT_TERMINAL";
+
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "TransportConnectionError";
+  }
+}
+
+export function isTransportConnectionError(value: unknown): value is TransportConnectionError {
+  return value instanceof TransportConnectionError;
+}
+
+function connectionError(error: Error): TransportConnectionError {
+  return isTransportConnectionError(error) ? error : new TransportConnectionError(error.message, { cause: error });
+}
+
 interface Hello {
   type: "hello";
   digest: string;
@@ -187,8 +204,15 @@ export async function connect(options: { socketPath?: string; url?: string } = {
         "one connection has one address, so say which one",
     );
   }
-  const wire =
-    options.url !== undefined ? await websocketWire(options.url) : socketWire(options.socketPath ?? defaultSocketPath());
+  let wire: Wire;
+  try {
+    wire =
+      options.url !== undefined
+        ? await websocketWire(options.url)
+        : socketWire(options.socketPath ?? defaultSocketPath());
+  } catch (error) {
+    throw connectionError(error instanceof Error ? error : new Error(String(error)));
+  }
   const peer = wire.peer;
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   const listeners = new Set<(event: ChangeEvent) => void>();
@@ -196,6 +220,20 @@ export async function connect(options: { socketPath?: string; url?: string } = {
   let buffer = "";
   let helloResolve: ((h: Hello) => void) | null = null;
   let helloReject: ((e: Error) => void) | null = null;
+  let terminalError: TransportConnectionError | null = null;
+
+  const terminate = (error: Error): TransportConnectionError => {
+    if (terminalError) return terminalError;
+    terminalError = connectionError(error);
+    helloResolve = null;
+    if (helloReject) {
+      helloReject(terminalError);
+      helloReject = null;
+    }
+    for (const p of pending.values()) p.reject(terminalError);
+    pending.clear();
+    return terminalError;
+  };
 
   wire.onData((chunk) => {
     buffer += chunk;
@@ -212,7 +250,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
         // A peer that emits a non-JSON line is not the daemon this client was
         // built for. Refuse loudly and stop, mirroring the daemon's own
         // handling of the same case - never die in an event handler.
-        failAll(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));
+        terminate(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));
         wire.drop();
         return;
       }
@@ -220,13 +258,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
         helloResolve(message);
         helloResolve = null;
       } else if (message.type === "refusal") {
-        const error = new Error(message.refusal);
-        if (helloReject) {
-          helloReject(error);
-          helloReject = null;
-        }
-        for (const p of pending.values()) p.reject(error);
-        pending.clear();
+        terminate(new Error(message.refusal));
       } else if (message.type === "event") {
         // An event answers no request, so it never touches the pending table.
         // It is handed to every listener even if none of them asked for this
@@ -253,37 +285,39 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     }
   });
 
-  const failAll = (error: Error) => {
-    if (helloReject) {
-      helloReject(error);
-      helloReject = null;
-    }
-    for (const p of pending.values()) p.reject(error);
-    pending.clear();
-  };
-  wire.onError(failAll);
-  wire.onClose(() => failAll(new Error(`transport: connection to ${peer} closed`)));
+  wire.onError((error) => terminate(error));
+  wire.onClose(() => terminate(new Error(`transport: connection to ${peer} closed`)));
 
   const serverHello = await new Promise<Hello>((resolve, reject) => {
     helloResolve = resolve;
     helloReject = reject;
-    wire.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+    try {
+      wire.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+    } catch (error) {
+      reject(terminate(error instanceof Error ? error : new Error(String(error))));
+    }
   });
 
   if (serverHello.digest !== SCHEMA_DIGEST) {
     const refusal =
       `transport: refused at connect - this transport was built against schema digest ${SCHEMA_DIGEST} ` +
       `but the daemon speaks schema digest ${serverHello.digest} (digest-agreement check)`;
+    const error = terminate(new Error(refusal));
     wire.drop();
-    throw new Error(refusal);
+    throw error;
   }
 
   function call(method: string, params: unknown): Promise<unknown> {
+    if (terminalError) return Promise.reject(terminalError);
     const id = nextId;
     nextId += 1;
     return new Promise((resolve, reject) => {
       pending.set(id, { resolve, reject });
-      wire.write(`${JSON.stringify({ type: "request", id, method, params })}\n`);
+      try {
+        wire.write(`${JSON.stringify({ type: "request", id, method, params })}\n`);
+      } catch (error) {
+        reject(terminate(error instanceof Error ? error : new Error(String(error))));
+      }
     });
   }
 
@@ -313,7 +347,10 @@ export async function connect(options: { socketPath?: string; url?: string } = {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
-    close: () => wire.end(),
+    close: () => {
+      terminate(new Error(`transport: connection to ${peer} closed`));
+      wire.end();
+    },
   };
 }
 

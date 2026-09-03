@@ -1,23 +1,26 @@
+import { randomUUID } from "node:crypto";
+
 import { Agent } from "@mastra/core/agent";
 import { createTool } from "@mastra/core/tools";
-import { MastraCC, INSTRUCTIONS } from "@mastra-cc/desktop/mastra";
+import { MastraCC, INSTRUCTIONS, isTransportConnectionError } from "@mastra-cc/desktop/mastra";
 import { z } from "zod";
 import { requestControl } from "./control";
+import { DeskCache } from "./desk-cache";
 import type { DemoEvent } from "./events";
 
 const DESK_URL = process.env.MASTRA_CC_URL ?? "ws://127.0.0.1:8787";
 const MODEL = process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash";
 const HANDOVER_TIMEOUT_MS = Number(process.env.MASTRA_CC_HANDOVER_TIMEOUT_MS ?? 10 * 60 * 1000);
+const CALL_ID_PREFIX = randomUUID();
+let callIdCounter = 0;
 
-// ONE DESK, ONE CONNECTION, for the life of the process. The instance IS the
-// connection (ADR-0060), so re-dialling per request would give the daemon a new
-// identity each turn and throw away the subscription book. Held in a module
-// global because Next re-evaluates route modules on edit in development.
-const globalDesk = globalThis as unknown as { __deskDemoDesk?: MastraCC };
-function desk(): MastraCC {
-  globalDesk.__deskDemoDesk ??= new MastraCC({ url: DESK_URL });
-  return globalDesk.__deskDemoDesk;
-}
+// ONE HEALTHY DESK, ONE CONNECTION, for the life of the process. A terminally
+// disconnected MastraCC is discarded, but never reconnects itself (ADR-0060).
+// The cache is global because Next re-evaluates route modules during development.
+const globalDesk = globalThis as unknown as { __deskDemoDeskCache?: DeskCache<MastraCC> };
+const deskCache = (globalDesk.__deskDemoDeskCache ??= new DeskCache(
+  () => new MastraCC({ url: DESK_URL }),
+));
 
 // The prose the agent gets on top of the shipped instructions. It says only what
 // the shipped text cannot know: that there is a person watching this particular
@@ -48,36 +51,12 @@ done, and the tool tells you what they did or did not do. Read the desk again
 afterwards rather than assuming the state you expected.
 `.trim();
 
-export function deskAgent(emit: (event: DemoEvent) => void) {
-  // Every protocol frame leaves through a tool, so wrapping execute is a complete
-  // record of what the agent asked the desk - the same trick the errand harness
-  // uses, here to feed the transcript pane instead of a proof file.
-  const wired = Object.fromEntries(
-    Object.entries(desk().getTools()).map(([name, tool]) => [
-      name,
-      {
-        ...tool,
-        execute: async (...args: Parameters<NonNullable<typeof tool.execute>>) => {
-          // Both shapes, because both are real: a tool's arguments arrive under
-          // `context` in some versions of the agent framework and as the object
-          // itself in others, and a transcript that silently logged `{}` for
-          // every call would look like an agent calling tools with no arguments.
-          const params = argumentsOf(args[0]);
-          emit({ type: "tool", name, params });
-          try {
-            const result = await tool.execute!(...args);
-            emit({ type: "tool-result", name, summary: summarise(result) });
-            return result;
-          } catch (error) {
-            // A refusal that arrives as a thrown error is still the desk
-            // answering. It belongs in the transcript, not in a stack trace.
-            emit({ type: "tool-result", name, summary: message(error) });
-            throw error;
-          }
-        },
-      },
-    ]),
-  );
+export function deskAgent(
+  emit: (event: DemoEvent) => void,
+  onTerminalConnection: (error: Error) => void = () => {},
+) {
+  const desk = deskCache.get();
+  const wired = wiredDeskTools(desk, deskCache, emit, onTerminalConnection);
 
   const requestHumanControl = createTool({
     id: "requestHumanControl",
@@ -108,6 +87,40 @@ export function deskAgent(emit: (event: DemoEvent) => void) {
     model: MODEL,
     tools: { ...wired, requestHumanControl },
   });
+}
+
+export function wiredDeskTools(
+  desk: MastraCC,
+  cache: DeskCache<MastraCC>,
+  emit: (event: DemoEvent) => void,
+  onTerminalConnection: (error: Error) => void,
+  isTerminal: (error: unknown) => boolean = isTransportConnectionError,
+): ReturnType<MastraCC["getTools"]> {
+  return Object.fromEntries(
+    Object.entries(desk.getTools()).map(([name, tool]) => [
+      name,
+      {
+        ...tool,
+        execute: async (...args: Parameters<NonNullable<typeof tool.execute>>) => {
+          const params = argumentsOf(args[0]);
+          const callId = `${CALL_ID_PREFIX}:${++callIdCounter}`;
+          emit({ type: "tool", callId, name, params });
+          try {
+            const result = await tool.execute!(...args);
+            emit({ type: "tool-result", callId, name, summary: summarise(result) });
+            return result;
+          } catch (error) {
+            emit({ type: "tool-result", callId, name, summary: message(error) });
+            if (isTerminal(error)) {
+              cache.invalidate(desk);
+              onTerminalConnection(error as Error);
+            }
+            throw error;
+          }
+        },
+      },
+    ]),
+  ) as ReturnType<MastraCC["getTools"]>;
 }
 
 function argumentsOf(input: unknown): Record<string, unknown> {

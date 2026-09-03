@@ -5,6 +5,8 @@ import type { SignalProviderTarget } from "@mastra/core/signals";
 import { connect, type ConnectOptions } from "./index.js";
 import { DesktopSignals, type DesktopSignalsOptions } from "./signals.js";
 
+export { isTransportConnectionError } from "@mastra-cc/transport";
+
 export {
   DesktopSignals,
   DEFAULT_DELIVERED_ATTRIBUTIONS,
