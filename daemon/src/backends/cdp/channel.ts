@@ -77,11 +77,18 @@ interface DiscoveredTarget {
 // Lazy: nothing dials until the first exchange, so constructing the backend
 // (as the conformance suite does at collection time) is free.
 export function liveCdpChannel(endpoint: string): CdpChannel {
-  const sockets = new Map<string, Promise<WebSocket>>();
+  interface PendingCall {
+    readonly resolve: (reply: unknown) => void;
+    readonly reject: (error: CdpUnreachableError) => void;
+  }
+  interface SocketState {
+    readonly ws: WebSocket;
+    readonly pending: Map<number, PendingCall>;
+  }
+
+  const sockets = new Map<string, Promise<SocketState>>();
   let targets: DiscoveredTarget[] = [];
   let nextId = 1;
-  // The event direction, per target. rpc() ignores messages that answer no
-  // request; these listeners are what they are for (ADR-0039).
   const eventListeners = new Map<string, Set<(method: string, params: Record<string, unknown>) => void>>();
 
   async function http(path: string): Promise<unknown> {
@@ -101,7 +108,7 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
     }
   }
 
-  function socketFor(targetId: string): Promise<WebSocket> {
+  function socketFor(targetId: string): Promise<SocketState> {
     const cached = sockets.get(targetId);
     if (cached) return cached;
     const target = targets.find((t) => t.id === targetId);
@@ -111,33 +118,58 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
         new CdpUnreachableError(`no target "${targetId}" in the most recent list reply - list before call`),
       );
     }
-    const opened = new Promise<WebSocket>((resolve, reject) => {
+    const opened = new Promise<SocketState>((resolve, reject) => {
       const ws = new WebSocket(url);
-      ws.addEventListener("open", () => resolve(ws), { once: true });
+      const state: SocketState = { ws, pending: new Map() };
+      let didOpen = false;
+      const rejectPending = (message: string) => {
+        for (const pending of state.pending.values()) pending.reject(new CdpUnreachableError(message));
+        state.pending.clear();
+      };
       ws.addEventListener(
-        "error",
+        "open",
         () => {
-          sockets.delete(targetId);
-          reject(new CdpUnreachableError(`the debugging socket for target "${targetId}" could not be opened`));
+          didOpen = true;
+          resolve(state);
         },
         { once: true },
       );
-      // A dead socket must not stay cached: the next exchange redials
-      // instead of sending into a closed connection.
-      ws.addEventListener("close", () => sockets.delete(targetId), { once: true });
-      // Every message without an id is an event. One reader per socket fans
-      // them out; a socket with no watches has an empty listener set and the
-      // messages go nowhere, which is what discarding them was.
+      ws.addEventListener("error", () => {
+        sockets.delete(targetId);
+        const error = new CdpUnreachableError(
+          didOpen
+            ? `the debugging socket closed before its pending calls were answered for target "${targetId}"`
+            : `the debugging socket for target "${targetId}" could not be opened`,
+        );
+        if (!didOpen) reject(error);
+        for (const pending of state.pending.values()) pending.reject(error);
+        state.pending.clear();
+      });
+      ws.addEventListener("close", () => {
+        sockets.delete(targetId);
+        if (!didOpen) reject(new CdpUnreachableError(`the debugging socket for target "${targetId}" could not be opened`));
+        rejectPending(`the debugging socket for target "${targetId}" closed before its pending calls were answered`);
+      });
       ws.addEventListener("message", (event) => {
-        const listeners = eventListeners.get(targetId);
-        if (listeners === undefined || listeners.size === 0) return;
         let message: { id?: number; method?: string; params?: Record<string, unknown> };
         try {
           message = JSON.parse(String(event.data));
         } catch {
+          rejectPending(`the debugging socket for target "${targetId}" did not answer usable JSON`);
+          ws.close();
           return;
         }
-        if (message.id !== undefined || message.method === undefined) return;
+        if (message.id !== undefined) {
+          const pending = state.pending.get(message.id);
+          if (pending === undefined) return;
+          state.pending.delete(message.id);
+          const { id: _connectionLocal, ...reply } = message;
+          pending.resolve(reply);
+          return;
+        }
+        if (message.method === undefined) return;
+        const listeners = eventListeners.get(targetId);
+        if (listeners === undefined) return;
         for (const listener of listeners) listener(message.method, message.params ?? {});
       });
     });
@@ -145,35 +177,16 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
     return opened;
   }
 
-  function rpc(ws: WebSocket, method: string, params: unknown): Promise<unknown> {
+  function rpc(state: SocketState, method: string, params: unknown): Promise<unknown> {
     const id = nextId++;
     return new Promise((resolve, reject) => {
-      // A hang is not a refusal (refuses-malformed-lines.test.ts:10-12): if
-      // the socket dies before the reply arrives - tab closed, browser
-      // crashed, terminateOwned mid-query - the pending call must reject, or
-      // the server's serialised chain never advances again for any client.
-      const onGone = () => {
-        cleanup();
+      state.pending.set(id, { resolve, reject });
+      try {
+        state.ws.send(JSON.stringify({ id, method, params: params ?? {} }));
+      } catch {
+        state.pending.delete(id);
         reject(new CdpUnreachableError(`the debugging socket closed before "${method}" was answered`));
-      };
-      const onMessage = (event: MessageEvent) => {
-        const message = JSON.parse(String(event.data)) as { id?: number };
-        if (message.id !== id) return;
-        cleanup();
-        // The reply is stored minus the connection-local id, so tapes are
-        // connection-independent: {result} or {error}, never {id, ...}.
-        const { id: _connectionLocal, ...reply } = message;
-        resolve(reply);
-      };
-      const cleanup = () => {
-        ws.removeEventListener("message", onMessage);
-        ws.removeEventListener("close", onGone);
-        ws.removeEventListener("error", onGone);
-      };
-      ws.addEventListener("message", onMessage);
-      ws.addEventListener("close", onGone);
-      ws.addEventListener("error", onGone);
-      ws.send(JSON.stringify({ id, method, params: params ?? {} }));
+      }
     });
   }
 
@@ -219,7 +232,7 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
     async close() {
       for (const pending of sockets.values()) {
         try {
-          (await pending).close();
+          (await pending).ws.close();
         } catch {
           // a socket that never opened has nothing to close
         }
