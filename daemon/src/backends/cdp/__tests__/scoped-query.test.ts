@@ -53,6 +53,28 @@ describe("scoped browser queries", () => {
     expect((backend as unknown as { applicationOf: Map<string, unknown> }).applicationOf.size).toBe(0);
   });
 
+  it("discovers nothing in a browser this session was never granted, and reads no page for it", async () => {
+    const { channel, exchanges } = channelWith([{ id: "inbox", type: "page", title: "Inbox" }]);
+    const backend = new CdpBackend(channel, new Set(["kate"]));
+
+    await expect(backend.discoverElements({ application: "chrome" })).resolves.toEqual({ entries: [], truncated: false });
+    expect(exchanges.some((exchange) => exchange.kind === "call")).toBe(false);
+  });
+
+  it("discovers nothing when two pages answer to the same window name", async () => {
+    const { channel, exchanges } = channelWith([
+      { id: "inbox", type: "page", title: "Inbox" },
+      { id: "other", type: "page", title: "Inbox" },
+    ]);
+    const backend = new CdpBackend(channel, "all");
+
+    await expect(backend.discoverElements({ application: "chrome", window: "Inbox" })).resolves.toEqual({
+      entries: [],
+      truncated: false,
+    });
+    expect(exchanges.some((exchange) => exchange.kind === "call")).toBe(false);
+  });
+
   it("returns nothing for an application selector outside the granted browser identity", async () => {
     const { channel, exchanges } = channelWith([{ id: "inbox", type: "page", title: "Inbox" }]);
     const backend = new CdpBackend(channel, "all");

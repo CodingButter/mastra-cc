@@ -77,6 +77,40 @@ describe("backend-selected AT-SPI search", () => {
     expect((backend as unknown as { applicationOf: Map<string, unknown> }).applicationOf.size).toBe(0);
   });
 
+  // Discovery aborts where a query would shrug: a vocabulary that stopped
+  // short is indistinguishable from a vocabulary that was complete, so the
+  // only honest answer to an unfinished walk is no answer at all.
+  it("refuses rather than reporting the vocabulary it managed to reach before the budget ran out", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all", { maxDepth: 10, maxNodesPerApp: 2, maxNodesTotal: 10 });
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(/would be partial/);
+  });
+
+  it("refuses when an element stops answering part-way through the walk", async () => {
+    const channel = desktop({ collection: true });
+    const failing: Channel & { asked: Exchange[] } = {
+      asked: channel.asked,
+      async call(exchange) {
+        if (exchange.member === "GetRoleName" && exchange.path === BUTTON) throw new Error("it went away");
+        return channel.call(exchange);
+      },
+      watch: channel.watch,
+      close: channel.close,
+    };
+    const backend = new AtspiBackend(failing, "all");
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(/stopped answering/);
+  });
+
+  it("discovers nothing in an application this session was never granted", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, new Set(["some-other-app"]));
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).resolves.toEqual({ entries: [], truncated: false });
+    expect(channel.asked.some((exchange) => exchange.path === BUTTON)).toBe(false);
+  });
+
   it("returns nothing for an application selector that does not match, without reading descendants", async () => {
     const channel = desktop({ collection: true });
     const backend = new AtspiBackend(channel, "all");
