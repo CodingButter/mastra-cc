@@ -52,6 +52,16 @@ export function accessibilityLayer(read: StatusRead, write: StatusWrite = liveSt
       // surfaces as a throw the server turns into an honest refusal rather
       // than a silent success.
       await write("IsEnabled", true);
+      // The second property is not a nicety. IsEnabled alone brings up the
+      // bus and the native widget trees; a Chromium-family browser reads
+      // ScreenReaderEnabled to decide whether to publish its RENDERER tree at
+      // all, so a desk acquired with IsEnabled only shows a browser's window
+      // and dialogs with nothing underneath them - measured on the demo
+      // container, where discovery over a Google Images page returned the
+      // application, four windows and a dialog and not one page control
+      // (ADR-0075). Both writes or neither: a half-acquired desk reads as a
+      // working one right up until an agent goes looking inside a browser.
+      await write("ScreenReaderEnabled", true);
     },
     async report(): Promise<AccessibilityReport> {
       let raw: unknown;

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MastraCC } from "@mastra-cc/desktop/mastra";
-import { HANDOVER_INSTRUCTIONS, wiredDeskTools } from "../agent";
+import { isTransportConnectionError } from "@mastra-cc/desktop/mastra";
+import { HANDOVER_BEFORE_LOOKING, HANDOVER_INSTRUCTIONS, wiredDeskTools } from "../agent";
 import { DeskCache } from "../desk-cache";
 import type { DemoEvent } from "../events";
 
@@ -36,6 +37,48 @@ describe("handover instructions", () => {
     expect(HANDOVER_INSTRUCTIONS).toContain("verify that the page changed");
     expect(HANDOVER_INSTRUCTIONS).toContain("read the desk again");
   });
+
+  it("names web search, downloads and settings as ordinary desktop work rather than boundaries", () => {
+    // The wallpaper dogfood: the agent refused all three by category, with no
+    // tool call, on a desk that had every one of them.
+    expect(HANDOVER_INSTRUCTIONS).toContain("refuses until you\nhave looked");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Searching the web, downloading a file, opening a settings window");
+    expect(HANDOVER_INSTRUCTIONS).toContain("ordinary desktop work on this desk, not\nboundaries");
+    expect(HANDOVER_INSTRUCTIONS).toContain("identity, money, or private\njudgement");
+  });
+});
+
+describe("a handover asked for before looking", () => {
+  it("is refused with somewhere to go, and does not unlock the desk", () => {
+    expect(HANDOVER_BEFORE_LOOKING.handedBack).toBe(false);
+    expect(HANDOVER_BEFORE_LOOKING.refused).toContain("not looked at this desk yet");
+    expect(HANDOVER_BEFORE_LOOKING.advice).toContain("listApplications");
+  });
+
+  // The gate has to be tested through the agent the route builds, not through
+  // a callback the test supplies itself: the bug being pinned is an agent that
+  // handed the desk over having called nothing, and only deskAgent knows
+  // whether requestHumanControl and the wired tools share a memory.
+  it("is refused by the real agent's tool until a desk tool has been tried", async () => {
+    const { deskAgent } = await import("../agent");
+    const tools = (await deskAgent(() => {}).listTools()) as unknown as Record<
+      string,
+      { execute: (input: unknown, context?: unknown) => Promise<unknown> }
+    >;
+
+    await expect(tools.requestHumanControl.execute({ reason: "sign in" })).resolves.toEqual(
+      HANDOVER_BEFORE_LOOKING,
+    );
+
+    // This desk is not there, and that is the point: what unlocks the handover
+    // is having asked, not having been answered.
+    await expect(tools.queryElements.execute({ role: "button" } as never, {} as never)).rejects.toThrow();
+
+    // Not the refusal any more: the desk has been consulted, so the handover is
+    // allowed to proceed and block on the person.
+    const handover = tools.requestHumanControl.execute({ reason: "sign in" });
+    await expect(Promise.race([handover, Promise.resolve("pending")])).resolves.toBe("pending");
+  });
 });
 
 describe("wiredDeskTools", () => {
@@ -56,6 +99,7 @@ describe("wiredDeskTools", () => {
       (event) => events.push(event),
       abort,
       (error) => error === terminal,
+      () => {},
     );
 
     await expect(wired.queryElements.execute!({ role: "button" } as never, {} as never)).rejects.toBe(terminal);
@@ -74,7 +118,7 @@ describe("wiredDeskTools", () => {
     const desk = fakeDesk(async () => "ok");
     const cache = new DeskCache<MastraCC>(() => desk);
     const events: DemoEvent[] = [];
-    const wired = wiredDeskTools(cache.get(), cache, event => events.push(event), () => {});
+    const wired = wiredDeskTools(cache.get(), cache, event => events.push(event), () => {}, isTransportConnectionError, () => {});
 
     await wired.queryElements.execute!({ role: "button" } as never, {} as never);
     await wired.queryElements.execute!({ role: "window" } as never, {} as never);
@@ -95,12 +139,28 @@ describe("wiredDeskTools", () => {
     const create = vi.fn(() => desk);
     const cache = new DeskCache<MastraCC>(create);
     const abort = vi.fn();
-    const wired = wiredDeskTools(cache.get(), cache, () => {}, abort);
+    const wired = wiredDeskTools(cache.get(), cache, () => {}, abort, isTransportConnectionError, () => {});
 
     await expect(wired.queryElements.execute!({} as never, {} as never)).rejects.toBe(refusal);
 
     expect(abort).not.toHaveBeenCalled();
     expect(cache.get()).toBe(desk);
     expect(create).toHaveBeenCalledOnce();
+  });
+
+  it("reports that the desk was consulted even when the desk refused", async () => {
+    // What unlocks a handover is having ASKED. An agent that queried and was
+    // refused has heard from the desk and may hand over on what it heard.
+    const refusal = new Error("desktop: refused");
+    const desk = fakeDesk(async () => {
+      throw refusal;
+    });
+    const cache = new DeskCache<MastraCC>(() => desk);
+    const looked = vi.fn();
+    const wired = wiredDeskTools(cache.get(), cache, () => {}, () => {}, () => false, looked);
+
+    await expect(wired.queryElements.execute!({} as never, {} as never)).rejects.toBe(refusal);
+
+    expect(looked).toHaveBeenCalledOnce();
   });
 });

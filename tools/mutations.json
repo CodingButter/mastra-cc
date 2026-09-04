@@ -1188,5 +1188,19 @@
     "find": "      const application = (result as { auditApplication?: string }).auditApplication;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/discover-elements.test.ts"
+  },
+  {
+    "name": "the-screen-reader-is-never-acquired",
+    "file": "daemon/src/accessibility/linux-atspi.ts",
+    "find": "      await write(\"ScreenReaderEnabled\", true);",
+    "cwd": "daemon",
+    "testFile": "src/accessibility/__tests__/acquiring.test.ts"
+  },
+  {
+    "name": "a-failed-acquire-hides-what-it-changed",
+    "file": "daemon/src/server.ts",
+    "find": "accessibility, ",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
   }
 ]
