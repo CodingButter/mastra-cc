@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-08-27
-**Introduces protocol schema version 1.6.1 and amends [ADR-0042](0042-existence-is-readable-content-is-not.md) clause 3.**
+**Introduces protocol schema version 1.6.1, updated by schema version 1.13.1 to make line metadata conditional, and amends [ADR-0042](0042-existence-is-readable-content-is-not.md) clause 3.**
 
 ## Context
 
