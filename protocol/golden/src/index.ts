@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.14.0
+// Mastra CC protocol v1.15.0
 
-export const PROTOCOL_VERSION = "1.14.0";
-export const SCHEMA_DIGEST = "1ee7d902e8bdf6249c69b9a12640ca993977f79ebf8e50b28d165c78655adab0";
+export const PROTOCOL_VERSION = "1.15.0";
+export const SCHEMA_DIGEST = "402c13c572f451153956f1e6d83820af00124618348008327da30b7e40ef0d80";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -26,7 +26,7 @@ export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText"] as const;
+export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -205,6 +205,20 @@ export interface ChangeEvent {
   at: number;
 }
 
+/** One aggregated role and name hint observed inside an authorised application scope. It is vocabulary for a fresh query, never an element handle or authority to act. */
+export interface ElementDiscoveryEntry {
+  /** The neutral role shared by the observed occurrences. */
+  role: Role;
+  /** The normalised human-facing name shared by the observed occurrences. An empty string represents unnamed elements without inventing a name. */
+  name: string;
+  /** The exact number of fully observed occurrences with this role and name inside the selected scope. */
+  count: number;
+  /** The sorted unique open-text action names exposed across the observed occurrences. */
+  actions: string[];
+  /** The sorted unique semantic operation names exposed across the observed occurrences. */
+  operations: string[];
+}
+
 /** Native details preserved for a human debugging. Exempt from the neutral-vocabulary rule; never load-bearing for agent logic. */
 export interface Diagnostic {
   /** The backend's own role word, verbatim. */
@@ -238,6 +252,25 @@ export interface QueryElementsParams {
 export interface QueryElementsResult {
   /** Every element that matched, in reading order. */
   elements: SemanticElement[];
+}
+
+/** Discover bounded semantic role and name vocabulary inside one authorised application scope. Observation only. The returned entries are hints, never element authority; use a fresh queryElements call before acting. */
+export interface DiscoverElementsParams {
+  /** Select one visible, authorised application whose normalised exact name matches. This scope only narrows observation and never grants authority. */
+  application: string;
+  /** Optionally select one visible window whose normalised exact name matches inside application. */
+  window?: string;
+  /** Optionally restrict the discovered vocabulary to one neutral role without changing complete traversal semantics. */
+  role?: Role;
+  /** Maximum number of distinct entries returned. The daemon requires an integer from 1 through 200 and defaults to 100. */
+  limit?: number;
+}
+
+export interface DiscoverElementsResult {
+  /** Aggregated role and name hints in deterministic order. They contain no element IDs or content and cannot be acted on directly. */
+  entries: ElementDiscoveryEntry[];
+  /** True only when complete traversal found more distinct entries than the returned limit. Incomplete traversal is a refusal, never truncation. */
+  truncated: boolean;
 }
 
 /** State what a later call would act on, without acting. Returns the element as currently resolvable, or an explicit refusal naming why. */
@@ -541,6 +574,54 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
         }
       },
       "required": [],
+      "additionalProperties": false
+    }
+  },
+  "discoverElements": {
+    "description": "Discover bounded semantic role and name vocabulary inside one authorised application scope. Observation only. The returned entries are hints, never element authority; use a fresh queryElements call before acting.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "application": {
+          "description": "Select one visible, authorised application whose normalised exact name matches. This scope only narrows observation and never grants authority.",
+          "type": "string"
+        },
+        "window": {
+          "description": "Optionally select one visible window whose normalised exact name matches inside application.",
+          "type": "string"
+        },
+        "role": {
+          "description": "Optionally restrict the discovered vocabulary to one neutral role without changing complete traversal semantics.",
+          "type": "string",
+          "enum": [
+            "application",
+            "window",
+            "dialog",
+            "button",
+            "checkbox",
+            "label",
+            "link",
+            "list",
+            "listitem",
+            "grid",
+            "row",
+            "gridcell",
+            "menu",
+            "menuitem",
+            "text",
+            "textbox",
+            "image",
+            "generic"
+          ]
+        },
+        "limit": {
+          "description": "Maximum number of distinct entries returned. The daemon requires an integer from 1 through 200 and defaults to 100.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "application"
+      ],
       "additionalProperties": false
     }
   },
@@ -904,7 +985,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
   }
 };
 
-const TYPE_SPECS = {"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"running":{"type":"runningState","literal":null,"literals":null,"required":true,"pattern":null},"runningUnknownBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"accessibilityLayer":{"fields":{"state":{"type":"accessibilityState","literal":null,"literals":null,"required":true,"pattern":null},"reason":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null}} as const;
+const TYPE_SPECS = {"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"running":{"type":"runningState","literal":null,"literals":null,"required":true,"pattern":null},"runningUnknownBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"elementDiscoveryEntry":{"fields":{"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"count":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"accessibilityLayer":{"fields":{"state":{"type":"accessibilityState","literal":null,"literals":null,"required":true,"pattern":null},"reason":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null}} as const;
 const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"runningState":["answering","not-answering","cannot-tell"],"accessibilityState":["enabled","disabled","cannot-tell"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit","rawInput"],"keyChordName":["Enter","Escape","Tab","Backspace","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown","F2"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
 
 type FieldSpec = {
@@ -1034,6 +1115,11 @@ function availabilityProblems(typeName: string, specs: Record<string, FieldSpec>
 /** Validate a semanticElement; returns an empty array when it conforms. */
 export function validateSemanticElement(value: unknown): string[] {
   return problemsFor("semanticElement", value);
+}
+
+/** Validate an elementDiscoveryEntry; returns an empty array when it conforms. */
+export function validateElementDiscoveryEntry(value: unknown): string[] {
+  return problemsFor("elementDiscoveryEntry", value);
 }
 
 /** Validate one installedApplication as the listing reports it; returns an empty array when it conforms. */

@@ -332,6 +332,11 @@ export function validateSemanticElement(value: unknown): string[] {
   return problemsFor("semanticElement", value);
 }
 
+/** Validate an elementDiscoveryEntry; returns an empty array when it conforms. */
+export function validateElementDiscoveryEntry(value: unknown): string[] {
+  return problemsFor("elementDiscoveryEntry", value);
+}
+
 /** Validate one installedApplication as the listing reports it; returns an empty array when it conforms. */
 export function validateInstalledApplication(value: unknown): string[] {
   return problemsFor("installedApplication", value);

@@ -13,6 +13,8 @@ import {
   type AcquireAccessibilityResult,
   type DescribeAccessibilityParams,
   type DescribeAccessibilityResult,
+  type DiscoverElementsParams,
+  type DiscoverElementsResult,
   type ListApplicationsParams,
   type ListApplicationsResult,
   type OpenApplicationParams,
@@ -108,6 +110,7 @@ interface EventMessage {
 
 export interface TransportClient {
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult>;
+  discoverElements(params: DiscoverElementsParams): Promise<DiscoverElementsResult>;
   attestElement(params: AttestElementParams): Promise<AttestElementResult>;
   readElementContent(params: ReadElementContentParams): Promise<ReadElementContentResult>;
   subscribeElement(params: SubscribeElementParams): Promise<SubscribeElementResult>;
@@ -323,6 +326,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
 
   return {
     queryElements: (params) => call("queryElements", params) as Promise<QueryElementsResult>,
+    discoverElements: (params) => call("discoverElements", params) as Promise<DiscoverElementsResult>,
     attestElement: (params) => call("attestElement", params) as Promise<AttestElementResult>,
     readElementContent: (params) => call("readElementContent", params) as Promise<ReadElementContentResult>,
     subscribeElement: (params) => call("subscribeElement", params) as Promise<SubscribeElementResult>,
