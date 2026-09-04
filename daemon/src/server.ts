@@ -344,6 +344,7 @@ export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this
 // reads as a desk that cannot be read rather than a question that cannot be
 // asked (ADR-0071).
 export const UNKNOWN_ROLE_REFUSAL = "that role is not one this desk can be asked about";
+export const QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL = "a window can only be named inside an application";
 
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
@@ -1728,11 +1729,14 @@ function withFocusNote(element: SemanticElement, note: string | undefined): Sema
 // is a malformed parameter, refused before the call. Enforcement of the
 // answer itself stays at-result, as for every observe-class method.
 async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<unknown> {
-  const role = (p as { role?: unknown } | undefined)?.role;
-  if (role !== undefined && !(ROLES as readonly string[]).includes(role as string)) {
+  const params = (p ?? {}) as { role?: unknown; application?: unknown; window?: unknown };
+  if (params.role !== undefined && !(ROLES as readonly string[]).includes(params.role as string)) {
     return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
-  return observedWithConfiguration(await b.queryElements((p ?? {}) as never), b, l);
+  if (params.window !== undefined && params.application === undefined) {
+    return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  return observedWithConfiguration(await b.queryElements(params as never), b, l);
 }
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -

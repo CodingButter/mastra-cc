@@ -300,29 +300,42 @@ export class AtspiBackend implements Backend {
     let total = 0;
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
+    const selected: Array<{ root: NativeRef; applicationName: string }> = [];
     for (const app of apps) {
-      // The visibility gate (ADR-0036). The application's NAME is the one
-      // permitted read of an ungranted application - you cannot decide
-      // visibility without it - and it is read BEFORE readElement, so an
-      // ungranted application's subtree is never walked, its states never
-      // read, its element never answered.
-      let applicationName: string;
+      let selectedApplicationName: string;
       try {
-        applicationName = await this.nameOf(app);
-        if (!isVisible(this.visibility, applicationName)) continue;
+        selectedApplicationName = await this.nameOf(app);
+        if (!isVisible(this.visibility, selectedApplicationName)) continue;
+        if (params.application !== undefined && applicationName(selectedApplicationName) !== applicationName(params.application)) continue;
+        let root = app;
+        if (params.window !== undefined) {
+          const windows: NativeRef[] = [];
+          for (const candidate of await this.children(app)) {
+            const role = toNeutralRole(await this.nativeRoleOf(candidate)).role;
+            if (role !== "window" && role !== "dialog") continue;
+            if (!nameMatches(await this.nameOf(candidate), params.window)) continue;
+            const [lower, upper] = await this.statesOf(candidate);
+            const states = toNeutralStates(lower, upper);
+            if (!states.includes("visible") || states.includes("offscreen")) continue;
+            windows.push(candidate);
+          }
+          if (windows.length !== 1) continue;
+          root = windows[0] as NativeRef;
+        }
+        selected.push({ root, applicationName: selectedApplicationName });
       } catch (error) {
-        // an off-tape read under replay is ignorance, and ignorance surfaces
-        // as a refusal - never a skip; a dying app that cannot state its name
-        // cannot be granted, so it is skipped like any dying node
         if (error instanceof UnrecordedExchangeError) throw error;
-        continue;
       }
+    }
+    if (params.application !== undefined && selected.length !== 1) return { elements: [] };
+
+    for (const { root, applicationName } of selected) {
       // The fast instrument, when the application advertises it and the
       // question is one the bus's own role vocabulary can carry. One exchange
       // replaces the walk; the answer goes through the SAME readElement and
       // the SAME response shape, so a caller cannot tell which instrument
       // answered - only that the answer is complete.
-      const collected = await this.collectByRole(app, params.role);
+      const collected = await this.collectByRole(root, params.role);
       // The fast instrument answers over the wire, and a wire question the bus
       // accepts but MEANS differently would answer confidently with the wrong
       // nodes - a failure no fallback-on-error can catch. So every match is
@@ -367,7 +380,7 @@ export class AtspiBackend implements Backend {
         continue;
       }
       // depth-first per application, in the order the bus lists them
-      const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: app, depth: 0 }];
+      const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: root, depth: 0 }];
       let inThisApp = 0;
       while (stack.length > 0) {
         // Budget exhausted with tree still unwalked. Answering here would hand

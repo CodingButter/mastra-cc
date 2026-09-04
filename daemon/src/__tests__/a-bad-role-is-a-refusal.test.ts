@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { type AuditEntry, useAuditLog } from "../audit.js";
 import { type Backend, IncompleteObservationError } from "../backend.js";
 import { OwnershipTable } from "../launch/table.js";
-import { BACKEND_UNREADABLE_REFUSAL, handleRequest, type LaunchContext, UNKNOWN_ROLE_REFUSAL } from "../server.js";
+import {
+  BACKEND_UNREADABLE_REFUSAL,
+  handleRequest,
+  type LaunchContext,
+  QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL,
+  UNKNOWN_ROLE_REFUSAL,
+} from "../server.js";
 import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
 
@@ -92,6 +98,28 @@ describe("a bad role is a refusal", () => {
       expect(refusalIn(answer)).toBeUndefined();
       expect(asked).toEqual([params]);
     }
+  });
+
+  it("refuses a window selector without its application before any backend is asked", async () => {
+    const asked: unknown[] = [];
+    const entries = remember();
+
+    const answer = await query({ window: "Inbox" }, backendThat({ asked }));
+
+    expect(refusalIn(answer)).toBe(QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL);
+    expect(asked).toEqual([]);
+    expect(answer).not.toHaveProperty("result.refusalClass");
+    expect(entries.map((entry) => entry.outcome)).toEqual(["refused:MalformedParameter"]);
+  });
+
+  it("passes application and window selectors together to the backend", async () => {
+    const asked: unknown[] = [];
+    const params = { role: "text", application: "Chromium", window: "Inbox" };
+
+    const answer = await query(params, backendThat({ asked }));
+
+    expect(refusalIn(answer)).toBeUndefined();
+    expect(asked).toEqual([params]);
   });
 });
 

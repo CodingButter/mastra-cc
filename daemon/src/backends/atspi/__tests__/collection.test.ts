@@ -56,6 +56,26 @@ function desktop(desk: Desk): Channel & { asked: Exchange[] } {
 }
 
 describe("backend-selected AT-SPI search", () => {
+  it("returns nothing for an application selector that does not match, without reading descendants", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    await expect(backend.queryElements({ application: "another-app", role: "textbox" })).resolves.toEqual({ elements: [] });
+
+    expect(channel.asked.filter((exchange) => exchange.member === "GetChildren")).toHaveLength(1);
+    expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(false);
+  });
+
+  it("selects the matching application before using its Collection instrument", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    const { elements } = await backend.queryElements({ application: "SCRIPTED-APP", role: "textbox" });
+
+    expect(elements.map((element) => element.role)).toEqual(["textbox"]);
+    expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(true);
+  });
+
   it("answers a role question through one Collection exchange when the application advertises it", async () => {
     const channel = desktop({ collection: true });
     const backend = new AtspiBackend(channel, "all");

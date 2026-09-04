@@ -84,6 +84,7 @@ interface VersionReply {
 interface ListedTarget {
   readonly id?: string;
   readonly type?: string;
+  readonly title?: string;
 }
 
 interface AxNode {
@@ -228,15 +229,15 @@ export class CdpBackend implements Backend {
     if (this.lastProductName !== undefined) this.applicationOf.set(id, this.lastProductName);
   }
 
-  private async pageTargets(): Promise<string[]> {
+  private async pageTargets(): Promise<Array<{ id: string; type: "page" | "iframe"; title: string }>> {
     const reply = await this.channel.exchange({ kind: "list" });
     if (!Array.isArray(reply)) return [];
     // Only page-shaped targets carry a user-visible tree; extension targets
     // (background pages, service workers) are proven present and excluded.
     return (reply as ListedTarget[])
-      .filter((t) => t.type === "page" || t.type === "iframe")
-      .map((t) => String(t.id ?? ""))
-      .filter((id) => id !== "");
+      .filter((target): target is ListedTarget & { type: "page" | "iframe" } => target.type === "page" || target.type === "iframe")
+      .map((target) => ({ id: String(target.id ?? ""), type: target.type, title: String(target.title ?? "") }))
+      .filter((target) => target.id !== "");
   }
 
   private async axTree(targetId: string): Promise<AxNode[]> {
@@ -352,9 +353,9 @@ export class CdpBackend implements Backend {
     // Accessibility.*. Nothing was registered as answered, so attestation
     // naturally refuses too.
     const version = await this.version();
-    if (!isVisible(this.visibility, productName(version))) {
-      return { elements: [] };
-    }
+    const product = productName(version);
+    if (!isVisible(this.visibility, product)) return { elements: [] };
+    if (params.application !== undefined && applicationName(product) !== applicationName(params.application)) return { elements: [] };
 
     const application = this.applicationElement(version);
     if (matches(application)) {
@@ -362,7 +363,15 @@ export class CdpBackend implements Backend {
       if (params.limit !== undefined && elements.length >= params.limit) return { elements };
     }
 
-    for (const targetId of await this.pageTargets()) {
+    let targets = await this.pageTargets();
+    if (params.window !== undefined) {
+      const windowName = params.window;
+      const matches = targets.filter((target) => target.type === "page" && nameMatches(target.title, windowName));
+      if (matches.length !== 1) return { elements: [] };
+      targets = [matches[0] as (typeof matches)[number]];
+    }
+    for (const target of targets) {
+      const targetId = target.id;
       let inThisTarget = 0;
       for (const node of await this.axTree(targetId)) {
         if (inThisTarget >= MAX_NODES_PER_TARGET || total >= MAX_NODES_TOTAL) break;
@@ -393,7 +402,8 @@ export class CdpBackend implements Backend {
     if (ref.kind === "browser") {
       return { element: this.applicationElement(await this.version()) };
     }
-    for (const targetId of await this.pageTargets()) {
+    for (const target of await this.pageTargets()) {
+      const targetId = target.id;
       if (targetId !== ref.targetId) continue;
       for (const node of await this.axTree(targetId)) {
         if (node.ignored === true) continue;
@@ -418,7 +428,8 @@ export class CdpBackend implements Backend {
       return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to read`, refusalClass: "UnknownElement" };
     }
     if (ref.kind === "browser") return { content: { kind: "unavailable", reason: "not-exposed" } };
-    for (const targetId of await this.pageTargets()) {
+    for (const target of await this.pageTargets()) {
+      const targetId = target.id;
       if (targetId !== ref.targetId) continue;
       for (const node of await this.axTree(targetId)) {
         if (node.ignored === true) continue;

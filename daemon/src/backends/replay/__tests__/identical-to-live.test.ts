@@ -70,4 +70,13 @@ describe("the replay backend answers identically to the live capture", () => {
     await backend.close();
     expect(attested.element?.id).toBe(elements[0].id);
   });
+
+  it("replays captured application and window scope without inventing new exchanges", async () => {
+    const backend = new ReplayBackend("gtk-dialog", "all");
+    const { elements } = await backend.queryElements({ application: "yad", window: "M1 demo window", name: "OK" });
+    await backend.close();
+
+    expect(elements.map((element) => element.name)).toEqual(["OK", "OK"]);
+    expect(elements.some((element) => element.role === "button")).toBe(true);
+  });
 });
