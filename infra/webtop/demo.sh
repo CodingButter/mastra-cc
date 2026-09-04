@@ -6,6 +6,12 @@ trap 'status=$?; if ! bash "$WEBTOP_DIR/diagnostics.sh" >/dev/null; then status=
 bash "$WEBTOP_DIR/start.sh"
 semantic="$(container_exec env MASTRA_CC_SOCKET="$SOCKET" MASTRA_CC_PROOF_SENTENCE="$PROOF_SENTENCE" /usr/local/bin/node "$DEPLOY/scenario-client.mjs" semantic)"
 printf '%s\n' "$semantic"
+# Independent visual corroboration: the sentence the semantic lane just wrote and
+# read back must also be PAINTED in the editor. The witness resolves the editor's
+# rectangle out of band from AT-SPI and inspects only that crop's ink, so a green
+# here is a screen claim the daemon under test never got to make about itself.
+witness="$(session_exec "MASTRA_CC_PROOF_SENTENCE=$(printf %q "$PROOF_SENTENCE") /usr/local/bin/node '$DEPLOY/witness.mjs'")"
+printf '%s\n' "$witness"
 subscription="$(container_exec env MASTRA_CC_SOCKET="$SOCKET" MASTRA_CC_PROOF_SENTENCE="$PROOF_SENTENCE ON WATCH" /usr/local/bin/node "$DEPLOY/scenario-client.mjs" subscribe)"
 printf '%s\n' "$subscription"
 protected="$(container_exec env MASTRA_CC_SOCKET="$CDP_SOCKET" /usr/local/bin/node "$DEPLOY/scenario-client.mjs" protected)"
