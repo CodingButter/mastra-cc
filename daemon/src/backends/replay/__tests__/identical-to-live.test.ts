@@ -97,7 +97,8 @@ describe("the replay backend answers identically to the live capture", () => {
       expect(captured.has(`${entry.role}\u0000${entry.name}`)).toBe(true);
       expect(Object.keys(entry).sort()).toEqual(["actions", "count", "name", "operations", "role"]);
     }
-    // Counts are exact, so every recorded occurrence is accounted for once.
+    // Something was actually counted: an inventory of nothing would satisfy
+    // every assertion above it.
     const occurrences = entries.reduce((sum, entry) => sum + entry.count, 0);
     expect(occurrences).toBeGreaterThan(0);
     expect(JSON.stringify(discovered)).not.toContain("el-");
