@@ -889,8 +889,20 @@ const ACQUIRE_WITHHELD_REFUSAL =
 const ACQUIRE_NOT_EXPOSED_REFUSAL =
   "refused before acting: switching this machine's accessibility layer on is not-exposed on this platform - " +
   "this build has no adapter that could, and no setting would change that";
+// Acquiring the layer is several writes, not one (ADR-0075), so a failure can
+// land after some of them have already been accepted. The refusal says the
+// attempt did not complete - never that nothing happened - and the report that
+// travels with it is the re-read, so an operator can see the half-acquired
+// machine it was actually left holding.
 const ACQUIRE_FAILED_REFUSAL =
-  "refused after acting: this machine's accessibility layer did not accept being switched on";
+  "refused after acting: this machine's accessibility layer did not accept every property of being switched on, " +
+  "and what it did accept is reported beside this refusal";
+// The re-read can fail too, and then there is nothing beside the refusal to
+// read. Promising a report that is not there would be the same lie in a
+// smaller place, so that case says so.
+const ACQUIRE_FAILED_UNREADABLE_REFUSAL =
+  "refused after acting: this machine's accessibility layer did not accept every property of being switched on, " +
+  "and could not be read afterwards to say what it was left holding";
 
 async function acquireAccessibility(launch: LaunchContext): Promise<Classified<{ accessibility?: AccessibilityReport; refusal?: string }>> {
   if (launch.mayAcquireAccessibility !== true) {
@@ -903,7 +915,17 @@ async function acquireAccessibility(launch: LaunchContext): Promise<Classified<{
   try {
     await layer.acquire();
   } catch {
-    return { refusal: ACQUIRE_FAILED_REFUSAL, refusalClass: "AccessibilityNotAcquired" };
+    // The same re-read the success path does, for the same reason: the state
+    // that goes back is measured, not assumed. A failed acquire is exactly
+    // where assuming would lie loudest.
+    let accessibility: AccessibilityReport | undefined;
+    try {
+      accessibility = await layer.report();
+    } catch {
+      accessibility = undefined;
+    }
+    const refusal = accessibility === undefined ? ACQUIRE_FAILED_UNREADABLE_REFUSAL : ACQUIRE_FAILED_REFUSAL;
+    return { accessibility, refusal, refusalClass: "AccessibilityNotAcquired" };
   }
   // RE-READ, never report the intention. The state that goes back is measured
   // after the attempt, so a write that was accepted and changed nothing is

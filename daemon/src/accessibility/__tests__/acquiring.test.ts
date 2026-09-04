@@ -8,7 +8,7 @@ import { unsupportedPlatform } from "../index.js";
 // same status object it reads, that a refused write surfaces rather than being
 // swallowed, and that a platform with no adapter is not acquirable at all.
 
-function scriptedLayer(options: { writable: boolean }) {
+function scriptedLayer(options: { writable: boolean; refuses?: string }) {
   let enabled = false;
   const writes: Array<[string, boolean]> = [];
   const layer = accessibilityLayer(
@@ -16,7 +16,8 @@ function scriptedLayer(options: { writable: boolean }) {
     async (property, value) => {
       writes.push([property, value]);
       if (!options.writable) throw new Error("this session's status object is read-only");
-      enabled = value;
+      if (property === options.refuses) throw new Error(`this session's status object refuses ${property}`);
+      if (property === "IsEnabled") enabled = value;
     },
   );
   return { layer, writes };
@@ -27,7 +28,12 @@ describe("acquiring this machine's accessibility layer", () => {
     const { layer, writes } = scriptedLayer({ writable: true });
     expect(await layer.report()).toEqual({ state: "disabled" });
     await layer.acquire();
-    expect(writes).toEqual([["IsEnabled", true]]);
+    // Both properties, in this order. The second one is what makes a browser
+    // publish its page; see the acquire() comment and ADR-0075.
+    expect(writes).toEqual([
+      ["IsEnabled", true],
+      ["ScreenReaderEnabled", true],
+    ]);
     // The measurement, taken after the fact. acquire() returns nothing on
     // purpose: a route that reported its own intention would say "enabled"
     // about a machine that ignored the write.
@@ -40,6 +46,25 @@ describe("acquiring this machine's accessibility layer", () => {
     // And the desk is where it was. This is the case that makes the re-read
     // load-bearing rather than ceremonial.
     expect(await layer.report()).toEqual({ state: "disabled" });
+  });
+
+  it("refuses a desk that took the layer but not the screen reader, rather than half-acquiring it", async () => {
+    // The dangerous machine: the first write lands, the second does not. Such
+    // a desk answers "enabled" and shows a browser's windows with nothing
+    // inside them. The throw is the only thing between an operator and a
+    // desk that looks working and is blind wherever it matters most.
+    const { layer, writes } = scriptedLayer({ writable: true, refuses: "ScreenReaderEnabled" });
+    await expect(layer.acquire()).rejects.toThrow();
+    expect(writes).toEqual([
+      ["IsEnabled", true],
+      ["ScreenReaderEnabled", true],
+    ]);
+  });
+
+  it("never reaches the screen reader property when the layer itself refused", async () => {
+    const { layer, writes } = scriptedLayer({ writable: false });
+    await expect(layer.acquire()).rejects.toThrow();
+    expect(writes).toEqual([["IsEnabled", true]]);
   });
 
   it("is not acquirable at all on a platform this build has no adapter for", async () => {

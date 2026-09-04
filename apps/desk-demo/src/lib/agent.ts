@@ -76,17 +76,40 @@ name identifies the requested item, and use its available semantic action, inclu
 clickAncestor when that is the action the page exposes. After activation, reread the
 destination scope and verify that the page changed before reporting success.
 
+A handover is something the desk showed you, so requestHumanControl refuses until you
+have looked. Searching the web, downloading a file, opening a settings window and
+changing a machine's own appearance are ordinary desktop work on this desk, not
+boundaries: do them. The boundary is the person's identity, money, or private
+judgement, and the desk will show it to you when you reach it.
+
 requestHumanControl unlocks the desk and blocks you until the person presses Done.
 You cannot take control back. When control returns, read the desk again before
 continuing; never assume the requested step succeeded.
 `.trim();
+
+// Refusing a handover is an ANSWER to the agent, phrased the way the desk
+// phrases its own refusals: what was wrong, and what to do instead.
+export const HANDOVER_BEFORE_LOOKING = {
+  handedBack: false,
+  refused:
+    "you have not looked at this desk yet, so this boundary is a guess rather than something the desk showed you",
+  advice:
+    "call listApplications, open what fits and read what appears; hand over once the desk itself shows a step only the person can take",
+} as const;
 
 export function deskAgent(
   emit: (event: DemoEvent) => void,
   onTerminalConnection: (error: Error) => void = () => {},
 ) {
   const desk = deskCache.get();
-  const wired = wiredDeskTools(desk, deskCache, emit, onTerminalConnection);
+  // One turn's worth of memory, and it only remembers one thing: whether this
+  // agent has looked at the desk yet. A handover asked for before the first
+  // look is not a boundary the desk reported - it is a guess about what the
+  // desk would have said (see requestHumanControl below).
+  const looked = { yet: false };
+  const wired = wiredDeskTools(desk, deskCache, emit, onTerminalConnection, isTransportConnectionError, () => {
+    looked.yet = true;
+  });
 
   const requestHumanControl = createTool({
     id: "requestHumanControl",
@@ -99,6 +122,17 @@ export function deskAgent(
     }),
     execute: async (input: unknown) => {
       const reason = String((argumentsOf(input) as { reason?: unknown }).reason ?? "").trim();
+      // The dogfood failure this exists for: asked to find a wallpaper and set
+      // it, the agent answered "I cannot search the web, download files, or
+      // change desktop settings" and handed the desk over having called NO
+      // tool at all - on a desk that had a browser, a file manager and a
+      // settings window on it. That is not a boundary, it is a guess about a
+      // boundary, and prose alone did not stop it. So the tool refuses: a
+      // handover has to be something the desk showed you, and you cannot have
+      // been shown anything you never looked at. The refusal is a tool result,
+      // not an error - it comes back as instructions to go and look, and the
+      // agent is free to hand over the moment it has.
+      if (!looked.yet) return HANDOVER_BEFORE_LOOKING;
       const { requestId, done } = requestControl(reason, HANDOVER_TIMEOUT_MS);
       emit({ type: "control", mode: "interact", reason, requestId });
       const note = await done;
@@ -125,6 +159,10 @@ export function wiredDeskTools(
   emit: (event: DemoEvent) => void,
   onTerminalConnection: (error: Error) => void,
   isTerminal: (error: unknown) => boolean = isTransportConnectionError,
+  // No default. A caller that forgets this argument would get a handover gate
+  // that is permanently open and says nothing about it, so the compiler asks
+  // instead of guessing.
+  onDeskCall: () => void,
 ): ReturnType<MastraCC["getTools"]> {
   return Object.fromEntries(
     Object.entries(desk.getTools()).map(([name, tool]) => [
@@ -134,6 +172,10 @@ export function wiredDeskTools(
         execute: async (...args: Parameters<NonNullable<typeof tool.execute>>) => {
           const params = argumentsOf(args[0]);
           const callId = `${CALL_ID_PREFIX}:${++callIdCounter}`;
+          // The attempt counts, not the outcome. An agent that tried to read
+          // the desk and got a refusal has heard from the desk; an agent that
+          // never called has heard from nothing.
+          onDeskCall();
           emit({ type: "tool", callId, name, params });
           try {
             const result = await tool.execute!(...args);

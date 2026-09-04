@@ -149,6 +149,36 @@ describe("acquiring is the operator's to permit", () => {
     const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
     expect(response.result).toMatchObject({ refusal: expect.stringContaining("did not accept") });
   });
+
+  it("says what the half-acquired machine was left holding", async () => {
+    // Acquiring is several writes (ADR-0075), so a failure can arrive with some
+    // of them already accepted. The refusal must not read as "nothing
+    // happened": the re-read travels with it, and it is the measured state.
+    const layer = layerThat(async () => ({ state: "enabled" }), async () => {
+      throw new Error("status object accepted one property and refused the next");
+    });
+    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    expect(response.result).toMatchObject({
+      refusal: expect.stringContaining("did not accept every property"),
+      accessibility: { state: "enabled" },
+    });
+  });
+
+  it("does not promise a report it could not take", async () => {
+    // The re-read can fail too. Then there is nothing beside the refusal, and
+    // the refusal has to say that rather than point at an absent field.
+    const layer = layerThat(
+      async () => {
+        throw new Error("status object went away");
+      },
+      async () => {
+        throw new Error("status object accepted one property and refused the next");
+      },
+    );
+    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    expect(response.result).toMatchObject({ refusal: expect.stringContaining("could not be read afterwards") });
+    expect((response.result as { accessibility?: unknown }).accessibility).toBeUndefined();
+  });
 });
 
 describe("every acquire attempt is written down", () => {

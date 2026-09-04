@@ -27,6 +27,9 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 # different, empty /config, and nothing here can disturb the harness.
 export MASTRA_CC_WEBTOP_PROJECT="${MASTRA_CC_WEBTOP_PROJECT:-mcc-desk-demo}"
 export MASTRA_CC_WEBTOP_PORT="${MASTRA_CC_WEBTOP_PORT:-13320}"
+export MASTRA_CC_WEBTOP_HTTPS_PORT="${MASTRA_CC_WEBTOP_HTTPS_PORT:-13321}"
+export MASTRA_CC_WEBTOP_BIND="${MASTRA_CC_WEBTOP_BIND:-127.0.0.1}"
+export MASTRA_CC_DESKTOP_HOST="${MASTRA_CC_DESKTOP_HOST:-127.0.0.1}"
 . "$ROOT/infra/webtop/common.sh"
 
 CONTAINER="$MASTRA_CC_WEBTOP_CONTAINER"
@@ -44,7 +47,7 @@ for arg in "$@"; do
   esac
 done
 
-echo "== the desk: $CONTAINER on 127.0.0.1:$MASTRA_CC_WEBTOP_PORT =="
+echo "== the desk: $CONTAINER on $MASTRA_CC_WEBTOP_BIND:$MASTRA_CC_WEBTOP_PORT =="
 if test "$FRESH" = yes; then
   "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
 fi
@@ -155,7 +158,11 @@ container_exec mkdir -p "$DEPLOY"
 docker cp "$ROOT/daemon/dist/." "$CONTAINER:$DEPLOY/desk-demo"
 
 # --acquire-accessibility: a fresh desk boots with org.a11y.Status/IsEnabled
-# false, and Chromium only registers on the bus when that is true at launch.
+# false, and an application only registers on the bus when that is true at
+# launch. The daemon also switches ScreenReaderEnabled on, which is the
+# property a browser reads before it publishes its PAGE rather than just its
+# window - see ADR-0075. Both, or the desk is readable everywhere except the
+# web.
 ARGS="--backend atspi --acquire-accessibility --socket '$DEMO_SOCKET' --ws-host 0.0.0.0 --ws-port $PORT"
 for name in "${PERMITS[@]}"; do ARGS="$ARGS --permit $name"; done
 for name in "${GRANTS[@]}"; do ARGS="$ARGS --grant $name"; done
@@ -177,12 +184,12 @@ IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}
 cat >"$HERE/.env.local" <<ENV
 # Written by desk-up.sh. The container's address changes when it is recreated.
 MASTRA_CC_URL=ws://$IP:$PORT
-NEXT_PUBLIC_DESKTOP_URL=http://127.0.0.1:$MASTRA_CC_WEBTOP_PORT
+NEXT_PUBLIC_DESKTOP_URL=https://$MASTRA_CC_DESKTOP_HOST:$MASTRA_CC_WEBTOP_HTTPS_PORT
 ENV
 
 echo
 echo "desk:    ws://$IP:$PORT"
-echo "desktop: http://127.0.0.1:$MASTRA_CC_WEBTOP_PORT"
+echo "desktop: https://$MASTRA_CC_DESKTOP_HOST:$MASTRA_CC_WEBTOP_HTTPS_PORT"
 echo "wrote    apps/desk-demo/.env.local"
 echo
 echo "now: GOOGLE_API_KEY=... pnpm --filter @mastra-cc/desk-demo dev"
