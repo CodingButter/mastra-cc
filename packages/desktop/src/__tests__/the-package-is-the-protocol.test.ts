@@ -67,6 +67,20 @@ describe("the installable package", () => {
     }
   });
 
+  it("carries optional query scope through the generated client", async () => {
+    const client = await connect({ socketPath: await daemonOnATape() });
+    try {
+      const found = await client.queryElements({
+        role: "dialog",
+        application: "gtk3-demo",
+        window: "Dialog",
+      });
+      expect(Array.isArray(found.elements)).toBe(true);
+    } finally {
+      client.close();
+    }
+  });
+
   it("carries a real answer back from a real daemon", async () => {
     const client = await connect({ socketPath: await daemonOnATape() });
     try {

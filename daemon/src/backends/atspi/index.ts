@@ -4,6 +4,8 @@ import type {
   AttestElementParams,
   AttestElementResult,
   Diagnostic,
+  DiscoverElementsParams,
+  DiscoverElementsResult,
   EditElementParams,
   EditElementResult,
   QueryElementsParams,
@@ -55,7 +57,8 @@ import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { emitChord, emitString } from "./rawinput/keys.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
-import { applicationName, nameMatches } from "./names.js";
+import { applicationName, nameMatches, normalise } from "./names.js";
+import { aggregateDiscovery, type DiscoveryMetadata } from "../../discovery.js";
 import { readPublishedActions } from "./actions.js";
 import { readObservableContent } from "./content.js";
 import { advertisesCollection, matchByRole, roleIsCollectable } from "./collection.js";
@@ -238,6 +241,19 @@ export class AtspiBackend implements Backend {
     return [0, 0];
   }
 
+  private async readDiscoveryMetadata(ref: NativeRef): Promise<DiscoveryMetadata> {
+    const nativeRole = await this.nativeRoleOf(ref);
+    const { role } = toNeutralRole(nativeRole);
+    const published = await readPublishedActions(this.channel, ref);
+    const magnitudes = await readPublishedOperations(this.channel, ref);
+    return {
+      role,
+      name: normalise(await this.nameOf(ref)),
+      actions: published.actions.map((action) => action.name),
+      operations: magnitudes.operations.map((operation) => operation.operation),
+    };
+  }
+
   private async readElement(ref: NativeRef, application?: string): Promise<SemanticElement> {
     const nativeRole = await this.nativeRoleOf(ref);
     const name = await this.nameOf(ref);
@@ -300,29 +316,42 @@ export class AtspiBackend implements Backend {
     let total = 0;
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
+    const selected: Array<{ root: NativeRef; applicationName: string }> = [];
     for (const app of apps) {
-      // The visibility gate (ADR-0036). The application's NAME is the one
-      // permitted read of an ungranted application - you cannot decide
-      // visibility without it - and it is read BEFORE readElement, so an
-      // ungranted application's subtree is never walked, its states never
-      // read, its element never answered.
-      let applicationName: string;
+      let selectedApplicationName: string;
       try {
-        applicationName = await this.nameOf(app);
-        if (!isVisible(this.visibility, applicationName)) continue;
+        selectedApplicationName = await this.nameOf(app);
+        if (!isVisible(this.visibility, selectedApplicationName)) continue;
+        if (params.application !== undefined && applicationName(selectedApplicationName) !== applicationName(params.application)) continue;
+        let root = app;
+        if (params.window !== undefined) {
+          const windows: NativeRef[] = [];
+          for (const candidate of await this.children(app)) {
+            const role = toNeutralRole(await this.nativeRoleOf(candidate)).role;
+            if (role !== "window" && role !== "dialog") continue;
+            if (!nameMatches(await this.nameOf(candidate), params.window)) continue;
+            const [lower, upper] = await this.statesOf(candidate);
+            const states = toNeutralStates(lower, upper);
+            if (!states.includes("visible") || states.includes("offscreen")) continue;
+            windows.push(candidate);
+          }
+          if (windows.length !== 1) continue;
+          root = windows[0] as NativeRef;
+        }
+        selected.push({ root, applicationName: selectedApplicationName });
       } catch (error) {
-        // an off-tape read under replay is ignorance, and ignorance surfaces
-        // as a refusal - never a skip; a dying app that cannot state its name
-        // cannot be granted, so it is skipped like any dying node
         if (error instanceof UnrecordedExchangeError) throw error;
-        continue;
       }
+    }
+    if (params.application !== undefined && selected.length !== 1) return { elements: [] };
+
+    for (const { root, applicationName } of selected) {
       // The fast instrument, when the application advertises it and the
       // question is one the bus's own role vocabulary can carry. One exchange
       // replaces the walk; the answer goes through the SAME readElement and
       // the SAME response shape, so a caller cannot tell which instrument
       // answered - only that the answer is complete.
-      const collected = await this.collectByRole(app, params.role);
+      const collected = await this.collectByRole(root, params.role);
       // The fast instrument answers over the wire, and a wire question the bus
       // accepts but MEANS differently would answer confidently with the wrong
       // nodes - a failure no fallback-on-error can catch. So every match is
@@ -367,7 +396,7 @@ export class AtspiBackend implements Backend {
         continue;
       }
       // depth-first per application, in the order the bus lists them
-      const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: app, depth: 0 }];
+      const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: root, depth: 0 }];
       let inThisApp = 0;
       while (stack.length > 0) {
         // Budget exhausted with tree still unwalked. Answering here would hand
@@ -410,6 +439,68 @@ export class AtspiBackend implements Backend {
       }
     }
     return { elements };
+  }
+
+  async discoverElements(params: DiscoverElementsParams): Promise<Classified<DiscoverElementsResult>> {
+    const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
+    const selected: Array<{ root: NativeRef; applicationName: string }> = [];
+    for (const app of apps) {
+      try {
+        const application = await this.nameOf(app);
+        if (!isVisible(this.visibility, application) || applicationName(application) !== applicationName(params.application)) continue;
+        let root = app;
+        if (params.window !== undefined) {
+          const windows: NativeRef[] = [];
+          for (const candidate of await this.children(app)) {
+            const role = toNeutralRole(await this.nativeRoleOf(candidate)).role;
+            if (role !== "window" && role !== "dialog") continue;
+            if (!nameMatches(await this.nameOf(candidate), params.window)) continue;
+            const [lower, upper] = await this.statesOf(candidate);
+            const states = toNeutralStates(lower, upper);
+            if (states.includes("visible") && !states.includes("offscreen")) windows.push(candidate);
+          }
+          if (windows.length !== 1) continue;
+          root = windows[0] as NativeRef;
+        }
+        selected.push({ root, applicationName: application });
+      } catch (error) {
+        if (error instanceof UnrecordedExchangeError) throw error;
+      }
+    }
+    if (selected.length !== 1) return { entries: [], truncated: false };
+
+    const metadata: DiscoveryMetadata[] = [];
+    let total = 0;
+    const { root, applicationName: selectedApplication } = selected[0] as (typeof selected)[number];
+    let inThisApp = 0;
+    const stack: Array<{ ref: NativeRef; depth: number }> = [{ ref: root, depth: 0 }];
+    while (stack.length > 0) {
+      if (inThisApp >= this.limits.maxNodesPerApp || total >= this.limits.maxNodesTotal) {
+        throw new IncompleteObservationError(
+          `walk budget exhausted inside "${selectedApplication}" with its tree unfinished - this observation would be partial`,
+        );
+      }
+      const { ref, depth } = stack.shift() as { ref: NativeRef; depth: number };
+      inThisApp += 1;
+      total += 1;
+      try {
+        const item = await this.readDiscoveryMetadata(ref);
+        if (params.role === undefined || item.role === params.role) metadata.push(item);
+        const kids = await this.children(ref);
+        if (depth >= this.limits.maxDepth && kids.length > 0) {
+          throw new IncompleteObservationError(
+            `depth budget reached inside "${selectedApplication}" above a node that still has children - the subtree below it was never observed`,
+          );
+        }
+        stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1 })));
+      } catch (error) {
+        if (error instanceof UnrecordedExchangeError || error instanceof IncompleteObservationError) throw error;
+        throw new IncompleteObservationError(
+          `an element inside "${selectedApplication}" stopped answering before discovery completed`,
+        );
+      }
+    }
+    return { ...aggregateDiscovery(metadata, params.limit ?? 100), auditApplication: applicationName(selectedApplication) };
   }
 
   async attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>> {

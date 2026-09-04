@@ -219,14 +219,14 @@
   {
     "name": "visibility-filter-never-consulted",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "      try {\n        applicationName = await this.nameOf(app);\n        if (!isVisible(this.visibility, applicationName)) continue;\n      } catch (error) {\n        // an off-tape read under replay is ignorance, and ignorance surfaces\n        // as a refusal - never a skip; a dying app that cannot state its name\n        // cannot be granted, so it is skipped like any dying node\n        if (error instanceof UnrecordedExchangeError) throw error;\n        continue;\n      }\n",
+    "find": "        if (!isVisible(this.visibility, selectedApplicationName)) continue;\n",
     "cwd": "daemon",
     "testFile": "src/backends/__tests__/invisibility.test.ts"
   },
   {
     "name": "cdp-visibility-never-consulted",
     "file": "daemon/src/backends/cdp/index.ts",
-    "find": "    if (!isVisible(this.visibility, productName(version))) {\n      return { elements: [] };\n    }\n",
+    "find": "    if (!isVisible(this.visibility, product)) return { elements: [] };\n    if (params.application !== undefined && applicationName(product) !== applicationName(params.application)) return { elements: [] };\n",
     "cwd": "daemon",
     "testFile": "src/backends/__tests__/invisibility.test.ts"
   },
@@ -555,7 +555,7 @@
   {
     "name": "the-read-that-leaves-no-receipt",
     "file": "daemon/src/server.ts",
-    "find": "      recordAudit({ application: undefined, element: answeredElements(result), scope: \"observe\", cause: causeOf(undefined), outcome: observeOutcome(result) });\n",
+    "find": "      recordAudit({ application, element: answeredElements(result), scope: \"observe\", cause: causeOf(application), outcome: observeOutcome(result) });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
@@ -1143,7 +1143,7 @@
   {
     "name": "any-role-reaches-the-backend",
     "file": "daemon/src/server.ts",
-    "find": "  if (role !== undefined && !(ROLES as readonly string[]).includes(role as string)) {\n    return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: \"MalformedParameter\" as const };\n  }\n",
+    "find": "  if (params.role !== undefined && !(ROLES as readonly string[]).includes(params.role as string)) {\n    return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: \"MalformedParameter\" as const };\n  }\n  if (params.window !== undefined && params.application === undefined) {\n    return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: \"MalformedParameter\" as const };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-bad-role-is-a-refusal.test.ts"
   },
@@ -1153,5 +1153,40 @@
     "find": "    console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-bad-role-is-a-refusal.test.ts"
+  },
+  {
+    "name": "discovery-order-follows-backend-iteration",
+    "file": "daemon/src/discovery.ts",
+    "find": "  entries.sort((left, right) =>\n    (roleOrder.get(left.role) ?? Number.MAX_SAFE_INTEGER) - (roleOrder.get(right.role) ?? Number.MAX_SAFE_INTEGER) ||\n    (left.name < right.name ? -1 : left.name > right.name ? 1 : 0),\n  );\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/discovery-aggregation.test.ts"
+  },
+  {
+    "name": "discovery-limit-does-not-bound-output",
+    "file": "daemon/src/discovery.ts",
+    "find": ".slice(0, limit)",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/discovery-aggregation.test.ts"
+  },
+  {
+    "name": "atspi-discovery-skips-metadata-reading",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "        const item = await this.readDiscoveryMetadata(ref);\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/collection.test.ts"
+  },
+  {
+    "name": "cdp-discovery-skips-metadata-reading",
+    "file": "daemon/src/backends/cdp/index.ts",
+    "find": "        const item = this.nodeDiscoveryMetadata(node);\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/scoped-query.test.ts"
+  },
+  {
+    "name": "discovery-audit-loses-resolved-application",
+    "file": "daemon/src/server.ts",
+    "find": "      const application = (result as { auditApplication?: string }).auditApplication;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/discover-elements.test.ts"
   }
 ]

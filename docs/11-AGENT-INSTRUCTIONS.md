@@ -48,21 +48,35 @@ anyway. So when a method exists for what you are trying to do, call it and read
 the answer. A refusal is cheap and it is informative; declining to try on the
 strength of an absent entry in a list is neither.
 
-**Looking is how you start, not what you deliver.** Elements do not carry the
-application they belong to, and many publish no name at all — a second editor's
-blank document is an unnamed visible `text` element with `setText` available and
-nothing anywhere tying it to the program that owns it. Some applications never
-publish a `window` for you to find it under. So use the inventory to orient, and
-then act on the element whose *shape* is what the work needs, exactly as
-*Choosing an element* says. Do not keep hunting for proof of which application
-an element belongs to; that proof frequently does not exist, and the element you
-already have in hand is the one to write to.
+**Scope the search when you know where the work lives.** Elements do not carry
+their owning application in the response, and many publish no name at all. Use
+`listApplications` to orient, then pass the observed application name to
+`queryElements`; add an observed window name when several visible windows or
+browser pages could contain the same control. Scope only narrows what the daemon
+may return — it never grants authority. When no reliable scope is known, choose
+by the element's *shape* exactly as *Choosing an element* says rather than
+inventing an application or window name.
+
+**Discover vocabulary before guessing predicates.** When the target application
+is known but its control roles or names are not, call `discoverElements` with
+that application and, when reliable, its window. The bounded entries are hints:
+they may include user-authored names, aggregate duplicates, represent unnamed
+controls with an empty name, and may be truncated. They are never element
+handles or authority. Choose a returned role/name pair, make a fresh exact
+`queryElements` call, and act only on the IDs from that fresh answer.
 
 **An empty answer often means "not yet".** A window that was just launched, or a
 surface that a click was meant to open, arrives on its own schedule; a query
 fired immediately gets an honest empty answer that is indistinguishable from
 absence. Before concluding something is not there, query again. If it still has
 not arrived after a few tries, then it is absent and that is worth reporting.
+
+**Navigation invalidates content IDs.** A visible taskbar, dock, tray, or window-
+switcher control belongs to the shell and may legitimately bring another
+application forward. After using one, discard content IDs from before the
+navigation, query the destination application/window again, and act only on the
+fresh IDs. Never infer that an old content element survived a page, tab, window,
+or application transition.
 
 ## The shape of a session
 
@@ -73,11 +87,17 @@ not arrived after a few tries, then it is absent and that is worth reporting.
    would change that. Treat `answering` as "already open, go look at it" and
    `not-answering` as "you will have to open it". Both are answers; only
    `cannot-tell` is not, and then `queryElements` is what settles it.
-2. `queryElements` is the one search. Give it a neutral `role` and, when you can,
-   a name. The daemon picks the fastest reachable route on its own — a toolkit
-   collection query when the application publishes one, an honest bounded walk
-   otherwise — and answers in one shape either way. You never choose the route.
-3. If a tree is too large or too deep to finish, the daemon refuses instead of
+2. When the target application's vocabulary is unfamiliar, use
+   `discoverElements` to inventory bounded role/name/action/operation hints.
+   Discovery never returns IDs. Follow it with a fresh exact `queryElements`
+   using a returned role/name pair; only that query confers an actionable ID.
+3. `queryElements` is the one actionable search. Give it a neutral `role` and,
+   when you can, a name. When the target application is known, also give its
+   observed `application`; add `window` only inside that application when the
+   visible window or browser-page title is known. The daemon picks the fastest
+   reachable route on its own and answers in one shape either way. You never
+   choose the route, and selectors never widen the daemon's grants.
+4. If a tree is too large or too deep to finish, the daemon refuses instead of
    answering with the part it managed to reach. A partial answer would read as
    absence, and absence is a claim the daemon is not entitled to make.
 

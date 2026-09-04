@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ID_PATTERN } from "@mastra-cc/protocol-types";
+import { ID_PATTERN, type ElementDiscoveryEntry } from "@mastra-cc/protocol-types";
 import { loadTape, ReplayBackend } from "../index.js";
 
 // Replaying the committed tape must produce the same tree the live capture
@@ -69,5 +69,48 @@ describe("the replay backend answers identically to the live capture", () => {
     const attested = await backend.attestElement({ id: elements[0].id });
     await backend.close();
     expect(attested.element?.id).toBe(elements[0].id);
+  });
+
+  it("replays captured application and window scope without inventing new exchanges", async () => {
+    const backend = new ReplayBackend("gtk-dialog", "all");
+    const { elements } = await backend.queryElements({ application: "yad", window: "M1 demo window", name: "OK" });
+    await backend.close();
+
+    expect(elements.map((element) => element.name)).toEqual(["OK", "OK"]);
+    expect(elements.some((element) => element.role === "button")).toBe(true);
+  });
+
+  // Discovery is the same observation the live capture recorded, aggregated -
+  // so the vocabulary it reports must be derivable from the tape rather than
+  // from anything replay made up. The comparison is against the elements the
+  // captured query answers, which is the only honest source of truth here.
+  it("discovers only the vocabulary the capture recorded, with no ids and no content", async () => {
+    const backend = new ReplayBackend("gtk-dialog", "all");
+    const { elements } = await backend.queryElements({ application: "yad", window: "M1 demo window" });
+    const discovered = await backend.discoverElements({ application: "yad", window: "M1 demo window" });
+    await backend.close();
+
+    expect(discovered.truncated).toBe(false);
+    const captured = new Set(elements.map((element) => `${element.role}\u0000${element.name}`));
+    const entries: ElementDiscoveryEntry[] = discovered.entries ?? [];
+    for (const entry of entries) {
+      expect(captured.has(`${entry.role}\u0000${entry.name}`)).toBe(true);
+      expect(Object.keys(entry).sort()).toEqual(["actions", "count", "name", "operations", "role"]);
+    }
+    // Something was actually counted: an inventory of nothing would satisfy
+    // every assertion above it.
+    const occurrences = entries.reduce((sum, entry) => sum + entry.count, 0);
+    expect(occurrences).toBeGreaterThan(0);
+    expect(JSON.stringify(discovered)).not.toContain("el-");
+  });
+
+  it("reports a window the capture does not hold as an empty scope, not as an invented one", async () => {
+    const backend = new ReplayBackend("gtk-dialog", "all");
+    // The tape records this application's windows, so a name that is not among
+    // them is an honest absence rather than a gap in the recording: discovery
+    // says nothing matched, and never manufactures a window to fill it.
+    const answer = await backend.discoverElements({ application: "yad", window: "a window nobody ever captured" });
+    await backend.close();
+    expect(answer).toEqual({ entries: [], truncated: false });
   });
 });

@@ -63,6 +63,24 @@ describe("the Mastra adapter", () => {
     }
   });
 
+  it("validates optional application and window query scope from the generated contract", async () => {
+    const client = await connect({ socketPath: await daemonOnATape() });
+    try {
+      const standard = (desktopTools(client).queryElements.inputSchema as {
+        ["~standard"]: { validate: (value: unknown) => { issues?: unknown } };
+      })["~standard"];
+
+      expect(
+        standard.validate({ role: "button", application: "Chromium", window: "Inbox", limit: 5 }).issues,
+      ).toBeUndefined();
+      expect(standard.validate({ application: 42 }).issues).toBeDefined();
+      expect(standard.validate({ window: false }).issues).toBeDefined();
+      expect(standard.validate({ application: "Chromium", inventedScope: "Inbox" }).issues).toBeDefined();
+    } finally {
+      client.close();
+    }
+  });
+
   it("calls the daemon through the one client when a tool executes", async () => {
     const client = await connect({ socketPath: await daemonOnATape() });
     try {

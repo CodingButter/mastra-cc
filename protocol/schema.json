@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.13.0",
+  "version": "1.15.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -480,6 +480,36 @@
         }
       }
     },
+    "elementDiscoveryEntry": {
+      "description": "One aggregated role and name hint observed inside an authorised application scope. It is vocabulary for a fresh query, never an element handle or authority to act.",
+      "fields": {
+        "role": {
+          "type": "role",
+          "required": true,
+          "description": "The neutral role shared by the observed occurrences."
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "The normalised human-facing name shared by the observed occurrences. An empty string represents unnamed elements without inventing a name."
+        },
+        "count": {
+          "type": "number",
+          "required": true,
+          "description": "The exact number of fully observed occurrences with this role and name inside the selected scope."
+        },
+        "actions": {
+          "type": "string[]",
+          "required": true,
+          "description": "The sorted unique open-text action names exposed across the observed occurrences."
+        },
+        "operations": {
+          "type": "string[]",
+          "required": true,
+          "description": "The sorted unique semantic operation names exposed across the observed occurrences."
+        }
+      }
+    },
     "diagnostic": {
       "description": "Native details preserved for a human debugging. Exempt from the neutral-vocabulary rule; never load-bearing for agent logic.",
       "fields": {
@@ -525,6 +555,16 @@
           "required": false,
           "description": "Restrict the answer to elements whose normalised name matches."
         },
+        "application": {
+          "type": "string",
+          "required": false,
+          "description": "Restrict the answer to one visible, authorised application whose normalised exact name matches. This selector only narrows observation and never grants authority."
+        },
+        "window": {
+          "type": "string",
+          "required": false,
+          "description": "Restrict the answer to one visible window whose normalised exact name matches inside application. A window can only be named when application is also present."
+        },
         "limit": {
           "type": "number",
           "required": false,
@@ -536,6 +576,43 @@
           "type": "semanticElement[]",
           "required": true,
           "description": "Every element that matched, in reading order."
+        }
+      }
+    },
+    "discoverElements": {
+      "description": "Discover bounded semantic role and name vocabulary inside one authorised application scope. Observation only. The returned entries are hints, never element authority; use a fresh queryElements call before acting.",
+      "params": {
+        "application": {
+          "type": "string",
+          "required": true,
+          "description": "Select one visible, authorised application whose normalised exact name matches. This scope only narrows observation and never grants authority."
+        },
+        "window": {
+          "type": "string",
+          "required": false,
+          "description": "Optionally select one visible window whose normalised exact name matches inside application."
+        },
+        "role": {
+          "type": "role",
+          "required": false,
+          "description": "Optionally restrict the discovered vocabulary to one neutral role without changing complete traversal semantics."
+        },
+        "limit": {
+          "type": "number",
+          "required": false,
+          "description": "Maximum number of distinct entries returned. The daemon requires an integer from 1 through 200 and defaults to 100."
+        }
+      },
+      "returns": {
+        "entries": {
+          "type": "elementDiscoveryEntry[]",
+          "required": true,
+          "description": "Aggregated role and name hints in deterministic order. They contain no element IDs or content and cannot be acted on directly."
+        },
+        "truncated": {
+          "type": "boolean",
+          "required": true,
+          "description": "True only when complete traversal found more distinct entries than the returned limit. Incomplete traversal is a refusal, never truncation."
         }
       }
     },

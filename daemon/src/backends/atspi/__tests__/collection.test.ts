@@ -56,6 +56,81 @@ function desktop(desk: Desk): Channel & { asked: Exchange[] } {
 }
 
 describe("backend-selected AT-SPI search", () => {
+  it("discovers through DFS without content reads, Collection, or actionable ID registration", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).resolves.toEqual({
+      entries: [
+        { role: "application", name: "scripted-app", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] },
+        { role: "button", name: "scripted-app", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] },
+        { role: "textbox", name: "scripted-app", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] },
+      ],
+      truncated: false,
+      auditApplication: "scripted-app",
+    });
+
+    expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(false);
+    expect(channel.asked.some((exchange) => exchange.member === "GetState")).toBe(false);
+    expect((backend as unknown as { answered: Map<string, unknown> }).answered.size).toBe(0);
+    expect((backend as unknown as { byNative: Map<string, unknown> }).byNative.size).toBe(0);
+    expect((backend as unknown as { applicationOf: Map<string, unknown> }).applicationOf.size).toBe(0);
+  });
+
+  // Discovery aborts where a query would shrug: a vocabulary that stopped
+  // short is indistinguishable from a vocabulary that was complete, so the
+  // only honest answer to an unfinished walk is no answer at all.
+  it("refuses rather than reporting the vocabulary it managed to reach before the budget ran out", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all", { maxDepth: 10, maxNodesPerApp: 2, maxNodesTotal: 10 });
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(/would be partial/);
+  });
+
+  it("refuses when an element stops answering part-way through the walk", async () => {
+    const channel = desktop({ collection: true });
+    const failing: Channel & { asked: Exchange[] } = {
+      asked: channel.asked,
+      async call(exchange) {
+        if (exchange.member === "GetRoleName" && exchange.path === BUTTON) throw new Error("it went away");
+        return channel.call(exchange);
+      },
+      watch: channel.watch,
+      close: channel.close,
+    };
+    const backend = new AtspiBackend(failing, "all");
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(/stopped answering/);
+  });
+
+  it("discovers nothing in an application this session was never granted", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, new Set(["some-other-app"]));
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).resolves.toEqual({ entries: [], truncated: false });
+    expect(channel.asked.some((exchange) => exchange.path === BUTTON)).toBe(false);
+  });
+
+  it("returns nothing for an application selector that does not match, without reading descendants", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    await expect(backend.queryElements({ application: "another-app", role: "textbox" })).resolves.toEqual({ elements: [] });
+
+    expect(channel.asked.filter((exchange) => exchange.member === "GetChildren")).toHaveLength(1);
+    expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(false);
+  });
+
+  it("selects the matching application before using its Collection instrument", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    const { elements } = await backend.queryElements({ application: "SCRIPTED-APP", role: "textbox" });
+
+    expect(elements.map((element) => element.role)).toEqual(["textbox"]);
+    expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(true);
+  });
+
   it("answers a role question through one Collection exchange when the application advertises it", async () => {
     const channel = desktop({ collection: true });
     const backend = new AtspiBackend(channel, "all");

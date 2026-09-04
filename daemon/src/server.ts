@@ -344,6 +344,10 @@ export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this
 // reads as a desk that cannot be read rather than a question that cannot be
 // asked (ADR-0071).
 export const UNKNOWN_ROLE_REFUSAL = "that role is not one this desk can be asked about";
+export const QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL = "a window can only be named inside an application";
+export const DISCOVERY_APPLICATION_REFUSAL = "an application must be named for element discovery";
+export const DISCOVERY_WINDOW_REFUSAL = "a discovery window must be a non-empty name inside an application";
+export const DISCOVERY_LIMIT_REFUSAL = "a discovery limit must be a whole number from 1 through 200";
 
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
@@ -1562,6 +1566,7 @@ function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, la
 type Handler = (params: unknown, backend: Backend, launch: LaunchContext, book?: SubscriptionBook) => Promise<unknown>;
 const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
   queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => queryElements(p, b, l) },
+  discoverElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => discoverElements(p, b, l) },
   attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.attestElement((p ?? {}) as never), b, l) },
   readElementContent: { effectClass: "observe", enforcement: "at-result", handler: async (p, b) => b.readElementContent((p ?? {}) as never) },
   subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b, _l, k) => subscribeElement((p ?? {}) as never, b, k) },
@@ -1728,11 +1733,31 @@ function withFocusNote(element: SemanticElement, note: string | undefined): Sema
 // is a malformed parameter, refused before the call. Enforcement of the
 // answer itself stays at-result, as for every observe-class method.
 async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<unknown> {
-  const role = (p as { role?: unknown } | undefined)?.role;
-  if (role !== undefined && !(ROLES as readonly string[]).includes(role as string)) {
+  const params = (p ?? {}) as { role?: unknown; application?: unknown; window?: unknown };
+  if (params.role !== undefined && !(ROLES as readonly string[]).includes(params.role as string)) {
     return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
-  return observedWithConfiguration(await b.queryElements((p ?? {}) as never), b, l);
+  if (params.window !== undefined && params.application === undefined) {
+    return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  return observedWithConfiguration(await b.queryElements(params as never), b, l);
+}
+
+async function discoverElements(p: unknown, b: Backend, _l: LaunchContext): Promise<unknown> {
+  const params = (p ?? {}) as { application?: unknown; window?: unknown; role?: unknown; limit?: unknown };
+  if (typeof params.application !== "string" || params.application.length === 0) {
+    return { refusal: DISCOVERY_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  if (params.window !== undefined && (typeof params.window !== "string" || params.window.length === 0)) {
+    return { refusal: DISCOVERY_WINDOW_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  if (params.role !== undefined && !(ROLES as readonly string[]).includes(params.role as string)) {
+    return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  if (params.limit !== undefined && (typeof params.limit !== "number" || !Number.isInteger(params.limit) || params.limit < 1 || params.limit > 200)) {
+    return { refusal: DISCOVERY_LIMIT_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  return b.discoverElements({ ...params, limit: params.limit ?? 100 } as never);
 }
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
@@ -2192,15 +2217,16 @@ export async function handleRequest(
     // THE THIRD AUDIT CALL SITE, and the one the artifact turns on. ADR-0026's
     // own defining example of an access record is a READ - "the subject field
     // of the third message was read" - so a log recording only effects would
-    // answer an audit of a reading session with an empty file. All five
-    // observe-class methods write from this ONE point, deliberately: an entry
-    // per handler would be five places to forget.
+    // answer an audit of a reading session with an empty file. All observe-class
+    // methods write from this ONE point, deliberately: per-handler entries are
+    // places where a new observation route can be forgotten.
     //
     // The effect routes are excluded because they already wrote, in the places
     // that know which scope they were permitted under; a second entry here
     // would double every effect in the record.
     if (entry.effectClass === "observe") {
-      recordAudit({ application: undefined, element: answeredElements(result), scope: "observe", cause: causeOf(undefined), outcome: observeOutcome(result) });
+      const application = (result as { auditApplication?: string }).auditApplication;
+      recordAudit({ application, element: answeredElements(result), scope: "observe", cause: causeOf(application), outcome: observeOutcome(result) });
     }
     return { type: "response", id: request.id, result: withoutInternals(result) };
   } catch (error) {

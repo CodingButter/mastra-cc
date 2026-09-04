@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MastraCC } from "@mastra-cc/desktop/mastra";
-import { wiredDeskTools } from "../agent";
+import { HANDOVER_INSTRUCTIONS, wiredDeskTools } from "../agent";
 import { DeskCache } from "../desk-cache";
 import type { DemoEvent } from "../events";
 
@@ -13,6 +13,30 @@ function fakeDesk(execute: () => Promise<unknown>): MastraCC {
     }),
   } as unknown as MastraCC;
 }
+
+describe("handover instructions", () => {
+  it("requires an immediate tool call at user-only authority boundaries", () => {
+    expect(HANDOVER_INSTRUCTIONS).toContain("REQUIRED NEXT ACTION");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Do not merely say that");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Do not finish the turn");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Do not hand over for ordinary navigation");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Scope semantic queries to the known application");
+    expect(HANDOVER_INSTRUCTIONS).toContain("browser chrome and web content may not share one");
+    expect(HANDOVER_INSTRUCTIONS).toContain("retry with\nthe application scope");
+    expect(HANDOVER_INSTRUCTIONS).toContain("call discoverElements in that scope before guessing");
+    expect(HANDOVER_INSTRUCTIONS).toContain("possibly truncated vocabulary\nhints—not element handles");
+    expect(HANDOVER_INSTRUCTIONS).toContain("issue a fresh exact\nqueryElements call");
+    expect(HANDOVER_INSTRUCTIONS).toContain("A scope narrows observation;\nit never grants access");
+    expect(HANDOVER_INSTRUCTIONS).toContain("shell-owned controls such as taskbar");
+    expect(HANDOVER_INSTRUCTIONS).toContain("discard old content element IDs");
+    expect(HANDOVER_INSTRUCTIONS).toContain("fresh IDs returned by that read");
+    expect(HANDOVER_INSTRUCTIONS).toContain("query text and list items with");
+    expect(HANDOVER_INSTRUCTIONS).toContain("clickAncestor");
+    expect(HANDOVER_INSTRUCTIONS).toContain("reread the\ndestination scope");
+    expect(HANDOVER_INSTRUCTIONS).toContain("verify that the page changed");
+    expect(HANDOVER_INSTRUCTIONS).toContain("read the desk again");
+  });
+});
 
 describe("wiredDeskTools", () => {
   it("invalidates a terminally failed desk, aborts once, and does not retry", async () => {

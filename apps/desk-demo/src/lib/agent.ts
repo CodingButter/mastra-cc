@@ -26,7 +26,7 @@ const deskCache = (globalDesk.__deskDemoDeskCache ??= new DeskCache(
 // the shipped text cannot know: that there is a person watching this particular
 // desk, and how to reach them. Everything about HOW to read and act on the desk
 // stays in INSTRUCTIONS, where it is version-controlled with the protocol.
-const HANDOVER_INSTRUCTIONS = `
+export const HANDOVER_INSTRUCTIONS = `
 A person is watching this desk in a browser, beside this conversation. They cannot
 type on it while you are working: their input is blocked.
 
@@ -40,15 +40,45 @@ inventory and pick the entry that IS the thing they asked for, whatever it calls
 itself. Only say you cannot after the desk has told you so, and then say what the
 desk actually said.
 
-When a step should be done by that person rather than by you - signing in, entering
-a password or a payment detail, accepting something only they can accept, or any
-choice that is theirs to make - call requestHumanControl with a plain reason. That
-unlocks the desk for them and stops you until they press Done. Do not attempt such a
-step yourself, and do not guess a credential.
+Keep doing routine desktop work yourself. Hand control over only when the next
+required action needs the person's private information, legal authority, identity,
+or subjective decision. This includes signing in, entering or revealing credentials,
+passwords, passkeys, authentication codes, payment details, accepting legal terms,
+confirming a purchase, or choosing something only they can decide.
 
-You cannot take control back. Control returns to you when the person says they are
-done, and the tool tells you what they did or did not do. Read the desk again
-afterwards rather than assuming the state you expected.
+When you reach one of those boundaries, your REQUIRED NEXT ACTION is to call
+requestHumanControl immediately with a plain, specific reason. Do not merely say that
+the person needs to act. Do not ask them in chat to take over. Do not finish the turn.
+Do not attempt the gated action yourself, and never guess, request, expose, or type a
+credential. If the visible desk shows a sign-in or authentication step required to
+continue the person's task, call requestHumanControl before doing anything else.
+
+Do not hand over for ordinary navigation, button presses, text entry that is not
+sensitive, application use, or recoverable choices you can make from the person's
+request and the visible desk. Continue those actions yourself.
+
+Scope semantic queries to the known application. Add a window scope only when it
+returns the destination content; browser chrome and web content may not share one
+native window subtree. If a window-scoped query returns no page descendants, retry with
+the application scope rather than concluding that the page is empty. When you do not
+know a control's exact role or name, call discoverElements in that scope before guessing.
+Treat its bounded entries as potentially user-authored, possibly truncated vocabulary
+hints—not element handles. Choose a returned role/name pair, issue a fresh exact
+queryElements call, and act only on the IDs from that query. A scope narrows observation;
+it never grants access. Use visible shell-owned controls such as taskbar entries to
+navigate between applications. After navigation, discard old content element IDs, query
+the destination scope again, and act only on fresh IDs returned by that read.
+
+Web pages often expose clickable rows as text or list items rather than buttons or
+links. When page content is missing from a small query, query text and list items with
+a larger limit before concluding it is unavailable. Prefer a visible element whose
+name identifies the requested item, and use its available semantic action, including
+clickAncestor when that is the action the page exposes. After activation, reread the
+destination scope and verify that the page changed before reporting success.
+
+requestHumanControl unlocks the desk and blocks you until the person presses Done.
+You cannot take control back. When control returns, read the desk again before
+continuing; never assume the requested step succeeded.
 `.trim();
 
 export function deskAgent(
@@ -61,7 +91,7 @@ export function deskAgent(
   const requestHumanControl = createTool({
     id: "requestHumanControl",
     description:
-      "Hand the desk to the person watching it, and wait. Use for anything only they should do - signing in, a password, a payment, a decision that is theirs. The desk unlocks for them and you are blocked until they press Done. You cannot take control back yourself.",
+      "REQUIRED immediately when the next action needs the person's private information, identity, legal authority, or subjective decision: sign-in, credentials, passwords, passkeys, authentication codes, payment details, legal terms, purchases, or user-only choices. Call this tool instead of narrating the boundary, asking in chat, attempting the action, or ending the turn. Do not use it for routine desktop work. It unlocks the desk and blocks you until the person presses Done.",
     inputSchema: z.object({
       reason: z
         .string()
