@@ -7,6 +7,8 @@ import type {
   AttestElementParams,
   AttestElementResult,
   ChangeKind,
+  DiscoverElementsParams,
+  DiscoverElementsResult,
   EditElementParams,
   EditElementResult,
   QueryElementsParams,
@@ -316,6 +318,7 @@ export function mintSubscriptionId(): string {
 export interface Backend {
   readonly name: string;
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult>;
+  discoverElements(params: DiscoverElementsParams): Promise<DiscoverElementsResult>;
   // The refusal a backend writes here carries the CLASS it belongs to
   // (daemon/src/audit.ts), stated where the sentence is written rather than
   // recovered by reading the sentence back: the record names categories, and a

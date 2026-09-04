@@ -4,6 +4,8 @@ import type {
   ActivateElementResult,
   AttestElementParams,
   AttestElementResult,
+  DiscoverElementsParams,
+  DiscoverElementsResult,
   EditElementResult,
   QueryElementsParams,
   QueryElementsResult,
@@ -90,6 +92,10 @@ export class ReplayBackend implements Backend {
 
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {
     return this.inner.queryElements(params);
+  }
+
+  discoverElements(params: DiscoverElementsParams): Promise<DiscoverElementsResult> {
+    return this.inner.discoverElements(params);
   }
 
   attestElement(params: AttestElementParams): Promise<AttestElementResult> {

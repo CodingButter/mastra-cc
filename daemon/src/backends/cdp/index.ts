@@ -3,6 +3,8 @@ import type {
   ActivateElementResult,
   AttestElementParams,
   AttestElementResult,
+  DiscoverElementsParams,
+  DiscoverElementsResult,
   EditElementParams,
   EditElementResult,
   QueryElementsParams,
@@ -29,6 +31,7 @@ import {
   type BackendSubscription,
   type ChannelWatch,
   commitDescription,
+  IncompleteObservationError,
   InventoryUnsupportedError,
   EffectUnsupportedError,
   MagnitudeOutOfRangeError,
@@ -45,7 +48,8 @@ import {
 import type { InventoryEntry } from "../../inventory.js";
 import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
-import { applicationName, nameMatches } from "../atspi/names.js";
+import { applicationName, nameMatches, normalise } from "../atspi/names.js";
+import { aggregateDiscovery, type DiscoveryMetadata } from "../../discovery.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
 import { needsProtectedClassification, readObservableContent } from "./content.js";
 import {
@@ -294,6 +298,17 @@ export class CdpBackend implements Backend {
     return false;
   }
 
+  private nodeDiscoveryMetadata(node: AxNode): DiscoveryMetadata {
+    const { role } = toNeutralRole(String(node.role?.value ?? ""));
+    const derived = deriveActions(node.properties ?? []);
+    return {
+      role,
+      name: normalise(String(node.name?.value ?? "")),
+      actions: derived.actions.map((action) => action.name),
+      operations: readPublishedOperations(node.properties ?? []).map((operation) => operation.operation),
+    };
+  }
+
   private async nodeElement(targetId: string, node: AxNode, knownProtectedByBackingNode?: boolean): Promise<SemanticElement> {
     const protectedByBackingNode = knownProtectedByBackingNode ?? await this.protectedByBackingNode(targetId, node);
     const nativeRole = String(node.role?.value ?? "");
@@ -386,6 +401,43 @@ export class CdpBackend implements Backend {
       }
     }
     return { elements };
+  }
+
+  async discoverElements(params: DiscoverElementsParams): Promise<DiscoverElementsResult> {
+    const version = await this.version();
+    const product = productName(version);
+    if (!isVisible(this.visibility, product) || applicationName(product) !== applicationName(params.application)) {
+      return { entries: [], truncated: false };
+    }
+
+    const metadata: DiscoveryMetadata[] = [];
+    if (params.window === undefined && (params.role === undefined || params.role === "application")) {
+      metadata.push({ role: "application", name: normalise(product), actions: [], operations: [] });
+    }
+
+    let targets = await this.pageTargets();
+    if (params.window !== undefined) {
+      const matches = targets.filter((target) => target.type === "page" && nameMatches(target.title, params.window as string));
+      if (matches.length !== 1) return { entries: [], truncated: false };
+      targets = [matches[0] as (typeof matches)[number]];
+    }
+
+    let total = 0;
+    for (const target of targets) {
+      let inThisTarget = 0;
+      const tree = await this.axTree(target.id);
+      for (const node of tree) {
+        if (node.ignored === true) continue;
+        if (inThisTarget >= MAX_NODES_PER_TARGET || total >= MAX_NODES_TOTAL) {
+          throw new IncompleteObservationError("browser accessibility traversal budget was exhausted before discovery completed");
+        }
+        inThisTarget += 1;
+        total += 1;
+        const item = this.nodeDiscoveryMetadata(node);
+        if (params.role === undefined || item.role === params.role) metadata.push(item);
+      }
+    }
+    return aggregateDiscovery(metadata, params.limit ?? 100);
   }
 
   // Attestation re-reads live. INVARIANT, load-bearing for the replay lane:

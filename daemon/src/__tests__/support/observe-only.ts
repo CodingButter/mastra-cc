@@ -27,6 +27,7 @@ export const observeOnlyEffects: Pick<
   Backend,
   | "installedApplications"
   | "runningApplications"
+  | "discoverElements"
   | "focusedElement"
   | "restoreFocus"
   | "editElement"
@@ -49,6 +50,9 @@ export const observeOnlyEffects: Pick<
   // would be the "nothing is running" falsehood - the same collapse, one
   // question later.
   runningApplications: async () => ({ observable: new Set<string>(), answersFor: new Set<string>() }),
+  discoverElements: async () => {
+    throw new InventoryUnsupportedError("this test double has no desktop behind it and cannot discover element vocabulary");
+  },
   focusedElement: async () => {
     throw new FocusUnsupportedError("this test double has no desktop behind it and cannot say what holds the focus");
   },

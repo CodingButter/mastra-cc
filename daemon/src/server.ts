@@ -345,6 +345,9 @@ export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this
 // asked (ADR-0071).
 export const UNKNOWN_ROLE_REFUSAL = "that role is not one this desk can be asked about";
 export const QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL = "a window can only be named inside an application";
+export const DISCOVERY_APPLICATION_REFUSAL = "an application must be named for element discovery";
+export const DISCOVERY_WINDOW_REFUSAL = "a discovery window must be a non-empty name inside an application";
+export const DISCOVERY_LIMIT_REFUSAL = "a discovery limit must be a whole number from 1 through 200";
 
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
@@ -1563,6 +1566,7 @@ function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, la
 type Handler = (params: unknown, backend: Backend, launch: LaunchContext, book?: SubscriptionBook) => Promise<unknown>;
 const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
   queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => queryElements(p, b, l) },
+  discoverElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => discoverElements(p, b, l) },
   attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.attestElement((p ?? {}) as never), b, l) },
   readElementContent: { effectClass: "observe", enforcement: "at-result", handler: async (p, b) => b.readElementContent((p ?? {}) as never) },
   subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b, _l, k) => subscribeElement((p ?? {}) as never, b, k) },
@@ -1737,6 +1741,23 @@ async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<
     return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
   return observedWithConfiguration(await b.queryElements(params as never), b, l);
+}
+
+async function discoverElements(p: unknown, b: Backend, _l: LaunchContext): Promise<unknown> {
+  const params = (p ?? {}) as { application?: unknown; window?: unknown; role?: unknown; limit?: unknown };
+  if (typeof params.application !== "string" || params.application.length === 0) {
+    return { refusal: DISCOVERY_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  if (params.window !== undefined && (typeof params.window !== "string" || params.window.length === 0)) {
+    return { refusal: DISCOVERY_WINDOW_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  if (params.role !== undefined && !(ROLES as readonly string[]).includes(params.role as string)) {
+    return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  if (params.limit !== undefined && (typeof params.limit !== "number" || !Number.isInteger(params.limit) || params.limit < 1 || params.limit > 200)) {
+    return { refusal: DISCOVERY_LIMIT_REFUSAL, refusalClass: "MalformedParameter" as const };
+  }
+  return b.discoverElements({ ...params, limit: params.limit ?? 100 } as never);
 }
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
