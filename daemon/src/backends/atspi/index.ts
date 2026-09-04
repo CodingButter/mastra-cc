@@ -441,7 +441,7 @@ export class AtspiBackend implements Backend {
     return { elements };
   }
 
-  async discoverElements(params: DiscoverElementsParams): Promise<DiscoverElementsResult> {
+  async discoverElements(params: DiscoverElementsParams): Promise<Classified<DiscoverElementsResult>> {
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     const selected: Array<{ root: NativeRef; applicationName: string }> = [];
     for (const app of apps) {
@@ -500,7 +500,7 @@ export class AtspiBackend implements Backend {
         );
       }
     }
-    return aggregateDiscovery(metadata, params.limit ?? 100);
+    return { ...aggregateDiscovery(metadata, params.limit ?? 100), auditApplication: applicationName(selectedApplication) };
   }
 
   async attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>> {

@@ -56,6 +56,27 @@ function desktop(desk: Desk): Channel & { asked: Exchange[] } {
 }
 
 describe("backend-selected AT-SPI search", () => {
+  it("discovers through DFS without content reads, Collection, or actionable ID registration", async () => {
+    const channel = desktop({ collection: true });
+    const backend = new AtspiBackend(channel, "all");
+
+    await expect(backend.discoverElements({ application: "scripted-app" })).resolves.toEqual({
+      entries: [
+        { role: "application", name: "scripted-app", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] },
+        { role: "button", name: "scripted-app", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] },
+        { role: "textbox", name: "scripted-app", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] },
+      ],
+      truncated: false,
+      auditApplication: "scripted-app",
+    });
+
+    expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(false);
+    expect(channel.asked.some((exchange) => exchange.member === "GetState")).toBe(false);
+    expect((backend as unknown as { answered: Map<string, unknown> }).answered.size).toBe(0);
+    expect((backend as unknown as { byNative: Map<string, unknown> }).byNative.size).toBe(0);
+    expect((backend as unknown as { applicationOf: Map<string, unknown> }).applicationOf.size).toBe(0);
+  });
+
   it("returns nothing for an application selector that does not match, without reading descendants", async () => {
     const channel = desktop({ collection: true });
     const backend = new AtspiBackend(channel, "all");

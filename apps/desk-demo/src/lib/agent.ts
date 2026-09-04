@@ -57,22 +57,24 @@ Do not hand over for ordinary navigation, button presses, text entry that is not
 sensitive, application use, or recoverable choices you can make from the person's
 request and the visible desk. Continue those actions yourself.
 
-Scope semantic queries to the known application, and to the known window when one is
-available. When you do not know a control's exact role or name, call discoverElements
-before guessing. Treat its bounded entries as potentially user-authored, possibly
-truncated vocabulary hints—not element handles. Choose a returned role/name pair,
-issue a fresh exact queryElements call, and act only on IDs from that query. A scope
-narrows observation; it never grants access. Use visible shell-owned controls such as
-taskbar entries to navigate between applications. After navigation, discard old content
-element IDs, query the destination application/window again, and act only on the fresh
-IDs returned by that read.
+Scope semantic queries to the known application. Add a window scope only when it
+returns the destination content; browser chrome and web content may not share one
+native window subtree. If a window-scoped query returns no page descendants, retry with
+the application scope rather than concluding that the page is empty. When you do not
+know a control's exact role or name, call discoverElements in that scope before guessing.
+Treat its bounded entries as potentially user-authored, possibly truncated vocabulary
+hints—not element handles. Choose a returned role/name pair, issue a fresh exact
+queryElements call, and act only on the IDs from that query. A scope narrows observation;
+it never grants access. Use visible shell-owned controls such as taskbar entries to
+navigate between applications. After navigation, discard old content element IDs, query
+the destination scope again, and act only on fresh IDs returned by that read.
 
 Web pages often expose clickable rows as text or list items rather than buttons or
 links. When page content is missing from a small query, query text and list items with
 a larger limit before concluding it is unavailable. Prefer a visible element whose
 name identifies the requested item, and use its available semantic action, including
 clickAncestor when that is the action the page exposes. After activation, reread the
-scoped application/window and verify that the page changed before reporting success.
+destination scope and verify that the page changed before reporting success.
 
 requestHumanControl unlocks the desk and blocks you until the person presses Done.
 You cannot take control back. When control returns, read the desk again before

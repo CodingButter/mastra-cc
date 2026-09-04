@@ -2217,15 +2217,16 @@ export async function handleRequest(
     // THE THIRD AUDIT CALL SITE, and the one the artifact turns on. ADR-0026's
     // own defining example of an access record is a READ - "the subject field
     // of the third message was read" - so a log recording only effects would
-    // answer an audit of a reading session with an empty file. All five
-    // observe-class methods write from this ONE point, deliberately: an entry
-    // per handler would be five places to forget.
+    // answer an audit of a reading session with an empty file. All observe-class
+    // methods write from this ONE point, deliberately: per-handler entries are
+    // places where a new observation route can be forgotten.
     //
     // The effect routes are excluded because they already wrote, in the places
     // that know which scope they were permitted under; a second entry here
     // would double every effect in the record.
     if (entry.effectClass === "observe") {
-      recordAudit({ application: undefined, element: answeredElements(result), scope: "observe", cause: causeOf(undefined), outcome: observeOutcome(result) });
+      const application = (result as { auditApplication?: string }).auditApplication;
+      recordAudit({ application, element: answeredElements(result), scope: "observe", cause: causeOf(application), outcome: observeOutcome(result) });
     }
     return { type: "response", id: request.id, result: withoutInternals(result) };
   } catch (error) {

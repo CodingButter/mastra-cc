@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { openAuditLog, useAuditLog } from "../audit.js";
 import type { Backend } from "../backend.js";
 import { OwnershipTable } from "../launch/table.js";
 import {
@@ -38,10 +42,20 @@ function refusalIn(answer: { refusal?: string; result?: unknown }): string | und
   return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal;
 }
 
+let temporary: string | undefined;
+afterEach(() => {
+  useAuditLog(undefined);
+  if (temporary !== undefined) rmSync(temporary, { recursive: true, force: true });
+  temporary = undefined;
+});
+
 describe("bounded element discovery boundary", () => {
   it.each([
+    [{}, DISCOVERY_APPLICATION_REFUSAL],
     [{ application: "" }, DISCOVERY_APPLICATION_REFUSAL],
+    [{ application: 42 }, DISCOVERY_APPLICATION_REFUSAL],
     [{ application: "app", window: "" }, DISCOVERY_WINDOW_REFUSAL],
+    [{ application: "app", window: 42 }, DISCOVERY_WINDOW_REFUSAL],
     [{ application: "app", limit: 0 }, DISCOVERY_LIMIT_REFUSAL],
     [{ application: "app", limit: 201 }, DISCOVERY_LIMIT_REFUSAL],
     [{ application: "app", limit: 1.5 }, DISCOVERY_LIMIT_REFUSAL],
@@ -57,5 +71,21 @@ describe("bounded element discovery boundary", () => {
     const answer = await discover({ application: "Chromium", role: "textbox" }, backendThat(asked));
     expect(refusalIn(answer)).toBeUndefined();
     expect(asked).toEqual([{ application: "Chromium", role: "textbox", limit: 100 }]);
+  });
+
+  it("records only the resolved application identity and strips internal audit fields from the wire", async () => {
+    temporary = mkdtempSync(join(tmpdir(), "mastra-cc-discovery-audit-"));
+    const path = join(temporary, "audit.jsonl");
+    useAuditLog(openAuditLog(path));
+    const backend = backendThat([]);
+    backend.discoverElements = async () => ({ entries: [], truncated: false, auditApplication: "chromium" });
+
+    const answer = await discover({ application: "CHROMIUM" }, backend);
+
+    expect(answer).toEqual({ type: "response", id: 1, result: { entries: [], truncated: false } });
+    const entry = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    expect(Object.keys(entry).sort()).toEqual(["application", "at", "attestation", "cause", "element", "outcome", "scope"]);
+    expect(entry).toMatchObject({ application: "chromium", element: [], scope: "observe", attestation: null, outcome: "read" });
+    expect(JSON.stringify(entry)).not.toContain("CHROMIUM");
   });
 });

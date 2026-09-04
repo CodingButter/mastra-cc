@@ -38,6 +38,21 @@ function channelWith(targets: unknown[]) {
 }
 
 describe("scoped browser queries", () => {
+  it("discovers vocabulary without minting actionable browser IDs", async () => {
+    const { channel } = channelWith([{ id: "inbox", type: "page", title: "Inbox" }]);
+    const backend = new CdpBackend(channel, "all");
+
+    await expect(backend.discoverElements({ application: "chrome", window: "Inbox" })).resolves.toEqual({
+      entries: [{ role: "button", name: "inbox", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] }],
+      truncated: false,
+      auditApplication: "chrome",
+    });
+
+    expect((backend as unknown as { answered: Map<string, unknown> }).answered.size).toBe(0);
+    expect((backend as unknown as { mintedByNode: Map<string, unknown> }).mintedByNode.size).toBe(0);
+    expect((backend as unknown as { applicationOf: Map<string, unknown> }).applicationOf.size).toBe(0);
+  });
+
   it("returns nothing for an application selector outside the granted browser identity", async () => {
     const { channel, exchanges } = channelWith([{ id: "inbox", type: "page", title: "Inbox" }]);
     const backend = new CdpBackend(channel, "all");

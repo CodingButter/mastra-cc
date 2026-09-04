@@ -403,7 +403,7 @@ export class CdpBackend implements Backend {
     return { elements };
   }
 
-  async discoverElements(params: DiscoverElementsParams): Promise<DiscoverElementsResult> {
+  async discoverElements(params: DiscoverElementsParams): Promise<Classified<DiscoverElementsResult>> {
     const version = await this.version();
     const product = productName(version);
     if (!isVisible(this.visibility, product) || applicationName(product) !== applicationName(params.application)) {
@@ -437,7 +437,7 @@ export class CdpBackend implements Backend {
         if (params.role === undefined || item.role === params.role) metadata.push(item);
       }
     }
-    return aggregateDiscovery(metadata, params.limit ?? 100);
+    return { ...aggregateDiscovery(metadata, params.limit ?? 100), auditApplication: applicationName(product) };
   }
 
   // Attestation re-reads live. INVARIANT, load-bearing for the replay lane:
