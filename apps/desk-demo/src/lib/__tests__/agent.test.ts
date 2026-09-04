@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MastraCC } from "@mastra-cc/desktop/mastra";
-import { wiredDeskTools } from "../agent";
+import { HANDOVER_INSTRUCTIONS, wiredDeskTools } from "../agent";
 import { DeskCache } from "../desk-cache";
 import type { DemoEvent } from "../events";
 
@@ -13,6 +13,25 @@ function fakeDesk(execute: () => Promise<unknown>): MastraCC {
     }),
   } as unknown as MastraCC;
 }
+
+describe("handover instructions", () => {
+  it("requires an immediate tool call at user-only authority boundaries", () => {
+    expect(HANDOVER_INSTRUCTIONS).toContain("REQUIRED NEXT ACTION");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Do not merely say that");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Do not finish the turn");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Do not hand over for ordinary navigation");
+    expect(HANDOVER_INSTRUCTIONS).toContain("Scope semantic queries to the known application");
+    expect(HANDOVER_INSTRUCTIONS).toContain("A scope narrows observation; it never grants access");
+    expect(HANDOVER_INSTRUCTIONS).toContain("shell-owned\ncontrols such as taskbar entries");
+    expect(HANDOVER_INSTRUCTIONS).toContain("discard old content element IDs");
+    expect(HANDOVER_INSTRUCTIONS).toContain("fresh IDs returned by that read");
+    expect(HANDOVER_INSTRUCTIONS).toContain("query text and list items with");
+    expect(HANDOVER_INSTRUCTIONS).toContain("clickAncestor");
+    expect(HANDOVER_INSTRUCTIONS).toContain("scoped application/window and verify");
+    expect(HANDOVER_INSTRUCTIONS).toContain("verify that the page changed");
+    expect(HANDOVER_INSTRUCTIONS).toContain("read the desk again");
+  });
+});
 
 describe("wiredDeskTools", () => {
   it("invalidates a terminally failed desk, aborts once, and does not retry", async () => {
