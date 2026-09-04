@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -188,18 +188,18 @@
             },
             "startLine": {
               "type": "number",
-              "required": true,
-              "description": "One-based line number containing the first character in value."
+              "required": false,
+              "description": "One-based line number containing the first character in value, when all line metadata can be determined without widening the content read."
             },
             "endLine": {
               "type": "number",
-              "required": true,
-              "description": "One-based line number containing the final character in value, or startLine for an empty window."
+              "required": false,
+              "description": "One-based line number containing the final character in value, or startLine for an empty window, when all line metadata can be determined without widening the content read."
             },
             "totalLines": {
               "type": "number",
-              "required": true,
-              "description": "Total number of lines in the element's current text."
+              "required": false,
+              "description": "Total number of lines in the element's current text, when all line metadata can be determined without widening the content read."
             }
           }
         },

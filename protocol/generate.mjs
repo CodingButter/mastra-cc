@@ -246,6 +246,10 @@ function observableContentProblems(record: Record<string, unknown>): string[] {
   const startLine = record.startLine;
   const endLine = record.endLine;
   const totalLines = record.totalLines;
+  const presentLineFields = [startLine, endLine, totalLines].filter((value) => value !== undefined).length;
+  if (presentLineFields !== 0 && presentLineFields !== 3) {
+    problems.push("observableContent: startLine, endLine, and totalLines must be published together");
+  }
   if (typeof offset === "number" && offset < 0) problems.push("observableContent.offset: must not be negative");
   if (typeof length === "number" && length < 0) problems.push("observableContent.length: must not be negative");
   if (typeof totalLength === "number" && totalLength < 0) problems.push("observableContent.totalLength: must not be negative");
