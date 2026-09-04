@@ -123,7 +123,7 @@ describe("the daemon says why", () => {
   });
 
   // P2-T5
-  it("still records the failed read in the receipt, and the role refusal as a classified one", async () => {
+  it("records the incomplete read and the role refusal as classified refusals", async () => {
     const entries = remember();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -131,7 +131,7 @@ describe("the daemon says why", () => {
     await query({ role: "heading" }, backendThat({ asked: [] }));
 
     expect(entries.map((entry) => [entry.scope, entry.outcome])).toEqual([
-      ["observe", "failed"],
+      ["observe", "refused:IncompleteObservation"],
       ["observe", "refused:MalformedParameter"],
     ]);
   });

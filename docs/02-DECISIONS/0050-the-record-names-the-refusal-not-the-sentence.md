@@ -1,6 +1,6 @@
 # 0050 — The record names the refusal, not the sentence
 
-- Status: accepted
+- Status: superseded in part by [0073](0073-an-incomplete-observation-names-itself-in-the-record.md)
 - Date: 2026-08-20
 - Relates to: [0026](0026-the-audit-log-is-an-access-record-episodes-are-the-narrative.md) (amends), [0042](0042-existence-is-readable-content-is-not.md), [0022](0022-failure-to-act-is-harm-we-caused.md), [0019](0019-capability-is-not-authority.md), [0039](0039-the-desktop-talks-first.md), M3 segment 1
 
