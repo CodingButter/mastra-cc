@@ -548,7 +548,7 @@
   {
     "name": "the-failed-launch-that-leaves-no-receipt",
     "file": "daemon/src/server.ts",
-    "find": "    recordAudit({ application: applicationName(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome: FAILED });\n",
+    "find": "    recordAudit({ application: applicationName(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
@@ -1153,5 +1153,21 @@
     "find": "    console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-bad-role-is-a-refusal.test.ts"
+  },
+  {
+    "name": "the-incomplete-read-recorded-as-a-bare-failure",
+    "file": "daemon/src/server.ts",
+    "find": "      const outcome = error instanceof IncompleteObservationError ? refused(\"IncompleteObservation\") : FAILED;\n",
+    "replace": "      const outcome = FAILED;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "the-incomplete-launch-recorded-as-a-bare-failure",
+    "file": "daemon/src/server.ts",
+    "find": "    const outcome = error instanceof IncompleteObservationError ? refused(\"IncompleteObservation\") : FAILED;\n    recordAudit({ application: applicationName(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome });\n",
+    "replace": "    const outcome = FAILED;\n    recordAudit({ application: applicationName(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   }
 ]
