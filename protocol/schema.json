@@ -188,18 +188,18 @@
             },
             "startLine": {
               "type": "number",
-              "required": true,
-              "description": "One-based line number containing the first character in value."
+              "required": false,
+              "description": "One-based line number containing the first character in value, when all line metadata can be determined without widening the content read."
             },
             "endLine": {
               "type": "number",
-              "required": true,
-              "description": "One-based line number containing the final character in value, or startLine for an empty window."
+              "required": false,
+              "description": "One-based line number containing the final character in value, or startLine for an empty window, when all line metadata can be determined without widening the content read."
             },
             "totalLines": {
               "type": "number",
-              "required": true,
-              "description": "Total number of lines in the element's current text."
+              "required": false,
+              "description": "Total number of lines in the element's current text, when all line metadata can be determined without widening the content read."
             }
           }
         },

@@ -17,7 +17,7 @@ Content also has a second boundary. Passwords and other controls marked protecte
 Protocol schema 1.6.1 adds one required provider-neutral `content` observation to `SemanticElement`. It is a discriminated structure with five states:
 
 - `text` carries the complete currently observed ordinary string when it fits the inline bound;
-- `text-window` carries an explicitly bounded string together with its zero-based Unicode-scalar offset and length, total length, and one-based start, end, and total line numbers;
+- `text-window` carries an explicitly bounded string together with its zero-based Unicode-scalar offset and length and total length; it carries one-based start, end, and total line numbers when the provider can determine all three without widening the requested content read;
 - `number` carries the currently observed numeric value and optional published range metadata;
 - `redacted` carries only the closed reason `protected` and cannot carry a value;
 - `unavailable` carries `not-exposed` or `unknown` when no readable observation is published or the route cannot determine one.

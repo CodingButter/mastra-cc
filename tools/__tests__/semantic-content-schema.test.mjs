@@ -23,6 +23,7 @@ describe("semantic observable content", () => {
       endLine: 2,
       totalLines: 2,
     },
+    { kind: "text-window", value: "bounded", offset: 100, length: 7, totalLength: 1000 },
     { kind: "number", value: 42 },
     { kind: "number", value: 42, range: { minimum: 0, maximum: 100, step: 1 } },
     { kind: "redacted", reason: "protected" },
@@ -42,6 +43,8 @@ describe("semantic observable content", () => {
     { kind: "text-window", value: "abc", offset: -1, length: 3, totalLength: 3, startLine: 1, endLine: 1, totalLines: 1 },
     { kind: "text-window", value: "abc", offset: 2, length: 3, totalLength: 4, startLine: 1, endLine: 1, totalLines: 1 },
     { kind: "text-window", value: "abc", offset: 0, length: 3, totalLength: 3, startLine: 2, endLine: 1, totalLines: 1 },
+    { kind: "text-window", value: "abc", offset: 0, length: 3, totalLength: 3, startLine: 1 },
+    { kind: "text-window", value: "abc", offset: 0, length: 3, totalLength: 3, startLine: 1, endLine: 1 },
     { kind: "atspi-text", value: "provider vocabulary" },
   ])("rejects malformed or ambiguous content %#", (content) => {
     expect(validateSemanticElement(element(content))).not.toEqual([]);
