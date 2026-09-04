@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.13.0
+// Mastra CC protocol v1.14.0
 
-export const PROTOCOL_VERSION = "1.13.0";
-export const SCHEMA_DIGEST = "00ed4ce0b3cb82fab02fed24097de36f70ab34fffd58ef1605c7787aa150cb8b";
+export const PROTOCOL_VERSION = "1.14.0";
+export const SCHEMA_DIGEST = "dc3862f8b61024dd127184b784f1a518d02f9b28be718b1f5c1b20f13672525b";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -227,6 +227,8 @@ export interface QueryElementsParams {
   role?: Role;
   /** Restrict the answer to elements whose normalised name matches. */
   name?: string;
+  /** Restrict the answer to the one application whose normalised name matches; absent means every visible application. */
+  application?: string;
   /** Upper bound on the number of returned elements. */
   limit?: number;
 }
@@ -521,6 +523,10 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
         },
         "name": {
           "description": "Restrict the answer to elements whose normalised name matches.",
+          "type": "string"
+        },
+        "application": {
+          "description": "Restrict the answer to the one application whose normalised name matches; absent means every visible application.",
           "type": "string"
         },
         "limit": {

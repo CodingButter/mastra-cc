@@ -70,4 +70,23 @@ describe("the replay backend answers identically to the live capture", () => {
     await backend.close();
     expect(attested.element?.id).toBe(elements[0].id);
   });
+
+  // ADR-0073: replay is a transparent proxy for queryElements, so the
+  // `application` scope must thread through it and reach the inner backend
+  // unchanged. Derived from the tape at runtime rather than hardcoded: the
+  // owning application's name is read back through applicationOfElement, so this
+  // test proves the scope is honoured without inventing a name.
+  it("threads the application scope through to the inner backend", async () => {
+    const backend = new ReplayBackend("gtk-dialog", "all");
+    const unscoped = await backend.queryElements({});
+    const owner = backend.applicationOfElement(unscoped.elements[0].id);
+    expect(owner).toBeDefined();
+
+    const scoped = await backend.queryElements({ application: owner as string });
+    const absent = await backend.queryElements({ application: "an application this tape does not contain" });
+    await backend.close();
+
+    expect(scoped.elements.map((e) => e.id)).toEqual(unscoped.elements.map((e) => e.id));
+    expect(absent.elements).toEqual([]);
+  });
 });

@@ -299,6 +299,15 @@ export class AtspiBackend implements Backend {
     const elements: SemanticElement[] = [];
     let total = 0;
 
+    // The scope (ADR-0073). When the caller names an application, the answer is
+    // restricted to the one whose name matches, compared with the SAME
+    // NFKC+case-fold normaliser grants use (a scope names an application the way
+    // a grant does). Normalised once here; the per-application name is
+    // normalised again at the gate below. The scope filter runs AFTER the
+    // visibility gate, so naming an ungranted application yields an empty answer
+    // - absent, never "blocked" (ADR-0036).
+    const scope = params.application === undefined ? undefined : applicationName(params.application);
+
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     for (const app of apps) {
       // The visibility gate (ADR-0036). The application's NAME is the one
@@ -306,10 +315,11 @@ export class AtspiBackend implements Backend {
       // visibility without it - and it is read BEFORE readElement, so an
       // ungranted application's subtree is never walked, its states never
       // read, its element never answered.
-      let applicationName: string;
+      let appName: string;
       try {
-        applicationName = await this.nameOf(app);
-        if (!isVisible(this.visibility, applicationName)) continue;
+        appName = await this.nameOf(app);
+        if (!isVisible(this.visibility, appName)) continue;
+        if (scope !== undefined && applicationName(appName) !== scope) continue;
       } catch (error) {
         // an off-tape read under replay is ignorance, and ignorance surfaces
         // as a refusal - never a skip; a dying app that cannot state its name
@@ -341,12 +351,12 @@ export class AtspiBackend implements Backend {
         for (const ref of collected) {
           if (total >= this.limits.maxNodesTotal) {
             throw new IncompleteObservationError(
-              `observation budget exhausted inside "${applicationName}" with matches still unread - this observation would be partial`,
+              `observation budget exhausted inside "${appName}" with matches still unread - this observation would be partial`,
             );
           }
           total += 1;
           try {
-            const element = await this.readElement(ref, applicationName);
+            const element = await this.readElement(ref, appName);
             if (params.role !== undefined && element.role !== params.role) {
               fastAnswerTrusted = false;
               break;
@@ -375,7 +385,7 @@ export class AtspiBackend implements Backend {
         // contain that element", so the walk refuses instead (ADR-0042).
         if (inThisApp >= this.limits.maxNodesPerApp || total >= this.limits.maxNodesTotal) {
           throw new IncompleteObservationError(
-            `walk budget exhausted inside "${applicationName}" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
+            `walk budget exhausted inside "${appName}" with its tree unfinished - this observation would be partial, and a partial tree cannot be told apart from a desktop that does not contain what was asked for`,
           );
         }
         const { ref, depth } = stack.shift() as { ref: NativeRef; depth: number };
@@ -386,7 +396,7 @@ export class AtspiBackend implements Backend {
         // trees contain dying processes and dead references, and one of them
         // must not take down the whole query.
         try {
-          const element = await this.readElement(ref, applicationName);
+          const element = await this.readElement(ref, appName);
           const roleMatches = params.role === undefined || element.role === params.role;
           const queryNameMatches = params.name === undefined || nameMatches(element.name, params.name);
           if (roleMatches && queryNameMatches) {
@@ -396,7 +406,7 @@ export class AtspiBackend implements Backend {
           const kids = await this.children(ref);
           if (depth >= this.limits.maxDepth && kids.length > 0) {
             throw new IncompleteObservationError(
-              `depth budget reached inside "${applicationName}" above a node that still has children - the subtree below it was never observed`,
+              `depth budget reached inside "${appName}" above a node that still has children - the subtree below it was never observed`,
             );
           }
           stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1 })));

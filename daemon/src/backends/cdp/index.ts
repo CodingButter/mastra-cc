@@ -356,6 +356,14 @@ export class CdpBackend implements Backend {
       return { elements: [] };
     }
 
+    // The scope (ADR-0073). A CDP target is one application - the browser named
+    // by its product name - so a scope that names anything else yields the same
+    // empty "absent" answer the visibility gate produces. Compared with the
+    // grant normaliser, after the visibility gate, so scope never widens access.
+    if (params.application !== undefined && applicationName(productName(version)) !== applicationName(params.application)) {
+      return { elements: [] };
+    }
+
     const application = this.applicationElement(version);
     if (matches(application)) {
       elements.push(application);
