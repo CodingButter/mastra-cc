@@ -118,10 +118,32 @@
     @media (max-width:820px) { html{scroll-snap-type:none}.navdots{display:none}.topbar{padding:0 14px}.compare,.demo,.platforms{grid-template-columns:1fr}.loop{grid-template-columns:1fr 1fr}.node::after{display:none}.trust-grid,.deploy-grid{grid-template-columns:1fr 1fr}.layer{grid-template-columns:1fr;gap:6px}.hero-orbit{opacity:.35;width:70vw}.desktop,.terminal{min-height:330px}section{padding-inline:20px}.platform-grid{grid-template-columns:1fr 1fr} }
     @media (max-width:520px) { .trust-grid,.deploy-grid,.platform-grid,.loop,.modal-grid{grid-template-columns:1fr}.topbar .brand{font-size:9px}.window{inset:28px 12px 18px}.mailbody{grid-template-columns:1fr}.list{display:none}.desktop{min-height:350px}.modal{padding:10px}.modal-card{padding:28px 20px}.modal h3{margin-right:40px} }
     @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.hero-orbit{animation:none}.reveal{transition:none}}
+    .player{position:fixed;top:14px;right:16px;z-index:60;width:64px;height:64px;touch-action:none}
+    .player svg{position:absolute;inset:0;width:64px;height:64px;transform:rotate(-90deg);cursor:pointer}
+    .player .track{fill:none;stroke:rgba(255,255,255,.16);stroke-width:3}
+    .player .fill{fill:none;stroke:#66e2cf;stroke-width:3;stroke-linecap:round}
+    .player .knob{fill:#66e2cf;stroke:#071019;stroke-width:2;cursor:grab}
+    .player.seeking .knob{cursor:grabbing}
+    .player button{position:absolute;left:11px;top:11px;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;
+      background:rgba(12,26,39,.82);backdrop-filter:blur(6px);color:#66e2cf;display:grid;place-items:center;padding:0}
+    .player button:hover{background:rgba(16,38,56,.92)}
+    .player button svg{position:static;width:16px;height:16px;transform:none;cursor:pointer}
+    @media (max-width:520px){.player{top:10px;right:10px}}
   </style>
 </head>
 <body>
   <div class="noise"></div>
+  <div class="player" id="player">
+    <audio id="track" src="the-desk-speaks-first.mp3" loop preload="auto"></audio>
+    <svg viewBox="0 0 64 64" id="ring" aria-hidden="true">
+      <circle class="track" cx="32" cy="32" r="28"></circle>
+      <circle class="fill" cx="32" cy="32" r="28" id="ringFill" stroke-dasharray="0 175.93"></circle>
+      <circle class="knob" id="ringKnob" cx="32" cy="4" r="4"></circle>
+    </svg>
+    <button id="playToggle" type="button" aria-label="Play soundtrack">
+      <svg viewBox="0 0 16 16" id="playIcon"><path fill="currentColor" d="M3 1.5 14 8 3 14.5z"></path></svg>
+    </button>
+  </div>
   <header class="topbar"><div class="brand">MASTRA CC</div><div class="progress"><i></i></div><div class="counter">01 / 09</div></header>
   <nav class="navdots" aria-label="Presentation sections"></nav>
 
@@ -219,6 +241,44 @@
     function openExplainer(el){const title=el.querySelector('b')?.textContent.trim().toUpperCase(),d=explainers[title];if(!d)return;modalTrigger=el;document.getElementById('modalTitle').textContent=title;['Summary','How','Why','Example','Limit'].forEach((k,i)=>document.getElementById(`modal${k}`).textContent=d[i]);modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';closeModal.focus()}
     function shutExplainer(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';modalTrigger?.focus()}
     document.querySelectorAll('.layer,.mini').forEach(el=>{const title=el.querySelector('b')?.textContent.trim().toUpperCase();if(!explainers[title])return;el.classList.add('explainable');el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label',`Explain ${title}`);el.addEventListener('click',()=>openExplainer(el));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openExplainer(el)}})});
+    (function soundtrack(){
+      const wrap=document.getElementById('player'),audio=document.getElementById('track'),ring=document.getElementById('ring'),
+        fill=document.getElementById('ringFill'),knob=document.getElementById('ringKnob'),btn=document.getElementById('playToggle'),
+        icon=document.getElementById('playIcon'),C=2*Math.PI*28,R=28;
+      const PLAY='M3 1.5 14 8 3 14.5z',PAUSE='M3 2h3.5v12H3zM9.5 2H13v12H9.5z';
+      let seeking=false;
+      function render(p){
+        p=Math.min(Math.max(p||0,0),1);
+        fill.setAttribute('stroke-dasharray',`${C*p} ${C}`);
+        const a=p*2*Math.PI-Math.PI/2;
+        knob.setAttribute('cx',String(32+R*Math.cos(a)));
+        knob.setAttribute('cy',String(32+R*Math.sin(a)));
+      }
+      function progress(){return audio.duration?audio.currentTime/audio.duration:0}
+      function fraction(e){
+        const r=ring.getBoundingClientRect(),
+          ang=Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))+Math.PI/2;
+        return (ang<0?ang+2*Math.PI:ang)/(2*Math.PI);
+      }
+      function seek(e){const f=fraction(e);render(f);if(audio.duration)audio.currentTime=f*audio.duration}
+      ring.addEventListener('pointerdown',e=>{e.preventDefault();seeking=true;wrap.classList.add('seeking');ring.setPointerCapture(e.pointerId);seek(e)});
+      ring.addEventListener('pointermove',e=>{if(seeking)seek(e)});
+      const endSeek=()=>{seeking=false;wrap.classList.remove('seeking')};
+      ring.addEventListener('pointerup',endSeek);ring.addEventListener('pointercancel',endSeek);
+      audio.addEventListener('timeupdate',()=>{if(!seeking)render(progress())});
+      audio.addEventListener('loadedmetadata',()=>render(progress()));
+      function paint(){const playing=!audio.paused;icon.firstElementChild.setAttribute('d',playing?PAUSE:PLAY);
+        btn.setAttribute('aria-label',playing?'Pause soundtrack':'Play soundtrack')}
+      audio.addEventListener('play',paint);audio.addEventListener('pause',paint);
+      btn.addEventListener('click',()=>{audio.paused?audio.play().catch(()=>{}):audio.pause()});
+      audio.play().catch(()=>{
+        const evts=['pointerdown','keydown','touchstart'],
+          off=()=>evts.forEach(t=>removeEventListener(t,kick)),
+          kick=e=>{if(e.target&&wrap.contains(e.target))return;audio.play().catch(()=>{});off()};
+        evts.forEach(t=>addEventListener(t,kick));
+      });
+      render(0);paint();
+    })();
     closeModal.addEventListener('click',shutExplainer);modal.addEventListener('click',e=>{if(e.target===modal)shutExplainer()});addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')){e.stopImmediatePropagation();shutExplainer()}},{capture:true});
   </script>
 </body>
