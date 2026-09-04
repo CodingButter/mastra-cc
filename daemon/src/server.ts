@@ -1768,9 +1768,11 @@ async function openApplication(
     // Symmetric with performEffect's FAILED path, and for the same reason: a
     // throw nobody classified reaches the caller as the opaque backstop, and a
     // launch that left no entry at all would be the one route where an
-    // unexplained failure is also an unrecorded one. The name is the caller's
-    // own word - past no gate, nothing has been resolved.
-    recordAudit({ application: applicationName(name), element: [], scope: "launch", cause: causeOf(undefined), outcome: FAILED });
+    // unexplained failure is also an unrecorded one. A tree walk that exhausted
+    // its budget is different: the daemon can name that refusal (ADR-0073).
+    // The name is the caller's own word - past no gate, nothing was resolved.
+    const outcome = error instanceof IncompleteObservationError ? refused("IncompleteObservation") : FAILED;
+    recordAudit({ application: applicationName(name), element: [], scope: "launch", cause: causeOf(undefined), outcome });
     throw error;
   }
   const application = answer.auditApplication ?? applicationName(name);
@@ -2211,15 +2213,16 @@ export async function handleRequest(
     // that has to be diagnosed by patching the bundle (ADR-0071). This line is
     // the daemon's log, not the audit record: the record keeps its no-prose
     // discipline. The attempt is still recorded: an access the daemon could
-    // not complete is a fact about access, and a record that keeps only the
-    // tidy cases is a record of the tidy cases.
+    // not complete is a fact about access. A walk that exhausted its budget is
+    // a refusal the daemon can name; every other throw remains a failed attempt.
     // Subclasses here do not set .name (IncompleteObservationError reads as
-    // "Error" through it), so the class name is what gets written.
+    // "Error" through it), so the class's constructor name is what gets written.
     const name = error instanceof Error ? error.constructor.name || error.name : "Error";
     const message = error instanceof Error ? error.message : String(error);
     console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
     if (entry.effectClass === "observe") {
-      recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
+      const outcome = error instanceof IncompleteObservationError ? refused("IncompleteObservation") : FAILED;
+      recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome });
     }
     return { type: "response", id: request.id, refusal: BACKEND_UNREADABLE_REFUSAL };
   }
