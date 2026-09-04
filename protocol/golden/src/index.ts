@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.13.0
+// Mastra CC protocol v1.14.0
 
-export const PROTOCOL_VERSION = "1.13.0";
-export const SCHEMA_DIGEST = "00ed4ce0b3cb82fab02fed24097de36f70ab34fffd58ef1605c7787aa150cb8b";
+export const PROTOCOL_VERSION = "1.14.0";
+export const SCHEMA_DIGEST = "1ee7d902e8bdf6249c69b9a12640ca993977f79ebf8e50b28d165c78655adab0";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -227,6 +227,10 @@ export interface QueryElementsParams {
   role?: Role;
   /** Restrict the answer to elements whose normalised name matches. */
   name?: string;
+  /** Restrict the answer to one visible, authorised application whose normalised exact name matches. This selector only narrows observation and never grants authority. */
+  application?: string;
+  /** Restrict the answer to one visible window whose normalised exact name matches inside application. A window can only be named when application is also present. */
+  window?: string;
   /** Upper bound on the number of returned elements. */
   limit?: number;
 }
@@ -521,6 +525,14 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
         },
         "name": {
           "description": "Restrict the answer to elements whose normalised name matches.",
+          "type": "string"
+        },
+        "application": {
+          "description": "Restrict the answer to one visible, authorised application whose normalised exact name matches. This selector only narrows observation and never grants authority.",
+          "type": "string"
+        },
+        "window": {
+          "description": "Restrict the answer to one visible window whose normalised exact name matches inside application. A window can only be named when application is also present.",
           "type": "string"
         },
         "limit": {
