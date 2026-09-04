@@ -897,6 +897,12 @@ const ACQUIRE_NOT_EXPOSED_REFUSAL =
 const ACQUIRE_FAILED_REFUSAL =
   "refused after acting: this machine's accessibility layer did not accept every property of being switched on, " +
   "and what it did accept is reported beside this refusal";
+// The re-read can fail too, and then there is nothing beside the refusal to
+// read. Promising a report that is not there would be the same lie in a
+// smaller place, so that case says so.
+const ACQUIRE_FAILED_UNREADABLE_REFUSAL =
+  "refused after acting: this machine's accessibility layer did not accept every property of being switched on, " +
+  "and could not be read afterwards to say what it was left holding";
 
 async function acquireAccessibility(launch: LaunchContext): Promise<Classified<{ accessibility?: AccessibilityReport; refusal?: string }>> {
   if (launch.mayAcquireAccessibility !== true) {
@@ -918,7 +924,8 @@ async function acquireAccessibility(launch: LaunchContext): Promise<Classified<{
     } catch {
       accessibility = undefined;
     }
-    return { accessibility, refusal: ACQUIRE_FAILED_REFUSAL, refusalClass: "AccessibilityNotAcquired" };
+    const refusal = accessibility === undefined ? ACQUIRE_FAILED_UNREADABLE_REFUSAL : ACQUIRE_FAILED_REFUSAL;
+    return { accessibility, refusal, refusalClass: "AccessibilityNotAcquired" };
   }
   // RE-READ, never report the intention. The state that goes back is measured
   // after the attempt, so a write that was accepted and changed nothing is

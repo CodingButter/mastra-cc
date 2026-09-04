@@ -61,7 +61,9 @@ describe("a handover asked for before looking", () => {
   // whether requestHumanControl and the wired tools share a memory.
   it("is refused by the real agent's tool until a desk tool has been tried", async () => {
     const { deskAgent } = await import("../agent");
-    const tools = (await deskAgent(() => {}).listTools()) as unknown as Record<
+    const { release } = await import("../control");
+    const events: DemoEvent[] = [];
+    const tools = (await deskAgent((event) => events.push(event)).listTools()) as unknown as Record<
       string,
       { execute: (input: unknown, context?: unknown) => Promise<unknown> }
     >;
@@ -74,10 +76,22 @@ describe("a handover asked for before looking", () => {
     // is having asked, not having been answered.
     await expect(tools.queryElements.execute({ role: "button" } as never, {} as never)).rejects.toThrow();
 
-    // Not the refusal any more: the desk has been consulted, so the handover is
-    // allowed to proceed and block on the person.
+    // Not the refusal any more: the desk has been consulted, so the handover
+    // reaches the person. The proof is the control event, not a race - the
+    // refusal returns without ever emitting one.
+    expect(events.filter((event) => event.type === "control")).toEqual([]);
     const handover = tools.requestHumanControl.execute({ reason: "sign in" });
-    await expect(Promise.race([handover, Promise.resolve("pending")])).resolves.toBe("pending");
+    let requestId = "";
+    await vi.waitFor(() => {
+      const control = events.find((event) => event.type === "control" && event.mode === "interact") as
+        | { requestId: string }
+        | undefined;
+      expect(control).toBeDefined();
+      requestId = control!.requestId;
+    });
+    // Hand it back, so no later test inherits an open handover.
+    release(requestId);
+    await handover;
   });
 });
 

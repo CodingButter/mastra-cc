@@ -59,8 +59,10 @@ export function accessibilityLayer(read: StatusRead, write: StatusWrite = liveSt
       // and dialogs with nothing underneath them - measured on the demo
       // container, where discovery over a Google Images page returned the
       // application, four windows and a dialog and not one page control
-      // (ADR-0075). Both writes or neither: a half-acquired desk reads as a
-      // working one right up until an agent goes looking inside a browser.
+      // (ADR-0075). A failure here throws with the first write already
+      // accepted, and that half state is exactly what the caller's re-read is
+      // for: a half-acquired desk reads as a working one right up until an
+      // agent goes looking inside a browser.
       await write("ScreenReaderEnabled", true);
     },
     async report(): Promise<AccessibilityReport> {

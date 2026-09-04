@@ -163,6 +163,22 @@ describe("acquiring is the operator's to permit", () => {
       accessibility: { state: "enabled" },
     });
   });
+
+  it("does not promise a report it could not take", async () => {
+    // The re-read can fail too. Then there is nothing beside the refusal, and
+    // the refusal has to say that rather than point at an absent field.
+    const layer = layerThat(
+      async () => {
+        throw new Error("status object went away");
+      },
+      async () => {
+        throw new Error("status object accepted one property and refused the next");
+      },
+    );
+    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    expect(response.result).toMatchObject({ refusal: expect.stringContaining("could not be read afterwards") });
+    expect((response.result as { accessibility?: unknown }).accessibility).toBeUndefined();
+  });
 });
 
 describe("every acquire attempt is written down", () => {
