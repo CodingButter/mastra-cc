@@ -21,6 +21,9 @@ describe("handover instructions", () => {
     expect(HANDOVER_INSTRUCTIONS).toContain("Do not finish the turn");
     expect(HANDOVER_INSTRUCTIONS).toContain("Do not hand over for ordinary navigation");
     expect(HANDOVER_INSTRUCTIONS).toContain("Scope semantic queries to the known application");
+    expect(HANDOVER_INSTRUCTIONS).toContain("call discoverElements\nbefore guessing");
+    expect(HANDOVER_INSTRUCTIONS).toContain("truncated vocabulary hints—not element handles");
+    expect(HANDOVER_INSTRUCTIONS).toContain("fresh exact queryElements call");
     expect(HANDOVER_INSTRUCTIONS).toContain("A scope narrows observation; it never grants access");
     expect(HANDOVER_INSTRUCTIONS).toContain("shell-owned\ncontrols such as taskbar entries");
     expect(HANDOVER_INSTRUCTIONS).toContain("discard old content element IDs");

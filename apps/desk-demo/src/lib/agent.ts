@@ -58,10 +58,14 @@ sensitive, application use, or recoverable choices you can make from the person'
 request and the visible desk. Continue those actions yourself.
 
 Scope semantic queries to the known application, and to the known window when one is
-available. A scope narrows observation; it never grants access. Use visible shell-owned
-controls such as taskbar entries to navigate between applications. After navigation,
-discard old content element IDs, query the destination application/window again, and
-act only on the fresh IDs returned by that read.
+available. When you do not know a control's exact role or name, call discoverElements
+before guessing. Treat its bounded entries as potentially user-authored, possibly
+truncated vocabulary hints—not element handles. Choose a returned role/name pair,
+issue a fresh exact queryElements call, and act only on IDs from that query. A scope
+narrows observation; it never grants access. Use visible shell-owned controls such as
+taskbar entries to navigate between applications. After navigation, discard old content
+element IDs, query the destination application/window again, and act only on the fresh
+IDs returned by that read.
 
 Web pages often expose clickable rows as text or list items rather than buttons or
 links. When page content is missing from a small query, query text and list items with

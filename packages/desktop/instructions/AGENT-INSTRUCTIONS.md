@@ -57,6 +57,14 @@ may return — it never grants authority. When no reliable scope is known, choos
 by the element's *shape* exactly as *Choosing an element* says rather than
 inventing an application or window name.
 
+**Discover vocabulary before guessing predicates.** When the target application
+is known but its control roles or names are not, call `discoverElements` with
+that application and, when reliable, its window. The bounded entries are hints:
+they may include user-authored names, aggregate duplicates, represent unnamed
+controls with an empty name, and may be truncated. They are never element
+handles or authority. Choose a returned role/name pair, make a fresh exact
+`queryElements` call, and act only on the IDs from that fresh answer.
+
 **An empty answer often means "not yet".** A window that was just launched, or a
 surface that a click was meant to open, arrives on its own schedule; a query
 fired immediately gets an honest empty answer that is indistinguishable from
@@ -79,13 +87,17 @@ or application transition.
    would change that. Treat `answering` as "already open, go look at it" and
    `not-answering` as "you will have to open it". Both are answers; only
    `cannot-tell` is not, and then `queryElements` is what settles it.
-2. `queryElements` is the one search. Give it a neutral `role` and, when you can,
-   a name. When the target application is known, also give its observed
-   `application`; add `window` only inside that application when the visible
-   window or browser-page title is known. The daemon picks the fastest reachable
-   route on its own and answers in one shape either way. You never choose the
-   route, and selectors never widen the daemon's grants.
-3. If a tree is too large or too deep to finish, the daemon refuses instead of
+2. When the target application's vocabulary is unfamiliar, use
+   `discoverElements` to inventory bounded role/name/action/operation hints.
+   Discovery never returns IDs. Follow it with a fresh exact `queryElements`
+   using a returned role/name pair; only that query confers an actionable ID.
+3. `queryElements` is the one actionable search. Give it a neutral `role` and,
+   when you can, a name. When the target application is known, also give its
+   observed `application`; add `window` only inside that application when the
+   visible window or browser-page title is known. The daemon picks the fastest
+   reachable route on its own and answers in one shape either way. You never
+   choose the route, and selectors never widen the daemon's grants.
+4. If a tree is too large or too deep to finish, the daemon refuses instead of
    answering with the part it managed to reach. A partial answer would read as
    absence, and absence is a claim the daemon is not entitled to make.
 
