@@ -17,6 +17,48 @@ const recordedWorld = (): Backend => new CdpReplayBackend("chrome-page", "all");
 const performingOverARecording = (): Backend => new CdpBackend(replayCdpChannel("chrome-page"), "all");
 
 describe("the browser route refuses before it acts", () => {
+  it("refuses every element effect when the answered element is no longer exposed", async () => {
+    const asked: unknown[] = [];
+    const backend = new CdpBackend(
+      {
+        async exchange(exchange) {
+          asked.push(exchange);
+          throw new Error("an effect reached the page");
+        },
+        async watch() {
+          throw new Error("not a watching test");
+        },
+        async close() {},
+      },
+      "all",
+    );
+    const hidden = {
+      id: "el-stale",
+      application: "Chrome",
+      role: "entry",
+      name: "Hidden field",
+      description: "",
+      states: ["enabled"],
+      actions: [{ name: "focus", description: "" }],
+      operations: [{ operation: "setValue", range: { minimum: 0, maximum: 100 } }],
+    } as const;
+    const internals = backend as unknown as { attestElement(params: { id: string }): Promise<{ element: typeof hidden }> };
+    internals.attestElement = async () => ({ element: hidden });
+
+    const effects = [
+      backend.editElement({ id: hidden.id, value: "x" }),
+      backend.activateElement({ id: hidden.id, action: "focus" }),
+      backend.submitElement({ id: hidden.id, attestation: "submits the hidden field" }),
+      backend.setElementValue({ id: hidden.id, value: 50 }),
+      backend.setElementText({ id: hidden.id, text: "x" }),
+      backend.setElementCaret({ id: hidden.id, offset: 0 }),
+      backend.revealElement({ id: hidden.id }),
+    ];
+
+    for (const effect of effects) await expect(effect).rejects.toBeInstanceOf(UnperformableElementError);
+    expect(asked).toEqual([]);
+  });
+
   it("refuses an id it never answered without saying whether such an element exists", async () => {
     const backend = performingOverARecording();
     const { elements } = await backend.queryElements({});
