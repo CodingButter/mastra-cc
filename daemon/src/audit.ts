@@ -126,6 +126,7 @@ export const REFUSAL_CLASSES = [
   "EffectClassGate",
   "ElementGone",
   "EnforcementUnrepresentable",
+  "IncompleteObservation",
   "InventoryUnsupported",
   "LaunchUnavailable",
   "MalformedParameter",
