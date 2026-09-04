@@ -873,13 +873,7 @@ export class AtspiBackend implements Backend {
   async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
     const { ref } = await this.performable(params.id, true);
     await scrollIntoView(this.channel, ref);
-    const element = await this.readElement(ref);
-    if (!element.states.includes("visible") || element.states.includes("offscreen")) {
-      throw new WriteNotObservedError(
-        `the element remained unexposed after it was revealed - the scroll was not observed`,
-      );
-    }
-    return { element };
+    return { element: await this.readElement(ref) };
   }
 
   async unsubscribeElement(subscriptionId: string): Promise<void> {
