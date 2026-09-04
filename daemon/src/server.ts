@@ -37,6 +37,8 @@ import {
   type BackendSubscription,
   AttestationFailedError,
   IncompleteObservationError,
+  WindowScopeAmbiguousError,
+  WindowScopeUnmatchedError,
   InventoryUnsupportedError,
   DeafWatchError,
   EffectUnsupportedError,
@@ -348,6 +350,21 @@ export const QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL = "a window can only be n
 export const DISCOVERY_APPLICATION_REFUSAL = "an application must be named for element discovery";
 export const DISCOVERY_WINDOW_REFUSAL = "a discovery window must be a non-empty name inside an application";
 export const DISCOVERY_LIMIT_REFUSAL = "a discovery limit must be a whole number from 1 through 200";
+
+// A window scope that names no window, or names several, used to answer with
+// an EMPTY list - and an empty list is a sentence about the desktop ("this
+// window has nothing in it") that the daemon had no grounds to say. Measured
+// on a Plasma file dialog, which publishes two visible top-levels called
+// "Open Image" for one dialog on screen: every scoped question about it came
+// back empty, and the agent asking them concluded the dialog had no controls
+// and gave up, while the same question WITHOUT the window answered with the
+// whole dialog. Not-found and ambiguous are separate sentences because they
+// have separate repairs: one is a wrong name, the other is a name that is not
+// enough by itself.
+export const WINDOW_SCOPE_UNMATCHED_REFUSAL =
+  "no visible window of that application answers to that name, so there is nothing this scope could have been asked about - ask without the window to see what windows there are";
+export const WINDOW_SCOPE_AMBIGUOUS_REFUSAL =
+  "more than one visible window of that application answers to that name, so this scope names no single window - ask without the window, or by a name only one of them carries";
 
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
@@ -1797,7 +1814,22 @@ async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<
   if (params.window !== undefined && params.application === undefined) {
     return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
-  return observedWithConfiguration(await b.queryElements(params as never), b, l);
+  try {
+    return observedWithConfiguration(await b.queryElements(params as never), b, l);
+  } catch (error) {
+    const scoped = windowScopeRefusal(error);
+    if (scoped !== undefined) return scoped;
+    throw error;
+  }
+}
+
+// One place turns the two scope failures into the two sentences, so the scoped
+// query and scoped discovery cannot drift apart in what they say about the
+// same desktop.
+function windowScopeRefusal(error: unknown): { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" } | undefined {
+  if (error instanceof WindowScopeUnmatchedError) return { refusal: WINDOW_SCOPE_UNMATCHED_REFUSAL, refusalClass: "WindowScopeUnmatched" };
+  if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "WindowScopeAmbiguous" };
+  return undefined;
 }
 
 async function discoverElements(p: unknown, b: Backend, _l: LaunchContext): Promise<unknown> {
@@ -1814,7 +1846,13 @@ async function discoverElements(p: unknown, b: Backend, _l: LaunchContext): Prom
   if (params.limit !== undefined && (typeof params.limit !== "number" || !Number.isInteger(params.limit) || params.limit < 1 || params.limit > 200)) {
     return { refusal: DISCOVERY_LIMIT_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
-  return b.discoverElements({ ...params, limit: params.limit ?? 100 } as never);
+  try {
+    return await b.discoverElements({ ...params, limit: params.limit ?? 100 } as never);
+  } catch (error) {
+    const scoped = windowScopeRefusal(error);
+    if (scoped !== undefined) return scoped;
+    throw error;
+  }
 }
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -

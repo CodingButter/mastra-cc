@@ -65,6 +65,16 @@ controls with an empty name, and may be truncated. They are never element
 handles or authority. Choose a returned role/name pair, make a fresh exact
 `queryElements` call, and act only on the IDs from that fresh answer.
 
+**A window scope that cannot resolve is refused, and the two refusals differ.**
+Naming a `window` asks about exactly one window. If nothing visible answers to
+that name the daemon refuses as `WindowScopeUnmatched`: list the application's
+windows and take a name from what is actually there, because the title may have
+changed or the window may have closed. If several windows answer to it the
+daemon refuses as `WindowScopeAmbiguous`: drop the `window` and read the whole
+application, because no name separates two windows that share one. File dialogs
+in particular often publish two visible top-levels of the same name, so the
+unscoped read is the working route, not a fallback.
+
 **An empty answer often means "not yet".** A window that was just launched, or a
 surface that a click was meant to open, arrives on its own schedule; a query
 fired immediately gets an honest empty answer that is indistinguishable from

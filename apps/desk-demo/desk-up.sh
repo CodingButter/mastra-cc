@@ -106,6 +106,24 @@ container_exec bash -lc 'mkdir -p /etc/chromium/policies/managed &&
   printf "%s\n" "{ \"PromptForDownloadLocation\": false, \"DownloadDirectory\": \"/config/Downloads\" }" \
     >/etc/chromium/policies/managed/90-mcc-downloads.json'
 
+# A DESKTOP THAT CAN BE CHANGED. This image ships its Plasma containments with
+# immutability=1, which locks the desktop's own configuration: System Settings
+# still shows the wallpaper page, still adds an image to the list, and its Apply
+# button still lights - and nothing is written, because the containment refuses
+# the write (measured 2026-09-04: the wallpaper file landed in plasmarc's
+# usersWallpapers and the containment's Image key never appeared). An agent
+# doing this errand cannot tell a locked desk from a failed one, so the desk is
+# unlocked here rather than left to look like a broken daemon.
+appletsrc=/config/.config/plasma-org.kde.plasma.desktop-appletsrc
+if container_exec bash -lc "grep -q '^immutability=1\$' $appletsrc 2>/dev/null"; then
+  container_exec bash -lc "sed -i 's/^immutability=1\$/immutability=0/' $appletsrc"
+  # The lock is read when the shell starts, so the shell is restarted here -
+  # before the daemon is started below, so the accessibility tree the daemon
+  # attaches to is the one the restarted shell publishes.
+  session_exec 'plasmashell --replace >/dev/null 2>&1 & disown' || true
+  sleep 8
+fi
+
 # What this desk lets the agent do, stated in one place so a viewer can read the
 # demo's authority off the screen rather than guessing it. Everything absent from
 # these lists is refused by the daemon, and a refusal is part of the demo.

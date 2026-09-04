@@ -44,6 +44,8 @@ import {
   UnperformableElementError,
   UnwatchableElementError,
   WriteNotObservedError,
+  WindowScopeAmbiguousError,
+  WindowScopeUnmatchedError,
 } from "../../backend.js";
 import { desktopEntryDirectories, type InventoryEntry, scanInstalledApplications } from "../../inventory.js";
 import {
@@ -354,12 +356,17 @@ export class AtspiBackend implements Backend {
             if (!states.includes("visible") || states.includes("offscreen")) continue;
             windows.push(candidate);
           }
-          if (windows.length !== 1) continue;
+          // Nothing to scope to, or too much: both are refusals rather than an
+          // empty answer, because the caller asked about a window and an empty
+          // list would have described one instead of the search for it.
+          if (windows.length === 0) throw new WindowScopeUnmatchedError(`no visible window named "${params.window}" in "${selectedApplicationName}"`);
+          if (windows.length > 1) throw new WindowScopeAmbiguousError(`${windows.length} visible windows named "${params.window}" in "${selectedApplicationName}"`);
           root = windows[0] as NativeRef;
         }
         selected.push({ root, applicationName: selectedApplicationName });
       } catch (error) {
         if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
       }
     }
     if (params.application !== undefined && selected.length !== 1) return { elements: [] };
@@ -478,12 +485,16 @@ export class AtspiBackend implements Backend {
             const states = toNeutralStates(lower, upper);
             if (states.includes("visible") && !states.includes("offscreen")) windows.push(candidate);
           }
-          if (windows.length !== 1) continue;
+          // Same rule as the scoped query: a window scope that resolves to
+          // nothing, or to several, is refused rather than answered empty.
+          if (windows.length === 0) throw new WindowScopeUnmatchedError(`no visible window named "${params.window}" in "${application}"`);
+          if (windows.length > 1) throw new WindowScopeAmbiguousError(`${windows.length} visible windows named "${params.window}" in "${application}"`);
           root = windows[0] as NativeRef;
         }
         selected.push({ root, applicationName: application });
       } catch (error) {
         if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
       }
     }
     if (selected.length !== 1) return { entries: [], truncated: false };

@@ -202,6 +202,15 @@ export class FocusUnsupportedError extends Error {}
 // exhausting them is reported rather than smoothed into a short answer.
 export class IncompleteObservationError extends Error {}
 
+// A window scope resolved to no window, or to several. Scope narrows what is
+// OBSERVED, so a scope that resolves to nothing has nothing to observe - and
+// answering that with an empty list would put a claim about the desktop
+// ("that window is empty") in the mouth of a daemon that only failed to find
+// the window. The two cases are distinct classes because they are distinct
+// repairs: a name nothing answers to, and a name too many things answer to.
+export class WindowScopeUnmatchedError extends Error {}
+export class WindowScopeAmbiguousError extends Error {}
+
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
 // can review"). This is not a judgement of the caller's attestation - the

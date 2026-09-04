@@ -1230,5 +1230,19 @@
     "find": "      await emitChord(this.channel, \"End\");\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "a-window-scope-that-answers-empty-instead-of-refusing",
+    "file": "daemon/src/server.ts",
+    "find": "  if (error instanceof WindowScopeUnmatchedError) return { refusal: WINDOW_SCOPE_UNMATCHED_REFUSAL, refusalClass: \"WindowScopeUnmatched\" };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
+  },
+  {
+    "name": "a-window-scope-that-picks-one-of-several-windows",
+    "file": "daemon/src/server.ts",
+    "find": "  if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: \"WindowScopeAmbiguous\" };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
   }
 ]
