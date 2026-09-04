@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.15.0
+// Mastra CC protocol v1.16.0
 
-export const PROTOCOL_VERSION = "1.15.0";
-export const SCHEMA_DIGEST = "402c13c572f451153956f1e6d83820af00124618348008327da30b7e40ef0d80";
+export const PROTOCOL_VERSION = "1.16.0";
+export const SCHEMA_DIGEST = "c9a7294be961d27874ef440e417377e8b58dec43e3d022528c64443fff2bca1f";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -26,7 +26,7 @@ export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText"] as const;
+export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText","clearElementText"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -525,6 +525,19 @@ export interface TypeTextResult {
   refusal?: string;
 }
 
+/** Empty one element's text by keystroke, so that a subsequent typeText writes a field instead of extending it. This is RAW INPUT in the same class as sendKeyChord and typeText, and it exists because typing is an APPEND: a field that publishes a value to read but no interface to set it can be typed into and cannot be replaced, and pressing a named chord once per character is the only vocabulary this contract has. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying, and it presses nothing it cannot count: the element's own published text says how many characters are there, the presses are bounded by that reading, and an element whose text this daemon cannot read is refused rather than cleared blind. The outcome is read back from the desktop and COMPARED - an element that is not empty afterwards is a refusal, never a success with a disappointing element attached. */
+export interface ClearElementTextParams {
+  /** The element to empty. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
+  id: string;
+}
+
+export interface ClearElementTextResult {
+  /** Present when the element read back empty; the element as it reads AFTERWARDS, read back from the desktop. An element that still carries text is reported as a refusal instead, because the whole point of this method is the comparison. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the reason the element's text could not be read, the length when there is more text than this method will press through, and what was observed when the element did not come back empty. */
+  refusal?: string;
+}
+
 /** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */
 export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = {
   "queryElements": {
@@ -979,6 +992,23 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
       "required": [
         "id",
         "text"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "clearElementText": {
+    "description": "Empty one element's text by keystroke, so that a subsequent typeText writes a field instead of extending it. This is RAW INPUT in the same class as sendKeyChord and typeText, and it exists because typing is an APPEND: a field that publishes a value to read but no interface to set it can be typed into and cannot be replaced, and pressing a named chord once per character is the only vocabulary this contract has. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying, and it presses nothing it cannot count: the element's own published text says how many characters are there, the presses are bounded by that reading, and an element whose text this daemon cannot read is refused rather than cleared blind. The outcome is read back from the desktop and COMPARED - an element that is not empty afterwards is a refusal, never a success with a disappointing element attached.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to empty. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "id"
       ],
       "additionalProperties": false
     }

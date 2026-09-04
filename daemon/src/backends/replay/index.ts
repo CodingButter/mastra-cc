@@ -218,6 +218,10 @@ export class ReplayBackend implements Backend {
     this.refuseToPerform("type text");
   }
 
+  async clearElementText(): Promise<never> {
+    this.refuseToPerform("clear an element's text");
+  }
+
   close(): Promise<void> {
     return this.inner.close();
   }

@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -1063,6 +1063,29 @@
           "type": "string",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the character or the length when the text is not printable or too long, and what was observed when the element could not be focused or the machine has no way to deliver a key at all."
+        }
+      }
+    },
+    "clearElementText": {
+      "description": "Empty one element's text by keystroke, so that a subsequent typeText writes a field instead of extending it. This is RAW INPUT in the same class as sendKeyChord and typeText, and it exists because typing is an APPEND: a field that publishes a value to read but no interface to set it can be typed into and cannot be replaced, and pressing a named chord once per character is the only vocabulary this contract has. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying, and it presses nothing it cannot count: the element's own published text says how many characters are there, the presses are bounded by that reading, and an element whose text this daemon cannot read is refused rather than cleared blind. The outcome is read back from the desktop and COMPARED - an element that is not empty afterwards is a refusal, never a success with a disappointing element attached.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element to empty. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the element read back empty; the element as it reads AFTERWARDS, read back from the desktop. An element that still carries text is reported as a refusal instead, because the whole point of this method is the comparison."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the reason the element's text could not be read, the length when there is more text than this method will press through, and what was observed when the element did not come back empty."
         }
       }
     }

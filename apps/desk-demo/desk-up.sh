@@ -88,6 +88,24 @@ fi
 # Desk preparation, like kcalc above - not the image, not the daemon.
 container_exec bash -lc 'printf "%s\n" "CHROMIUM_FLAGS=\"\$CHROMIUM_FLAGS --force-renderer-accessibility\"" >/etc/chromium.d/90-mcc-accessibility'
 
+# A DOWNLOAD THAT DOES NOT KILL THE BROWSER. Saving an image opens Chromium's
+# GTK file chooser; GTK decodes that dialog's icons through glycin, which reruns
+# the decode inside bubblewrap, and bubblewrap cannot make a user namespace on
+# this host (kernel.apparmor_restrict_unprivileged_userns). GTK turns the failed
+# icon into a fatal assertion, so - measured 2026-09-04 - asking this browser to
+# save a picture killed the browser outright, before any dialog existed for the
+# desk to read or refuse.
+#
+# The dialog is not the point; the file is. Chromium's own policy directory
+# turns the chooser off and names the folder, so "Save image as..." writes
+# straight to ~/Downloads. Desk preparation, like the accessibility flag above:
+# the daemon is unchanged and the agent still reaches the menu item the same
+# way. An operator who wants the picker back deletes this file and gets the
+# crash back with it, until the host allows user namespaces.
+container_exec bash -lc 'mkdir -p /etc/chromium/policies/managed &&
+  printf "%s\n" "{ \"PromptForDownloadLocation\": false, \"DownloadDirectory\": \"/config/Downloads\" }" \
+    >/etc/chromium/policies/managed/90-mcc-downloads.json'
+
 # What this desk lets the agent do, stated in one place so a viewer can read the
 # demo's authority off the screen rather than guessing it. Everything absent from
 # these lists is refused by the daemon, and a refusal is part of the demo.

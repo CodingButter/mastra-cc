@@ -27,6 +27,8 @@ import type {
   SetElementTextResult,
   TypeTextParams,
   TypeTextResult,
+  ClearElementTextParams,
+  ClearElementTextResult,
   SetElementValueParams,
   SetElementValueResult,
   SubmitElementParams,
@@ -456,6 +458,16 @@ export interface Backend {
   // server before this is reached; the backend types what it is given.
   typeText(params: TypeTextParams): Promise<TypeTextResult>;
 
+  // The third raw-input method (ADR-0076), and the only one that both counts
+  // its presses and compares afterwards: typing is an append, so a field with
+  // no editable-text interface can be written to and not replaced. The backend
+  // reads the element's own published text to learn how many characters are
+  // there, presses that many times, and refuses if what it reads back is not
+  // empty. An element whose text this daemon cannot read is refused, because a
+  // blind clear would be pressing a key an unknown number of times at a window
+  // it cannot see.
+  clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult>;
+
   close(): Promise<void>;
 }
 
@@ -478,5 +490,6 @@ export const BACKEND_METHODS = [
   "revealElement",
   "sendKeyChord",
   "typeText",
+  "clearElementText",
   "close",
 ] as const;

@@ -23,6 +23,9 @@ import type {
   SetElementTextResult,
   TypeTextParams,
   TypeTextResult,
+  ClearElementTextParams,
+  ClearElementTextResult,
+  ObservableContent,
   SetElementValueParams,
   SetElementValueResult,
   SubmitElementParams,
@@ -111,6 +114,22 @@ export const TRAVERSAL_LIMITS = {
   maxNodesPerApp: MAX_NODES_PER_APP,
   maxNodesTotal: MAX_NODES_TOTAL,
 } as const;
+
+// One key per character, and never more than a field's worth of them
+// (ADR-0076). The bound is the same 1024 typeText carries: the two methods are
+// the two halves of writing a field, and a text longer than one call can type
+// is a text this one will not press through either.
+const CLEAR_MAX_PRESSES = 1024;
+
+// How many characters this element says it is carrying, or `undefined` when it
+// does not say. A protected or unpublished observation is a silence, and a
+// silence is not a zero: an element that will not tell this daemon what is in
+// it cannot be emptied by counting, and cannot be checked afterwards either.
+function clearableLength(content: ObservableContent): number | undefined {
+  if (content.kind === "text") return [...content.value].length;
+  if (content.kind === "text-window") return content.totalLength;
+  return undefined;
+}
 
 interface NativeRef {
   busName: string;
@@ -795,6 +814,70 @@ export class AtspiBackend implements Backend {
   // was reached. Like the chord, nothing else in this file calls it.
   async typeText(params: TypeTextParams): Promise<TypeTextResult> {
     return this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
+  }
+
+  // The third raw-input method (ADR-0076). Typing is an APPEND: a field that
+  // publishes a value and no way to set it can be typed into and never
+  // replaced, and this contract has no held-modifier chord to select with -
+  // the platform's synthesis taps a modifier rather than holding it, so there
+  // is no select-all to press (ADR-0067). What is left is deleting one
+  // character at a time, and the only way to do that honestly is to COUNT
+  // first: the element's own published text says how many characters are
+  // there, and the presses are bounded by that reading rather than by a guess
+  // at how long a field might be.
+  //
+  // Three refusals, all before or instead of a claim of success:
+  //   - text this daemon cannot read: refused, because a blind clear is an
+  //     unbounded number of destructive presses aimed at a window it cannot
+  //     see. Emptiness that cannot be verified is not emptiness.
+  //   - more text than this method will press through: refused by length,
+  //     because a thousand keystrokes to empty a document is not a field entry
+  //     and this is a field-entry verb.
+  //   - not empty afterwards: refused, not returned. Unlike every other
+  //     raw-input method here, this one HAS something to compare against - the
+  //     intended state is "empty" - so the read-back is evidence the seam can
+  //     judge instead of handing the caller an element and a shrug.
+  async clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult> {
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      throw new UnperformableElementError(
+        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    const before = await this.readElement(ref);
+    const length = clearableLength(before.content);
+    if (length === undefined) {
+      throw new UnperformableElementError(
+        `this element does not publish text this daemon can read, so there is no count to press through and no way to ` +
+          `see whether it emptied - clearing it would be an unknown number of destructive keys aimed at a window this ` +
+          `daemon cannot check`,
+      );
+    }
+    if (length > CLEAR_MAX_PRESSES) {
+      throw new UnperformableElementError(
+        `this element publishes ${length} characters and this contract clears at most ${CLEAR_MAX_PRESSES} by keystroke - ` +
+          `clearing is one key per character, and a text this long is a document rather than a field`,
+      );
+    }
+    const cleared = await this.performing(params.id, async (target) => {
+      await grabFocus(this.channel, target);
+      if (length === 0) return;
+      // End before the deletions, so the caret is behind the last character
+      // wherever the application left it; then one Backspace per character
+      // that was read. Neither press is aimed - raw input never is - which is
+      // exactly why the comparison below exists.
+      await emitChord(this.channel, "End");
+      for (let pressed = 0; pressed < length; pressed += 1) await emitChord(this.channel, "Backspace");
+    });
+    const remaining = clearableLength(cleared.element.content);
+    if (remaining !== 0) {
+      throw new WriteNotObservedError(
+        `this element read back with ${remaining === undefined ? "text this daemon can no longer read" : `${remaining} characters still in it`} after ` +
+          `${length} deletions - the keys were sent, and either they landed somewhere else or the application put text back. ` +
+          `Nothing here claims the element is empty when it does not read empty`,
+      );
+    }
+    return cleared;
   }
 
   private async aimedRawInput(id: string, sent: "key" | "text", emit: () => Promise<void>): Promise<SendKeyChordResult> {

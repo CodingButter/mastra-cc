@@ -1202,5 +1202,33 @@
     "find": "accessibility, ",
     "cwd": "daemon",
     "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
+  },
+  {
+    "name": "a-clear-that-never-checks-it-emptied",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (remaining !== 0) {\n      throw new WriteNotObservedError(\n        `this element read back with ${remaining === undefined ? \"text this daemon can no longer read\" : `${remaining} characters still in it`} after ` +\n          `${length} deletions - the keys were sent, and either they landed somewhere else or the application put text back. ` +\n          `Nothing here claims the element is empty when it does not read empty`,\n      );\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "a-clear-that-presses-blind-at-unreadable-text",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (length === undefined) {\n      throw new UnperformableElementError(\n        `this element does not publish text this daemon can read, so there is no count to press through and no way to ` +\n          `see whether it emptied - clearing it would be an unknown number of destructive keys aimed at a window this ` +\n          `daemon cannot check`,\n      );\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "a-clear-with-no-upper-bound-on-the-keys-it-sends",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (length > CLEAR_MAX_PRESSES) {\n      throw new UnperformableElementError(\n        `this element publishes ${length} characters and this contract clears at most ${CLEAR_MAX_PRESSES} by keystroke - ` +\n          `clearing is one key per character, and a text this long is a document rather than a field`,\n      );\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "a-clear-that-does-not-put-the-caret-behind-the-text",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      await emitChord(this.channel, \"End\");\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
   }
 ]

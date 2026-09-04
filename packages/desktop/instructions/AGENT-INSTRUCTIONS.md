@@ -232,12 +232,27 @@ A newline is not text; it is the chord `Enter`, sent separately with
 string carrying one is refused by name before anything is typed. A text is at
 most 1024 characters: a field entry, not a document.
 
+### Typing appends, so empty the field first
+
+`typeText` adds to what is already there. A field holding `google.com` that you
+type `duckduckgo.com` into holds both, and there is no chord in this contract
+that selects a field's contents to type over them. Before you type into a field
+that already has something in it, call `clearElementText` with the element's id.
+It presses one key per character the element publishes, reads the element back,
+and refuses if the field is not empty afterwards — so a success there is an
+emptiness that was observed, not assumed. It refuses without pressing anything
+when the text cannot be read or is longer than 1024 characters.
+
+Do not empty a field by hand. `Home` followed by `Delete` after `Delete` after
+`Delete` spends a turn per character and will run you out of steps long before
+the field is empty.
+
 Worked example — navigating a browser: open it, find the element named
 `Address and search bar`, see `setText` is `not-exposed` on it (or call
-`setElementText` and receive the same), call `typeText` with its id and the
-URL, read the bar back and see the URL in it, then `sendKeyChord` `Enter`, then
-query the `window` role and read the browser's title to learn what page you
-reached.
+`setElementText` and receive the same), call `clearElementText` with its id so
+the bar is empty, call `typeText` with its id and the URL, read the bar back and
+see the URL and nothing else in it, then `sendKeyChord` `Enter`, then query the
+`window` role and read the browser's title to learn what page you reached.
 
 ## Refusals
 

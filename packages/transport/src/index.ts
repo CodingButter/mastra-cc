@@ -25,6 +25,8 @@ import {
   type SendKeyChordResult,
   type TypeTextParams,
   type TypeTextResult,
+  type ClearElementTextParams,
+  type ClearElementTextResult,
   type QueryElementsParams,
   type QueryElementsResult,
   type ReadElementContentParams,
@@ -129,6 +131,7 @@ export interface TransportClient {
   restartApplication(params: RestartApplicationParams): Promise<RestartApplicationResult>;
   sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult>;
   typeText(params: TypeTextParams): Promise<TypeTextResult>;
+  clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult>;
   /**
    * Register a listener for pushed change events. Returns a function that
    * removes it. Events are delivered as they arrive and are never buffered:
@@ -347,6 +350,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     restartApplication: (params) => call("restartApplication", params) as Promise<RestartApplicationResult>,
     sendKeyChord: (params) => call("sendKeyChord", params) as Promise<SendKeyChordResult>,
     typeText: (params) => call("typeText", params) as Promise<TypeTextResult>,
+    clearElementText: (params) => call("clearElementText", params) as Promise<ClearElementTextResult>,
     onChangeEvent: (listener) => {
       listeners.add(listener);
       return () => void listeners.delete(listener);

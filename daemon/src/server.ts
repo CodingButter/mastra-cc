@@ -411,10 +411,12 @@ export const REVEAL_SCOPE_REFUSAL =
 // The two raw-input methods share one refusal shape and differ in the name
 // they carry, because the name is what the caller reads back to know which
 // call was turned away (ADR-0070 admits typeText into the same class).
-function rawInputScopeSentence(method: "sendKeyChord" | "typeText"): string {
+type RawInputMethod = "sendKeyChord" | "typeText" | "clearElementText";
+
+function rawInputScopeSentence(method: RawInputMethod): string {
   return (
     `refused by the scope gate: "${method}" is rawInput-class and this session holds no rawInput authority - ` +
-    `${method === "typeText" ? "typed text is keystrokes, and keystrokes are" : "a key is"} raw input even when it is addressed to one element, ` +
+    `${method === "sendKeyChord" ? "a key is" : method === "typeText" ? "typed text is keystrokes, and keystrokes are" : "clearing presses one key per character, and keystrokes are"} raw input even when it is addressed to one element, ` +
     "this session was started without the session flag --allow rawInput, and only a session started with it can perform this method"
   );
 }
@@ -435,6 +437,9 @@ export function unknownChordRefusal(chord: string): string {
 
 export const NO_KEY_ROUTE_REFUSAL =
   'refused before the call: "sendKeyChord" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
+
+export const NO_CLEAR_ROUTE_REFUSAL =
+  'refused before the call: "clearElementText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
 
 export const NO_TYPE_ROUTE_REFUSAL =
   'refused before the call: "typeText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
@@ -485,7 +490,7 @@ export function typeTextRefusal(text: string): string | undefined {
 // says plainly that the flag alone is not enough here. The capability report
 // answers the same question with `not-exposed` and names no setting
 // (capabilityFor above), because a report has no room for a sequence.
-export function rawInputScopeRefusal(hasRoute: boolean, method: "sendKeyChord" | "typeText" = "sendKeyChord"): string {
+export function rawInputScopeRefusal(hasRoute: boolean, method: RawInputMethod = "sendKeyChord"): string {
   const sentence = rawInputScopeSentence(method);
   if (hasRoute) return sentence;
   return (
@@ -1554,6 +1559,35 @@ function sendKeyChord(params: { id?: unknown; chord?: unknown }, backend: Backen
 // `not-exposed` has told the CALLER to decide whether to type, and the daemon
 // deciding it for them would be the fallback ADR-0046 clause 3 forbids. The
 // test that pins it is type-blind-read-back.test.ts.
+// CLEARING BLIND, AND THEN LOOKING (ADR-0076). Same gate order as the other
+// two raw-input methods - authority, reach, then the call - and the same
+// borrowed focus. What differs is at the far end: the seam refuses when the
+// element does not read back empty, so this is the one raw-input verb whose
+// success is a comparison rather than a delivery.
+//
+// NOTHING CALLS THIS FUNCTION EXCEPT THE DISPATCH TABLE, and in particular no
+// failed setElementText reaches it: a daemon that emptied a field because a
+// semantic write was refused would be doing by keystroke what it had just been
+// told it may not do (ADR-0046 clause 3).
+function clearElementText(params: { id?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  return performEffect(
+    "rawInput",
+    "clearElementText",
+    rawInputScopeRefusal(launch.keys !== undefined, "clearElementText"),
+    launch,
+    backend,
+    id,
+    async () => {
+      if (launch.keys === undefined) return { refusal: NO_CLEAR_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
+      const held = await focusBeforeEffect(backend);
+      const answer = await backend.clearElementText({ id });
+      const note = await restoreFocusAfterEffect(backend, held, "clearing");
+      return answer.element === undefined ? answer : { element: withFocusNote(answer.element, note) };
+    },
+  );
+}
+
 function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const text = typeof params.text === "string" ? params.text : "";
@@ -1603,6 +1637,7 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   revealElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },
   sendKeyChord: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => sendKeyChord((p ?? {}) as { id?: unknown; chord?: unknown }, b, l) },
   typeText: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => typeText((p ?? {}) as { id?: unknown; text?: unknown }, b, l) },
+  clearElementText: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => clearElementText((p ?? {}) as { id?: unknown }, b, l) },
   listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
   describeAccessibility: { effectClass: "observe", enforcement: "at-result", handler: (_p, _b, l) => describeAccessibility(l) },
   // Its own effect class, not one of the five capability names, because it is

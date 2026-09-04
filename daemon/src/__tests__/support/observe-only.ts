@@ -39,6 +39,7 @@ export const observeOnlyEffects: Pick<
   | "revealElement"
   | "sendKeyChord"
   | "typeText"
+  | "clearElementText"
 > = {
   installedApplications: async () => {
     throw new InventoryUnsupportedError("this test double has no machine behind it and cannot enumerate what is installed");
@@ -87,6 +88,9 @@ export const observeOnlyEffects: Pick<
     throw new EffectUnsupportedError("this test double observes only");
   },
   typeText: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  clearElementText: async () => {
     throw new EffectUnsupportedError("this test double observes only");
   },
 };
