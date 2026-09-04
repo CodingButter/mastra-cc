@@ -68,6 +68,63 @@ const PROBE_BUDGET_MS = 2000;
 // the daemon's own log - never on the wire, which has no field for it.
 const BACKSTOP_WINDOW_MS = 100;
 
+// The backstop remembers only what it can still decide with. Its entire job is
+// the comparison `now - last < BACKSTOP_WINDOW_MS`, so an id whose last attempt
+// is older than that window can never change an answer again - keeping it is
+// pure retention. A watch over a busy subtree sees a fresh id stream (nodes
+// appear and disappear; the ones the walk never answered arrive under a derived
+// id), so a map that only ever grows is unbounded for the life of the watch.
+//
+// TWO ROTATING MAPS, NO TIMER. Writes land in `current`; when a window has
+// passed, `current` demotes to `previous` and a fresh `current` takes over, so
+// a lookup checks both and retention is bounded by the ids seen in the last two
+// windows rather than by every id ever seen. After two idle windows both maps
+// are dropped outright: every entry in them is already past the window, and
+// demoting instead would park a large stale map in `previous` for as long as the
+// stream stays quiet.
+//
+// The alternative was a swept map on an interval, which this module will not
+// have: `close()` holds no handles and keeps nothing alive, and a sweep timer
+// would make it the one thing that does.
+//
+// `now` is a parameter rather than a clock read so the decision is a pure
+// function of its inputs and a test can drive time without faking timers.
+export interface CollapseBackstop {
+  collapses(id: string, now: number): boolean;
+  // Entries retained. Only the bound is meaningful - this exists so a test can
+  // assert retention directly instead of measuring the heap, which would be a
+  // GC-timing coin flip.
+  size(): number;
+}
+
+export function createCollapseBackstop(windowMs: number): CollapseBackstop {
+  let current = new Map<string, number>();
+  let previous = new Map<string, number>();
+  let windowStart = Number.NEGATIVE_INFINITY;
+
+  return {
+    collapses(id, now) {
+      if (now - windowStart >= windowMs) {
+        // Every entry in `current` was written within a window of windowStart,
+        // so two windows on it holds nothing that could still collapse.
+        previous = now - windowStart >= 2 * windowMs ? new Map() : current;
+        current = new Map();
+        windowStart = now;
+      }
+      const last = current.get(id) ?? previous.get(id);
+      // The write precedes the verdict, exactly as the single map did: a repeat
+      // that IS collapsed still refreshes the stamp, so a sustained sub-window
+      // stream on one id stays collapsed instead of leaking one change per
+      // window.
+      current.set(id, now);
+      return last !== undefined && now - last < windowMs;
+    },
+    size() {
+      return current.size + previous.size;
+    },
+  };
+}
+
 // How far a signal may be from the watched root before this route stops
 // trying to place it. The same ceiling the walk descends to, read from the
 // other direction.
@@ -155,7 +212,7 @@ export async function openSignalStream(
   // not dropped and not delivered: if the probe confirms, they flush in
   // arrival order; if it refuses, no watch ever existed to deliver them to.
   let pending: BackendChange[] | null = [];
-  const lastEmitted = new Map<string, number>();
+  const backstop = createCollapseBackstop(BACKSTOP_WINDOW_MS);
 
   // SUBTREE SCOPE (Jamie, 2026-08-28): "you subscribe to state changes on an
   // element that means you get a signal when ever its content or properties or
@@ -209,10 +266,7 @@ export async function openSignalStream(
   const deliver = (change: BackendChange) => {
     // The backstop: one change per element per window. Scope is the design;
     // this only catches what scope let through.
-    const now = Date.now();
-    const last = lastEmitted.get(change.id);
-    lastEmitted.set(change.id, now);
-    if (last !== undefined && now - last < BACKSTOP_WINDOW_MS) {
+    if (backstop.collapses(change.id, Date.now())) {
       console.error(`atspi-stream: backstop collapsed a repeat change for ${change.id} - scope let ambient noise through`);
       return;
     }
