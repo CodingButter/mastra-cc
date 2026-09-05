@@ -37,6 +37,8 @@ import {
   type BackendSubscription,
   AttestationFailedError,
   IncompleteObservationError,
+  ApplicationScopeAmbiguousError,
+  ApplicationScopeUnmatchedError,
   WindowScopeAmbiguousError,
   WindowScopeUnmatchedError,
   InventoryUnsupportedError,
@@ -365,6 +367,10 @@ export const WINDOW_SCOPE_UNMATCHED_REFUSAL =
   "no visible window of that application answers to that name, so there is nothing this scope could have been asked about - ask without the window to see what windows there are";
 export const WINDOW_SCOPE_AMBIGUOUS_REFUSAL =
   "more than one visible window of that application answers to that name, so this scope names no single window - ask without the window, or by a name only one of them carries";
+export const APPLICATION_SCOPE_UNMATCHED_REFUSAL =
+  "no application on this desktop answers to that name, so there is nothing this scope could have been asked about - listApplications names every application this desktop has, and an application just launched may not have arrived yet";
+export const APPLICATION_SCOPE_AMBIGUOUS_REFUSAL =
+  "more than one application on this desktop answers to that name, so this scope names no single application - listApplications names them as the desktop publishes them";
 
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
@@ -428,12 +434,12 @@ export const REVEAL_SCOPE_REFUSAL =
 // The two raw-input methods share one refusal shape and differ in the name
 // they carry, because the name is what the caller reads back to know which
 // call was turned away (ADR-0070 admits typeText into the same class).
-type RawInputMethod = "sendKeyChord" | "typeText" | "clearElementText";
+type RawInputMethod = "sendKeyChord" | "typeText" | "clearElementText" | "clickElement";
 
 function rawInputScopeSentence(method: RawInputMethod): string {
   return (
     `refused by the scope gate: "${method}" is rawInput-class and this session holds no rawInput authority - ` +
-    `${method === "sendKeyChord" ? "a key is" : method === "typeText" ? "typed text is keystrokes, and keystrokes are" : "clearing presses one key per character, and keystrokes are"} raw input even when it is addressed to one element, ` +
+    `${method === "sendKeyChord" ? "a key is" : method === "typeText" ? "typed text is keystrokes, and keystrokes are" : method === "clearElementText" ? "clearing presses one key per character, and keystrokes are" : "a pointer press is synthesised on the machine, and a synthesised press is"} raw input even when it is addressed to one element, ` +
     "this session was started without the session flag --allow rawInput, and only a session started with it can perform this method"
   );
 }
@@ -457,6 +463,40 @@ export const NO_KEY_ROUTE_REFUSAL =
 
 export const NO_CLEAR_ROUTE_REFUSAL =
   'refused before the call: "clearElementText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
+
+// The pointer vocabulary, named here rather than imported from the AT-SPI
+// route: the wire's vocabulary is the contract's, not one platform's, and a
+// second backend with a different gesture table must not be able to widen what
+// the wire accepts by existing.
+const POINTER_BUTTON_NAMES: readonly string[] = ["left", "middle", "right"];
+
+export const NO_POINTER_ROUTE_REFUSAL =
+  'refused before the call: "clickElement" cannot be performed by this build on this platform - there is no way to move or press a pointer here, and no setting on this daemon would change that';
+
+// The pointer's own vocabulary refusals (ADR-0078). Each names the thing that
+// was wrong and the set it was not in, for the same reason the chord list is
+// spelled out: a caller told only "invalid" has to guess, and guessing at an
+// input surface is how a caller ends up sending a hundred variants.
+export function unknownButtonRefusal(button: string): string {
+  return (
+    `refused before the call: "clickElement" was given the button ${JSON.stringify(button)}, which this contract does not define - ` +
+    'the buttons it defines are: left, middle, right'
+  );
+}
+
+export function unknownClickCountRefusal(count: unknown): string {
+  return (
+    `refused before the call: "clickElement" was asked for ${JSON.stringify(count)} presses and this contract performs 1 or 2 - ` +
+    "a double click is asked for by name so that the platform makes the gesture, and anything beyond two is a drumroll rather than a click"
+  );
+}
+
+export function outsideElementRefusal(axis: "x" | "y", value: unknown): string {
+  return (
+    `refused before the call: "clickElement" was given ${axis} of ${JSON.stringify(value)}, and a position inside an element ` +
+    "is a fraction of that element's own rectangle from 0 through 1 - a fraction outside that range names a point outside the element, which is a press on a neighbour"
+  );
+}
 
 export const NO_TYPE_ROUTE_REFUSAL =
   'refused before the call: "typeText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
@@ -1605,6 +1645,62 @@ function clearElementText(params: { id?: unknown }, backend: Backend, launch: La
   );
 }
 
+// THE POINTER (ADR-0078). Same gate order as the three keyboard verbs -
+// authority, reach, then the vocabulary of what was given - and the same read
+// back afterwards. Two things differ.
+//
+// The first is that no focus is borrowed. A press is how focus MOVES on a desk;
+// grabbing focus before pressing would make the press land on something the
+// daemon had just pulled to the front, which is not what the caller asked for
+// and not what a person's click does.
+//
+// The second is that the vocabulary check here is arithmetic rather than a
+// list: a button name, a count of one or two, and two fractions inside the
+// element's own rectangle. The fractions are refused rather than clamped, for
+// the reason every clamp in this file is refused - a clamped fraction is a
+// press on the neighbour, reported as a press on the element.
+//
+// NOTHING CALLS THIS FUNCTION EXCEPT THE DISPATCH TABLE. In particular a
+// refused activateElement does not fall back to it: an element that published
+// no action has told the CALLER to decide whether to reach for the pointer, and
+// a daemon that decided that on its own would be the fallback ADR-0046 clause 3
+// forbids.
+function clickElement(
+  params: { id?: unknown; button?: unknown; count?: unknown; x?: unknown; y?: unknown },
+  backend: Backend,
+  launch: LaunchContext,
+) {
+  const id = typeof params.id === "string" ? params.id : "";
+  return performEffect(
+    "rawInput",
+    "clickElement",
+    rawInputScopeRefusal(launch.keys !== undefined, "clickElement"),
+    launch,
+    backend,
+    id,
+    async () => {
+      if (launch.keys === undefined) return { refusal: NO_POINTER_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
+      const button = params.button === undefined ? "left" : params.button;
+      if (typeof button !== "string" || !POINTER_BUTTON_NAMES.includes(button)) {
+        return { refusal: unknownButtonRefusal(String(button)), refusalClass: "MalformedParameter" as const };
+      }
+      const count = params.count === undefined ? 1 : params.count;
+      if (count !== 1 && count !== 2) return { refusal: unknownClickCountRefusal(count), refusalClass: "MalformedParameter" as const };
+      const fractions: Array<["x" | "y", unknown]> = [
+        ["x", params.x === undefined ? 0.5 : params.x],
+        ["y", params.y === undefined ? 0.5 : params.y],
+      ];
+      for (const [axis, value] of fractions) {
+        if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+          return { refusal: outsideElementRefusal(axis, value), refusalClass: "MalformedParameter" as const };
+        }
+      }
+      const [[, x], [, y]] = fractions as [["x", number], ["y", number]];
+      return backend.clickElement({ id, button, count, x, y });
+    },
+  );
+}
+
 function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const text = typeof params.text === "string" ? params.text : "";
@@ -1654,6 +1750,7 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   revealElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },
   sendKeyChord: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => sendKeyChord((p ?? {}) as { id?: unknown; chord?: unknown }, b, l) },
   typeText: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => typeText((p ?? {}) as { id?: unknown; text?: unknown }, b, l) },
+  clickElement: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => clickElement((p ?? {}) as { id?: unknown }, b, l) },
   clearElementText: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => clearElementText((p ?? {}) as { id?: unknown }, b, l) },
   listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
   describeAccessibility: { effectClass: "observe", enforcement: "at-result", handler: (_p, _b, l) => describeAccessibility(l) },
@@ -1826,9 +1923,15 @@ async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<
 // One place turns the two scope failures into the two sentences, so the scoped
 // query and scoped discovery cannot drift apart in what they say about the
 // same desktop.
-function windowScopeRefusal(error: unknown): { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" } | undefined {
+function windowScopeRefusal(
+  error: unknown,
+):
+  | { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" | "ApplicationScopeUnmatched" | "ApplicationScopeAmbiguous" }
+  | undefined {
   if (error instanceof WindowScopeUnmatchedError) return { refusal: WINDOW_SCOPE_UNMATCHED_REFUSAL, refusalClass: "WindowScopeUnmatched" };
   if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "WindowScopeAmbiguous" };
+  if (error instanceof ApplicationScopeUnmatchedError) return { refusal: APPLICATION_SCOPE_UNMATCHED_REFUSAL, refusalClass: "ApplicationScopeUnmatched" };
+  if (error instanceof ApplicationScopeAmbiguousError) return { refusal: APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "ApplicationScopeAmbiguous" };
   return undefined;
 }
 

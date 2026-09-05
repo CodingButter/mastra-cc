@@ -38,6 +38,7 @@ export const observeOnlyEffects: Pick<
   | "setElementCaret"
   | "revealElement"
   | "sendKeyChord"
+  | "clickElement"
   | "typeText"
   | "clearElementText"
 > = {
@@ -91,6 +92,9 @@ export const observeOnlyEffects: Pick<
     throw new EffectUnsupportedError("this test double observes only");
   },
   clearElementText: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  clickElement: async () => {
     throw new EffectUnsupportedError("this test double observes only");
   },
 };

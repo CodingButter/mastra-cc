@@ -1244,5 +1244,47 @@
     "find": "  if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: \"WindowScopeAmbiguous\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
+  },
+  {
+    "name": "an-application-scope-that-answers-empty-instead-of-refusing",
+    "file": "daemon/src/server.ts",
+    "find": "  if (error instanceof ApplicationScopeUnmatchedError) return { refusal: APPLICATION_SCOPE_UNMATCHED_REFUSAL, refusalClass: \"ApplicationScopeUnmatched\" };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
+  },
+  {
+    "name": "an-application-scope-that-picks-one-of-several-applications",
+    "file": "daemon/src/server.ts",
+    "find": "  if (error instanceof ApplicationScopeAmbiguousError) return { refusal: APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: \"ApplicationScopeAmbiguous\" };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
+  },
+  {
+    "name": "a-press-at-an-element-with-no-place-on-the-screen",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (rectangle === undefined) {\n      throw new UnperformableElementError(\n        `this element publishes no rectangle on this desk, so there is nowhere on the screen this daemon could press ` +\n          `that it could afterwards say was inside it`,\n      );\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "a-press-inside-a-rectangle-with-no-area",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (rectangle.width <= 0 || rectangle.height <= 0) {\n      throw new UnperformableElementError(\n        `this element publishes an empty rectangle (${rectangle.width} by ${rectangle.height}) - it occupies no part of ` +\n          `the screen, so a press inside it is not a place`,\n      );\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "a-press-clamped-onto-the-desk-from-off-the-screen",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (point.x < 0 || point.y < 0) {\n      throw new UnperformableElementError(\n        `this element's rectangle sits off the screen (${rectangle.x}, ${rectangle.y}) - pressing at the nearest point ` +\n          `on the desk would press whatever is there instead, so it is refused rather than clamped`,\n      );\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "a-press-at-a-fraction-outside-the-element",
+    "file": "daemon/src/server.ts",
+    "find": "        if (typeof value !== \"number\" || !Number.isFinite(value) || value < 0 || value > 1) {\n          return { refusal: outsideElementRefusal(axis, value), refusalClass: \"MalformedParameter\" as const };\n        }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
   }
 ]

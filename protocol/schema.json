@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -1086,6 +1086,49 @@
           "type": "string",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the reason the element's text could not be read, the length when there is more text than this method will press through, and what was observed when the element did not come back empty."
+        }
+      }
+    },
+    "clickElement": {
+      "description": "Press a pointer button inside one element that this daemon has already answered for. This is a POINTER, and it is deliberately not a free one: there is no method here that takes a screen coordinate, because a coordinate names a place on a screen rather than a thing on a desk, and a daemon that clicked places could not say afterwards what it had clicked. What this method takes is an ELEMENT and, optionally, a position INSIDE that element expressed as a fraction of its own rectangle, which the daemon turns into a screen point from the bounds the platform publishes for it. It exists because a published action is not always offered: a grid of images, a canvas, a map and a custom widget can all be seen, named and bounded while publishing nothing to activate, and an agent that can only activate what advertises itself has one road that can fail rather than several that can succeed. An element the platform gives no bounds for, or that is off screen, or that is not visible, is refused rather than guessed at, and the outcome is read back from the desktop afterwards like every other effect in this contract.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element to press inside. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a click aimed at where something used to be."
+        },
+        "button": {
+          "type": "string",
+          "required": false,
+          "description": "Which pointer button: \"left\", \"middle\" or \"right\". Defaults to \"left\". A name this contract never defined is refused by name rather than mapped to something near it."
+        },
+        "count": {
+          "type": "number",
+          "required": false,
+          "description": "How many presses in one gesture: the daemon accepts 1 or 2 and defaults to 1, so that a double click is asked for by name rather than assembled by a caller sending two clicks and hoping the platform joins them."
+        },
+        "x": {
+          "type": "number",
+          "required": false,
+          "description": "Where inside the element to press, horizontally, as a fraction of its own width from its left edge. Defaults to 0.5, the centre. Refused outside 0 through 1, because a fraction outside the element is a click on a neighbour."
+        },
+        "y": {
+          "type": "number",
+          "required": false,
+          "description": "Where inside the element to press, vertically, as a fraction of its own height from its top edge. Defaults to 0.5, the centre. Refused outside 0 through 1 for the same reason."
+        }
+      },
+      "returns": {
+        "element": {
+          "type": "semanticElement",
+          "required": false,
+          "description": "Present when the press was delivered; the element as it reads AFTERWARDS, read back from the desktop. A pointer press is not aimed at an element the way a semantic action is - it is aimed at a point that was inside the element when the bounds were read - so this element is evidence to compare against what was expected, not a claim that the click did what the caller wanted."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer - the effect class this session was not granted, the missing pointer route on a build that has none, the button or count or fraction that was not in this contract's vocabulary, and the reason the element could not be aimed at: no bounds published, an empty rectangle, or a rectangle that is off the screen."
         }
       }
     }

@@ -75,6 +75,14 @@ application, because no name separates two windows that share one. File dialogs
 in particular often publish two visible top-levels of the same name, so the
 unscoped read is the working route, not a fallback.
 
+**An application scope that cannot resolve is refused too.** The name in a scope
+is the name the accessibility bus publishes, which is often not the launcher id
+you opened the application with: `openApplication` may take `org.kde.konsole`
+while every query about it must say `konsole`. A scope naming no application is
+refused as `ApplicationScopeUnmatched` - call `listApplications` and use the name
+it prints. A just-launched application may simply not have arrived yet, so query
+again before concluding it is absent.
+
 **An empty answer often means "not yet".** A window that was just launched, or a
 surface that a click was meant to open, arrives on its own schedule; a query
 fired immediately gets an honest empty answer that is indistinguishable from
@@ -263,6 +271,34 @@ Worked example — navigating a browser: open it, find the element named
 the bar is empty, call `typeText` with its id and the URL, read the bar back and
 see the URL and nothing else in it, then `sendKeyChord` `Enter`, then query the
 `window` role and read the browser's title to learn what page you reached.
+
+### When an element publishes no action, press it
+
+Some things on a desk are not controls. A wallpaper thumbnail, an entry in a
+file dialog, an image on a web page and a cell in a grid can all be visible,
+named and scoped while publishing `actions: []` — there is nothing to
+`activateElement`, and focusing them and pressing `Enter` changes nothing. That
+is not a broken desk. It is a thing that is done with a pointer.
+
+`clickElement` presses inside an element you name. It takes the element's id, a
+button (`left`, `middle` or `right`, default `left`), a `count` of 1 or 2 for a
+double click, and optionally `x` and `y` as fractions of that element's own
+rectangle — `0.5, 0.5` is the centre and is what you get if you say nothing. You
+never give it a screen coordinate; the daemon reads the element's bounds itself
+at the moment it presses.
+
+Reach for it when, and only when, the semantic road has ended: the element
+publishes no action, or the action it publishes was refused, or you pressed the
+thing it advertised and the desk did not change. It refuses when the element has
+no rectangle on this desk, when the rectangle is empty, and when it sits off the
+screen — bring the element into view with `revealElement` first and try again.
+
+Read back afterwards, and read something that would have CHANGED: a press is
+aimed at a point, not at an element, so the element coming back unchanged means
+either the press did nothing or it landed elsewhere. Selecting an item in a
+grid, for instance, is best confirmed by the `Apply` button beside it gaining
+the `enabled` state.
+
 
 ## Refusals
 

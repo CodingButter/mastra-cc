@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { Backend } from "../backend.js";
-import { WindowScopeAmbiguousError, WindowScopeUnmatchedError } from "../backend.js";
+import {
+  ApplicationScopeAmbiguousError,
+  ApplicationScopeUnmatchedError,
+  WindowScopeAmbiguousError,
+  WindowScopeUnmatchedError,
+} from "../backend.js";
 import { OwnershipTable } from "../launch/table.js";
-import { handleRequest, type LaunchContext, WINDOW_SCOPE_AMBIGUOUS_REFUSAL, WINDOW_SCOPE_UNMATCHED_REFUSAL } from "../server.js";
+import {
+  APPLICATION_SCOPE_AMBIGUOUS_REFUSAL,
+  APPLICATION_SCOPE_UNMATCHED_REFUSAL,
+  handleRequest,
+  type LaunchContext,
+  WINDOW_SCOPE_AMBIGUOUS_REFUSAL,
+  WINDOW_SCOPE_UNMATCHED_REFUSAL,
+} from "../server.js";
 import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
 
@@ -61,5 +73,26 @@ describe("a window scope that resolves to no single window", () => {
     const answer = await ask("queryElements", backendThatThrows(new Error("the bus went away")));
     expect(refusalIn(answer as never)).not.toBe(WINDOW_SCOPE_UNMATCHED_REFUSAL);
     expect(refusalIn(answer as never)).not.toBe(WINDOW_SCOPE_AMBIGUOUS_REFUSAL);
+  });
+});
+
+describe("an application scope that resolves to no single application", () => {
+  it.each(["queryElements", "discoverElements"] as const)("%s refuses a name no application answers to", async (method) => {
+    const answer = await ask(method, backendThatThrows(new ApplicationScopeUnmatchedError("no application named x")));
+    expect(refusalIn(answer as never)).toBe(APPLICATION_SCOPE_UNMATCHED_REFUSAL);
+  });
+
+  it.each(["queryElements", "discoverElements"] as const)("%s refuses a name several applications answer to", async (method) => {
+    const answer = await ask(method, backendThatThrows(new ApplicationScopeAmbiguousError("2 applications named x")));
+    expect(refusalIn(answer as never)).toBe(APPLICATION_SCOPE_AMBIGUOUS_REFUSAL);
+  });
+
+  // The name the caller guessed was a launcher id; the bus publishes another.
+  // The refusal has to point at the one call that reconciles the two, or it
+  // leaves the caller exactly where the empty answer did.
+  it("sends the caller to listApplications, which is where the real name is", () => {
+    expect(APPLICATION_SCOPE_UNMATCHED_REFUSAL).toContain("listApplications");
+    expect(APPLICATION_SCOPE_AMBIGUOUS_REFUSAL).toContain("listApplications");
+    expect(APPLICATION_SCOPE_UNMATCHED_REFUSAL).not.toBe(APPLICATION_SCOPE_AMBIGUOUS_REFUSAL);
   });
 });

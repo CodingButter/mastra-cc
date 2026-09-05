@@ -38,6 +38,7 @@ describe("protocol/schema.json v1", () => {
       "sendKeyChord",
       "typeText",
       "clearElementText",
+      "clickElement",
     ]);
   });
 
@@ -70,7 +71,7 @@ describe("protocol/schema.json v1", () => {
   });
 
   it("requires one provider-neutral observable-content state, including value-free protected redaction (ADR-0056)", () => {
-    expect(schema.version).toBe("1.16.0");
+    expect(schema.version).toBe("1.17.0");
     expect(schema.types.semanticElement.fields.content).toMatchObject({
       type: "observableContent",
       required: true,

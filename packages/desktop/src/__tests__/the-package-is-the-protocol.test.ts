@@ -70,12 +70,16 @@ describe("the installable package", () => {
   it("carries optional query scope through the generated client", async () => {
     const client = await connect({ socketPath: await daemonOnATape() });
     try {
-      const found = await client.queryElements({
+      const found = (await client.queryElements({
         role: "dialog",
         application: "gtk3-demo",
         window: "Dialog",
-      });
-      expect(Array.isArray(found.elements)).toBe(true);
+      })) as { elements?: unknown[]; refusal?: string };
+      // The tape holds no such application, and a scope that resolves to
+      // nothing is a refusal now rather than an empty list (ADR-0077). Either
+      // shape proves what this test is for: the two optional fields survived
+      // the generated client, the wire and the daemon's own validation.
+      expect(Array.isArray(found.elements) || typeof found.refusal === "string").toBe(true);
     } finally {
       client.close();
     }

@@ -1,4 +1,4 @@
-# 0077 — A scope that matches no single window is refused, not answered
+# 0077 — A scope that matches no single thing is refused, not answered
 
 **Status:** accepted
 **Date:** 2026-09-04
@@ -40,6 +40,18 @@ windows, take a name from what is actually there. Ambiguous means *stop narrowin
 `window` and read the application, because no name will separate two windows that share one.
 A single "scope did not resolve" sentence would leave the caller unable to choose between the
 two, which is the failure this ADR exists to end.
+
+The application scope is the same rule one level up, and it was measured the
+same day: an agent scoped a query to `org.kde.konsole` - the launcher id it had
+just used to open the terminal - while the accessibility bus publishes that
+application as `konsole`. The empty answer told it the terminal had no controls,
+and it stopped in front of a terminal that was publishing a hundred of them. An
+application scope that matches nothing now refuses as `ApplicationScopeUnmatched`
+and names `listApplications` as the repair; one that matches several refuses as
+`ApplicationScopeAmbiguous`. An application this session may not observe answers
+with the unmatched refusal too - the sentence is about the search, not about the
+desktop, so it discloses nothing about what is running behind the visibility
+line.
 
 Replay answers the same way. Its tape is a record of what the live backend did, so a scope the
 tape cannot resolve refuses exactly as the live backend refuses; replay does not get to be

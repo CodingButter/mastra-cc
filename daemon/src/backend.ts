@@ -29,6 +29,8 @@ import type {
   TypeTextResult,
   ClearElementTextParams,
   ClearElementTextResult,
+  ClickElementParams,
+  ClickElementResult,
   SetElementValueParams,
   SetElementValueResult,
   SubmitElementParams,
@@ -210,6 +212,15 @@ export class IncompleteObservationError extends Error {}
 // repairs: a name nothing answers to, and a name too many things answer to.
 export class WindowScopeUnmatchedError extends Error {}
 export class WindowScopeAmbiguousError extends Error {}
+
+// The same lie one level up. An application scope that matches nothing on the
+// bus used to answer with an empty list, which reads as "that application has
+// no controls" - measured 2026-09-04, an agent scoped a query to the launcher
+// id "org.kde.konsole" while the bus published the application as "konsole",
+// was told the terminal was featureless, and gave up in front of a terminal it
+// could have read. The name it needed was one listApplications call away.
+export class ApplicationScopeUnmatchedError extends Error {}
+export class ApplicationScopeAmbiguousError extends Error {}
 
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
@@ -477,6 +488,18 @@ export interface Backend {
   // it cannot see.
   clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult>;
 
+  // The pointer (ADR-0078). Not a coordinate: an element this backend has
+  // already answered for, plus a fraction of that element's own rectangle. The
+  // backend reads the bounds the platform publishes for the element AT THE
+  // MOMENT OF THE CALL, turns the fraction into a screen point, and presses
+  // there. An element with no bounds, an empty rectangle, or a rectangle off
+  // the screen is refused rather than aimed at, because a pointer that guesses
+  // presses something and cannot say what. Like the raw-input verbs, the press
+  // is not aimed at the element the way a published action is, so the read back
+  // afterwards is the evidence and nothing here claims the click did what the
+  // caller wanted.
+  clickElement(params: ClickElementParams): Promise<ClickElementResult>;
+
   close(): Promise<void>;
 }
 
@@ -500,5 +523,6 @@ export const BACKEND_METHODS = [
   "sendKeyChord",
   "typeText",
   "clearElementText",
+  "clickElement",
   "close",
 ] as const;

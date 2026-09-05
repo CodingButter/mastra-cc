@@ -24,6 +24,8 @@ import type {
   TypeTextParams,
   TypeTextResult,
   ClearElementTextParams,
+  ClickElementParams,
+  ClickElementResult,
   ClearElementTextResult,
   ObservableContent,
   SetElementValueParams,
@@ -45,6 +47,8 @@ import {
   UnwatchableElementError,
   WriteNotObservedError,
   WindowScopeAmbiguousError,
+  ApplicationScopeAmbiguousError,
+  ApplicationScopeUnmatchedError,
   WindowScopeUnmatchedError,
 } from "../../backend.js";
 import { desktopEntryDirectories, type InventoryEntry, scanInstalledApplications } from "../../inventory.js";
@@ -61,6 +65,7 @@ import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { emitChord, emitString } from "./rawinput/keys.js";
+import { emitClick, isPointerButton, POINTER_BUTTONS, screenRectangle, type PointerButton } from "./rawinput/pointer.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { applicationName, nameMatches, normalise } from "./names.js";
 import { aggregateDiscovery, type DiscoveryMetadata } from "../../discovery.js";
@@ -122,6 +127,10 @@ export const TRAVERSAL_LIMITS = {
 // the two halves of writing a field, and a text longer than one call can type
 // is a text this one will not press through either.
 const CLEAR_MAX_PRESSES = 1024;
+
+// Named once, so the refusal for an unknown button lists the vocabulary rather
+// than leaving the caller to guess which three words this desk knows.
+const POINTER_BUTTON_LIST = POINTER_BUTTONS.map((name) => JSON.stringify(name)).join(", ");
 
 // How many characters this element says it is carrying, or `undefined` when it
 // does not say. A protected or unpublished observation is a silence, and a
@@ -367,9 +376,15 @@ export class AtspiBackend implements Backend {
       } catch (error) {
         if (error instanceof UnrecordedExchangeError) throw error;
         if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
+        if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
     }
-    if (params.application !== undefined && selected.length !== 1) return { elements: [] };
+    if (params.application !== undefined && selected.length === 0)
+      throw new ApplicationScopeUnmatchedError(
+        `no application named "${params.application}" is on this desktop's accessibility bus - listApplications names what is`,
+      );
+    if (params.application !== undefined && selected.length > 1)
+      throw new ApplicationScopeAmbiguousError(`${selected.length} applications named "${params.application}" are on this desktop's accessibility bus`);
 
     for (const { root, applicationName } of selected) {
       // The fast instrument, when the application advertises it and the
@@ -495,9 +510,15 @@ export class AtspiBackend implements Backend {
       } catch (error) {
         if (error instanceof UnrecordedExchangeError) throw error;
         if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
+        if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
     }
-    if (selected.length !== 1) return { entries: [], truncated: false };
+    if (selected.length === 0)
+      throw new ApplicationScopeUnmatchedError(
+        `no application named "${params.application}" is on this desktop's accessibility bus - listApplications names what is`,
+      );
+    if (selected.length > 1)
+      throw new ApplicationScopeAmbiguousError(`${selected.length} applications named "${params.application}" are on this desktop's accessibility bus`);
 
     const metadata: DiscoveryMetadata[] = [];
     let total = 0;
@@ -889,6 +910,70 @@ export class AtspiBackend implements Backend {
       );
     }
     return cleared;
+  }
+
+  // THE POINTER (ADR-0078). The fourth raw-input method, and the first one that
+  // is aimed at all: a keystroke goes wherever the focus is, but a press goes
+  // exactly where it is sent, so this is the only verb in the class that can
+  // say where it landed before it lands.
+  //
+  // Three refusals, all before anything is pressed:
+  //   - no id this daemon answered: the same refusal as every other verb, and
+  //     byte-identical to an id that never existed.
+  //   - no rectangle: an element with no Component interface, or one that
+  //     answers with something that is not a rectangle, or one with no area.
+  //     There is no default place to press for a thing that has no place.
+  //   - off the screen: a rectangle whose computed point is negative is a
+  //     scrolled-away or hidden element, and pressing at a clamped point would
+  //     be pressing whatever is at the edge of the desk instead.
+  //
+  // The bounds are read HERE rather than taken from the element that was
+  // answered earlier, because a remembered rectangle is a press aimed at where
+  // something used to be. Nothing here grabs focus first: a pointer press is
+  // how focus MOVES on a desk, and grabbing it beforehand would make this verb
+  // a keystroke wearing a pointer's name.
+  async clickElement(params: ClickElementParams): Promise<ClickElementResult> {
+    const button = (params.button ?? "left") as string;
+    if (!isPointerButton(button)) {
+      throw new UnperformableElementError(
+        `this contract has no pointer button named ${JSON.stringify(button)} - it has ${POINTER_BUTTON_LIST}`,
+      );
+    }
+    const count = params.count ?? 1;
+    const fractionX = params.x ?? 0.5;
+    const fractionY = params.y ?? 0.5;
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      throw new UnperformableElementError(
+        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    const rectangle = await screenRectangle(this.channel, ref);
+    if (rectangle === undefined) {
+      throw new UnperformableElementError(
+        `this element publishes no rectangle on this desk, so there is nowhere on the screen this daemon could press ` +
+          `that it could afterwards say was inside it`,
+      );
+    }
+    if (rectangle.width <= 0 || rectangle.height <= 0) {
+      throw new UnperformableElementError(
+        `this element publishes an empty rectangle (${rectangle.width} by ${rectangle.height}) - it occupies no part of ` +
+          `the screen, so a press inside it is not a place`,
+      );
+    }
+    const point = {
+      x: rectangle.x + rectangle.width * fractionX,
+      y: rectangle.y + rectangle.height * fractionY,
+    };
+    if (point.x < 0 || point.y < 0) {
+      throw new UnperformableElementError(
+        `this element's rectangle sits off the screen (${rectangle.x}, ${rectangle.y}) - pressing at the nearest point ` +
+          `on the desk would press whatever is there instead, so it is refused rather than clamped`,
+      );
+    }
+    return this.performing(params.id, async () => {
+      await emitClick(this.channel, point, button as PointerButton, count === 2 ? 2 : 1);
+    });
   }
 
   private async aimedRawInput(id: string, sent: "key" | "text", emit: () => Promise<void>): Promise<SendKeyChordResult> {

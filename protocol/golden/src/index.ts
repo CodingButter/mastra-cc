@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.16.0
+// Mastra CC protocol v1.17.0
 
-export const PROTOCOL_VERSION = "1.16.0";
-export const SCHEMA_DIGEST = "c9a7294be961d27874ef440e417377e8b58dec43e3d022528c64443fff2bca1f";
+export const PROTOCOL_VERSION = "1.17.0";
+export const SCHEMA_DIGEST = "f638112f0f5010deb2b7f196fddfe6c3d72c63c5a2c808e0dfde0c0427638638";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -26,7 +26,7 @@ export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText","clearElementText"] as const;
+export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText","clearElementText","clickElement"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -538,6 +538,27 @@ export interface ClearElementTextResult {
   refusal?: string;
 }
 
+/** Press a pointer button inside one element that this daemon has already answered for. This is a POINTER, and it is deliberately not a free one: there is no method here that takes a screen coordinate, because a coordinate names a place on a screen rather than a thing on a desk, and a daemon that clicked places could not say afterwards what it had clicked. What this method takes is an ELEMENT and, optionally, a position INSIDE that element expressed as a fraction of its own rectangle, which the daemon turns into a screen point from the bounds the platform publishes for it. It exists because a published action is not always offered: a grid of images, a canvas, a map and a custom widget can all be seen, named and bounded while publishing nothing to activate, and an agent that can only activate what advertises itself has one road that can fail rather than several that can succeed. An element the platform gives no bounds for, or that is off screen, or that is not visible, is refused rather than guessed at, and the outcome is read back from the desktop afterwards like every other effect in this contract. */
+export interface ClickElementParams {
+  /** The element to press inside. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a click aimed at where something used to be. */
+  id: string;
+  /** Which pointer button: "left", "middle" or "right". Defaults to "left". A name this contract never defined is refused by name rather than mapped to something near it. */
+  button?: string;
+  /** How many presses in one gesture: the daemon accepts 1 or 2 and defaults to 1, so that a double click is asked for by name rather than assembled by a caller sending two clicks and hoping the platform joins them. */
+  count?: number;
+  /** Where inside the element to press, horizontally, as a fraction of its own width from its left edge. Defaults to 0.5, the centre. Refused outside 0 through 1, because a fraction outside the element is a click on a neighbour. */
+  x?: number;
+  /** Where inside the element to press, vertically, as a fraction of its own height from its top edge. Defaults to 0.5, the centre. Refused outside 0 through 1 for the same reason. */
+  y?: number;
+}
+
+export interface ClickElementResult {
+  /** Present when the press was delivered; the element as it reads AFTERWARDS, read back from the desktop. A pointer press is not aimed at an element the way a semantic action is - it is aimed at a point that was inside the element when the bounds were read - so this element is evidence to compare against what was expected, not a claim that the click did what the caller wanted. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer - the effect class this session was not granted, the missing pointer route on a build that has none, the button or count or fraction that was not in this contract's vocabulary, and the reason the element could not be aimed at: no bounds published, an empty rectangle, or a rectangle that is off the screen. */
+  refusal?: string;
+}
+
 /** Each method's description and a JSON Schema for its parameters, generated from the same schema the types come from. */
 export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; params: Record<string, unknown> }> = {
   "queryElements": {
@@ -1005,6 +1026,39 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
           "description": "The element to empty. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over.",
           "type": "string",
           "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "clickElement": {
+    "description": "Press a pointer button inside one element that this daemon has already answered for. This is a POINTER, and it is deliberately not a free one: there is no method here that takes a screen coordinate, because a coordinate names a place on a screen rather than a thing on a desk, and a daemon that clicked places could not say afterwards what it had clicked. What this method takes is an ELEMENT and, optionally, a position INSIDE that element expressed as a fraction of its own rectangle, which the daemon turns into a screen point from the bounds the platform publishes for it. It exists because a published action is not always offered: a grid of images, a canvas, a map and a custom widget can all be seen, named and bounded while publishing nothing to activate, and an agent that can only activate what advertises itself has one road that can fail rather than several that can succeed. An element the platform gives no bounds for, or that is off screen, or that is not visible, is refused rather than guessed at, and the outcome is read back from the desktop afterwards like every other effect in this contract.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to press inside. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a click aimed at where something used to be.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "button": {
+          "description": "Which pointer button: \"left\", \"middle\" or \"right\". Defaults to \"left\". A name this contract never defined is refused by name rather than mapped to something near it.",
+          "type": "string"
+        },
+        "count": {
+          "description": "How many presses in one gesture: the daemon accepts 1 or 2 and defaults to 1, so that a double click is asked for by name rather than assembled by a caller sending two clicks and hoping the platform joins them.",
+          "type": "number"
+        },
+        "x": {
+          "description": "Where inside the element to press, horizontally, as a fraction of its own width from its left edge. Defaults to 0.5, the centre. Refused outside 0 through 1, because a fraction outside the element is a click on a neighbour.",
+          "type": "number"
+        },
+        "y": {
+          "description": "Where inside the element to press, vertically, as a fraction of its own height from its top edge. Defaults to 0.5, the centre. Refused outside 0 through 1 for the same reason.",
+          "type": "number"
         }
       },
       "required": [

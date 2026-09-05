@@ -718,6 +718,13 @@ export class CdpBackend implements Backend {
   }
 
   // Same fact, same reason: clearing is keystrokes, and this route has none.
+  async clickElement(): Promise<never> {
+    throw new EffectUnsupportedError(
+      "this route reads a browser through its debugging protocol and has no pointer on the machine - " +
+        "no setting on this daemon would change that",
+    );
+  }
+
   async clearElementText(): Promise<never> {
     throw new EffectUnsupportedError(
       "this route reads a browser through its debugging protocol and has no way to type on the machine - " +
