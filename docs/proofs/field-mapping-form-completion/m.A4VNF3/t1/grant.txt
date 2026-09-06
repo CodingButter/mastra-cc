@@ -1,0 +1,1 @@
+--backend atspi --grant yad --allow edit --allow activate --allow rawInput

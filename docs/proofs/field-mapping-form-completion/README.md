@@ -1,6 +1,8 @@
-# Field mapping: native evidence, not model success
+# Field mapping: explicit labels and verified native tasks
 
-Status: Phase 2 implements bounded native label observations with schema 1.20.0. The isolated deterministic base/candidate proof passes; no new model trials have run. Phase 1 recording review used a browser on a separate private Xvfb display, not the personal desktop.
+Status: Phase 3 acceptance batch `m.CrBkmf` passes five consecutive fresh receipt trials and one ordinary launcher-editor task, including exact independent oracles, fresh public actual-value readback, and reviewed recording checkpoints. Four earlier candidate batches failed verification requirements and remain visible. This is bounded task evidence, not a reliability percentage. Phase 2's separate deterministic base/candidate proof establishes native label causality. Visual review uses a browser on a separate private Xvfb display, not the personal desktop.
+
+Phase 3 trial counts, failures, public call ledger, reproduction commands and limits are in [phase3.md](phase3.md).
 
 ## Run
 
@@ -37,7 +39,7 @@ Current recording: `inspect.pF79GR/screen.mkv` (8.3 seconds). Reviewed the 1fps 
 
 ## Next gates
 
-Phase 3 model trials and final independent review remain outstanding. `publication-manifest.json` inventories Phase 1 published files; `phase2-manifest.json` inventories the Phase 2 delivery. Private session home/runtime caches remain local and uncommitted.
+Final independent review and Phase 4 ship checks remain outstanding. `publication-manifest.json` inventories Phase 1 published files; `phase2-manifest.json` inventories the Phase 2 delivery. Private session home/runtime caches remain local and uncommitted.
 
 ## Phase 2 deterministic proof
 

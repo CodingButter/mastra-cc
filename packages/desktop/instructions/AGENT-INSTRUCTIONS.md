@@ -321,7 +321,19 @@ capture the containing form or window before submitting and
 visually compare each value against its intended label; correct any swaps and
 recheck. If mapping remains uncertain, do not submit; report the uncertainty.
 After submission, compare confirmation values against the intended labeled values,
-not merely a success banner. A mismatch is not success.
+not merely a success banner. A mismatch is not success. A submit or save can destroy
+the old control before its action response is read. An application-gone or stale-ID
+error at that boundary is not proof that the submission failed or that no result
+exists. Discard the old IDs, observe applications/windows again, and retry a bounded
+number of fresh queries for the result. Do not repeat the submission blindly. Only
+report verification unavailable after those fresh observations cannot find it.
+Discovery is only a locator, not completion verification. Before closing a result
+window or claiming success, use a fresh `queryElements` or `readElementContent`
+observation to read its actual confirmation values and compare each with the
+intended value. A screenshot can corroborate this check, but does not replace the
+public text readback when confirmation text is exposed. Query the result window's
+contents, not only the window itself. Confirmation text may be a label rather than
+an editable field; do not restrict that observation to the old field's role.
 
 ### Typing appends, so empty the field first
 

@@ -4,6 +4,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
 if [[ "${1:-}" == deterministic ]]; then exec bash "$HERE/deterministic.sh"; fi
+if [[ "${1:-}" == model ]]; then shift; exec node "$HERE/model-batch.mjs" "$@"; fi
 if [[ "${1:-}" == --session ]]; then
   RUN="$2"
   pids=(); recorder=""

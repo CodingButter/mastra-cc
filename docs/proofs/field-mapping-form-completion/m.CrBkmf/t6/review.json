@@ -1,0 +1,29 @@
+{
+  "visualReviewed": true,
+  "comparisonReviewed": true,
+  "reviewer": "Wren",
+  "method": "Actual browser screenshot of extracted recording checkpoints on private Xvfb; read initial/filled/confirmation values. Source tool-result labels, selected public IDs, action and verification calls checked against ledger and exact oracle.",
+  "eventsSha256": "8935af61cadffa585a5c2cf50b9251f841ad066aba6e75ed0ee102f12271d532",
+  "recordingSha256": "27380caf5212abbfde0f9d1c7834631132a519cf0d1adf3101960b7abdbb2d1d",
+  "checkpoints": [
+    {
+      "stage": "before-fill",
+      "file": "before-fill.png",
+      "sha256": "c699982af8ce530e14bb9984587ff0fae88b711e5e92494873bbfa0a286a0adc"
+    },
+    {
+      "stage": "before-submit",
+      "file": "before-submit.png",
+      "sha256": "d0d58ea925cbb9ec878b71c37e7787bc4bd9762f9ebec806f3a69a197ff9a1df"
+    },
+    {
+      "stage": "after-confirmation",
+      "file": "after-confirmation.png",
+      "sha256": "3413e42ef400da5cd933bb48f2bf87f33e2d3ef2333c57f992880f09ef3cbc14"
+    }
+  ],
+  "observedValues": {
+    "name": "Launcher-6471e7f3d7",
+    "comment": "Comment-95a72c46b5"
+  }
+}

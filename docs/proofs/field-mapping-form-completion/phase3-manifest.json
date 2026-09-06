@@ -1,0 +1,2015 @@
+{
+  "scope": "Phase 3 explicit deliverables; excludes private HOME/runtime, earlier phases, plans and unrelated artifacts; self excluded",
+  "files": [
+    {
+      "path": "docs/11-AGENT-INSTRUCTIONS.md",
+      "sha256": "00e0b7dbb9cd6ed92eb39e2f58f9e532024fe4752c37d2b6fd947ae6ddc3f161",
+      "bytes": 34416
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/README.md",
+      "sha256": "9128d65c27ba6cec9a7df2fba76354350411b975e3181e6c5093525a666bf493",
+      "bytes": 5879
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/demo.sh",
+      "sha256": "5f0e62ca69928d62ebaf92f5f727fbd86870db94faf1ddbd791e095a348ef77f",
+      "bytes": 5450
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/evidence.test.mjs",
+      "sha256": "a9486748114b28946bceb799a114345ab00a2fa4534c5498229a0d15b271ac39",
+      "bytes": 5558
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/outcome.json",
+      "sha256": "8bd1b59413600d54baccf952629149c63aa4944375c14a219623141332f7ade8",
+      "bytes": 80
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/outcomes.json",
+      "sha256": "ae51be421b59d56e68b3a0c49a53529ea5ae182caa99f4922fd8eb2c3f3c622f",
+      "bytes": 834
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/predeclared.json",
+      "sha256": "33e8a43e504ca4d25b31681a628003eb7e4cf3ba791ab9a04e1837e58069be9c",
+      "bytes": 1264
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/a11y.log",
+      "sha256": "780d50e89514ac58db022149107a3ff2bb0fa9fcc57d083dc3289a417c7a495a",
+      "bytes": 345
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/after-confirmation.png",
+      "sha256": "5f9ac101e0d577c0b1d478020e29a8e84f264126e0f4f200295a59719ce0f061",
+      "bytes": 18381
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/before-fill.png",
+      "sha256": "55dc254223766fa1df4ad1b19083fb6d0b0ca0c244e5b2fadb1c60307a37beb4",
+      "bytes": 21358
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/before-submit.png",
+      "sha256": "a8185bae5c75ac455908d5f998dd40d3f03754de82b2ed02b311ba1007e26dde",
+      "bytes": 23572
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/daemon.log",
+      "sha256": "9be86bd3795b9089b2c580454404925fbcc45f6cc3bf41b85df3ea0983629b64",
+      "bytes": 764
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/events.jsonl",
+      "sha256": "2d702d2450b5db924799e5a5c219aae03f4f34d03cb40ee745b8a8d8f96874dd",
+      "bytes": 111388
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/expected.json",
+      "sha256": "40c6170a809f6e11a8997c8d0403a5db803b10ca3b8cc2fecadecdbdcf29c311",
+      "bytes": 55
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/ffmpeg.log",
+      "sha256": "1bffae91816b7dc49cd0b8ac284aa8930299e30a1f50369f6eab86071d102fa6",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/fixture.log",
+      "sha256": "ddc338fe369760127de1f4f2f1fbec95d4ce9829384769895f5e49eb5a012bf5",
+      "bytes": 152
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/ledger.json",
+      "sha256": "82beaad005b73c8346a503dc1b7dabce2622b635fa3c089ea69ad2ed679d8e3e",
+      "bytes": 589
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/metadata.json",
+      "sha256": "1fb8590f474b1114217a62155409e55febce67805cdd0395b52850be80c0087b",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/recording-start-ms.txt",
+      "sha256": "28453f6c6bed89e211019a9b80b1ff41e4e9e203ba65428d5ca39293c92c2060",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/recording.json",
+      "sha256": "dfc056703b0ae0edc0d027c43ec33ae2af1cbd1dc90d8f7965e690a2bbb5cbd3",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/review-cropped.png",
+      "sha256": "37a79d83df69640c012b6f8fabfe33ccdda9c4634d18b568fe0892602e26f270",
+      "bytes": 53331
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/screen.mkv",
+      "sha256": "2738d97e870a1e3165689ca44b4bf67a77b83c6fba89429b98246dc47f631be9",
+      "bytes": 72295
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/session.log",
+      "sha256": "ee7c45dcd63d1b8966598370205b25c8400e90b2cb5283283eab9715213334a6",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/submission.txt",
+      "sha256": "ff06bc3141eb3900503ec23c803056c16353e8a36ad3e5ae6d8dab4de3e07ff5",
+      "bytes": 22
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/visual-review.json",
+      "sha256": "0888c765043a561d7b743f5212952625aaed52982b03f6546facba64305c125e",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/a11y.log",
+      "sha256": "b5a17da477e6c276a940bf1ee5477cb345b509976b8341546e010a5e1f8cc408",
+      "bytes": 345
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/after-confirmation.png",
+      "sha256": "091c3efa6aac95791e5a3435bc553ccf45d700b1da350f31652fcbb8d2334364",
+      "bytes": 17803
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/before-fill.png",
+      "sha256": "77f552532c250a26f26909553de84bd09232105eba9da17fb4561bd92e830bad",
+      "bytes": 20997
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/before-submit.png",
+      "sha256": "e62e371e0327142c4debe7a9d8c2bd7e32634e16a71ddc4bc6f1209b86850b45",
+      "bytes": 22899
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/daemon.log",
+      "sha256": "fbeb999b38fe6d5b8bfbbd3ed0eb4965d1e1bcd01f6bb4639d845a8dddff0299",
+      "bytes": 206
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/events.jsonl",
+      "sha256": "f6b47ddcb9d264cec46a2d19eb6eb46881e1c5ce7be4bd3b67e88b0e607c0d67",
+      "bytes": 110372
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/expected.json",
+      "sha256": "9f37a658c7e72f6c1859c2ec58f315c6e8f41c3a3c35f88cee9b14337f8c5f81",
+      "bytes": 54
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/ffmpeg.log",
+      "sha256": "2f1f8153aee0230d2597a4c8abd3c1cea95d98c21c6f969b2a163e017affc5d7",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/fixture.log",
+      "sha256": "48160c059ee541591e61880f589cfe7087f17af33c9615397aae67173956935b",
+      "bytes": 304
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/image-1.bin",
+      "sha256": "9c1cffbc0f37b97a11aa9a4b148068d1ed1b675e410489fccf963817f37f2861",
+      "bytes": 11253
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/image-2.bin",
+      "sha256": "d3d0d81f067490ac4feaefe7ce9d56159e876e5320e26e34e2fd2b361b013ad3",
+      "bytes": 8754
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/metadata.json",
+      "sha256": "1fb8590f474b1114217a62155409e55febce67805cdd0395b52850be80c0087b",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/openbox.log",
+      "sha256": "0fce8bee8fddc11f0b194334614ac95514e12842284aafec972ab1d819bf526a",
+      "bytes": 235
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/openbox.log.raw.gz",
+      "sha256": "ab3cc479acdcef438c764ec9ffd86334f3e1bcf1d743383a1dc0e52f93ed0d70",
+      "bytes": 205
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/recording-start-ms.txt",
+      "sha256": "7e5a7e2c7ab3f0da001bf8511382cabaddf1210b1272f672652bfb40d3a20e49",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/recording.json",
+      "sha256": "587480c0d005721f9874e1290d8d92d2f3a8d4120f4f92bf2e9fba366efc59ae",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/review-cropped.png",
+      "sha256": "0c3b21391f5bfac76e8e0e95decee7e5f0002e0b82a93a3bfe8862c2eec75da9",
+      "bytes": 51634
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/screen.mkv",
+      "sha256": "20e88667af8ad7bfb7b3391b70e6f0752b746ac76e743609ffb145fb930b92e3",
+      "bytes": 99788
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/session.log",
+      "sha256": "6a2bcd8065decce0c8cfcb0417a3b7963efac429b6f7ea4738b36fbfa87642d5",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/submission.txt",
+      "sha256": "edede486253c3a649327a614516234f763fbc9c9cdb3826cf0e79f32b1ae8ba0",
+      "bytes": 21
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/visual-review.json",
+      "sha256": "fc3acbe5200f175505f90cb424052a1612c957c45f354b7c78af28ff56c4bc90",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.3kHuSR/t2/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/outcome.json",
+      "sha256": "b8a3fb9e355a522a423898190d1213420615081c649ed6cd5043d56c9c485b85",
+      "bytes": 80
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/outcomes.json",
+      "sha256": "b73ec93a10198c6177f0c8f3c4f42f74ef93b14e4db552891822bc2b728d7ef7",
+      "bytes": 164
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/predeclared.json",
+      "sha256": "e343e3878b42838b3b5f86e389ba5b5be853a09c3ca9b14d269efefeb9de3cdf",
+      "bytes": 1088
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/a11y.log",
+      "sha256": "1d06a34d94df7b8fee9a0a0c9f2278166da0b7717101d68cee572e299b665b90",
+      "bytes": 345
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/after-confirmation.png",
+      "sha256": "de99f8937a78cb02f6f5b59c7965526e489b47d6c71d847005f4d2bc6e02bc3d",
+      "bytes": 18217
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/before-fill.png",
+      "sha256": "8a35b006ab1fb01ea6d9a15e0217adf096cf98d5868a7b7009be4684b9b63889",
+      "bytes": 21262
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/before-submit.png",
+      "sha256": "b262193e9e8e5df213a8ab4d36fc1f217f3710c929947b7ba14b32b3ac06fe0d",
+      "bytes": 23189
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/daemon.log",
+      "sha256": "b6dd7c6efb16df1a28ee09c1965d211586ad7edb62745cc58f57e10a72beecd0",
+      "bytes": 764
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/events.jsonl",
+      "sha256": "d01f8f952c38d02bd38e54fd18552796b41f6f0ea09c59f243eab0a2dd126a7e",
+      "bytes": 106626
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/expected.json",
+      "sha256": "50fa3ce376da0712e5b804bfa06632251ad78fc59f1e6714e97be15e1d01b268",
+      "bytes": 55
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/ffmpeg.log",
+      "sha256": "da8e5d59315f8378ce88b3aa872771e4696d1924ba78af98598ebb1ceda962db",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/fixture.log",
+      "sha256": "3c828dbd477c09aca19175bded080b16d2d82e849feb9fb1cbbff5851a09cc73",
+      "bytes": 76
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/metadata.json",
+      "sha256": "ea7024607fbd0ddaf67693549fa1d66523eae1ad432168232a81b8b524154327",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/openbox.log",
+      "sha256": "2a17b4ced1d77c8e365197407ccad0443dacf7c5f5a9a18d0f33935897d1da48",
+      "bytes": 235
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/openbox.log.raw.gz",
+      "sha256": "1902ac2593856c50f82b5607fb235e4f3e8d37937b9bfdc9b8e9a25116cccfd6",
+      "bytes": 205
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/recording-start-ms.txt",
+      "sha256": "f12a3a8a92770bcbae77bac84b47b97084d7c5744e58d6319f54092c944a4486",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/recording.json",
+      "sha256": "e4435266d05854522dd6e521f922f79f979d98c94be90fefc1a3f7e5ffe1784d",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/review-cropped.png",
+      "sha256": "2232ca1595426c18b5d5299ad3a884851b1caf386521f5f2f618d8982c696e3a",
+      "bytes": 52712
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/screen.mkv",
+      "sha256": "0eb1c46f7980cd9a93367fdfd56fbb0e9cec543f3d374b52e12fb729a26479af",
+      "bytes": 63907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/session.log",
+      "sha256": "6bf7e52dba347c4c3de62bc1bc8dd4d7d45db46d6694993cd8101a644cf40a3c",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/submission.txt",
+      "sha256": "2aae0e305dc820f8a985bf29cb860d01aeac11f8f2470eaf234b6dc946ba9bac",
+      "bytes": 22
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/visual-review.json",
+      "sha256": "ea203d34ab5aa9655355c4314f078a34d411738a3b2f37c34b69388519c8a207",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.A4VNF3/t1/xvfb.log",
+      "sha256": "ba3a845f35cd8a9b096b8af143842ecf4f968baecce3bd737a37ab77eddaf73a",
+      "bytes": 2612
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/outcome.json",
+      "sha256": "7ba05668f57c22a9322f0ada1c14ad353fe061ddf795ffecc71e98cbeb988d43",
+      "bytes": 67
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/outcomes.json",
+      "sha256": "455d5b5e8a1a6c3ee0340a82b056a6f85cd4f9ff4216d95a85ea4a620e5782bd",
+      "bytes": 4092
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/predeclared.json",
+      "sha256": "04560739e4689d2f8d5918aff74a5cd49e8d383321803847c0e601d2e24504cd",
+      "bytes": 1276
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/review-1-3.png",
+      "sha256": "d55b8ea91fbb3c2fec5542c87fe7b05a080b1e842f2eac66b959231fd6ea1f97",
+      "bytes": 102151
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/review-4-6.png",
+      "sha256": "f15ecd4db4db24593318c524e9495dc0ce3068f570b33eb304fd633dfc79f3a1",
+      "bytes": 180722
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/a11y.log",
+      "sha256": "c7ed075832163b95f2e6a9e7b6c02662f52db3dd50de7f5deb47f39d17565a9a",
+      "bytes": 345
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/after-confirmation.png",
+      "sha256": "7ab3eb108638d71c2c3600585a52cde45047aeb88eaa0df41f4db673eff8ce19",
+      "bytes": 18328
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/before-fill.png",
+      "sha256": "9e6e11dbef65093d1e4864c5c9d03375439f968a8845785de8b4bbb3d6b83841",
+      "bytes": 21024
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/before-submit.png",
+      "sha256": "7be42b484d978ef24abfc1e092a2ed0d74d9bac311cc10895c9727048c9c274b",
+      "bytes": 23070
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/daemon.log",
+      "sha256": "f66a612f57b79c635457438c156d7311a47845f82b8d9eae6c8f971bd970230d",
+      "bytes": 1321
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/events.jsonl",
+      "sha256": "0e05d116469b38ecfe6498f53ab0d2e803029a1d12f1d52784c901c94f1f67bf",
+      "bytes": 112245
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/expected.json",
+      "sha256": "6fe8cdc1c0a321eff744c816a4a1ebc06c2ab2d7b22860bb64b98911628773a1",
+      "bytes": 55
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/ffmpeg.log",
+      "sha256": "f27774499d8493125028cda1cc6976401cf49b55c5e1ab169b0d6c17f0493f8f",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/fixture.log",
+      "sha256": "55725ebee230f3118535b03475f187a3459cd85bed26e7ff21cc7a48d4fc1567",
+      "bytes": 152
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/ledger.json",
+      "sha256": "9b636ec364f2eb8287731c50a3f9ab0ba146758664b2c868b01f82f39c9801af",
+      "bytes": 582
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/metadata.json",
+      "sha256": "bf5fd816bb2436dcc42c8ed7c0189e61e0d773a8779e72c6711acc34194b61d2",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/recording-start-ms.txt",
+      "sha256": "ee5ffdfb5f21075981e6de136b6405ea74fb6ab48d2bf29e9d56e35e3ff8e0cf",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/recording.json",
+      "sha256": "ac83a59bd3ce41c814b0e73c35dbcf3d7c15d73be4e23f593fe6fa3d9f557598",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/review-contact.png",
+      "sha256": "c6a4cfce69ae925a9a9b1a5a3d48a392e0898c39689bc0a04af099d449f92b35",
+      "bytes": 43435
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/review-cropped.png",
+      "sha256": "a96d50b9af31bbada96b302a7aaebdc5bcb2fcf604971a24d2cd867f7e00d636",
+      "bytes": 52402
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/review.json",
+      "sha256": "2a518d4735be6b71b2c4043e2761c99864309e3e7658dba2d847115ce8be08e2",
+      "bytes": 1074
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/screen.mkv",
+      "sha256": "ec16deb12f53166afe5c31b7bf6a4bbb5e157d7b5b91357123c83f6fdbb349f6",
+      "bytes": 72062
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/session.log",
+      "sha256": "ae31e556a0beb97303f66fade9c33fb7033cdac9b94c7a7aa062fc42aba2ffed",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/submission.txt",
+      "sha256": "048f619b11b9bd4a33b6019951ead9eec2857c0f925d87eca9810762f04f4159",
+      "bytes": 22
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t1/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/a11y.log",
+      "sha256": "fbc9a5d96012504f05aa0a1490c9616ab78e3ba496772d1bf8cd6656570fa77b",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/a11y.log.raw.gz",
+      "sha256": "9efa4b106b2f753b5a0a20029d41b767180cafcecd6b809d277f6f5df3187861",
+      "bytes": 280
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/after-confirmation.png",
+      "sha256": "aee9a9c5ebdcf5c18ed7fd4fe97cc3d5a618917bcb9a00a556a35484faf5f482",
+      "bytes": 17865
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/before-fill.png",
+      "sha256": "846aaec3cebf63c51f27989fb4ebe5da1710bf0728f26f570631b94ab52944cb",
+      "bytes": 21111
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/before-submit.png",
+      "sha256": "5d0c4e2b8a2e31aed82d92205874fa0a1aab3e7560a8af21bb872e9b72bd41ce",
+      "bytes": 23212
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/daemon.log",
+      "sha256": "c0d3130c3286bfcc891dcff2c39f46c3c1cfe3155d5412db922b583895467c3e",
+      "bytes": 793
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/events.jsonl",
+      "sha256": "2bfc1c29553fb066d733ff77c0bd62c5d520efeb25e19f2ea0834df08ae94c28",
+      "bytes": 109863
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/expected.json",
+      "sha256": "bbebce81c68e6d3b32e941721a6cf409bd960241f5db8f0e783c7ce5859f748d",
+      "bytes": 54
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/ffmpeg.log",
+      "sha256": "7f121ada096ead7d3396197f9a911acf39e53355d560eb05b36ac43aaf83cf78",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/fixture.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/ledger.json",
+      "sha256": "293ad34cf7070f8d015c349bb2836a9949d882e6a2511a08e046748249436b61",
+      "bytes": 579
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/metadata.json",
+      "sha256": "bf5fd816bb2436dcc42c8ed7c0189e61e0d773a8779e72c6711acc34194b61d2",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/openbox.log",
+      "sha256": "0fce8bee8fddc11f0b194334614ac95514e12842284aafec972ab1d819bf526a",
+      "bytes": 235
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/openbox.log.raw.gz",
+      "sha256": "ab3cc479acdcef438c764ec9ffd86334f3e1bcf1d743383a1dc0e52f93ed0d70",
+      "bytes": 205
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/recording-start-ms.txt",
+      "sha256": "ad0e9101ef50c7196f0171ef069bb5b77491e9e8a64029e52c2f3900701d23ff",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/recording.json",
+      "sha256": "7ef9115969e8876f57545e65211ee2fbbbca62de64c8e9fba0285346f059c470",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/review-contact.png",
+      "sha256": "ebba3167c1ae4a6983afbce196147d85d71ac352a26bae8ab9689019eaa0880a",
+      "bytes": 60873
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/review-cropped.png",
+      "sha256": "6dbc92505ec2354dd2440780382621cb4eee8cdd2e8bf37118f30f4373884f4d",
+      "bytes": 52386
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/review.json",
+      "sha256": "6650b6d83ae91e0b84959206b8b24703843c075324bb8ed2e2ece9ec63d7d708",
+      "bytes": 1073
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/screen.mkv",
+      "sha256": "f0ff47c43eb39996f79c49cfb8711fb22f93e969dcc20c1e7a22622429e58247",
+      "bytes": 62662
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/session.log",
+      "sha256": "f7472c9175a342076306fc17fb76c59a59ae075ac84b430b90f6f54205c60511",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/submission.txt",
+      "sha256": "1ad891d0b0ea86bbcdbe4a45b06d039743abf8c5e2ef0bedc835b739f9c9998a",
+      "bytes": 21
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t2/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/a11y.log",
+      "sha256": "6be8909f7160f8f7ac8dcd1e28ff05665a04c27754959be0176519299c897004",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/a11y.log.raw.gz",
+      "sha256": "b3b7523f894ca40ff3f8cfad63d59903491a20cc594f0c6099bb20e9c9d9d13c",
+      "bytes": 279
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/after-confirmation.png",
+      "sha256": "0ce01286fb4d9d5be1ab717897db09b1facc6c07697ef7382d3103b61baf6ebc",
+      "bytes": 17971
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/before-fill.png",
+      "sha256": "67b14882df1a6d4b2a94bfc67c572fef188777500abf80313e1477b1dd48b9da",
+      "bytes": 21293
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/before-submit.png",
+      "sha256": "cc946344500e79c1f8f01e428a14cfc49d4dcc3fef4b368f89c6a77bbc8b346f",
+      "bytes": 23451
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/daemon.log",
+      "sha256": "bd73dfc5932c0254b37c7f9d489c304c597d333cab8832bf0f2625a92180a00c",
+      "bytes": 1309
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/events.jsonl",
+      "sha256": "9fef457831d231b138071d6047a009d8ea1b2eb897875519cd01a785c3d7f727",
+      "bytes": 110444
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/expected.json",
+      "sha256": "ac2db02101ccbcfabf4c80a7adb56a7333849ea03016aafc9d7c87eac8a035c2",
+      "bytes": 55
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/ffmpeg.log",
+      "sha256": "88ee8dc59f7577ac8813620581648f36deec2b8b0bcea0302319f47045c770b1",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/fixture.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/ledger.json",
+      "sha256": "b0df35b2bc9c90f4159429060493aede8edfe7eee377ed23c8bb8009878b22fa",
+      "bytes": 581
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/metadata.json",
+      "sha256": "bf5fd816bb2436dcc42c8ed7c0189e61e0d773a8779e72c6711acc34194b61d2",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/recording-start-ms.txt",
+      "sha256": "3aa4c851c880e632ee02d68729929b98685712842a79fea83e2c6a72e4037a48",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/recording.json",
+      "sha256": "4cfcb90e5803f35de5893f5b40a2b173930d2d67f8f5399f92066ed45be330a1",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/review-contact.png",
+      "sha256": "2e17b16709e08e397ce4bb131984fa44cdcab367db3d6847dcf0a6823c5219ba",
+      "bytes": 60850
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/review-cropped.png",
+      "sha256": "c7283f6682ad67cfc045eb4c9c7870c6009e172bc3c8a6bad9f59b69f93fcf82",
+      "bytes": 52748
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/review.json",
+      "sha256": "3ec3b7448e0b88f9a37303ed3a2f0416ee9238dcd17bc76f1445e111c5245725",
+      "bytes": 1074
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/screen.mkv",
+      "sha256": "3631077778bcbdd587f0dc2580e880cdfe82519323e5da5ee5ce68db6acad2b4",
+      "bytes": 67780
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/session.log",
+      "sha256": "da9ab2d6c71f2e45910e5cd854adf43894258e84e029e427441201e9517b26e2",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/submission.txt",
+      "sha256": "e97a70a29df1dea1385b7f41b3824fd18da9b3bfddd51488b749d521a4ca57f7",
+      "bytes": 22
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t3/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/a11y.log",
+      "sha256": "2d7bad38488de4771eddc269aa2c8d88a2859c9563e4785ba1f5af06e380f47f",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/a11y.log.raw.gz",
+      "sha256": "bf79c316f03cc58be50d21d0e883b8e4ed367a36fdd34cec21ebf70a1c48a0cc",
+      "bytes": 279
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/after-confirmation.png",
+      "sha256": "bcebd34450376b8aee5e93c666a7bd06bee768944b7d3eb0ab2d5d0ee1412ec6",
+      "bytes": 18235
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/before-fill.png",
+      "sha256": "ede8dfea0ee85637dee4b9b3a49eee5515ce1db140f74c01c889d44b3867653c",
+      "bytes": 21146
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/before-submit.png",
+      "sha256": "f6a276c0363d558e8031e91ea18674544fccef1c297822fdba35d5585d29db57",
+      "bytes": 22975
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/daemon.log",
+      "sha256": "9113ebd6bcfec3449250b47ba8430982f623ebe0bcee6c740d2999c67e670036",
+      "bytes": 1321
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/events.jsonl",
+      "sha256": "1121a4134c5a081600d54cec08d4a58d75b7a4965f749df2753f3a662225c085",
+      "bytes": 112245
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/expected.json",
+      "sha256": "64ce827e4c65b75f3258dc8ca19cb1fda60920c28b0573135b842b51841f975a",
+      "bytes": 55
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/ffmpeg.log",
+      "sha256": "ba84a8edd3f026e27916cd81a172a226656b54e20be81a3f4e130cc7939b58de",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/fixture.log",
+      "sha256": "c3e415a81b428a95564c6155294c4f62955a428a5b91bd536f253df5e5f280db",
+      "bytes": 152
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/ledger.json",
+      "sha256": "936612c711c394a1d2e0c534f555e166d1d2576fcec59c790d10576ab79fda5d",
+      "bytes": 582
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/metadata.json",
+      "sha256": "bf5fd816bb2436dcc42c8ed7c0189e61e0d773a8779e72c6711acc34194b61d2",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/recording-start-ms.txt",
+      "sha256": "7bfe3ef46d13a17002f770f5ad168b86cc0fc1e70558a9c33a1e04a6d1d962ca",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/recording.json",
+      "sha256": "1ef925efedb6237c5cd84147aca35f31974137b6308baa68db8d8461616a2d97",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/review-contact.png",
+      "sha256": "a4cd12cfc6977ed7eb078595c913e03e0933b6783095ede6c4ed964f755fe647",
+      "bytes": 43304
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/review-cropped.png",
+      "sha256": "735697006bc650c2fdcff2b6ac8e53568867d10dc8685d8db46e12d7eac14c55",
+      "bytes": 52391
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/review.json",
+      "sha256": "3a59cc4ad3c52e7372fb4ecbc1b6205137910e8e838dfed79fadee7fbbdff052",
+      "bytes": 1074
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/screen.mkv",
+      "sha256": "28812cb3cc04d338ab7e542442464953978a95e7bc85053ca90e1d39296bec90",
+      "bytes": 68663
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/session.log",
+      "sha256": "779e986ecfcbf9661132a62cc500606bac8fd3eb1248003c978937bb815c6220",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/submission.txt",
+      "sha256": "e36fd8ce14a413bc4ba777e1e893daf01bad061fbe6c9ecb2cadde57cdc56918",
+      "bytes": 22
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t4/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/a11y.log",
+      "sha256": "4d7013673cf9b8c6871e45a56e0ef2964b9370f8c3b5ea63e97ce93bbe7fa322",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/a11y.log.raw.gz",
+      "sha256": "70a12b033e61191f7e82f68a1ee00f29213883593597ee79eeeb5f5a7703ce67",
+      "bytes": 280
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/after-confirmation.png",
+      "sha256": "8d698ea994aafe98235ad6f396d29bece80fcf617753ac01edfce81118dfad14",
+      "bytes": 18209
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/before-fill.png",
+      "sha256": "ec5cf44be83036b7b416aab847b65ab5ec2a52c74947c6b57c6911bb15cb0ae5",
+      "bytes": 21184
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/before-submit.png",
+      "sha256": "c4c2c957a8227676bbfcdbc96c765aaf4a2830f6f3117e99cc27e880f8622f5d",
+      "bytes": 23159
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/daemon.log",
+      "sha256": "2f84f1776b0cd1229edeab9954dc4c6bd4ef90b1d48807fc518a10ab3c6a8acd",
+      "bytes": 1321
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/events.jsonl",
+      "sha256": "bc2b64f0000f3704c3f04c17fcbcc408dde3c4224dd30925180eca0490507af3",
+      "bytes": 112639
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/expected.json",
+      "sha256": "993cab5a84b4de5660818e4a772d16c4b189c0621d996293f5bcf0ba8403ac38",
+      "bytes": 54
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/ffmpeg.log",
+      "sha256": "f09384acc9445170ca72862acded9012d23783cb560bdc71dcca89c8695edf3f",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/fixture.log",
+      "sha256": "00eaac9616d200fb9d11aa0850ab6c8a41c7a198452b489767970433b0b4eb9f",
+      "bytes": 152
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/ledger.json",
+      "sha256": "99c418ca058a0b1007d3d8e6fa369202f19c472acc408ff8680e17f7b7d1ae67",
+      "bytes": 580
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/metadata.json",
+      "sha256": "bf5fd816bb2436dcc42c8ed7c0189e61e0d773a8779e72c6711acc34194b61d2",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/recording-start-ms.txt",
+      "sha256": "0c0313f74302d4667cefa7e7f65088dbe3ed24f7c22fc56078800bf3f93e033d",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/recording.json",
+      "sha256": "640fc8e2d23490e0731b79e2e9cbecf7731b81c41e2f616b7d29c7e2fe9fab68",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/review-contact.png",
+      "sha256": "f9c08f4c1a89be5b24625c67a58d261aefb43e91eca00b35d95eb1059ac76e35",
+      "bytes": 43450
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/review-cropped.png",
+      "sha256": "7e490735a4618331e3d9a4700d67aaaf0a819c07b2b36e234636cb5979ef7c78",
+      "bytes": 52619
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/review.json",
+      "sha256": "307f033ee595eab3948a196c4ec631693cb7b920fe10d2fc14f9ecbc0447f9de",
+      "bytes": 1073
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/screen.mkv",
+      "sha256": "12044a2360977abc1fe2ab9f060ac79e266bde03e0d755c53e00805a06733eb6",
+      "bytes": 70704
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/session.log",
+      "sha256": "cee709b3b96c414baf46ca464a24aa92d88257ed6691f872fadb57d6f917eca1",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/submission.txt",
+      "sha256": "8412b4711f5b34126f9aab1f9bb6aef0e978dbce8ba79571ed7abaf8c751f2fd",
+      "bytes": 21
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t5/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/a11y.log",
+      "sha256": "3cf448dae70b633386cfb522c6d2cadd93be5915eb045e03e34f550254c013dc",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/a11y.log.raw.gz",
+      "sha256": "fc7f1b0b7b576edfbbdc2b6254eeb99644c384e133cb76745184982e5c291f57",
+      "bytes": 279
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/after-confirmation.png",
+      "sha256": "3413e42ef400da5cd933bb48f2bf87f33e2d3ef2333c57f992880f09ef3cbc14",
+      "bytes": 35681
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/app.log",
+      "sha256": "ab11cc50ddb4027359ace24c54f28dbc05d160cf47c88a20938b91172ae6e0bb",
+      "bytes": 752
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/before-fill.png",
+      "sha256": "c699982af8ce530e14bb9984587ff0fae88b711e5e92494873bbfa0a286a0adc",
+      "bytes": 32680
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/before-submit.png",
+      "sha256": "d0d58ea925cbb9ec878b71c37e7787bc4bd9762f9ebec806f3a69a197ff9a1df",
+      "bytes": 33321
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/daemon.log",
+      "sha256": "890dfa725b7b2920ca290067bf9b0515c993ec7feb3e90f1b083af043f16e632",
+      "bytes": 765
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/events.jsonl",
+      "sha256": "8935af61cadffa585a5c2cf50b9251f841ad066aba6e75ed0ee102f12271d532",
+      "bytes": 113828
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/exo-executable.sha256",
+      "sha256": "68bd38d100838412fd22484b5ef130af8d80fa2e736292e6c2561c074123e901",
+      "bytes": 97
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/exo-version.txt",
+      "sha256": "b6fb78a4f40398528f4bad253f91acdf3e3e9f1345f504404a88581729bfe011",
+      "bytes": 25
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/expected.json",
+      "sha256": "e73a0a2ff86e10eb71fa5fb032b49a9137631e2cf216a39e7004c45bf670775a",
+      "bytes": 71
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/ffmpeg.log",
+      "sha256": "c97ce64ee2a2483ebd7215d8af841e5a3114e39354cd27702fbbc17fc8f5e0ab",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/grant.txt",
+      "sha256": "a157d8c9793871ac86cf6c5754f9ef5ee8c5ae80bc131c7e7d3f2e2fc3486562",
+      "bytes": 93
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/launcher-before.desktop",
+      "sha256": "63802ead839bf08ad87ffd3ed55f6cb02505652d3875d463adc03ba349e07117",
+      "bytes": 121
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/launcher.desktop",
+      "sha256": "92779de61595a27b4454d74c8e19960f40fce5f109cd57a0eff17ecfd017f4d2",
+      "bytes": 163
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/ledger.json",
+      "sha256": "b5dc7868efe7356d97df3a18172f72fbed8ae8a296344a02fa5250c727cfd6cc",
+      "bytes": 651
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/metadata.json",
+      "sha256": "9de2e97d001a911557877878e56f4c76e07d4e492293905cfe54c6b6ca20ca73",
+      "bytes": 1416
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/oracle.txt",
+      "sha256": "bcc5d59c52a4761c99ae372f2f34a65b074172f3418c9f7b7947c8a6c0d1c5db",
+      "bytes": 166
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/recording-start-ms.txt",
+      "sha256": "484d0bf8a91a8db074c099dd68b1621b396d34b7ed010d89bb6c51177978f4f2",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/recording.json",
+      "sha256": "981a46f4dcf6c1f3f744f9ea773b9d784b2523aeac1bd29832e26bc5e1c6b515",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/reopened-ms.txt",
+      "sha256": "a643b41f62ff872a19b340ce13462ce8c51bce0330ff7b9ab199749b6e796edd",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/review-contact.png",
+      "sha256": "f5aa26c04ff689d4748298200c1f9698f59010578dcec56390d4c4279c631224",
+      "bytes": 100918
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/review-cropped.png",
+      "sha256": "1c8533d5ac9e0f2cfe8abff9806af8eb62706031cc4b2023afff9355a52f0025",
+      "bytes": 90052
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/review.json",
+      "sha256": "38d2a3991751abfdf442e8c870483a953102925461a9f2ab046a231fe7065053",
+      "bytes": 1125
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/screen.mkv",
+      "sha256": "27380caf5212abbfde0f9d1c7834631132a519cf0d1adf3101960b7abdbb2d1d",
+      "bytes": 111184
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/session.log",
+      "sha256": "8b6d2669a2ea479c3e93095e7ef7ccb8171acbbc9e3442c70dc96dee3d42efff",
+      "bytes": 678
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/task.txt",
+      "sha256": "e2b859fe3fedb8667942d3353e2b125e42910849c5b84b3d3d909b6531ac4cc5",
+      "bytes": 253
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.CrBkmf/t6/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/outcome.json",
+      "sha256": "8bd1b59413600d54baccf952629149c63aa4944375c14a219623141332f7ade8",
+      "bytes": 80
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/outcomes.json",
+      "sha256": "10f8c09b4c57754c2a7baade1775fe488ba97ca09fca05c080e494ec21c2c079",
+      "bytes": 832
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/predeclared.json",
+      "sha256": "a9541bca80b44b854405e45f967fcf76c4364087e4870dbbe4179615d07a3d4d",
+      "bytes": 1240
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/a11y.log",
+      "sha256": "fb213455a21d3e364160022362a24a8985889de186e4800541d5799ec4c2d51d",
+      "bytes": 345
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/after-confirmation.png",
+      "sha256": "de48e2816292955485adf96df80817198907d27321af43de5de415bb9230ec79",
+      "bytes": 18138
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/before-fill.png",
+      "sha256": "90b783ca880b9d8842d038378f5d8415fc00a3cdfc0d284e9d06d140f62b1d30",
+      "bytes": 21131
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/before-submit.png",
+      "sha256": "15631680a1a5c392843008ff0b4bdc6a106b0a5ed13ad52674e8dd86e6f5b4e7",
+      "bytes": 23290
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/daemon.log",
+      "sha256": "1425f04bf748e7f6b27e220628a35a2145aaf14e9e3b306163a7e3f8ac4e422d",
+      "bytes": 793
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/events.jsonl",
+      "sha256": "a1ae980dea1afe131a7ab461bc2febf1b4b49fcfb15508c21212e630e9395112",
+      "bytes": 111295
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/expected.json",
+      "sha256": "fbe198a59ab6ffdd0919cb0e1e2b2bfa16f94eca044fd25ae3f1653793ef20d5",
+      "bytes": 54
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/ffmpeg.log",
+      "sha256": "6a171965704d41fba8b07bcdf47fa8d0cbf53dd2a17efd2fd11ec887f3565bf7",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/fixture.log",
+      "sha256": "561d35c6ba12c049b0a9c616bd4e13c03ef1e2936eefc90c34acd192889dc646",
+      "bytes": 152
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/ledger.json",
+      "sha256": "3ab15c74c73f78c8af3a445f9c796f8e9ae5f2c5043d9629100c5abbae60d9ce",
+      "bytes": 587
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/metadata.json",
+      "sha256": "1fb8590f474b1114217a62155409e55febce67805cdd0395b52850be80c0087b",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/openbox.log",
+      "sha256": "0fce8bee8fddc11f0b194334614ac95514e12842284aafec972ab1d819bf526a",
+      "bytes": 235
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/openbox.log.raw.gz",
+      "sha256": "ab3cc479acdcef438c764ec9ffd86334f3e1bcf1d743383a1dc0e52f93ed0d70",
+      "bytes": 205
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/recording-start-ms.txt",
+      "sha256": "4634e6f6f0e69dc338269519fb2c9dcd4aa8a5af9c817163178e61ebc71f8df8",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/recording.json",
+      "sha256": "1ef925efedb6237c5cd84147aca35f31974137b6308baa68db8d8461616a2d97",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/review-cropped.png",
+      "sha256": "3a72f8cbf548d54356c5528441cd964f3f3221258b110bc7f4ccd435f0983748",
+      "bytes": 52556
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/screen.mkv",
+      "sha256": "b95c0d161898cff98184906ada7bfef007ac5987b0016b4e3428345bfcfe4949",
+      "bytes": 70363
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/session.log",
+      "sha256": "f3aaf6eaef8a717e18660df33aeabee43d8109512e5a059a328d5e7368938c2d",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/submission.txt",
+      "sha256": "eb8af22a0d8ac488bae687be267f491f2141909c1f74b1e31049a9f8bc7a76e8",
+      "bytes": 21
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/visual-review.json",
+      "sha256": "a8941cf879c07ce21d3dbff09a815ff8b76f0ee35f389a3c080f7a809339b208",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/a11y.log",
+      "sha256": "d74f512f965190d5cccd27604ca398abda96ef2fc6df09c45ae135a4cfa20f16",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/a11y.log.raw.gz",
+      "sha256": "8f46f4b75ecfb0668dc6de0174051e18a6a87fa5c571f1e6de96710ebfcaf7f4",
+      "bytes": 280
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/after-confirmation.png",
+      "sha256": "c980db42a85d563c4bd984cb5662f8bb2a083463f3b76ed6063d06f77d25bd28",
+      "bytes": 2723
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/before-fill.png",
+      "sha256": "cc2bc17460f7bfec7f0c2bf14d6c8dc542a7e4921199241fb1c6ec47f9ae3ca1",
+      "bytes": 21192
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/before-submit.png",
+      "sha256": "659fd784ae8a351429b902c30bdb9a6ebb710e1f3f4a6b5650cf2358b22fc40e",
+      "bytes": 23178
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/daemon.log",
+      "sha256": "8c52cfafc8da2a302c2e90e66600bfcdf0936b8406e48d6f53b1a82692927a26",
+      "bytes": 1379
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/events.jsonl",
+      "sha256": "d8e83361721b6ec0d83130bf59554d93d0eebd6b1d32a3ba5b9285b6eb575284",
+      "bytes": 111906
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/expected.json",
+      "sha256": "5366c0b524a73a171042472c1c343c793b5cc56b2b0b7e7edd9cab4a4cb0f5f3",
+      "bytes": 54
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/ffmpeg.log",
+      "sha256": "f74075404678d5ec6eb823e651501189531352fc58478bc4af15853c48e54c56",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/fixture.log",
+      "sha256": "0995be531a2ff724f73e37a7e59cf2303d1b0e477673d7a74ed4c7c7f737e4de",
+      "bytes": 380
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/image-1.bin",
+      "sha256": "d9cbed582be3378adc140d87b33abf6fa709afcb8a04abdde67adcf98b57fead",
+      "bytes": 11468
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/metadata.json",
+      "sha256": "1fb8590f474b1114217a62155409e55febce67805cdd0395b52850be80c0087b",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/recording-start-ms.txt",
+      "sha256": "e377121c9488c3af27fb1eaf4adbe1075d1f1174263332e0d72eed74a261c51c",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/recording.json",
+      "sha256": "e84c219ed110be54df089b3215bfa805f3a9a935ec083c279b530924939c31d3",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/review-cropped.png",
+      "sha256": "d03125911fedc24beefe03a84631731165bbda3fa2571a1cf6cb9f0a401b04b0",
+      "bytes": 38999
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/screen.mkv",
+      "sha256": "61b07ee1ae7b60615a0b1ee97057de4f28465d60f5f7fec68102782be25bc2bd",
+      "bytes": 101501
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/session.log",
+      "sha256": "f96bb7682a602ce9054318be8552699782650c4fd3fafbde9043d01c56877cb8",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/submission.txt",
+      "sha256": "395ca7f19073b2f85ae0f0a551405cd16a91405c1a72320638627571e64df79f",
+      "bytes": 21
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/visual-review.json",
+      "sha256": "415b45d7ed81b3a49230d68b04a078942cff01ea55def945e6e2a3b3ce73339d",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.TbkXy3/t2/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/outcome.json",
+      "sha256": "16c967bfd827bb5b1756c7df6a5bd4713d5c0d60f9ce88caf272fd99ccf1c106",
+      "bytes": 80
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/outcomes.json",
+      "sha256": "21ef1a64f6d2392e6b7c93ab888114a00f8d7abdca00b0d889f14fdd9949b2e7",
+      "bytes": 1506
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/predeclared.json",
+      "sha256": "6e1abd3df5d7c9cf22e504dcd6db8bbf29d9c25fa08fa80580e7806290d02bef",
+      "bytes": 1267
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/a11y.log",
+      "sha256": "2d6adf448b2e28eb93017a5baa25b671f9cad961d3e68f4a437ec2609417f89f",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/a11y.log.raw.gz",
+      "sha256": "abd00d2622c87620c9e45aedd2d25aeb8362c8abf99dd32e23d79c6992787d15",
+      "bytes": 278
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/after-confirmation.png",
+      "sha256": "6dd7ad2ce8f67e4432b2726b5289022199a5e254f0ff81d9f80bc84ab518ea9a",
+      "bytes": 2722
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/before-fill.png",
+      "sha256": "fb3f087eb530b1257c72afbfeb142385d69b4bfcaebd1e42f5afef8692690ab9",
+      "bytes": 21219
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/before-submit.png",
+      "sha256": "14e7aa2f76160414b8835090a3b05071298941f059da76abf8db5c66b5b6ac05",
+      "bytes": 23325
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/daemon.log",
+      "sha256": "ed3111d8c440dc2c189f53627275e3b45e23e7b165e4e0127ba89e7ec15cb06d",
+      "bytes": 1321
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/events.jsonl",
+      "sha256": "fa26c32efa19c291549cd09e90c879f68ac1fa760afa083f9b49eb89fb82171f",
+      "bytes": 109555
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/expected.json",
+      "sha256": "b68acde0c5e9a612ae6677e6d9c3898bfd5ef429d112d0a0d9522f404541b8f1",
+      "bytes": 55
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/ffmpeg.log",
+      "sha256": "bcf80adf9d61d7147d76b08cf8193807d1fc1e0cc932edec0601f476ae828acd",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/fixture.log",
+      "sha256": "d5f40be2d81ab7e3e0aa80cf00173077bbd8fb68175ded46877fd583541c4970",
+      "bytes": 304
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/ledger.json",
+      "sha256": "05dcb18da2be03bd3be41dd0ac8c01186cddd3fbf559aacfb0cf41dbb4b13655",
+      "bytes": 591
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/metadata.json",
+      "sha256": "0ab7178f248af394c3f919f8b83cac2244b21d1196d23294af37e95367bbcfc0",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/recording-start-ms.txt",
+      "sha256": "cd939c10710b454467b6606b37de885141d401e024dfe5fdf26a97ed18e8b040",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/recording.json",
+      "sha256": "95d04d12bafb24623ab8077824fd03a6b28a6366b3f69e81b26b3ce35e182768",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/review-cropped.png",
+      "sha256": "f78dbabe610f3b8e7ed61e6cd7d1d3ef770887c3c4ce365d24b33999974ab6b1",
+      "bytes": 39140
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/screen.mkv",
+      "sha256": "9b04284931ec89a33f45f95828bd5d927cb6af26267fc5ac0ffba82b3303a973",
+      "bytes": 76395
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/session.log",
+      "sha256": "2a83835d97319f2a2a78dc2149065a635fa379b60ddc44f7c8573bae13904050",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/submission.txt",
+      "sha256": "f2b1759696d539165682c02574b6238991a5a5c4b6f31a4a7e60b070f99ea293",
+      "bytes": 22
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/visual-review.json",
+      "sha256": "02b36af4ea9672e2512d2785d340cdc22b0bf83072db3e436648ff9f8f75bd5a",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/xvfb.log",
+      "sha256": "ba3a845f35cd8a9b096b8af143842ecf4f968baecce3bd737a37ab77eddaf73a",
+      "bytes": 2612
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/a11y.log",
+      "sha256": "4050c0c3776d9ad5e2296dccaa02f65a1a640120d7c3a4625838fe9013836cc9",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/a11y.log.raw.gz",
+      "sha256": "467a59b3004d7b5bcaf459b63dc16ad18c32c6068538f32051442eae1aea50b3",
+      "bytes": 278
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/after-confirmation.png",
+      "sha256": "fb0c420394aa790b1c4436d714dedffd04a76fe0cb42c28b659261f21d8b7622",
+      "bytes": 18260
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/before-fill.png",
+      "sha256": "7071d0b04c4c5a3866baa15dc6884e058c432b0e4b6459061fe0ada5dbcb6967",
+      "bytes": 21095
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/before-submit.png",
+      "sha256": "c33f27f010650ac50b1548beac72d638bebe21d9f2fdb17a166d3365170eb6e7",
+      "bytes": 23132
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/daemon.log",
+      "sha256": "4451286259401f6d89d7d7e28cffb3b99a5c664a76e4524a78af9ceb77e8bb6d",
+      "bytes": 764
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/events.jsonl",
+      "sha256": "353afd05c501a1a1e4d31cc9c0ff9906fe3882fe52f8fa217e4e281e180c1982",
+      "bytes": 108939
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/expected.json",
+      "sha256": "92eadf4687fb0046359a84eef2028121411c95b88ec6526411ba7e85304fe650",
+      "bytes": 54
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/ffmpeg.log",
+      "sha256": "9d369c47744afbefdcd165c06ba634a29c912c6d148b5202e828ac94940e7367",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/fixture.log",
+      "sha256": "6ebe3cd700e4e9d68979c67e8cbf09338b2d9d8dc8d9b7131b0bcbf4da85541a",
+      "bytes": 304
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/ledger.json",
+      "sha256": "81f495b037bfd320f01d661b3024188beb9b71374d97e16c897b397584b94090",
+      "bytes": 589
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/metadata.json",
+      "sha256": "0ab7178f248af394c3f919f8b83cac2244b21d1196d23294af37e95367bbcfc0",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/recording-start-ms.txt",
+      "sha256": "3c4c2606ab200e019b32a588e4a49bce5412383eb96db2e30bda33eeb774e721",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/recording.json",
+      "sha256": "7027b267f9c120e74846286b9d6115bc7c01cc193d1078cf22bb049bdb9cb931",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/review-cropped.png",
+      "sha256": "ccbf855389c9f2b315a15858f95e15866073e4ffb5b2e5160a9e3034b4df60a5",
+      "bytes": 52516
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/screen.mkv",
+      "sha256": "4df2a61254ce5e0defb53382ffaeb37df159fa3ab74a525b11e2e7a4818010d2",
+      "bytes": 76670
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/session.log",
+      "sha256": "8211349c025db742a6a072971015cfa5e5d8699118ff7f0c77f25f7bd4e23e0b",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/submission.txt",
+      "sha256": "afd98cb69ad0265cf1c00222b88ffd026629cdc29b035468a7a13fb8e76eeb16",
+      "bytes": 21
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/visual-review.json",
+      "sha256": "f9d6eb11438b612f2f935f22b510d5684a549e30d77a1cb3c30f4f62a8f5faa3",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/a11y.log",
+      "sha256": "0bd10f019a87fae67643e6dfac1cbd0c3ba042624a35f8f415e6ea3651420993",
+      "bytes": 407
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/a11y.log.raw.gz",
+      "sha256": "6838cb71d58c99b3fdd1d69b097882dbfffeb4ac80e1a987114e78a108c21e6e",
+      "bytes": 278
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/after-confirmation.png",
+      "sha256": "6dd7ad2ce8f67e4432b2726b5289022199a5e254f0ff81d9f80bc84ab518ea9a",
+      "bytes": 2722
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/before-fill.png",
+      "sha256": "4ca030da66a9484b24459800c9bcc0258f3607de3e6bf4d7d5017596d5726c27",
+      "bytes": 21039
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/before-submit.png",
+      "sha256": "8637c69164005f8ada9e9d48b3082d7e5e73bc0816f51b71b4e7b9ea56aac906",
+      "bytes": 22921
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/daemon.log",
+      "sha256": "c9386885d6e6a703f56789573e018c294ff81c145979aec16c1463e6a55543fd",
+      "bytes": 1321
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "bytes": 2
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/driver.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/events.jsonl",
+      "sha256": "9f87dd0b692c66c2e264272c93be3ed94e509500680c41df0ad9712f661ae76d",
+      "bytes": 107689
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/expected.json",
+      "sha256": "77fe9fd1886da7c335b81a746707946fea284368115262b40856f57de2a513df",
+      "bytes": 54
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/ffmpeg.log",
+      "sha256": "4961f1f390ec9ea79731e13c6c5637f59167541e6e3c62ff451abba10d3128e7",
+      "bytes": 104
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/fixture.log",
+      "sha256": "25e22dbad71781e6a7ee3d460e44d1413601f45600c23fc5d6b6d535825feed1",
+      "bytes": 456
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/grant.txt",
+      "sha256": "e8e30974af50f1b48100819f6790200658f636ba5c6fd57970e077ddd3650952",
+      "bytes": 75
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/metadata.json",
+      "sha256": "0ab7178f248af394c3f919f8b83cac2244b21d1196d23294af37e95367bbcfc0",
+      "bytes": 1344
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/openbox.log",
+      "sha256": "bf7d6fb2696d337730451f97533f849098b44abfa5e2b5d1c455c148637275e1",
+      "bytes": 147
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/openbox.log.raw.gz",
+      "sha256": "29d93c3ec13a850b2abf97eb306bc9c2f4f329ee6b9b8e4610e0b5f5c8d25f3f",
+      "bytes": 144
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/oracle.txt",
+      "sha256": "134276359a6f1a310aa404876b53fe932c0d9f0c495ed1ed8169e2251ef0328a",
+      "bytes": 73
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/recording-start-ms.txt",
+      "sha256": "31b3fb3c050307f50200477d89bdd78edcbd0edff5acd2e7d6d5758d8027b852",
+      "bytes": 14
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/recording.json",
+      "sha256": "fbcdd0957103578f483cc6fbfe77cc81c48def5a928e8dc2cf0b1968fbc383c4",
+      "bytes": 58
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/review-cropped.png",
+      "sha256": "6be06baef52f7427574cf6be76de0bd8ad46fa1f84e1007aa39a6e1252796ee4",
+      "bytes": 38630
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/screen.mkv",
+      "sha256": "fc4f746990ed889dcfe8ff262fbe1c6be6c7a2ecaf688d8b8f0935d530def901",
+      "bytes": 81820
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/session.log",
+      "sha256": "9f85bc15cb4e0d81d5c5e381c61b391432c745fb0c4e32e7ca9fa5ebbfeeacd0",
+      "bytes": 356
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/submission.txt",
+      "sha256": "7d8340cbf2480504cfffaa81c5f52e828c411c2768ae5816eb6941df1cae26b8",
+      "bytes": 21
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/visual-review.json",
+      "sha256": "7f8002df5547585805c8893885b53072fe2e67b60020c3aa1bd216c2faa9c3ba",
+      "bytes": 907
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/m.mAhpEr/t3/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "bytes": 1438
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/model-batch.mjs",
+      "sha256": "239867589d6b5669a111ae2bcc8b3e4c9c3331b875ef29d679b94bb88838fb39",
+      "bytes": 4521
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/model-driver.mjs",
+      "sha256": "2ff1e094814f0c5d1164d535c9fb7ebc0a8f7a4aca14f8a896303b7a7bf2326b",
+      "bytes": 4162
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/model-evidence.mjs",
+      "sha256": "d1bb2c1a302f3da6eb3a2d1fd936db27650f285eb91aa5ad8a1c29ed81f963ab",
+      "bytes": 5119
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/model-session.sh",
+      "sha256": "ec3202c3ff8375cc3e410c12b91fd2043de6457ece2acba24d82479f5d1095c5",
+      "bytes": 3393
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/phase3-earlier-1.png",
+      "sha256": "c54dcad1b58b9563f1267a5bc6d8404a75a166b8b214eb9efe5acb0e714f3e47",
+      "bytes": 105664
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/phase3-earlier-2.png",
+      "sha256": "fb357f9c8abc804de3b118b656ae5d56c457939f902939d266c403282a4d6e4f",
+      "bytes": 101915
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/phase3-gates/verification.txt",
+      "sha256": "2364aaf9fa2adef3a2ab3452ddb8114424964c297282977705cc27cfc86f5406",
+      "bytes": 66227
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/phase3-gates/verification.txt.raw.gz",
+      "sha256": "a91d20df5f503a72163ac0b6bb6b88e294793d81625871f25222475f15fa9c66",
+      "bytes": 10503
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/phase3.md",
+      "sha256": "0dc7efa5b480791f7e1e4038c816475960852e64161f136c1da73aae31740c49",
+      "bytes": 4512
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/with.txt",
+      "sha256": "4e110cbe3f4d0cac34a40e1dfa14bfd6d0120706352838184450c74ef63bb0c3",
+      "bytes": 62
+    },
+    {
+      "path": "docs/proofs/field-mapping-form-completion/without.txt",
+      "sha256": "1c2fa60b4168f6498865cf5f29caf14580653bd4b8290a8c7344e190b567e3fe",
+      "bytes": 481
+    },
+    {
+      "path": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+      "sha256": "00e0b7dbb9cd6ed92eb39e2f58f9e532024fe4752c37d2b6fd947ae6ddc3f161",
+      "bytes": 34416
+    }
+  ]
+}

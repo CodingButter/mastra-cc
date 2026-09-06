@@ -1,0 +1,1 @@
+PASS: entire saved launcher matches independently calibrated serialization; Name and Comment exact; inert Exec and all other keys unchanged. Launcher never executed.
