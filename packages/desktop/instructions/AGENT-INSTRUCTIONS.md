@@ -307,6 +307,15 @@ A newline is not text; it is the chord `Enter`, sent separately with
 string carrying one is refused by name before anything is typed. A text is at
 most 1024 characters: a field entry, not a document.
 
+**Map fields before submitting.** Returned control order is not visual order or
+requested value order. For unnamed editable fields, establish field/label mapping
+from actual evidence, never position in the returned array. When names cannot
+establish mapping, capture the containing form or window before submitting and
+visually compare each value against its intended label; correct any swaps and
+recheck. If mapping remains uncertain, do not submit; report the uncertainty.
+After submission, compare confirmation values against the intended labeled values,
+not merely a success banner. A mismatch is not success.
+
 ### Typing appends, so empty the field first
 
 `typeText` adds to what is already there. A field holding `google.com` that you

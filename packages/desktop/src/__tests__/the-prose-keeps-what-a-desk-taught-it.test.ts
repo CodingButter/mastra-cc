@@ -100,6 +100,27 @@ describe("what a live desk taught these instructions", () => {
     expect(teaches("not task-success evidence", "verify the requested state change")).toBe(true);
   });
 
+  // Measured 2026-09-06, model-desktop-task.po8F5n: reverse-order unnamed
+  // controls swapped receipt/total; the run claimed success despite the confirmation.
+  it("does not treat returned control order as visual or requested value order", () => {
+    const flat = prose.replace(/\s+/g, " ");
+    expect(flat).toMatch(/(?:returned|control) order.{0,40}not visual order.{0,40}requested(?: value)? order/i);
+  });
+
+  it("maps unnamed fields to visible labels before submitting", () => {
+    const flat = prose.replace(/\s+/g, " ");
+    expect(teaches("captureElement")).toBe(true);
+    expect(flat).toMatch(/unnamed.{0,40}fields.{0,60}(?:label.{0,20}mapping|mapping.{0,20}label)/i);
+    expect(flat).toMatch(/capture.{0,30}containing (?:form|window).{0,40}before submitt/i);
+    expect(flat).toMatch(/visual(?:ly)?.{0,30}compar.{0,60}(?:intended|visible) label/i);
+  });
+
+  it("rejects confirmation mismatches instead of claiming success", () => {
+    const flat = prose.replace(/\s+/g, " ");
+    expect(flat).toMatch(/compar.{0,30}confirmation.{0,60}intended.{0,30}values/i);
+    expect(flat).toMatch(/mismatch.{0,30}(?:not|never).{0,20}success/i);
+  });
+
   // Measured 2026-09-05: keys aimed at a field in a window that was not in
   // front went into the front window instead, and the verb answered performed.
   it("does not mistake a pointer press for proof of keyboard ownership", () => {
