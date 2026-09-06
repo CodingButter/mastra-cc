@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+import { LabelReader, type LabelBudget } from "./labels.js";
 import type {
   ActivateElementParams,
   ActivateElementResult,
@@ -179,6 +181,9 @@ export class AtspiBackend implements Backend {
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
+  private readonly applicationRootOf = new Map<string, NativeRef>();
+  private readonly labelBudget = new AsyncLocalStorage<LabelBudget>();
+  private readonly labels: LabelReader;
 
   // How many times a press has been refused at each greyed-out control, so the
   // second refusal can say something the first one could not (ADR-0083).
@@ -203,6 +208,7 @@ export class AtspiBackend implements Backend {
 
   constructor(channel: Channel, visibility: Visibility = new Set(), limits: TraversalLimits = TRAVERSAL_LIMITS) {
     this.channel = channel;
+    this.labels = new LabelReader(channel);
     this.visibility = visibility;
     this.limits = limits;
   }
@@ -324,7 +330,7 @@ export class AtspiBackend implements Backend {
     };
   }
 
-  private async readElement(ref: NativeRef, application?: string): Promise<SemanticElement> {
+  private async readElement(ref: NativeRef, application?: string, applicationRoot?: NativeRef): Promise<SemanticElement> {
     const nativeRole = await this.nativeRoleOf(ref);
     const name = await this.nameOf(ref);
     const [lower, upper] = await this.statesOf(ref);
@@ -339,6 +345,11 @@ export class AtspiBackend implements Backend {
     const magnitudes = await readPublishedOperations(this.channel, ref);
     const content = await readObservableContent(this.channel, ref, nativeRole);
     const id = deriveId(role, ref.busName, ref.objectPath);
+    const root = applicationRoot ?? this.applicationRootOf.get(id);
+    const labelObservation = nativeRole === "text" || nativeRole === "entry" || nativeRole === "textbox"
+      ? await this.labels.read(ref, root, this.labelBudget.getStore() ?? { waited: 0 })
+      : undefined;
+    if (applicationRoot !== undefined) this.applicationRootOf.set(id, applicationRoot);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
     if (application !== undefined) this.applicationOf.set(id, application);
@@ -348,6 +359,7 @@ export class AtspiBackend implements Backend {
       name,
       states: toNeutralStates(lower, upper),
       content,
+      ...(labelObservation === undefined ? {} : { labelObservation }),
       actions: published.actions,
       operations: magnitudes.operations,
       // ADR-0040: every answer names its instrument; the unmapped-role
@@ -382,11 +394,12 @@ export class AtspiBackend implements Backend {
   }
 
   async queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.queryElements(params));
     const elements: SemanticElement[] = [];
     let total = 0;
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
-    const selected: Array<{ root: NativeRef; applicationName: string }> = [];
+    const selected: Array<{ root: NativeRef; applicationRoot: NativeRef; applicationName: string }> = [];
     for (const app of apps) {
       let selectedApplicationName: string;
       try {
@@ -412,7 +425,7 @@ export class AtspiBackend implements Backend {
           if (windows.length > 1) throw new WindowScopeAmbiguousError(`${windows.length} visible windows named "${params.window}" in "${selectedApplicationName}"`);
           root = windows[0] as NativeRef;
         }
-        selected.push({ root, applicationName: selectedApplicationName });
+        selected.push({ root, applicationRoot: app, applicationName: selectedApplicationName });
       } catch (error) {
         if (error instanceof UnrecordedExchangeError) throw error;
         if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
@@ -426,7 +439,7 @@ export class AtspiBackend implements Backend {
     if (params.application !== undefined && selected.length > 1)
       throw new ApplicationScopeAmbiguousError(`${selected.length} applications named "${params.application}" are on this desktop's accessibility bus`);
 
-    for (const { root, applicationName } of selected) {
+    for (const { root, applicationRoot, applicationName } of selected) {
       // The fast instrument, when the application advertises it and the
       // question is one the bus's own role vocabulary can carry. One exchange
       // replaces the walk; the answer goes through the SAME readElement and
@@ -456,7 +469,7 @@ export class AtspiBackend implements Backend {
           }
           total += 1;
           try {
-            const element = await this.readElement(ref, applicationName);
+            const element = await this.readElement(ref, applicationName, applicationRoot);
             if (params.role !== undefined && element.role !== params.role) {
               fastAnswerTrusted = false;
               break;
@@ -496,7 +509,7 @@ export class AtspiBackend implements Backend {
         // trees contain dying processes and dead references, and one of them
         // must not take down the whole query.
         try {
-          const element = await this.readElement(ref, applicationName);
+          const element = await this.readElement(ref, applicationName, applicationRoot);
           const roleMatches = params.role === undefined || element.role === params.role;
           const nameMatched = params.name === undefined || queryNameMatches(element, params.name);
           if (roleMatches && nameMatched) {
@@ -595,6 +608,7 @@ export class AtspiBackend implements Backend {
   }
 
   async attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.attestElement(params));
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest`, refusalClass: "UnknownElement" };
@@ -749,6 +763,7 @@ export class AtspiBackend implements Backend {
   // focus is an ordinary desktop, and saying so is different from saying the
   // question could not be asked - which is what FocusUnsupportedError is for.
   async focusedElement(): Promise<SemanticElement | undefined> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.focusedElement());
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     for (const app of apps) {
       // The visibility gate, exactly as queryElements applies it: the name is
@@ -783,7 +798,7 @@ export class AtspiBackend implements Backend {
             // Read in full only now, so the element is answered (and its id
             // recorded in the answered map) exactly as any other read would
             // answer it - restoreFocus resolves that same id afterwards.
-            return await this.readElement(ref, applicationName);
+            return await this.readElement(ref, applicationName, app);
           }
           const kids = await this.children(ref);
           if (depth >= this.limits.maxDepth && kids.length > 0) {
@@ -843,6 +858,7 @@ export class AtspiBackend implements Backend {
   // it produced a fresh, honest-looking element after an operation that may
   // have done nothing. The element below is the ANSWER, not the evidence.
   private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<void>): Promise<{ element: SemanticElement } & T> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.performing<T>(id, effect));
     const ref = this.answered.get(id);
     if (ref === undefined) {
       // Byte-identical to the refusal for an element that does not exist: an id
@@ -902,6 +918,7 @@ export class AtspiBackend implements Backend {
   // read is treated exactly as before - there is nothing to compare, and the
   // doubt is all there is to give.
   async typeText(params: TypeTextParams): Promise<TypeTextResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.typeText(params));
     const ref = this.answered.get(params.id);
     const before = ref === undefined ? undefined : clearableLength((await this.readElement(ref)).content);
     const typed = await this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
@@ -956,6 +973,7 @@ export class AtspiBackend implements Backend {
   //     intended state is "empty" - so the read-back is evidence the seam can
   //     judge instead of handing the caller an element and a shrug.
   async clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.clearElementText(params));
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       throw new UnperformableElementError(
@@ -1053,6 +1071,7 @@ export class AtspiBackend implements Backend {
 
   // Aim from fresh semantic geometry; read-back is observation, not recipient proof.
   async clickElement(params: ClickElementParams): Promise<ClickElementResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.clickElement(params));
     const button = (params.button ?? "left") as string;
     if (!isPointerButton(button)) {
       throw new UnperformableElementError(
@@ -1282,6 +1301,7 @@ export class AtspiBackend implements Backend {
   // can check - and the daemon's own description is what makes the commit
   // reviewable (ADR-0008 rule 2, ADR-0021).
   async submitElement(params: SubmitElementParams): Promise<SubmitElementResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.submitElement(params));
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       // Byte-identical to every other unperformable id (ADR-0008 rule 6).
@@ -1387,6 +1407,7 @@ export class AtspiBackend implements Backend {
   }
 
   async close(): Promise<void> {
+    this.labels.close();
     // Closing the reader closes what it was watching: a watch outliving its
     // backend would be fed by a channel that is gone.
     for (const watch of this.watches.values()) await watch.close();

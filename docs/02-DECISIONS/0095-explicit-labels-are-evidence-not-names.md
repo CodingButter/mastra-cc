@@ -37,7 +37,7 @@ Read only explicit LABELLED_BY targets. Deduplicate target references before rea
 
 An empty string label is unreadable; whitespace-only strings are also unreadable, but accepted strings are preserved without trimming. Check protected state/role after ownership and before Name. Never read label values. Unsupported errors must be positively identified, not inferred from arbitrary failures. Explicit unrecorded replay errors propagate instead of becoming unavailable.
 
-Schema version is planned as 1.20.0 from 1.19.0. ADR-0073 records the additive/minor-version convention; ADR-0002 requires ADR, regeneration and golden fixtures. This phase does not change the schema. Digest handshake compatibility is still enforced; additive does not mean different-digest clients may connect.
+Phase 2 implements schema version 1.20.0 from 1.19.0. ADR-0073 records the additive/minor-version convention; ADR-0002 requires ADR, regeneration and golden fixtures. Digest handshake compatibility is still enforced; additive does not mean different-digest clients may connect.
 
 ## Ownership and bounded work
 

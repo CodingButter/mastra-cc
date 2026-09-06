@@ -1,6 +1,6 @@
 # Field mapping: native evidence, not model success
 
-Status: Phase 1 measurements, calibration and recording checkpoint review pass. Review used a browser on a separate private Xvfb display, not the personal desktop. No feature implementation or new model trials are included.
+Status: Phase 2 implements bounded native label observations with schema 1.20.0. The isolated deterministic base/candidate proof passes; no new model trials have run. Phase 1 recording review used a browser on a separate private Xvfb display, not the personal desktop.
 
 ## Run
 
@@ -37,4 +37,20 @@ Current recording: `inspect.pF79GR/screen.mkv` (8.3 seconds). Reviewed the 1fps 
 
 ## Next gates
 
-Phase 1 is ready for its scoped checkpoint and judge verification. ADR-0095 freezes the intended additive metadata contract; production schema/runtime remain unchanged. Phase 2 native bounded enrichment and Phase 3 model trials have not started. `publication-manifest.json` inventories published files by relative path, size and SHA256, excluding itself and private session home/runtime caches (retained locally, not committed); `attempts.json` inventories every measurement attempt, including partial and rejected runs.
+Phase 3 model trials and final independent review remain outstanding. `publication-manifest.json` inventories Phase 1 published files; `phase2-manifest.json` inventories the Phase 2 delivery. Private session home/runtime caches remain local and uncommitted.
+
+## Phase 2 deterministic proof
+
+Run `bash docs/proofs/field-mapping-form-completion/demo.sh deterministic`. Expected final signal: `PROOF: GREEN (base RED and candidate GREEN; no model trials)`.
+
+| Directory | Outcome |
+| --- | --- |
+| deterministic.GBmz1F | INVALID: detached base dependency/build setup failed |
+| deterministic.g1tuuI | INVALID: client/daemon handshake setup failed |
+| deterministic.UbmhQh | INVALID: proof requested the wrong public role; zero matching fields |
+| deterministic.iaMI2I | INVALID overall: base RED valid, candidate socket path setup failed |
+| deterministic.DaiP2I | Accepted: SETUP_OK then base RED / candidate GREEN |
+
+The accepted run uses unchanged fixture semantics, separately built base/candidate artifacts, and independent native calibration. Its public responses preserve empty names and calibrated content values; only the candidate exposes the matching explicit labels. Per-side metadata and transcripts are retained. Candidate artifact hashes were checked against the current build. Base worktree cleanup follows capture; recorded base hashes are historical build provenance, not a claim that the deleted artifacts can still be rehashed.
+
+`phase2-gates/` retains gate output. The public-stack test uses deliberately synthetic response variants through the real server, transport, and generated tool executor: absent, available/multiple (including duplicate strings), available/empty, and unavailable. The native deterministic run is the separate live causality proof. Neither is model task completion.

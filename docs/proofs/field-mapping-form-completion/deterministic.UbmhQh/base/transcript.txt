@@ -1,0 +1,16 @@
+dbus-daemon[228506]: [session uid=1000 pid=228506] Activating service name='org.gtk.vfs.Daemon' requested by ':1.2' (uid=1000 pid=228534 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[228506]: [session uid=1000 pid=228506] Successfully activated service 'org.gtk.vfs.Daemon'
+INVALID_SETUP AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+0 !== 2
+
+    at [90mfile:///home/codingbutter/mastra-cc/[39mdocs/proofs/field-mapping-form-completion/deterministic.mjs:24:10
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m {
+  generatedMessage: [33mtrue[39m,
+  code: [32m'ERR_ASSERTION'[39m,
+  actual: [33m0[39m,
+  expected: [33m2[39m,
+  operator: [32m'strictEqual'[39m,
+  diff: [32m'simple'[39m
+}
+A connection to the bus can't be made

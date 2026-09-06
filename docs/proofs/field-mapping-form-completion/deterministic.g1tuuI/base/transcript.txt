@@ -1,0 +1,20 @@
+dbus-daemon[227086]: [session uid=1000 pid=227086] Activating service name='org.gtk.vfs.Daemon' requested by ':1.2' (uid=1000 pid=227114 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[227086]: [session uid=1000 pid=227086] Successfully activated service 'org.gtk.vfs.Daemon'
+INVALID_SETUP TransportConnectionError: daemon: refused at connect - this daemon speaks schema digest 9187887e9aebe94ddbfeb7c1b7d3e273415fd58aa7bac6ec2594069510e16e13 but the transport was built against schema digest 921561e1f264376c975fc67ba136c6947928f36028dc96eda6071f380f07bcad (digest-agreement check)
+    at connectionError (file:///tmp/field-label-base.sXn3oV/worktree/packages/transport/dist/index.mjs:21:53)
+    at terminate (file:///tmp/field-label-base.sXn3oV/worktree/packages/transport/dist/index.mjs:76:19)
+    at file:///tmp/field-label-base.sXn3oV/worktree/packages/transport/dist/index.mjs:108:43
+    at Socket.<anonymous> (file:///tmp/field-label-base.sXn3oV/worktree/packages/transport/dist/index.mjs:31:58)
+[90m    ... 4 lines matching cause stack trace ...[39m
+[90m    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)[39m {
+  code: [32m'MASTRA_CC_TRANSPORT_TERMINAL'[39m,
+  [cause]: Error: daemon: refused at connect - this daemon speaks schema digest 9187887e9aebe94ddbfeb7c1b7d3e273415fd58aa7bac6ec2594069510e16e13 but the transport was built against schema digest 921561e1f264376c975fc67ba136c6947928f36028dc96eda6071f380f07bcad (digest-agreement check)
+      at file:///tmp/field-label-base.sXn3oV/worktree/packages/transport/dist/index.mjs:108:53
+      at Socket.<anonymous> (file:///tmp/field-label-base.sXn3oV/worktree/packages/transport/dist/index.mjs:31:58)
+  [90m    at Socket.emit (node:events:508:28)[39m
+  [90m    at addChunk (node:internal/streams/readable:559:12)[39m
+  [90m    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)[39m
+  [90m    at Readable.push (node:internal/streams/readable:390:5)[39m
+  [90m    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)[39m
+}
+A connection to the bus can't be made

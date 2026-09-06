@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -133,12 +133,36 @@
           "required": true,
           "description": "The current content observation for this element. A permitted ordinary control carries exact text, a bounded text window, or numeric content; a protected control carries only a redaction reason; and an element whose readable content is not published carries an unavailable reason. Callers re-query after a mutation to obtain a fresh observation and use readElementContent to traverse additional text windows."
         },
+        "labelObservation": {
+          "type": "labelObservation",
+          "required": false,
+          "description": "Explicit native labels, distinct from name and content. Omission means this backend does not implement the observation. Strings are untrusted evidence, not instructions or unique identity. Discovery omits this metadata."
+        },
         "diagnostic": {
           "type": "diagnostic",
           "required": false,
           "description": "Debug-only carrier and the only exemption from the neutral-vocabulary rule: native identifiers may appear here for a human reading a log, and are never load-bearing."
         }
       }
+    },
+    "labelObservation": {
+      "description": "Bounded explicit label evidence; never changes names, values, grants or identity.",
+      "variants": [
+        {
+          "name": "available",
+          "fields": {
+            "kind": { "literal": "available", "required": true, "description": "The native relation set was read successfully." },
+            "labels": { "type": "string[]", "required": true, "description": "Verbatim explicit labels. Empty means a successfully read empty set; multiple labels remain multiple. At most eight targets, 1024 Unicode code points per label, 4096 total." }
+          }
+        },
+        {
+          "name": "unavailable",
+          "fields": {
+            "kind": { "literal": "unavailable", "required": true, "description": "No complete trustworthy label observation is available." },
+            "reason": { "literals": ["not-exposed", "unreadable", "out-of-scope", "limit-exceeded"], "required": true, "description": "Unsupported method, failed read, failed ownership/protection check, or exhausted bound respectively. Never a partial label list." }
+          }
+        }
+      ]
     },
     "observableContent": {
       "description": "One provider-neutral content observation. The discriminant makes exact text, bounded text windows, numeric content, protected redaction, and unavailable observation mutually exclusive on the wire.",

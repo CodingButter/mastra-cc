@@ -1,5 +1,45 @@
 [
   {
+    "name": "native-label-mapping-dropped",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "        labels.push(name);",
+    "replace": "        labels.push(\"\");",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/labels.test.ts"
+  },
+  {
+    "name": "native-labels-sorted-instead-of-related",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "      return { kind: \"available\", labels };",
+    "replace": "      return { kind: \"available\", labels: labels.sort() };",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/labels.test.ts"
+  },
+  {
+    "name": "native-label-target-limit-bypassed",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "          if (targets.size > 8) throw new Unavailable(\"limit-exceeded\");",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/labels.test.ts"
+  },
+  {
+    "name": "native-label-ownership-bypassed",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "        await owned(target);",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/labels.test.ts"
+  },
+  {
+    "name": "native-label-unavailable-invented-empty",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "      return { kind: \"unavailable\", reason: error instanceof Unavailable ? error.reason : \"unreadable\" };",
+    "replace": "      return { kind: \"available\", labels: [] };",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/labels.test.ts"
+  },
+  {
     "name": "catalog-check-named-catalog-comparison-removed",
     "file": "tools/catalog-check.mjs",
     "find": "  for (const key of WATCHED.filter((k) => k in pins)) {\n    const there = destNamed[name][key];\n    if (there === undefined) {\n      divergences.push(`catalog-check: ${key} in catalog ${name} is ${pins[key]} here, absent in the destination`);\n    } else if (there !== pins[key]) {\n      divergences.push(`catalog-check: ${key} in catalog ${name} is ${pins[key]} here, ${there} in the destination`);\n    }\n  }",

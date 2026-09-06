@@ -24,6 +24,7 @@ try {
     const [success] = await invoke(bus, { destination: matches[0].ref[0], path: matches[0].ref[1], interface: 'org.a11y.atspi.EditableText', member: 'SetTextContents', signature: 's', body: [value] });
     assert.equal(success, true);
   }
+  if (buttonName !== undefined) {
   const buttons = data.nodes.filter(n => n.role === 'push button' && n.name === buttonName);
   assert.equal(buttons.length, 1);
   const ref = buttons[0].ref;
@@ -33,6 +34,7 @@ try {
   assert.ok(index >= 0);
   const [success] = await invoke(bus, { ...request, member: 'DoAction', signature: 'i', body: [index] });
   assert.equal(success, true);
+  }
 } finally {
   console.log(JSON.stringify({ setupOnly: true, values, exchanges }, null, 2));
   bus?.connection.stream.end();
