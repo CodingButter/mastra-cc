@@ -1,0 +1,609 @@
+{
+  "region": {
+    "x": 12,
+    "y": 6,
+    "width": 108,
+    "height": 22
+  },
+  "comparison": "exact RGB equality",
+  "pixels": 2376,
+  "colors": [
+    {
+      "rgb": "ffffff",
+      "pixels": 1950
+    },
+    {
+      "rgb": "000000",
+      "pixels": 69
+    },
+    {
+      "rgb": "333333",
+      "pixels": 15
+    },
+    {
+      "rgb": "5b5b5b",
+      "pixels": 14
+    },
+    {
+      "rgb": "3f3f3f",
+      "pixels": 10
+    },
+    {
+      "rgb": "4f4f4f",
+      "pixels": 10
+    },
+    {
+      "rgb": "d3d3d3",
+      "pixels": 10
+    },
+    {
+      "rgb": "b7b7b7",
+      "pixels": 10
+    },
+    {
+      "rgb": "525252",
+      "pixels": 7
+    },
+    {
+      "rgb": "353535",
+      "pixels": 6
+    },
+    {
+      "rgb": "0a0a0a",
+      "pixels": 6
+    },
+    {
+      "rgb": "efefef",
+      "pixels": 6
+    },
+    {
+      "rgb": "0f0f0f",
+      "pixels": 6
+    },
+    {
+      "rgb": "f8f8f8",
+      "pixels": 6
+    },
+    {
+      "rgb": "fcfcfc",
+      "pixels": 6
+    },
+    {
+      "rgb": "171717",
+      "pixels": 5
+    },
+    {
+      "rgb": "555555",
+      "pixels": 5
+    },
+    {
+      "rgb": "c3c3c3",
+      "pixels": 5
+    },
+    {
+      "rgb": "c7c7c7",
+      "pixels": 5
+    },
+    {
+      "rgb": "b2b2b2",
+      "pixels": 5
+    },
+    {
+      "rgb": "676767",
+      "pixels": 5
+    },
+    {
+      "rgb": "f9f9f9",
+      "pixels": 4
+    },
+    {
+      "rgb": "2f2f2f",
+      "pixels": 4
+    },
+    {
+      "rgb": "d5d5d5",
+      "pixels": 4
+    },
+    {
+      "rgb": "dddddd",
+      "pixels": 4
+    },
+    {
+      "rgb": "090909",
+      "pixels": 4
+    },
+    {
+      "rgb": "0c0c0c",
+      "pixels": 4
+    },
+    {
+      "rgb": "b3b3b3",
+      "pixels": 3
+    },
+    {
+      "rgb": "121212",
+      "pixels": 3
+    },
+    {
+      "rgb": "d9d9d9",
+      "pixels": 3
+    },
+    {
+      "rgb": "ededed",
+      "pixels": 3
+    },
+    {
+      "rgb": "050505",
+      "pixels": 3
+    },
+    {
+      "rgb": "0e0e0e",
+      "pixels": 3
+    },
+    {
+      "rgb": "4a4a4a",
+      "pixels": 3
+    },
+    {
+      "rgb": "e7e7e7",
+      "pixels": 3
+    },
+    {
+      "rgb": "686868",
+      "pixels": 3
+    },
+    {
+      "rgb": "e0e0e0",
+      "pixels": 3
+    },
+    {
+      "rgb": "373737",
+      "pixels": 3
+    },
+    {
+      "rgb": "232323",
+      "pixels": 3
+    },
+    {
+      "rgb": "e3e3e3",
+      "pixels": 3
+    },
+    {
+      "rgb": "f7f7f7",
+      "pixels": 3
+    },
+    {
+      "rgb": "f0f0f0",
+      "pixels": 3
+    },
+    {
+      "rgb": "cacaca",
+      "pixels": 3
+    },
+    {
+      "rgb": "101010",
+      "pixels": 3
+    },
+    {
+      "rgb": "616161",
+      "pixels": 3
+    },
+    {
+      "rgb": "010101",
+      "pixels": 3
+    },
+    {
+      "rgb": "f4f4f4",
+      "pixels": 3
+    },
+    {
+      "rgb": "2a2a2a",
+      "pixels": 3
+    },
+    {
+      "rgb": "070707",
+      "pixels": 2
+    },
+    {
+      "rgb": "4e4e4e",
+      "pixels": 2
+    },
+    {
+      "rgb": "787878",
+      "pixels": 2
+    },
+    {
+      "rgb": "181818",
+      "pixels": 2
+    },
+    {
+      "rgb": "dfdfdf",
+      "pixels": 2
+    },
+    {
+      "rgb": "fdfdfd",
+      "pixels": 2
+    },
+    {
+      "rgb": "1c1c1c",
+      "pixels": 2
+    },
+    {
+      "rgb": "a8a8a8",
+      "pixels": 2
+    },
+    {
+      "rgb": "e2e2e2",
+      "pixels": 2
+    },
+    {
+      "rgb": "585858",
+      "pixels": 2
+    },
+    {
+      "rgb": "fafafa",
+      "pixels": 2
+    },
+    {
+      "rgb": "a4a4a4",
+      "pixels": 2
+    },
+    {
+      "rgb": "808080",
+      "pixels": 2
+    },
+    {
+      "rgb": "f5f5f5",
+      "pixels": 2
+    },
+    {
+      "rgb": "1b1b1b",
+      "pixels": 2
+    },
+    {
+      "rgb": "9f9f9f",
+      "pixels": 2
+    },
+    {
+      "rgb": "6d6d6d",
+      "pixels": 2
+    },
+    {
+      "rgb": "979797",
+      "pixels": 2
+    },
+    {
+      "rgb": "cecece",
+      "pixels": 2
+    },
+    {
+      "rgb": "adadad",
+      "pixels": 2
+    },
+    {
+      "rgb": "767676",
+      "pixels": 2
+    },
+    {
+      "rgb": "1d1d1d",
+      "pixels": 2
+    },
+    {
+      "rgb": "898989",
+      "pixels": 2
+    },
+    {
+      "rgb": "636363",
+      "pixels": 2
+    },
+    {
+      "rgb": "fefefe",
+      "pixels": 2
+    },
+    {
+      "rgb": "131313",
+      "pixels": 2
+    },
+    {
+      "rgb": "959595",
+      "pixels": 2
+    },
+    {
+      "rgb": "040404",
+      "pixels": 2
+    },
+    {
+      "rgb": "c1c1c1",
+      "pixels": 2
+    },
+    {
+      "rgb": "656565",
+      "pixels": 2
+    },
+    {
+      "rgb": "ababab",
+      "pixels": 2
+    },
+    {
+      "rgb": "626262",
+      "pixels": 2
+    },
+    {
+      "rgb": "d4d4d4",
+      "pixels": 2
+    },
+    {
+      "rgb": "969696",
+      "pixels": 2
+    },
+    {
+      "rgb": "2b2b2b",
+      "pixels": 1
+    },
+    {
+      "rgb": "080808",
+      "pixels": 1
+    },
+    {
+      "rgb": "303030",
+      "pixels": 1
+    },
+    {
+      "rgb": "c9c9c9",
+      "pixels": 1
+    },
+    {
+      "rgb": "9a9a9a",
+      "pixels": 1
+    },
+    {
+      "rgb": "8d8d8d",
+      "pixels": 1
+    },
+    {
+      "rgb": "505050",
+      "pixels": 1
+    },
+    {
+      "rgb": "858585",
+      "pixels": 1
+    },
+    {
+      "rgb": "c4c4c4",
+      "pixels": 1
+    },
+    {
+      "rgb": "5f5f5f",
+      "pixels": 1
+    },
+    {
+      "rgb": "e4e4e4",
+      "pixels": 1
+    },
+    {
+      "rgb": "444444",
+      "pixels": 1
+    },
+    {
+      "rgb": "3b3b3b",
+      "pixels": 1
+    },
+    {
+      "rgb": "242424",
+      "pixels": 1
+    },
+    {
+      "rgb": "b6b6b6",
+      "pixels": 1
+    },
+    {
+      "rgb": "4c4c4c",
+      "pixels": 1
+    },
+    {
+      "rgb": "4b4b4b",
+      "pixels": 1
+    },
+    {
+      "rgb": "dadada",
+      "pixels": 1
+    },
+    {
+      "rgb": "757575",
+      "pixels": 1
+    },
+    {
+      "rgb": "6e6e6e",
+      "pixels": 1
+    },
+    {
+      "rgb": "eaeaea",
+      "pixels": 1
+    },
+    {
+      "rgb": "d0d0d0",
+      "pixels": 1
+    },
+    {
+      "rgb": "a9a9a9",
+      "pixels": 1
+    },
+    {
+      "rgb": "c5c5c5",
+      "pixels": 1
+    },
+    {
+      "rgb": "c6c6c6",
+      "pixels": 1
+    },
+    {
+      "rgb": "838383",
+      "pixels": 1
+    },
+    {
+      "rgb": "0b0b0b",
+      "pixels": 1
+    },
+    {
+      "rgb": "474747",
+      "pixels": 1
+    },
+    {
+      "rgb": "bfbfbf",
+      "pixels": 1
+    },
+    {
+      "rgb": "cbcbcb",
+      "pixels": 1
+    },
+    {
+      "rgb": "fbfbfb",
+      "pixels": 1
+    },
+    {
+      "rgb": "c2c2c2",
+      "pixels": 1
+    },
+    {
+      "rgb": "919191",
+      "pixels": 1
+    },
+    {
+      "rgb": "2e2e2e",
+      "pixels": 1
+    },
+    {
+      "rgb": "b9b9b9",
+      "pixels": 1
+    },
+    {
+      "rgb": "f3f3f3",
+      "pixels": 1
+    },
+    {
+      "rgb": "8b8b8b",
+      "pixels": 1
+    },
+    {
+      "rgb": "2c2c2c",
+      "pixels": 1
+    },
+    {
+      "rgb": "595959",
+      "pixels": 1
+    },
+    {
+      "rgb": "404040",
+      "pixels": 1
+    },
+    {
+      "rgb": "b5b5b5",
+      "pixels": 1
+    },
+    {
+      "rgb": "828282",
+      "pixels": 1
+    },
+    {
+      "rgb": "d7d7d7",
+      "pixels": 1
+    },
+    {
+      "rgb": "020202",
+      "pixels": 1
+    },
+    {
+      "rgb": "383838",
+      "pixels": 1
+    },
+    {
+      "rgb": "282828",
+      "pixels": 1
+    },
+    {
+      "rgb": "737373",
+      "pixels": 1
+    },
+    {
+      "rgb": "666666",
+      "pixels": 1
+    },
+    {
+      "rgb": "cdcdcd",
+      "pixels": 1
+    },
+    {
+      "rgb": "949494",
+      "pixels": 1
+    },
+    {
+      "rgb": "5e5e5e",
+      "pixels": 1
+    },
+    {
+      "rgb": "191919",
+      "pixels": 1
+    },
+    {
+      "rgb": "bbbbbb",
+      "pixels": 1
+    },
+    {
+      "rgb": "cccccc",
+      "pixels": 1
+    },
+    {
+      "rgb": "d6d6d6",
+      "pixels": 1
+    },
+    {
+      "rgb": "494949",
+      "pixels": 1
+    },
+    {
+      "rgb": "f1f1f1",
+      "pixels": 1
+    },
+    {
+      "rgb": "606060",
+      "pixels": 1
+    },
+    {
+      "rgb": "777777",
+      "pixels": 1
+    },
+    {
+      "rgb": "ececec",
+      "pixels": 1
+    }
+  ],
+  "rejectedControls": {
+    "blank": true,
+    "shifts": [
+      [
+        1,
+        0
+      ],
+      [
+        -1,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        -1
+      ],
+      [
+        8,
+        0
+      ],
+      [
+        0,
+        8
+      ]
+    ]
+  }
+}

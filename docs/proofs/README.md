@@ -31,6 +31,9 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 
 | Artifact | Question |
 |---|---|
+| [Bounded connection startup](connection-startup-2026-09-06/README.md) | One startup deadline, real stalled-peer teardown including an uncooperative WebSocket, and explicit healthy recovery; see retained transcripts for measured results |
+| [Native desktop restoration](native-restoration-2026-09-06/README.md) | Real GTK text readback, independently verified visible screenshot pixels and button callback through the public WebSocket API; restoration GREEN, not merge-base RED |
+| [Architecture audit boundary evidence](architecture-audit-2026-09-05/README.md) | Source-backed capture ownership and handover lifecycle defects, with explicit distinction between defect reproduction and corrected regression evidence |
 | [which condition makes a browser readable](which-condition-makes-a-browser-readable.md) | Q01 — the flag is mandatory; nothing else flips it |
 | [what the browser protocol gives us](what-the-browser-protocol-gives-us.md) | The browser substrate's shape, including per-session re-arming |
 | [what a page-level recorder observes](what-a-page-level-recorder-observes.md) | G6 — 5 of 8 effect paths; instrument, never gate |

@@ -1,7 +1,9 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { displayBounds, emitClick } from "../backends/atspi/rawinput/pointer.js";
 import type { Channel } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
 import { replayChannel } from "../backends/replay/index.js";
@@ -33,6 +35,20 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+// Replace only the external executable: production querying, parsing and the
+// final pre-emission guard still run, independently of accessibility geometry.
+const displayTools = mkdtempSync(join(tmpdir(), "pointer-display-"));
+const displayOutput = "  Absolute upper-left X: 0\n  Absolute upper-left Y: 0\n  Width: 1024\n  Height: 768\n";
+const displayProgram = '#!/bin/sh\n[ "$1" = "-root" ] || exit 2\n[ "$LC_ALL" = "C" ] || exit 3\nprintf "%s\\n" "$POINTER_TEST_DISPLAY"\n';
+beforeEach(() => {
+  writeFileSync(join(displayTools, "xwininfo"), displayProgram, { mode: 0o700 });
+  vi.stubEnv("PATH", `${displayTools}:${process.env.PATH ?? ""}`);
+  vi.stubEnv("DISPLAY", ":pointer-test");
+  vi.stubEnv("POINTER_TEST_DISPLAY", displayOutput);
+});
+afterEach(() => vi.unstubAllEnvs());
+afterAll(() => rmSync(displayTools, { recursive: true, force: true }));
+
 const A_ROUTE = { route: "test-route" };
 const ARMED = { allows: new Set(["rawInput"]) };
 
@@ -46,26 +62,77 @@ interface Press {
 // platform publishes for every element here; `undefined` is the element that
 // carries no Component interface at all, which is the shape of a thing with no
 // place on the screen.
-function deskAt(extents: [number, number, number, number] | undefined) {
+function deskAt(
+  extents: [number, number, number, number] | undefined,
+  // What the platform says every element here IS, and whether it says the
+  // element responds to input. The tape's own answers stand unless a test
+  // needs a control that is greyed out, which no tape of a working dialog has.
+) {
   const tape = replayChannel("gtk-dialog");
   const presses: Press[] = [];
+  let published = extents;
+  let scrolled = 0;
+  let afterScroll: [number, number, number, number] | undefined;
+  let afterFocus: [number, number, number, number] | undefined;
+  let stale = false;
+  let offscreen = false;
+  let focused = 0;
+  const events: string[] = [];
+  // What the platform says the element IS and whether it responds to input.
+  // Left alone the tape answers both; a test that needs a greyed-out control
+  // sets it, because no tape of a working dialog contains one.
+  let control: { role: string; enabled: boolean } | undefined;
   const channel: Channel = {
     async call(exchange) {
+      events.push(exchange.member);
+      if (stale && exchange.member === "GetRoleName") throw new Error("element is gone");
+      if (exchange.member === "GrabFocus") {
+        focused += 1;
+        if (afterFocus !== undefined) published = afterFocus;
+        return [true];
+      }
+      if (control !== undefined && exchange.member === "GetRoleName") return [control.role];
+      if (control !== undefined && exchange.member === "GetState") {
+        return [[control.enabled ? 1 << 8 : 0, 0]];
+      }
+      if (offscreen && exchange.member === "GetState") return [[(1 << 8) | (1 << 30), 0]];
       if (exchange.member === "GenerateMouseEvent") {
         const body = exchange.body as unknown[];
         presses.push({ x: Number(body[0]), y: Number(body[1]), gesture: String(body[2]) });
         return [];
       }
+      if (exchange.member === "ScrollTo") {
+        scrolled += 1;
+        if (afterScroll !== undefined) published = afterScroll;
+        return [];
+      }
       if (exchange.member === "GetExtents") {
-        if (extents === undefined) throw new Error("this element carries no Component interface");
-        return [extents];
+        if (published === undefined) throw new Error("this element carries no Component interface");
+        return [published];
       }
       return tape.call(exchange);
     },
     watch: (subscribedTo, sink, anchor) => tape.watch(subscribedTo, sink, anchor),
     close: () => tape.close(),
   };
-  return { backend: new AtspiBackend(channel, "all"), presses };
+  return {
+    backend: new AtspiBackend(channel, "all"),
+    presses,
+    events,
+    disappears() { stale = true; },
+    staysOffscreen() { offscreen = true; },
+    get focused() { return focused; },
+    get scrolled() {
+      return scrolled;
+    },
+    after(member: "ScrollTo" | "GrabFocus", rectangle: [number, number, number, number]) {
+      if (member === "ScrollTo") afterScroll = rectangle;
+      else afterFocus = rectangle;
+    },
+    becomes(role: string, enabled: boolean) {
+      control = { role, enabled };
+    },
+  };
 }
 
 async function anElement(backend: AtspiBackend): Promise<string> {
@@ -107,50 +174,265 @@ function refusalIn(answer: { refusal?: string; result?: unknown }): string {
 }
 
 describe("aiming a press from an element's own rectangle", () => {
-  it("presses the centre of the rectangle the platform publishes right now", async () => {
+  it("sends a centre press and reads the element back without claiming recipient proof", async () => {
     const desk = deskAt([100, 200, 80, 40]);
     const id = await anElement(desk.backend);
-    await desk.backend.clickElement({ id });
-    // The coordinate is arithmetic on bounds read a moment ago, not a number
-    // that crossed the wire: 100 + 80/2, 200 + 40/2.
+    const result = await desk.backend.clickElement({ id });
+    expect(result.element?.id).toBe(id);
+    expect(result.element?.diagnostic).toHaveProperty("mastra-cc/pointer-aim");
     expect(desk.presses).toEqual([{ x: 140, y: 220, gesture: "b1c" }]);
   });
 
-  it("presses where inside the element it was asked to, as a fraction of that element", async () => {
+  it("keeps fractional edge presses inside the rectangle", async () => {
     const desk = deskAt([100, 200, 80, 40]);
     const id = await anElement(desk.backend);
     await desk.backend.clickElement({ id, x: 0, y: 1 });
-    expect(desk.presses).toEqual([{ x: 100, y: 240, gesture: "b1c" }]);
+    expect(desk.presses).toEqual([{ x: 100, y: 239, gesture: "b1c" }]);
   });
 
-  it("asks the platform for the double gesture rather than sending two presses", async () => {
+  it("sends the native double-click gesture", async () => {
     const desk = deskAt([0, 0, 10, 10]);
     const id = await anElement(desk.backend);
     await desk.backend.clickElement({ id, count: 2 });
     expect(desk.presses).toEqual([{ x: 5, y: 5, gesture: "b1d" }]);
   });
 
-  it("presses the button it was named, and not the one nearest to it", async () => {
+  it("sends right clicks and rejects unknown buttons", async () => {
     const desk = deskAt([0, 0, 10, 10]);
     const id = await anElement(desk.backend);
     await desk.backend.clickElement({ id, button: "right" });
-    expect(desk.presses[0]?.gesture).toBe("b3c");
+    expect(desk.presses).toEqual([{ x: 5, y: 5, gesture: "b3c" }]);
     await expect(desk.backend.clickElement({ id, button: "thumb" })).rejects.toThrow(/no pointer button named/);
     expect(desk.presses).toHaveLength(1);
+  });
+
+  // MEASURED 2026-09-05 on the wallpaper page: Apply published ["visible"]
+  // while every live button beside it published "enabled" too. A press there
+  // reported success over a control that could not take it, and the errand
+  // went on to report a wallpaper the desktop configuration never received.
+  it("refuses a press on a control the platform greys out, rather than spending it on a dead button", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.becomes("push button", false);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/reads it as disabled/);
+    expect(desk.presses).toHaveLength(0);
+  });
+
+  // MEASURED 2026-09-05, by hand at the desk: Plasma's wallpaper Apply never
+  // gains "enabled", under this daemon's pointer or a real xdotool click, so
+  // the first refusal's advice - go and do the step it waits on - is advice
+  // that cannot be taken. Told the same hopeful thing three times, a run read
+  // the grey as work done quietly and reported a wallpaper nobody had set.
+  it("says the road is closed, and claims nothing, when the same grey control refuses again", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.becomes("push button", false);
+
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/has not happened yet$/);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/NOTHING HAS BEEN APPLIED/);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/This road is closed/);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/refusal 4 at this same control/);
+    expect(desk.presses).toHaveLength(0);
+  });
+
+  // THE OTHER DOOR. Measured 2026-09-05: refused at Plasma's Apply by the
+  // pointer, a run performed the button's own published `Press` instead, was
+  // answered with a bare success, and reported a wallpaper the desk never
+  // received. A grey control is grey through whichever door the press arrives.
+  it("refuses the control's own press action at a control the platform greys out", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.becomes("push button", false);
+    await expect(desk.backend.activateElement({ id, action: "Press" })).rejects.toThrow(/reads it as disabled/);
+  });
+
+  it("still lets a grey control be given the focus, which is how a form is filled", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.becomes("push button", false);
+    // This tape's element publishes no Action interface at all, so the call
+    // cannot succeed here - what it must not do is refuse for being GREY. The
+    // refusal that comes back is about the missing interface, which is the
+    // proof that the enablement guard let a non-activating verb past it.
+    await expect(desk.backend.activateElement({ id, action: "SetFocus" })).rejects.toThrow(/does not expose actions/);
+  });
+
+  it("allows enabled controls without claiming recipient proof", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.becomes("push button", true);
+    await desk.backend.clickElement({ id });
+    expect(desk.presses).toEqual([{ x: 140, y: 220, gesture: "b1c" }]);
+  });
+
+  // A PAGE IS NOT A TOOLKIT. Web content publishes enablement for controls and
+  // nothing at all for the generic nodes that carry most of a page's clickable
+  // area; holding those to the same reading would refuse every press on a
+  // search result. Only roles a toolkit greys out are checked.
+  it("allows generic nodes without an enablement claim", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.becomes("generic", false);
+    await desk.backend.clickElement({ id });
+    expect(desk.presses).toEqual([{ x: 140, y: 220, gesture: "b1c" }]);
   });
 
   it("refuses an element the platform gives no rectangle for, rather than pressing at a default", async () => {
     const desk = deskAt(undefined);
     const id = await anElement(desk.backend);
-    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/publishes no rectangle/);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/rectangle/);
     expect(desk.presses).toEqual([]);
   });
 
   it("refuses an element that occupies no part of the screen", async () => {
     const desk = deskAt([10, 10, 0, 0]);
     const id = await anElement(desk.backend);
-    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/empty rectangle/);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/rectangle/);
     expect(desk.presses).toEqual([]);
+  });
+
+  it("accepts fresh valid geometry after reveal even when the offscreen flag stays set", async () => {
+    const desk = deskAt([100, -200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.staysOffscreen();
+    desk.after("ScrollTo", [100, 200, 80, 40]);
+    const result = await desk.backend.clickElement({ id });
+    expect(result.element?.states).toContain("offscreen");
+    expect(desk.scrolled).toBe(1);
+    expect(desk.presses).toEqual([{ x: 140, y: 220, gesture: "b1c" }]);
+  });
+
+  it("reveals an offscreen target before reading its fresh rectangle", async () => {
+    // A page element above the viewport answers with a negative origin. The
+    // desk asks the element itself to scroll into view - the same operation
+    // revealElement performs - and presses the rectangle it then publishes.
+    const desk = deskAt([-2000, -2000, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.after("ScrollTo", [100, 200, 80, 40]);
+    await desk.backend.clickElement({ id });
+    expect(desk.scrolled).toBe(1);
+    expect(desk.presses).toEqual([{ x: 140, y: 220, gesture: "b1c" }]);
+  });
+
+  it("uses geometry read after reveal AND focus, before the actual pointer callback", async () => {
+    const desk = deskAt([-2000, -2000, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.after("ScrollTo", [100, 200, 80, 40]);
+    desk.after("GrabFocus", [300, 400, 20, 20]);
+    await desk.backend.clickElement({ id });
+    expect(desk.scrolled).toBe(1);
+    expect(desk.focused).toBe(1);
+    expect(desk.presses).toEqual([{ x: 310, y: 410, gesture: "b1c" }]);
+    const focus = desk.events.lastIndexOf("GrabFocus");
+    const geometry = desk.events.lastIndexOf("GetExtents");
+    expect(geometry).toBeGreaterThan(focus);
+    expect(desk.events.indexOf("GenerateMouseEvent")).toBeGreaterThan(geometry);
+  });
+
+  it.each([[1024, 200, 80, 40], [100, 768, 80, 40], [1000, 200, 80, 40], [100, 750, 80, 40]])(
+    "refuses positive off-display aiming after focus: %j", async (x, y, width, height) => {
+      const desk = deskAt([100, 200, 80, 40]);
+      const id = await anElement(desk.backend);
+      desk.after("GrabFocus", [x, y, width, height]);
+      await expect(desk.backend.clickElement({ id })).rejects.toThrow(/outside the actual display bounds/);
+      expect(desk.presses).toEqual([]);
+    },
+  );
+
+  it("accepts the last display pixel with stale offscreen flags", async () => {
+    const desk = deskAt([100, -200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.staysOffscreen();
+    desk.after("ScrollTo", [1023, 767, 1, 1]);
+    await desk.backend.clickElement({ id, x: 1, y: 1 });
+    expect(desk.presses).toEqual([{ x: 1023, y: 767, gesture: "b1c" }]);
+  });
+
+  it.each(["", "Width: 1024\nHeight: 768", displayOutput.replace("1024", "0"),
+    displayOutput.replace("768", "NaN"), displayOutput + "Width: 1024\n"])(
+    "refuses unavailable or invalid display bounds without pointer emission: %j", async (output) => {
+      vi.stubEnv("POINTER_TEST_DISPLAY", output);
+      const desk = deskAt([100, 200, 80, 40]);
+      const id = await anElement(desk.backend);
+      await expect(desk.backend.clickElement({ id })).rejects.toThrow(/display bounds are unavailable/);
+      expect(desk.presses).toEqual([]);
+    },
+  );
+
+  it("does not infer display dimensions when DISPLAY is unavailable", async () => {
+    vi.stubEnv("DISPLAY", "");
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/display bounds are unavailable/);
+    expect(desk.presses).toEqual([]);
+  });
+
+  it("refuses when the display query executable is missing", async () => {
+    vi.stubEnv("PATH", "");
+    const call = vi.fn();
+    await expect(emitClick({ call }, { x: 100, y: 200 }, "left", 1)).rejects.toThrow(/display bounds are unavailable/);
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("rereads the display rather than caching its earlier dimensions", async () => {
+    expect(await displayBounds()).toEqual({ x: 0, y: 0, width: 1024, height: 768 });
+    vi.stubEnv("POINTER_TEST_DISPLAY", displayOutput.replace("1024", "100"));
+    const call = vi.fn();
+    await expect(emitClick({ call }, { x: 100, y: 200 }, "left", 1)).rejects.toThrow(/outside/);
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    '#!/bin/sh\nexit 1\n',
+    '#!/bin/sh\nwhile :; do :; done\n',
+    '#!/bin/sh\nwhile :; do printf "oversized display output\\n"; done\n',
+  ])("bounds failing, hanging and oversized display queries", async (program) => {
+    writeFileSync(join(displayTools, "xwininfo"), program, { mode: 0o700 });
+    const call = vi.fn();
+    await expect(emitClick({ call }, { x: 100, y: 200 }, "left", 1)).rejects.toThrow(/display bounds are unavailable/);
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("checks the rounded emitted pixel rather than the unrounded point", async () => {
+    const call = vi.fn();
+    await expect(emitClick({ call }, { x: 1023.6, y: 100 }, "left", 1)).rejects.toThrow(/outside/);
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("refuses stale targets before reveal, focus, or pointer effects", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.disappears();
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/gone/);
+    expect(desk.presses).toEqual([]);
+    expect(desk.scrolled).toBe(0);
+    expect(desk.focused).toBe(0);
+  });
+
+  it("refuses fresh geometry that became invalid during focus", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    desk.after("GrabFocus", [300, 400, 0, 20]);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/rectangle/);
+    expect(desk.presses).toEqual([]);
+  });
+
+  it.each([{ x: NaN }, { y: Infinity }, { x: -0.1 }, { y: 1.1 }, { count: 3 }])(
+    "refuses invalid native parameters %j before effects", async (params) => {
+      const desk = deskAt([100, 200, 80, 40]);
+      const id = await anElement(desk.backend);
+      await expect(desk.backend.clickElement({ id, ...params })).rejects.toThrow();
+      expect(desk.presses).toEqual([]);
+      expect(desk.scrolled).toBe(0);
+      expect(desk.focused).toBe(0);
+    },
+  );
+
+  it("does not scroll an element that is already on the screen", async () => {
+    const desk = deskAt([100, 200, 80, 40]);
+    const id = await anElement(desk.backend);
+    await desk.backend.clickElement({ id });
+    expect(desk.scrolled).toBe(0);
   });
 
   it("refuses a rectangle that sits off the screen instead of clamping onto the desk", async () => {
@@ -159,9 +441,19 @@ describe("aiming a press from an element's own rectangle", () => {
     // report it as this element.
     const desk = deskAt([-2000, -2000, 80, 40]);
     const id = await anElement(desk.backend);
-    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/off the screen/);
+    await expect(desk.backend.clickElement({ id })).rejects.toThrow(/rectangle/);
     expect(desk.presses).toEqual([]);
   });
+
+  it.each([[10, 10, -1, 40], [10, 10, 40, -1], [NaN, 0, 10, 10], [0, 0, Infinity, 10]])(
+    "refuses invalid geometry %j without pointer effects", async (x, y, width, height) => {
+      const desk = deskAt([x, y, width, height]);
+      const id = await anElement(desk.backend);
+      await expect(desk.backend.clickElement({ id })).rejects.toThrow(/rectangle/);
+      expect(desk.presses).toEqual([]);
+      expect(desk.scrolled).toBe(0);
+    },
+  );
 
   it("refuses an id it never answered, in the words it uses for one that was never real", async () => {
     const desk = deskAt([0, 0, 10, 10]);

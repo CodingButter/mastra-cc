@@ -315,6 +315,9 @@ describe("effect authority: every element method is refused before the backend i
     clickElement: async () => {
       throw new Error("the effect authority gate touched the backend");
     },
+    captureElement: async () => {
+      throw new Error("the effect authority gate touched the backend");
+    },
     close: async () => undefined,
   };
 

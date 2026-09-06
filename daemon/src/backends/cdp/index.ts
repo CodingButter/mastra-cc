@@ -717,7 +717,16 @@ export class CdpBackend implements Backend {
     );
   }
 
-  // Same fact, same reason: clearing is keystrokes, and this route has none.
+  // A picture of an element is a picture of a SCREEN, and this route is a
+  // debugging socket rather than a display: what a page renders here it renders
+  // wherever the browser is, which may be nowhere anybody can see.
+  async captureElement(): Promise<never> {
+    throw new EffectUnsupportedError(
+      "this route reads a browser through its debugging protocol and has no view of the machine's screen - " +
+        "no setting on this daemon would change that",
+    );
+  }
+
   async clickElement(): Promise<never> {
     throw new EffectUnsupportedError(
       "this route reads a browser through its debugging protocol and has no pointer on the machine - " +

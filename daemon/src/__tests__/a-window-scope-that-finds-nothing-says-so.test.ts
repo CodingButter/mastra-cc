@@ -39,8 +39,8 @@ function backendThatThrows(error: Error): Backend {
   } as unknown as Backend;
 }
 
-function ask(method: "queryElements" | "discoverElements", backend: Backend) {
-  return handleRequest({ type: "request", id: 1, method, params: { application: "app", window: "Open Image" } }, backend, {
+function ask(method: "queryElements" | "discoverElements", backend: Backend, window = "Open Image") {
+  return handleRequest({ type: "request", id: 1, method, params: { application: "app", window } }, backend, {
     permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
@@ -61,6 +61,23 @@ describe("a window scope that resolves to no single window", () => {
   it.each(["queryElements", "discoverElements"] as const)("%s refuses a name several windows answer to", async (method) => {
     const answer = await ask(method, backendThatThrows(new WindowScopeAmbiguousError("2 visible windows named x")));
     expect(refusalIn(answer as never)).toBe(WINDOW_SCOPE_AMBIGUOUS_REFUSAL);
+  });
+
+  // Measured on the desk: an agent that had just been answered with
+  // win-ef83fb73e9da passed that id back as the window scope, was told the name
+  // matched nothing, and spent its next turns hunting a window that was there
+  // all along. The id is the mistake, so the refusal names it.
+  it.each(["queryElements", "discoverElements"] as const)("%s says so when the scope is an id rather than a name", async (method) => {
+    const answer = await ask(method, backendThatThrows(new WindowScopeUnmatchedError("no visible window named x")), "win-ef83fb73e9da");
+    const refusal = refusalIn(answer as never) ?? "";
+    expect(refusal).toContain(WINDOW_SCOPE_UNMATCHED_REFUSAL);
+    expect(refusal).toContain("win-ef83fb73e9da");
+    expect(refusal).toContain("is an id this daemon answers WITH");
+  });
+
+  it("leaves an ordinary name unadorned, so the hint means what it says", async () => {
+    const answer = await ask("queryElements", backendThatThrows(new WindowScopeUnmatchedError("no visible window named x")), "Downloads");
+    expect(refusalIn(answer as never)).toBe(WINDOW_SCOPE_UNMATCHED_REFUSAL);
   });
 
   it("says which repair each case needs, so the two are not one sentence", () => {

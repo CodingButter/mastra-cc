@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.17.0",
+  "version": "1.19.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -537,6 +537,46 @@
           "type": "string",
           "required": false,
           "description": "Why the state could not be determined, in words an operator can act on. Present exactly when state is cannot-tell: an ignorance with no reason is a shrug, and a reason attached to a measurement is noise."
+        }
+      }
+    },
+    "desktopPlaces": {
+      "description": "Where this desktop keeps a session's own files. A caller cannot see a filesystem through this contract and is not being given one: these are the few paths a desktop's applications will themselves offer - the home a file dialog opens in, the folder a browser saves into - and they are here because the alternative is a caller inventing them. An invented path produces an application's own not-found page, which reads exactly like a file that failed to save, and a caller that cannot tell those apart reports a download as broken or a save as done. Nothing here reads, writes or lists a file; the paths are the desktop's, not this daemon's, and a desktop that does not publish one omits it rather than guessing.",
+      "fields": {
+        "home": {
+          "type": "string",
+          "required": false,
+          "description": "The session's home directory, when the desktop publishes one. Absent rather than defaulted: a home this daemon assumed would be a guess wearing an answer's clothes."
+        },
+        "downloads": {
+          "type": "string",
+          "required": false,
+          "description": "The folder this desktop's applications save downloads into, when it publishes one. Not derived from home - a desktop is free to put it elsewhere, and the deriving is the mistake this field exists to remove."
+        }
+      }
+    },
+    "capturedImage": {
+      "description": "A picture of one part of this desktop, as bytes rather than as a description. Every other answer in this contract is what the platform SAYS about a thing; this is what the thing LOOKS like, and it exists because the saying runs out: an image on a web page routinely publishes no name and content the platform reports as not exposed, which reads to a caller exactly like a blank rectangle, and a caller with no eyes then guesses - at file names, at menu items, at whether anything happened at all. The picture is bounded by an element that this daemon has already answered for, so it is not a screen recording and not a view of a desk the caller was never shown: it is the rectangle of one named thing, read at the moment of the call.",
+      "fields": {
+        "format": {
+          "type": "string",
+          "required": true,
+          "description": "The encoding of the bytes. \"png\", always: one lossless format, so a caller never has to ask what it is looking at."
+        },
+        "width": {
+          "type": "number",
+          "required": true,
+          "description": "The width of the picture in pixels, which is the width of the element's rectangle as the platform published it at the moment of the grab."
+        },
+        "height": {
+          "type": "number",
+          "required": true,
+          "description": "The height of the picture in pixels, on the same terms."
+        },
+        "data": {
+          "type": "string",
+          "required": true,
+          "description": "The image bytes, base64. Bounded by this daemon: a picture larger than its ceiling is refused rather than quietly shrunk, because a caller told an image is 4096 wide when it was resized to 512 has been given a measurement that is not true."
         }
       }
     }
@@ -1129,6 +1169,40 @@
           "type": "string",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the effect class this session was not granted, the missing pointer route on a build that has none, the button or count or fraction that was not in this contract's vocabulary, and the reason the element could not be aimed at: no bounds published, an empty rectangle, or a rectangle that is off the screen."
+        }
+      }
+    },
+    "describeDesktop": {
+      "description": "Ask this desktop where its own files live. Observation only, and of the machine rather than of anything an application published: no file is read, listed or opened, and nothing here is per-application, so there is no capability it could belong to. It exists because every other verb in this contract is about what is ON the screen, and a caller that must name a path has nowhere else to learn one - so it uses the home directory of whatever machine it was trained on, and a desk whose home is somewhere else answers with a not-found page that a caller reads as a failed save. Answering carries no risk: these paths are already visible in any file dialog the caller is permitted to open.",
+      "params": {},
+      "returns": {
+        "places": {
+          "type": "desktopPlaces",
+          "required": true,
+          "description": "The paths this desktop publishes, each omitted when it publishes none."
+        }
+      }
+    },
+    "captureElement": {
+      "description": "Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. Pixels are read from the window the element sits in, not from the root - a compositing window manager can refuse the root outright - so an element behind another window is answered with its own window's pixels rather than with whatever is covering it.",
+      "params": {
+        "id": {
+          "type": "string",
+          "pattern": "idPattern",
+          "required": true,
+          "description": "The element to look at. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a picture of where something used to be."
+        }
+      },
+      "returns": {
+        "image": {
+          "type": "capturedImage",
+          "required": false,
+          "description": "Present when the picture was taken; the element's rectangle as pixels."
+        },
+        "refusal": {
+          "type": "string",
+          "required": false,
+          "description": "Present otherwise; names the check that ran and what would change the answer - an element the platform gives no bounds for, one that is off screen, a desk with no way to grab its own pixels, or a picture past this daemon's ceiling."
         }
       }
     }

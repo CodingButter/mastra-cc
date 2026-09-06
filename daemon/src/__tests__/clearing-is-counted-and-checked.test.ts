@@ -31,7 +31,9 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 const here = dirname(fileURLToPath(import.meta.url));
 
 const BACKSPACE = 0xff08;
+const DELETE = 0xffff;
 const END = 0xff57;
+const HOME = 0xff50;
 
 const A_ROUTE = { route: "test-route" };
 const ARMED = { allows: new Set(["rawInput"]) };
@@ -40,20 +42,39 @@ const ARMED = { allows: new Set(["rawInput"]) };
 // `deletes` says whether a Backspace actually removes a character: a field that
 // ignores the key is the shape of a keystroke landing in another window, and
 // this daemon must not call that empty.
-function deskCarrying(text: string, options: { deletes?: boolean; readable?: boolean } = {}) {
+// `refills` is the address bar measured on this desk: the field autocompletes
+// a suffix back in as the deletions land, so a counted pass ends short of empty
+// through no fault of the keys. Each entry is what the field puts back the next
+// time the deletions empty it.
+// `autocompletes` is the address bar's harder shape: a Backspace eats the
+// SELECTED autocompletion rather than a character, so a backwards pass spends a
+// key per character and ends where it began. A forward Delete has no selection
+// in front of it, so the only way out of that field is to turn the pass around.
+function deskCarrying(
+  text: string,
+  options: { deletes?: boolean; readable?: boolean; refills?: string[]; autocompletes?: boolean } = {},
+) {
   const tape = replayChannel("gtk-dialog");
   const pressed: number[] = [];
   let buffer = text;
+  const refills = [...(options.refills ?? [])];
   const channel: Channel = {
     async call(exchange) {
       if (exchange.member === "GenerateKeyboardEvent") {
         const keysym = Number((exchange.body as unknown[])[0]);
         pressed.push(keysym);
+        if (keysym === DELETE && options.deletes !== false) {
+          buffer = [...buffer].slice(1).join("");
+          if (buffer === "" && refills.length > 0) buffer = refills.shift() as string;
+          return [];
+        }
+        if (keysym === BACKSPACE && options.autocompletes === true) return [];
         if (keysym === BACKSPACE && options.deletes !== false) {
           // Delete a CHARACTER, the way a field does - not a UTF-16 unit,
           // which would leave half an emoji behind and make the count below
           // meaningless.
           buffer = [...buffer].slice(0, -1).join("");
+          if (buffer === "" && refills.length > 0) buffer = refills.shift() as string;
         }
         return [];
       }
@@ -151,7 +172,9 @@ describe("emptying a field one key at a time", () => {
   it("refuses a text longer than it will press through, by length, without pressing", async () => {
     const desk = deskCarrying("x".repeat(1025));
     const id = await anElement(desk.backend);
-    await expect(desk.backend.clearElementText({ id })).rejects.toThrow(/1025 characters/);
+    await expect(desk.backend.clearElementText({ id })).rejects.toThrow(
+      /this element publishes 1025 characters and this contract clears at most/,
+    );
     expect(desk.pressed).toEqual([]);
   });
 
@@ -162,7 +185,52 @@ describe("emptying a field one key at a time", () => {
     const desk = deskCarrying("example.com", { deletes: false });
     const id = await anElement(desk.backend);
     await expect(desk.backend.clearElementText({ id })).rejects.toThrow(/11 characters still in it/);
+    // Not one character went, so the keys never reached this field at all. The
+    // refusal says which verb puts the keyboard in it rather than leaving the
+    // caller to guess at a window it cannot see.
+    await expect(desk.backend.clearElementText({ id })).rejects.toThrow(
+      /Not one character went.*task bar/s,
+    );
+  });
+
+  it("presses again for a field that autocompletes text back in, and empties it", async () => {
+    const desk = deskCarrying("example.com", { refills: ["com"] });
+    const id = await anElement(desk.backend);
+    const answer = await desk.backend.clearElementText({ id });
+    // Eleven for what was read, then three for what the field put back. The
+    // second pass is counted from the element's own reading, exactly like the
+    // first - nothing here presses a key it did not count.
+    expect(desk.pressed.filter((key) => key === BACKSPACE)).toHaveLength(14);
+    expect(desk.read()).toBe("");
+    expect(answer.element?.content).toEqual({ kind: "text", value: "" });
+  });
+
+  it("stops pressing at a field that refills as fast as it empties, and says how much is left", async () => {
+    // A field that puts back everything that was deleted is not being emptied,
+    // and pressing on would be an unbounded run of destructive keys.
+    const desk = deskCarrying("example.com", { refills: ["example.com", "example.com", "example.com"] });
+    const id = await anElement(desk.backend);
+    // Once backwards, once turned around, and then it stops: a field that
+    // survives deletion from both ends is not being emptied by keys.
+    await expect(desk.backend.clearElementText({ id })).rejects.toThrow(/11 characters still in it after 22 deletions/);
     expect(desk.pressed.filter((key) => key === BACKSPACE)).toHaveLength(11);
+    expect(desk.pressed.filter((key) => key === DELETE)).toHaveLength(11);
+  });
+
+  it("turns the pass around for a field whose autocompletion eats the backspaces", async () => {
+    // Chromium's address bar, measured 2026-09-05: every Backspace landed and
+    // not one character went, because each one was eaten by the selected
+    // autocompletion. Deleting forwards from the front has no selection ahead
+    // of it, so the same counted pass, turned around, empties the field.
+    const desk = deskCarrying("google.com/search?q=mastra", { autocompletes: true });
+    const id = await anElement(desk.backend);
+    const answer = await desk.backend.clearElementText({ id });
+    expect(desk.read()).toBe("");
+    expect(answer.element?.content).toEqual({ kind: "text", value: "" });
+    // The turnaround is a turnaround, not a second strategy bolted on: Home in
+    // front of the forward pass exactly as End goes in front of the backward one.
+    expect(desk.pressed).toContain(HOME);
+    expect(desk.pressed.filter((key) => key === DELETE)).toHaveLength(26);
   });
 
   it("refuses an id it never answered, in the words it uses for one that was never real", async () => {

@@ -542,6 +542,7 @@ describe("the refusal vocabulary is closed", () => {
         // permitted and did not take. Named rather than folded into an
         // existing class because an operator's remedy differs for each.
         "AccessibilityNotAcquirable",
+        "AccessibilityLostMidSession",
         "AccessibilityNotAcquired",
         "AlreadyRunning",
         "AttestationFailedError",
@@ -553,6 +554,9 @@ describe("the refusal vocabulary is closed", () => {
         "ElementGone",
         "EnforcementUnrepresentable",
         "InventoryUnsupported",
+        // The keyboard is in another application's window, so a raw key would
+        // land there. Refused before it is sent (ADR-0086).
+        "KeyboardHeldElsewhereError",
         "LaunchUnavailable",
         "MagnitudeOutOfRangeError",
         "MalformedParameter",
@@ -562,6 +566,7 @@ describe("the refusal vocabulary is closed", () => {
         "NotReadableInTime",
         "OneBrowserIdentity",
         "OperationNotExposedError",
+        "PointerBlockedError",
         "RecordingNotPerformableError",
         // The three restart refusals (ADR-0065). Separate classes because the
         // remedies are three different things: nothing this daemon opened,

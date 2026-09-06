@@ -1,0 +1,596 @@
+
+   • Packages in scope: @mastra-cc/daemon, @mastra-cc/desk-demo, @mastra-cc/desktop, @mastra-cc/protocol-types, @mastra-cc/tools, @mastra-cc/transport
+   • Running build, lint, typecheck, test in 6 packages
+   • Remote caching disabled
+
+[36m@mastra-cc/desk-demo:lint: [0mcache miss, executing [2m60b37e1201b75f9c[0m
+[35m@mastra-cc/transport:lint: [0mcache hit, replaying logs [2m1ba24052a0d0e0b7[0m
+[32m@mastra-cc/protocol-types:build: [0mcache hit, replaying logs [2md3c651a4a588982b[0m
+[34m@mastra-cc/daemon:lint: [0mcache hit, replaying logs [2m980748c7c05da5fd[0m
+[35m@mastra-cc/transport:lint: [0m
+[35m@mastra-cc/transport:lint: [0m> @mastra-cc/transport@0.1.0 lint /home/codingbutter/mastra-cc/packages/transport
+[35m@mastra-cc/transport:lint: [0m> oxlint src
+[35m@mastra-cc/transport:lint: [0m
+[35m@mastra-cc/transport:lint: [0mFound 0 warnings and 0 errors.
+[35m@mastra-cc/transport:lint: [0mFinished in 18ms on 10 files with 96 rules using 12 threads.
+[32m@mastra-cc/protocol-types:build: [0m
+[32m@mastra-cc/protocol-types:build: [0m> @mastra-cc/protocol-types@1.19.0 build /home/codingbutter/mastra-cc/packages/protocol-types
+[34m@mastra-cc/daemon:lint: [0m
+[32m@mastra-cc/protocol-types:build: [0m> tsc -p tsconfig.json
+[32m@mastra-cc/protocol-types:build: [0m
+[33m@mastra-cc/tools:lint: [0mcache hit, replaying logs [2m4327155a12d5f32d[0m
+[34m@mastra-cc/daemon:lint: [0m> @mastra-cc/daemon@0.0.0 lint /home/codingbutter/mastra-cc/daemon
+[33m@mastra-cc/tools:lint: [0m
+[36m@mastra-cc/desktop:lint: [0mcache hit, replaying logs [2mc7094c6ae482002c[0m
+[34m@mastra-cc/daemon:lint: [0m> oxlint src
+[36m@mastra-cc/desktop:lint: [0m
+[33m@mastra-cc/tools:lint: [0m> @mastra-cc/tools@0.0.0 lint /home/codingbutter/mastra-cc/tools
+[33m@mastra-cc/tools:lint: [0m> oxlint .
+[36m@mastra-cc/desktop:lint: [0m> @mastra-cc/desktop@0.1.0 lint /home/codingbutter/mastra-cc/packages/desktop
+[33m@mastra-cc/tools:lint: [0m
+[36m@mastra-cc/desktop:lint: [0m> oxlint src
+[33m@mastra-cc/tools:lint: [0mFound 0 warnings and 0 errors.
+[36m@mastra-cc/desktop:lint: [0m
+[33m@mastra-cc/tools:lint: [0mFinished in 17ms on 34 files with 96 rules using 12 threads.
+[36m@mastra-cc/desktop:lint: [0m
+[36m@mastra-cc/desktop:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1municorn(no-useless-spread): Using a spread operator here creates a new array unnecessarily.[0m
+[36m@mastra-cc/desktop:lint: [0m    ╭─[[38;2;92;157;255;1msrc/__tests__/the-desk-speaks-first.test.ts[0m:95:27]
+[36m@mastra-cc/desktop:lint: [0m [2m94[0m │     push(change: Change) {
+[36m@mastra-cc/desktop:lint: [0m [2m95[0m │       for (const sink of [...sinks]) sink(change);
+[36m@mastra-cc/desktop:lint: [0m    · [38;2;246;87;248m                          ───[0m
+[36m@mastra-cc/desktop:lint: [0m [2m96[0m │     },
+[36m@mastra-cc/desktop:lint: [0m    ╰────
+[36m@mastra-cc/desktop:lint: [0m[38;2;106;159;181m  help: [0m`for…of` can iterate over iterable, it's unnecessary to convert to an array.
+[36m@mastra-cc/desktop:lint: [0m
+[36m@mastra-cc/desktop:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1municorn(no-useless-spread): Using a spread operator here creates a new array unnecessarily.[0m
+[36m@mastra-cc/desktop:lint: [0m     ╭─[[38;2;92;157;255;1msrc/__tests__/the-desk-speaks-first.test.ts[0m:163:31]
+[36m@mastra-cc/desktop:lint: [0m [2m162[0m │     async emit(e: ChangeEvent) {
+[36m@mastra-cc/desktop:lint: [0m [2m163[0m │       for (const listener of [...listeners]) listener(e);
+[36m@mastra-cc/desktop:lint: [0m     · [38;2;246;87;248m                              ───[0m
+[36m@mastra-cc/desktop:lint: [0m [2m164[0m │       await settle();
+[36m@mastra-cc/desktop:lint: [0m     ╰────
+[36m@mastra-cc/desktop:lint: [0m[38;2;106;159;181m  help: [0m`for…of` can iterate over iterable, it's unnecessary to convert to an array.
+[36m@mastra-cc/desktop:lint: [0m
+[36m@mastra-cc/desktop:lint: [0mFound 2 warnings and 0 errors.
+[36m@mastra-cc/desktop:lint: [0mFinished in 15ms on 11 files with 96 rules using 12 threads.
+[34m@mastra-cc/daemon:lint: [0m
+[32m@mastra-cc/daemon:build: [0mcache hit, replaying logs [2m3a16be3242cc2c83[0m
+[34m@mastra-cc/daemon:lint: [0m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1municorn(no-useless-spread): Using a spread operator here creates a new array unnecessarily.[0m
+[34m@mastra-cc/daemon:lint: [0m    ╭─[[38;2;92;157;255;1msrc/backends/atspi/__tests__/signal-subscription.test.ts[0m:70:33]
+[32m@mastra-cc/daemon:build: [0m
+[34m@mastra-cc/daemon:lint: [0m [2m69[0m │       queueMicrotask(() => {
+[32m@mastra-cc/daemon:build: [0m> @mastra-cc/daemon@0.0.0 build /home/codingbutter/mastra-cc/daemon
+[34m@mastra-cc/daemon:lint: [0m [2m70[0m │         for (const listener of [...listeners]) {
+[32m@mastra-cc/daemon:build: [0m> tsdown && mkdir -p dist/tools/pins && cp ../tools/pins/deny-list.json dist/tools/pins/deny-list.json
+[34m@mastra-cc/daemon:lint: [0m    · [38;2;246;87;248m                                ───[0m
+[32m@mastra-cc/daemon:build: [0m
+[34m@mastra-cc/daemon:lint: [0m [2m71[0m │           listener({ sender: ":9.99", path: msg.path, iface: msg.iface, member: msg.member, body: msg.body });
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [34mtsdown v0.22.14[39m powered by [91mrolldown v1.2.3[39m
+[34m@mastra-cc/daemon:lint: [0m    ╰────
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m config file: [4m/home/codingbutter/mastra-cc/daemon/tsdown.config.ts[24m
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0m`for…of` can iterate over iterable, it's unnecessary to convert to an array.
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m entry: [34msrc/index.ts, src/main.ts[39m
+[34m@mastra-cc/daemon:lint: [0m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1municorn(no-useless-spread): Using a spread operator here creates a new array unnecessarily.[0m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m Build start
+[34m@mastra-cc/daemon:lint: [0m    ╭─[[38;2;92;157;255;1msrc/backends/atspi/__tests__/signal-subscription.test.ts[0m:87:31]
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m Cleaning 12 files
+[34m@mastra-cc/daemon:lint: [0m [2m86[0m │     inject(signal: IncomingSignal) {
+[32m@mastra-cc/daemon:build: [0m
+[34m@mastra-cc/daemon:lint: [0m [2m87[0m │       for (const listener of [...listeners]) listener(signal);
+[32m@mastra-cc/daemon:build: [0m[43m WARN [49m TypeScript 7.0 does not yet have a stable API and is experimental. Some options will be unavailable.
+[34m@mastra-cc/daemon:lint: [0m    · [38;2;246;87;248m                              ───[0m
+[32m@mastra-cc/daemon:build: [0m
+[34m@mastra-cc/daemon:lint: [0m [2m88[0m │     },
+[34m@mastra-cc/daemon:lint: [0m    ╰────
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m Emit types with [4mtypescript@7.0.2[24m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m Hint: consider adding [34mdeps.onlyBundle[39m option to avoid unintended bundling of dependencies, or set [34mdeps.onlyBundle: false[39m to disable this hint.
+[32m@mastra-cc/daemon:build: [0mSee more at [4mhttps://tsdown.dev/options/dependencies#deps-onlybundle[24m
+[32m@mastra-cc/daemon:build: [0mDetected dependencies in bundle:
+[35m@mastra-cc/daemon:typecheck: [0mcache hit, replaying logs [2m4b541a2373d00d7a[0m
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0m`for…of` can iterate over iterable, it's unnecessary to convert to an array.
+[34m@mastra-cc/daemon:lint: [0m
+[32m@mastra-cc/daemon:build: [0m- [34mdbus-native[39m
+[32m@mastra-cc/daemon:build: [0m- [34mxml2js[39m
+[32m@mastra-cc/daemon:build: [0m- [34mxmlbuilder[39m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1municorn(no-useless-spread): Using a spread operator here creates a new array unnecessarily.[0m
+[34m@mastra-cc/daemon:lint: [0m    ╭─[[38;2;92;157;255;1msrc/__tests__/subscription-lifetime.test.ts[0m:62:27]
+[34m@mastra-cc/daemon:lint: [0m [2m61[0m │     push(change: BackendChange) {
+[34m@mastra-cc/daemon:lint: [0m [2m62[0m │       for (const sink of [...sinks.values()]) sink(change);
+[34m@mastra-cc/daemon:lint: [0m    · [38;2;246;87;248m                          ───[0m
+[34m@mastra-cc/daemon:lint: [0m [2m63[0m │     },
+[34m@mastra-cc/daemon:lint: [0m    ╰────
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0m`for…of` can iterate over iterable, it's unnecessary to convert to an array.
+[34m@mastra-cc/daemon:lint: [0m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1meslint(no-unsafe-optional-chaining): Unsafe usage of optional chaining[0m
+[34m@mastra-cc/daemon:lint: [0m     ╭─[[38;2;92;157;255;1msrc/__tests__/the-audit-log-names-what-was-touched.test.ts[0m:509:8]
+[34m@mastra-cc/daemon:lint: [0m [2m508[0m │     expect(JSON.stringify(written[0]!)).not.toContain(
+[34m@mastra-cc/daemon:lint: [0m [2m509[0m │       (answer.result?.subscription as { subscriptionId: string }).subscriptionId,
+[34m@mastra-cc/daemon:lint: [0m     · [38;2;246;87;248m       ───────────────────────────[0m
+[34m@mastra-cc/daemon:lint: [0m [2m510[0m │     );
+[34m@mastra-cc/daemon:lint: [0m     ╰────
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0mIf this short-circuits with 'undefined' the evaluation will throw TypeError
+[34m@mastra-cc/daemon:lint: [0m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1meslint(no-unsafe-optional-chaining): Unsafe usage of optional chaining[0m
+[34m@mastra-cc/daemon:lint: [0m     ╭─[[38;2;92;157;255;1msrc/__tests__/the-audit-log-names-what-was-touched.test.ts[0m:519:29]
+[34m@mastra-cc/daemon:lint: [0m [2m518[0m │     const opened = await watch("subscribeElement", { id: WATCHED, priority: "medium" }, world.backend, book);
+[34m@mastra-cc/daemon:lint: [0m [2m519[0m │     const subscriptionId = (opened.result?.subscription as { subscriptionId: string }).subscriptionId;
+[34m@mastra-cc/daemon:lint: [0m     · [38;2;246;87;248m                            ───────────────────────────[0m
+[34m@mastra-cc/daemon:lint: [0m [2m520[0m │     const closed = await watch("unsubscribeElement", { subscriptionId }, world.backend, book);
+[34m@mastra-cc/daemon:lint: [0m     ╰────
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0mIf this short-circuits with 'undefined' the evaluation will throw TypeError
+[34m@mastra-cc/daemon:lint: [0m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1municorn(no-useless-spread): Using a spread operator here creates a new array unnecessarily.[0m
+[34m@mastra-cc/daemon:lint: [0m    ╭─[[38;2;92;157;255;1msrc/backends/cdp/__tests__/subtree-stream.test.ts[0m:46:29]
+[34m@mastra-cc/daemon:lint: [0m [2m45[0m │   const push = (method: string, params: Record<string, unknown>) => {
+[34m@mastra-cc/daemon:lint: [0m [2m46[0m │     for (const listener of [...listeners]) listener(method, params);
+[34m@mastra-cc/daemon:lint: [0m    · [38;2;246;87;248m                            ───[0m
+[34m@mastra-cc/daemon:lint: [0m [2m47[0m │   };
+[34m@mastra-cc/daemon:lint: [0m    ╰────
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0m`for…of` can iterate over iterable, it's unnecessary to convert to an array.
+[34m@mastra-cc/daemon:lint: [0m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1meslint(no-unsafe-optional-chaining): Unsafe usage of optional chaining[0m
+[34m@mastra-cc/daemon:lint: [0m    ╭─[[38;2;92;157;255;1msrc/backends/cdp/__tests__/subtree-stream.test.ts[0m:66:20]
+[34m@mastra-cc/daemon:lint: [0m [2m65[0m │   const install = h.calls.find((c) => c.method === "Runtime.callFunctionOn");
+[34m@mastra-cc/daemon:lint: [0m [2m66[0m │   const watchId = (install?.params.arguments as Array<{ value: string }>)[0].value;
+[34m@mastra-cc/daemon:lint: [0m    · [38;2;246;87;248m                   ─────────────────────────[0m
+[34m@mastra-cc/daemon:lint: [0m [2m67[0m │   h.push("Runtime.bindingCalled", {
+[34m@mastra-cc/daemon:lint: [0m    ╰────
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0mIf this short-circuits with 'undefined' the evaluation will throw TypeError
+[34m@mastra-cc/daemon:lint: [0m
+[34m@mastra-cc/daemon:lint: [0m  [38;2;244;191;117;1m⚠[0m [38;2;244;191;117;1municorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary[0m
+[34m@mastra-cc/daemon:lint: [0m      ╭─[[38;2;92;157;255;1msrc/backends/atspi/index.ts[0m:1429:12]
+[34m@mastra-cc/daemon:lint: [0m [2m1428[0m │ function keyAimNote(diagnostic: Diagnostic | undefined, note: string): Diagnostic & { "mastra-cc/key-aim": string } {
+[34m@mastra-cc/daemon:lint: [0m [2m1429[0m │   return { ...(diagnostic ?? {}), "mastra-cc/key-aim": note };
+[34m@mastra-cc/daemon:lint: [0m      · [38;2;246;87;248m           ─────────────────────[0m
+[34m@mastra-cc/daemon:lint: [0m [2m1430[0m │ }
+[34m@mastra-cc/daemon:lint: [0m      ╰────
+[34m@mastra-cc/daemon:lint: [0m[38;2;106;159;181m  help: [0mSpreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+[34m@mastra-cc/daemon:lint: [0m
+[34m@mastra-cc/daemon:lint: [0mFound 8 warnings and 0 errors.
+[34m@mastra-cc/daemon:lint: [0mFinished in 18ms on 132 files with 96 rules using 12 threads.
+[35m@mastra-cc/daemon:typecheck: [0m
+[32m@mastra-cc/daemon:build: [0m- [34msax[39m
+[35m@mastra-cc/daemon:typecheck: [0m> @mastra-cc/daemon@0.0.0 typecheck /home/codingbutter/mastra-cc/daemon
+[35m@mastra-cc/daemon:typecheck: [0m> tsc --noEmit
+[32m@mastra-cc/daemon:build: [0m- [34mws[39m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[1mmain.mjs[22m                       [2m 18.68 kB[22m [2m│ gzip:   6.23 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[1mindex.mjs[22m                      [2m  2.18 kB[22m [2m│ gzip:   0.99 kB[22m
+[35m@mastra-cc/daemon:typecheck: [0m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mreplay-uAwEvBJO.mjs            [2m467.15 kB[22m [2m│ gzip: 106.43 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mserver-SJmWC_iA.mjs            [2m124.73 kB[22m [2m│ gzip:  30.90 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mwrapper-DqQbFP8R.mjs           [2m112.25 kB[22m [2m│ gzip:  23.43 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mrolldown-runtime-CMFfr-1z.mjs  [2m  1.31 kB[22m [2m│ gzip:   0.65 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mverify-DHurhF-y.mjs            [2m  1.18 kB[22m [2m│ gzip:   0.58 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m                    [2m 57.90 kB[22m [2m│ gzip:  15.96 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mmain.d.mts[22m[39m                     [2m  0.01 kB[22m [2m│ gzip:   0.03 kB[22m
+[32m@mastra-cc/daemon:build: [0m[34mℹ[39m 9 files, total: 785.39 kB
+[32m@mastra-cc/daemon:build: [0m[32m✔[39m Build complete in [32m276ms[39m
+[33m@mastra-cc/transport:build: [0mcache hit, replaying logs [2m8c95634b4b28bf90[0m
+[36m@mastra-cc/daemon:test: [0mcache hit, replaying logs [2m8f55bb7112fe3ab5[0m
+[34m@mastra-cc/transport:typecheck: [0mcache hit, replaying logs [2m276e226175794e80[0m
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m> @mastra-cc/daemon@0.0.0 test /home/codingbutter/mastra-cc/daemon
+[36m@mastra-cc/daemon:test: [0m> vitest run
+[36m@mastra-cc/daemon:test: [0m
+[34m@mastra-cc/transport:typecheck: [0m
+[34m@mastra-cc/transport:typecheck: [0m> @mastra-cc/transport@0.1.0 typecheck /home/codingbutter/mastra-cc/packages/transport
+[33m@mastra-cc/transport:build: [0m
+[33m@mastra-cc/transport:build: [0m> @mastra-cc/transport@0.1.0 build /home/codingbutter/mastra-cc/packages/transport
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/codingbutter/mastra-cc/daemon[39m
+[36m@mastra-cc/daemon:test: [0m
+[34m@mastra-cc/transport:typecheck: [0m> tsc --noEmit
+[34m@mastra-cc/transport:typecheck: [0m
+[33m@mastra-cc/transport:build: [0m> tsdown
+[33m@mastra-cc/transport:build: [0m
+[36m@mastra-cc/daemon:test: [0mlaunched org.kde.kate pid 88833
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-picture-of-one-element-and-no-more.test.ts [2m([22m[2m28 tests[22m[2m)[22m[33m 467[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched yad pid 88858
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m [34mtsdown v0.22.14[39m powered by [91mrolldown v1.2.3[39m
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m config file: [4m/home/codingbutter/mastra-cc/packages/transport/tsdown.config.ts[24m
+[36m@mastra-cc/daemon:test: [0mlaunched org.kde.kate pid 88976
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/backends/atspi/__tests__/signal-subscription.test.ts[2m > [22m[2mthe accessibility stream[2m > [22m[2masks the bus for a node's ancestry once, then remembers the verdict
+[36m@mastra-cc/daemon:test: [0m[22m[39matspi-stream: backstop collapsed a repeat change for el-adef1840ada8 - scope let ambient noise through
+[35m@mastra-cc/tools:test: [0mcache hit, replaying logs [2m3d768700d8d273ba[0m
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m entry: [34msrc/index.ts[39m
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/backends/atspi/__tests__/signal-subscription.test.ts[2m > [22m[2mthe accessibility stream[2m > [22m[2masks the bus for a node's ancestry once, then remembers the verdict
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m Build start
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m Cleaning 2 files
+[33m@mastra-cc/transport:build: [0m
+[35m@mastra-cc/tools:test: [0m
+[35m@mastra-cc/tools:test: [0m> @mastra-cc/tools@0.0.0 test /home/codingbutter/mastra-cc/tools
+[36m@mastra-cc/daemon:test: [0m[22m[39matspi-stream: backstop collapsed a repeat change for el-adef1840ada8 - scope let ambient noise through
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/backends/atspi/__tests__/signal-subscription.test.ts[2m > [22m[2mthe accessibility stream[2m > [22m[2masks the bus for a node's ancestry once, then remembers the verdict
+[33m@mastra-cc/transport:build: [0m[43m WARN [49m TypeScript 7.0 does not yet have a stable API and is experimental. Some options will be unavailable.
+[33m@mastra-cc/transport:build: [0m
+[35m@mastra-cc/tools:test: [0m> vitest run
+[35m@mastra-cc/tools:test: [0m
+[36m@mastra-cc/daemon:test: [0m[22m[39matspi-stream: backstop collapsed a repeat change for el-adef1840ada8 - scope let ambient noise through
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0mlaunched ordinary pid 89039
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m Emit types with [4mtypescript@7.0.2[24m
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m [2mdist/[22m[1mindex.mjs[22m    [2m7.46 kB[22m [2m│ gzip: 2.29 kB[22m
+[35m@mastra-cc/tools:test: [0m
+[35m@mastra-cc/tools:test: [0m[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/codingbutter/mastra-cc/tools[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/subscription-visibility.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 196[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/subscription-lifetime.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 226[2mms[22m[39m
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m  [2m4.15 kB[22m [2m│ gzip: 1.16 kB[22m
+[33m@mastra-cc/transport:build: [0m[34mℹ[39m 2 files, total: 11.61 kB
+[33m@mastra-cc/transport:build: [0m[32m✔[39m Build complete in [32m132ms[39m
+[35m@mastra-cc/tools:test: [0m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/schema.test.mjs [2m([22m[2m12 tests[22m[2m)[22m[32m 110[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89086
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/signal-subscription.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 160[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched office-calc pid 89091
+[35m@mastra-cc/tools:test: [0m [32m✓[39m proofs/__tests__/concurrent-accessibility.test.mjs [2m([22m[2m6 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/digest-agreement.test.mjs [2m([22m[2m4 tests[22m[2m)[22m[33m 335[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/any-app-the-machine-has.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 238[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/launch-authority.test.ts[2m > [22m[2meffect authority: every element method is refused before the backend is reached[2m > [22m[2mholding the class gets past the gate and reaches the backend
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/catalog-check.test.mjs [2m([22m[2m8 tests[22m[2m)[22m[33m 618[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m pins/__tests__/b10.test.mjs [2m([22m[2m7 tests[22m[2m)[22m[33m 652[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: editElement failed in the backend: Error: the effect authority gate touched the backend
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/launch-authority.test.ts[2m > [22m[2meffect authority: every element method is refused before the backend is reached[2m > [22m[2mholding the class gets past the gate and reaches the backend
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/freeze-gate.test.mjs [2m([22m[2m5 tests[22m[2m)[22m[33m 996[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m accepts a compliant change: version bump, ADR naming it, regenerated fixtures [33m 354[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: activateElement failed in the backend: Error: the effect authority gate touched the backend
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/launch-authority.test.ts[2m > [22m[2meffect authority: every element method is refused before the backend is reached[2m > [22m[2mholding the class gets past the gate and reaches the backend
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/webtop-harness.test.mjs [2m([22m[2m4 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/mutations.test.mjs [2m([22m[2m5 tests[22m[2m)[22m[33m 558[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/no-ignored-fixtures.test.mjs [2m([22m[2m1 test[22m[2m)[22m[33m 542[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: submitElement failed in the backend: Error: the effect authority gate touched the backend
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/launch-authority.test.ts[2m > [22m[2meffect authority: every element method is refused before the backend is reached[2m > [22m[2mholding the class gets past the gate and reaches the backend
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m no test reads a fixture git refuses to track [33m 540[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: setElementValue failed in the backend: Error: the effect authority gate touched the backend
+[36m@mastra-cc/daemon:test: [0m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/semantic-content-schema.test.mjs [2m([22m[2m18 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/launch-authority.test.ts[2m > [22m[2meffect authority: every element method is refused before the backend is reached[2m > [22m[2mholding the class gets past the gate and reaches the backend
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: setElementText failed in the backend: Error: the effect authority gate touched the backend
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/m6-gmail-config-install.test.mjs [2m([22m[2m3 tests[22m[2m)[22m[33m 1485[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m seeds the restrictive authority files and complete daemon tree on a fresh prefix [33m 399[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/launch-authority.test.ts[2m > [22m[2meffect authority: every element method is refused before the backend is reached[2m > [22m[2mholding the class gets past the gate and reaches the backend
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m preserves operator edits while replacing repository-owned daemon output [33m 929[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/mutations-runner.test.mjs [2m([22m[2m7 tests[22m[2m)[22m[33m 2396[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: setElementCaret failed in the backend: Error: the effect authority gate touched the backend
+[33m@mastra-cc/desktop:typecheck: [0mcache hit, replaying logs [2mf3465a741f6069d3[0m
+[34m@mastra-cc/desktop:build: [0mcache hit, replaying logs [2m2a4812b21800f0f0[0m
+[32m@mastra-cc/transport:test: [0mcache hit, replaying logs [2m908f278389d5f3d6[0m
+[36m@mastra-cc/daemon:test: [0m
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m restores the mutated file when the signal is sent to the runner alone [33m 1524[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/determinism.test.mjs [2m([22m[2m5 tests[22m[2m)[22m[33m 1857[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/launch-authority.test.ts[2m > [22m[2meffect authority: every element method is refused before the backend is reached[2m > [22m[2mholding the class gets past the gate and reaches the backend
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: revealElement failed in the backend: Error: the effect authority gate touched the backend
+[34m@mastra-cc/desktop:build: [0m
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/launch-authority.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 214[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched chrome-personal pid 89341
+[33m@mastra-cc/desktop:typecheck: [0m
+[33m@mastra-cc/desktop:typecheck: [0m> @mastra-cc/desktop@0.1.0 typecheck /home/codingbutter/mastra-cc/packages/desktop
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m covers the emitted tsconfig, so a generator that stops emitting it goes red [33m 538[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m goes red on a hand-edited golden fixture, showing the differing line [33m 344[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m
+[32m@mastra-cc/transport:test: [0m> @mastra-cc/transport@0.1.0 test /home/codingbutter/mastra-cc/packages/transport
+[34m@mastra-cc/desktop:build: [0m> @mastra-cc/desktop@0.1.0 build /home/codingbutter/mastra-cc/packages/desktop
+[34m@mastra-cc/desktop:build: [0m> tsdown
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/profile-launch.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched org.kde.kate pid 89373
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/daemon-dies-clean.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 1588[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m SIGINT still runs the handler with a websocket listener bound and clients on both pipes [33m 331[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m exits 0 again once both are restored [33m 330[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m pins/__tests__/pins.test.mjs [2m([22m[2m24 tests[22m[2m)[22m[33m 2525[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m> vitest run
+[32m@mastra-cc/transport:test: [0m
+[32m@mastra-cc/transport:test: [0m
+[34m@mastra-cc/desktop:build: [0m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m [34mtsdown v0.22.14[39m powered by [91mrolldown v1.2.3[39m
+[33m@mastra-cc/desktop:typecheck: [0m> tsc --noEmit
+[33m@mastra-cc/desktop:typecheck: [0m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m opens no port at all when nobody asked for one - read off the running process, not off a mock [33m 326[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/a-deep-application-does-not-silence-the-desk.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 711[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m walks a tree far deeper and larger than the old caps to completion [33m 336[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/licences.test.mjs [2m([22m[2m25 tests[22m[2m)[22m[33m 3627[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m       [33m[2m✓[22m[39m passes when the payload's credits match the digest that was reviewed [33m 308[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/codingbutter/mastra-cc/packages/transport[39m
+[32m@mastra-cc/transport:test: [0m
+[32m@mastra-cc/transport:test: [0m [32m✓[39m src/__tests__/every-method-is-reachable.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 123[2mms[22m[39m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m config file: [4m/home/codingbutter/mastra-cc/packages/desktop/tsdown.config.ts[24m
+[32m@mastra-cc/transport:test: [0m [32m✓[39m src/__tests__/terminal-connection.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 185[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89630
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89632
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89638
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/check-docs-citations.test.mjs [2m([22m[2m31 tests[22m[2m)[22m[33m 4404[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m     [33m[2m✓[22m[39m lets a record quote the struck clause it is striking [33m 327[2mms[22m[39m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m entry: [34msrc/index.ts, src/mastra.ts[39m
+[35m@mastra-cc/tools:test: [0m [32m✓[39m __tests__/release-check.test.mjs [2m([22m[2m7 tests[22m[2m)[22m[33m 11317[2mms[22m[39m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m a clean publishable set packs, unpacks and passes [33m 2839[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m an entry point the tarball does not contain is caught [33m 2915[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89640
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/subtree-stream.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89645
+[32m@mastra-cc/transport:test: [0m [32m✓[39m src/__tests__/open-actions.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m [32m✓[39m src/__tests__/digest-agreement.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 357[2mms[22m[39m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m Build start
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m Cleaning 4 files
+[34m@mastra-cc/desktop:build: [0m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89646
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89658
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89660
+[32m@mastra-cc/transport:test: [0m     [33m[2m✓[22m[39m refuses when the server's hello names a different digest, naming both digests [33m 306[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m [32m✓[39m src/__tests__/event-delivery.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 260[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m a publishable package missing from the list is caught [33m 2070[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m a private package is allowed to stay off the list [33m 861[2mms[22m[39m
+[34m@mastra-cc/desktop:build: [0m[43m WARN [49m TypeScript 7.0 does not yet have a stable API and is experimental. Some options will be unavailable.
+[34m@mastra-cc/desktop:build: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/one-entry-several-names.test.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 1030[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m on the wire: an application opened by its short name is restartable by that same name [33m 862[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/the-audit-log-names-what-was-touched.test.ts[2m > [22m[2man effect writes exactly one receipt, and it names the element by identity[2m > [22m[2m1b: an effect that FAILED is recorded as an attempt, not omitted as untidy
+[32m@mastra-cc/transport:test: [0m [32m✓[39m src/__tests__/an-effect-over-the-wire.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m [32m✓[39m src/__tests__/dialling-the-second-pipe.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 521[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m depending on the daemon is refused, whatever the version says [33m 821[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m shipped code importing a source-entry package is caught [33m 769[2mms[22m[39m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m Emit types with [4mtypescript@7.0.2[24m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[1mmastra.mjs[22m    [2m9.03 kB[22m [2m│ gzip: 3.72 kB[22m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: activateElement failed in the backend: Error: the bus went away mid-effect
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/focus-preservation.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 95[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/the-audit-log-names-what-was-touched.test.ts[2m > [22m[2mthe launch and the read keep receipts of their own[2m > [22m[2m7b: a launch that throws unclassified is recorded as an attempt
+[32m@mastra-cc/transport:test: [0m[2m Test Files [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: openApplication failed in the backend: Error: the ownership table went away mid-launch
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/the-audit-log-names-what-was-touched.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 106[2mms[22m[39m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[1mindex.mjs[22m     [2m3.90 kB[22m [2m│ gzip: 1.74 kB[22m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mmastra.d.mts[22m[39m  [2m7.42 kB[22m [2m│ gzip: 2.98 kB[22m
+[35m@mastra-cc/tools:test: [0m   [33m[2m✓[22m[39m a package whose own entry point is TypeScript source is caught [33m 1038[2mms[22m[39m
+[35m@mastra-cc/tools:test: [0m
+[32m@mastra-cc/transport:test: [0m[2m      Tests [22m [1m[32m48 passed[39m[22m[90m (48)[39m
+[32m@mastra-cc/transport:test: [0m[2m   Start at [22m 07:09:12
+[32m@mastra-cc/transport:test: [0m[2m   Duration [22m 2.85s[2m (transform 3.50s, setup 0ms, import 5.30s, tests 1.54s, environment 1ms)[22m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m   [2m3.71 kB[22m [2m│ gzip: 1.66 kB[22m
+[34m@mastra-cc/desktop:build: [0m[34mℹ[39m 4 files, total: 24.06 kB
+[35m@mastra-cc/tools:test: [0m[2m Test Files [22m [1m[32m17 passed[39m[22m[90m (17)[39m
+[35m@mastra-cc/tools:test: [0m[2m      Tests [22m [1m[32m172 passed[39m[22m[90m (172)[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/backend-conformance.test.ts [2m([22m[2m55 tests[22m[2m | [22m[33m24 skipped[39m[2m)[22m[32m 178[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 89778
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/__tests__/invisibility.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 97[2mms[22m[39m
+[32m@mastra-cc/transport:test: [0m
+[34m@mastra-cc/desktop:build: [0m[32m✔[39m Build complete in [32m1080ms[39m
+[35m@mastra-cc/tools:test: [0m[2m   Start at [22m 07:09:11
+[35m@mastra-cc/tools:test: [0m[2m   Duration [22m 11.80s[2m (transform 541ms, setup 0ms, import 1.14s, tests 31.54s, environment 2ms)[22m
+[36m@mastra-cc/daemon:test: [0m[90mstdout[2m | src/backends/cdp/__tests__/channel.test.ts[2m > [22m[2mcapture then replay[2m > [22m[2mreplays recorded replies and refuses an exchange not on the tape
+[36m@mastra-cc/daemon:test: [0m[22m[39mcapture: 3 exchange(s) and 0 event(s) recorded to daemon/fixtures/test-cdp-roundtrip-89520/tape.json
+[36m@mastra-cc/daemon:test: [0m
+[35m@mastra-cc/tools:test: [0m
+[36m@mastra-cc/daemon:test: [0mlaunched chromium pid 89886
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/an-owned-application-with-nothing-to-show-is-opened-again.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/channel.test.ts [2m([22m[2m5 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 154[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/installed-inventory.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 163[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/launch/__tests__/ownership-table.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 124[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/launch/__tests__/profiles.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 90012
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/what-is-running.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 212[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 90041
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/clearing-is-counted-and-checked.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/launch/__tests__/derived.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 185[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 90107
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/who-may-close-a-window.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 2345[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m graceful: an application that is still there with no dialog is reported unconfirmed, not restarted [33m 501[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m graceful: an application that leaves the accessibility tree but keeps running is not declared closed [33m 537[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m force: an application that refuses SIGTERM is taken down, because the operator wrote that down [33m 307[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/keys-that-went-to-the-other-window-of-the-same-name.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 164[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-press-inside-one-element.test.ts [2m([22m[2m51 tests[22m[2m)[22m[33m 2331[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m     [33m[2m✓[22m[39m bounds failing, hanging and oversized display queries [33m 1510[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/restart-authority.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 121[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-key-sent-while-another-application-holds-the-keyboard.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 119[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/collection.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 137[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/raw-input-authority.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 75[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/discover-elements.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 90328
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/attribution.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/capability-configuration.test.ts[2m > [22m[2mthe daemon enforces the configuration[2m > [22m[2mthe same session with the capability on reaches the backend - the gate is not a constant
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: editElement failed in the backend: Error: the capability gate touched the backend
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/type-blind-read-back.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/capability-configuration.test.ts[2m > [22m[2mthe daemon enforces the configuration[2m > [22m[2ma session with no configuration behaves exactly as it did before this file existed
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: editElement failed in the backend: Error: the capability gate touched the backend
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/capability-configuration.test.ts[2m > [22m[2mthe daemon enforces the configuration[2m > [22m[2ma session with no configuration behaves exactly as it did before this file existed
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: editElement failed in the backend: Error: the capability gate touched the backend
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/capability-configuration.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 90[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/actions.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-key-addressed-to-one-element.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/one-name-any-case.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/actions.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/container-portability.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts[2m > [22m[2ma window scope that resolves to no single window[2m > [22m[2mleaves an unrelated backend failure alone - only the scope errors become these sentences
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: Error: the bus went away
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/roles.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/accessibility/__tests__/acquiring.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/refuses-malformed-lines.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/effects-are-observed.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+[36m@mastra-cc/desk-demo:typecheck: [0mcache miss, executing [2m4ca3e0e4151912b4[0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/roles.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/an-application-answers-to-its-own-name-in-any-case.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/refuses-beyond-observe.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+[32m@mastra-cc/desk-demo:build: [0mcache miss, executing [2md6026fff6c0f0234[0m
+[35m@mastra-cc/desktop:test: [0mcache hit, replaying logs [2mb210afd78ef1200a[0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/__tests__/focus-instrument.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/effects.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/can-the-desk-be-heard.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 73[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts[2m > [22m[2ma call that fails because one application is gone[2m > [22m[2msays that application is gone, and that the rest of the desk is still there
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: PeerGoneError: d-bus call failed for :1.14|...
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts[2m > [22m[2ma call that fails because one application is gone[2m > [22m[2mtells the caller what to do next - ask what is on the desk again
+[35m@mastra-cc/desktop:test: [0m
+[35m@mastra-cc/desktop:test: [0m> @mastra-cc/desktop@0.1.0 test /home/codingbutter/mastra-cc/packages/desktop
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: PeerGoneError: gone
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts[2m > [22m[2ma call that fails because one application is gone[2m > [22m[2mcarries no bus vocabulary out to the caller
+[35m@mastra-cc/desktop:test: [0m> vitest run
+[35m@mastra-cc/desktop:test: [0m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: PeerGoneError: d-bus call failed for :1.14|/org/a11y/atspi/accessible/1923: {"name":"DBusError"}
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts[2m > [22m[2ma call that fails because one application is gone[2m > [22m[2mstill condemns the desk when the failure names no application at all
+[35m@mastra-cc/desktop:test: [0m
+[35m@mastra-cc/desktop:test: [0m[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/codingbutter/mastra-cc/packages/desktop[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: Error: the bus socket closed
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts[2m > [22m[2ma call that fails because one application is gone[2m > [22m[2mholds the same line on a read as on a query - any method, one meaning
+[35m@mastra-cc/desktop:test: [0m
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-prose-names-real-verbs.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: readElementContent failed in the backend: PeerGoneError: gone
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts[2m > [22m[2ma call aimed at an element that no longer exists[2m > [22m[2msays that element is gone and to work from a fresh answer
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-instructions-ship-with-it.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-refusal-survives-the-wrapper.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 157[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: ElementGoneError: No such object path
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/scoped-query.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 435[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m     [33m[2m✓[22m[39m ships the same bytes as the documentation [33m 326[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts[2m > [22m[2ma call aimed at an element that no longer exists[2m > [22m[2mdoes not accuse the application of having died - it has not
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: ElementGoneError: No such object path
+[36m@mastra-cc/daemon:test: [0m
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-package-is-the-protocol.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 93[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-instance-is-the-connection.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 256[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-field-that-names-its-own-way-to-the-focus.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-desk-speaks-first.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 777[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/a-desk-that-went-deaf-does-not-answer-as-if-it-were-bare.test.ts[2m > [22m[2man empty answer from a desk whose layer went off[2m > [22m[2mdoes not ask about the layer at all when the query found something
+[35m@mastra-cc/desktop:test: [0m [32m✓[39m src/__tests__/the-adapter-is-optional.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 739[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: TypeError: backend.applicationOfElement is not a function
+[35m@mastra-cc/desktop:test: [0m     [33m[2m✓[22m[39m builds one tool per protocol method, described by the contract itself [33m 648[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m
+[35m@mastra-cc/desktop:test: [0m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-desk-that-went-deaf-does-not-answer-as-if-it-were-bare.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/discovery-aggregation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-desk-says-where-its-own-files-live.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m[2m Test Files [22m [1m[32m8 passed[39m[22m[90m (8)[39m
+[35m@mastra-cc/desktop:test: [0m[2m      Tests [22m [1m[32m60 passed[39m[22m[90m (60)[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-bad-role-is-a-refusal.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/normalisation.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/replay/__tests__/refuses-unrecorded.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m[2m   Start at [22m 07:09:15
+[35m@mastra-cc/desktop:test: [0m[2m   Duration [22m 3.09s[2m (transform 4.94s, setup 0ms, import 8.13s, tests 2.50s, environment 2ms)[22m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/running-applications.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/ambiguity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/m6-gmail-startup-composition.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+[35m@mastra-cc/desktop:test: [0m
+[36m@mastra-cc/daemon:test: [0mlaunched test-sleep pid 90591
+[36m@mastra-cc/daemon:test: [0mlaunched test-marker pid 90597
+[36m@mastra-cc/daemon:test: [0mlaunched test-quick pid 90599
+[36m@mastra-cc/daemon:test: [0mlaunched test-sleep pid 90601
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/a-look-is-a-look-and-not-a-new-authority.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/launch/__tests__/spawn-records.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 147[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/refusal-on-unreadable-backend.test.ts[2m > [22m[2man unreachable browser is a named refusal, not a crash[2m > [22m[2ma wire queryElements over a dead endpoint returns the constant and keeps serving
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: CdpUnreachableError: no debugging endpoint answered at http://127.0.0.1:42379/json/version
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[90mstderr[2m | src/__tests__/refusal-on-unreadable-backend.test.ts[2m > [22m[2man unreachable browser is a named refusal, not a crash[2m > [22m[2ma wire queryElements over a dead endpoint returns the constant and keeps serving
+[36m@mastra-cc/daemon:test: [0m[22m[39mdaemon: queryElements failed in the backend: CdpUnreachableError: no debugging endpoint answered at http://127.0.0.1:42379/json/version
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0mlaunched test-app pid 90645
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/effects.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/attestation.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/refusal-on-unreadable-backend.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 124[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/replay/__tests__/identical-to-live.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/refused-before-the-call.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/the-second-pipe.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 344[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/magnitudes.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/magnitudes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/one-handler-behind-a-pipe.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/refused-before-the-call.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/verified-by-reading-back.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/__tests__/no-real-catalog-in-a-spawnable-path.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/content.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/cdp/__tests__/content.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/identity.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/accessibility/__tests__/reporting.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/replay/__tests__/events-in-recorded-order.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m [32m✓[39m src/backends/atspi/__tests__/channel.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+[36m@mastra-cc/daemon:test: [0m
+[36m@mastra-cc/daemon:test: [0m[2m Test Files [22m [1m[32m82 passed[39m[22m[90m (82)[39m
+[36m@mastra-cc/daemon:test: [0m[2m      Tests [22m [1m[32m806 passed[39m[22m[2m | [22m[33m25 skipped[39m[90m (831)[39m
+[36m@mastra-cc/daemon:test: [0m[2m   Start at [22m 07:09:11
+[36m@mastra-cc/daemon:test: [0m[2m   Duration [22m 7.69s[2m (transform 9.59s, setup 0ms, import 34.72s, tests 14.03s, environment 34ms)[22m
+[36m@mastra-cc/daemon:test: [0m
+[32m@mastra-cc/desk-demo:build: [0m
+[32m@mastra-cc/desk-demo:build: [0m> @mastra-cc/desk-demo@0.0.0 build /home/codingbutter/mastra-cc/apps/desk-demo
+[32m@mastra-cc/desk-demo:build: [0m> next build
+[32m@mastra-cc/desk-demo:build: [0m
+[36m@mastra-cc/desk-demo:typecheck: [0m
+[36m@mastra-cc/desk-demo:typecheck: [0m> @mastra-cc/desk-demo@0.0.0 typecheck /home/codingbutter/mastra-cc/apps/desk-demo
+[36m@mastra-cc/desk-demo:typecheck: [0m> tsc --noEmit
+[36m@mastra-cc/desk-demo:typecheck: [0m
+[36m@mastra-cc/desk-demo:lint: [0m
+[36m@mastra-cc/desk-demo:lint: [0m> @mastra-cc/desk-demo@0.0.0 lint /home/codingbutter/mastra-cc/apps/desk-demo
+[36m@mastra-cc/desk-demo:lint: [0m> oxlint src
+[36m@mastra-cc/desk-demo:lint: [0m
+[36m@mastra-cc/desk-demo:lint: [0mFound 0 warnings and 0 errors.
+[36m@mastra-cc/desk-demo:lint: [0mFinished in 14ms on 24 files with 96 rules using 12 threads.
+[32m@mastra-cc/desk-demo:build: [0m[1m[38;2;173;127;168m▲ Next.js 16.3.4[39m[22m (Turbopack)
+[32m@mastra-cc/desk-demo:build: [0m- Environments: .env.local
+[32m@mastra-cc/desk-demo:build: [0m[32m[1m✓[22m[39m Running next.config.mjs took 6ms
+[32m@mastra-cc/desk-demo:build: [0m
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Creating an optimized production build ...
+[32m@mastra-cc/desk-demo:build: [0m[32m[1m✓[22m[39m Compiled successfully in 262ms
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Running TypeScript ...
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Finished TypeScript in 291ms ...
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Collecting page data using 6 workers ...
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (0/5) ...
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (1/5)
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (2/5)
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (3/5)
+[32m@mastra-cc/desk-demo:build: [0m[32m[1m✓[22m[39m Generating static pages using 6 workers (5/5) in 593ms
+[32m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Finalizing page optimization ...
+[32m@mastra-cc/desk-demo:build: [0m
+[32m@mastra-cc/desk-demo:build: [0m[4mRoute (app)[24m
+[32m@mastra-cc/desk-demo:build: [0m┌ ○ /
+[32m@mastra-cc/desk-demo:build: [0m├ ○ /_not-found
+[32m@mastra-cc/desk-demo:build: [0m├ ƒ /api/chat
+[32m@mastra-cc/desk-demo:build: [0m└ ƒ /api/control
+[32m@mastra-cc/desk-demo:build: [0m
+[32m@mastra-cc/desk-demo:build: [0m
+[32m@mastra-cc/desk-demo:build: [0m○  (Static)   prerendered as static content
+[32m@mastra-cc/desk-demo:build: [0mƒ  (Dynamic)  server-rendered on demand
+[32m@mastra-cc/desk-demo:build: [0m
+[33m@mastra-cc/desk-demo:test: [0mcache miss, executing [2md197d8c21d3eeabf[0m
+[33m@mastra-cc/desk-demo:test: [0m
+[33m@mastra-cc/desk-demo:test: [0m> @mastra-cc/desk-demo@0.0.0 test /home/codingbutter/mastra-cc/apps/desk-demo
+[33m@mastra-cc/desk-demo:test: [0m> vitest run
+[33m@mastra-cc/desk-demo:test: [0m
+[33m@mastra-cc/desk-demo:test: [0m
+[33m@mastra-cc/desk-demo:test: [0m[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/codingbutter/mastra-cc/apps/desk-demo[39m
+[33m@mastra-cc/desk-demo:test: [0m
+[33m@mastra-cc/desk-demo:test: [0m [32m✓[39m src/lib/__tests__/desk-cache.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m [32m✓[39m src/lib/__tests__/control-lifecycle.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m [32m✓[39m src/lib/__tests__/control.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m [32m✓[39m src/lib/__tests__/transcript.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m [32m✓[39m src/lib/__tests__/stream.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m [32m✓[39m src/lib/__tests__/agent.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 70[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m [32m✓[39m src/app/api/chat/route.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 4060[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m     [33m[2m✓[22m[39m waits out a rate limit and carries the same errand on, rather than ending the turn [33m 1013[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m     [33m[2m✓[22m[39m resumes with its prose but does not assume the desk stayed unchanged [33m 1013[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m     [33m[2m✓[22m[39m carries on through a provider connection that timed out, which touched no desk [33m 2003[2mms[22m[39m
+[33m@mastra-cc/desk-demo:test: [0m
+[33m@mastra-cc/desk-demo:test: [0m[2m Test Files [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[33m@mastra-cc/desk-demo:test: [0m[2m      Tests [22m [1m[32m42 passed[39m[22m[90m (42)[39m
+[33m@mastra-cc/desk-demo:test: [0m[2m   Start at [22m 07:13:00
+[33m@mastra-cc/desk-demo:test: [0m[2m   Duration [22m 4.30s[2m (transform 337ms, setup 0ms, import 791ms, tests 4.19s, environment 1ms)[22m
+[33m@mastra-cc/desk-demo:test: [0m
+
+[1m Tasks:    [32m[1m19 successful[0m, 19 total[0m
+[1mCached:    [1m15 cached[0m, 19 total[0m
+[1m  Time:    [1m8.319s[0m [0m

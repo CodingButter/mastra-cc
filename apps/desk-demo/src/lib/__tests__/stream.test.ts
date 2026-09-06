@@ -36,7 +36,15 @@ describe("consumeDemoStream", () => {
   it("rejects non-OK, absent-body, and malformed responses", async () => {
     await expect(consumeDemoStream(response([], { status: 503 }), () => {})).rejects.toThrow("503");
     await expect(consumeDemoStream(new Response(null), () => {})).rejects.toThrow("no body");
-    await expect(consumeDemoStream(response(['{"type":']), () => {})).rejects.toThrow();
+    await expect(consumeDemoStream(response(['{"type":']), () => {})).rejects.toThrow("Desktop effects may already have happened");
+  });
+
+  it("refuses silent EOF rather than implying an interrupted turn completed", async () => {
+    for (const chunks of [[], ['{"type":"text","text":"working"}\n']]) {
+      await expect(consumeDemoStream(response(chunks), () => {})).rejects.toThrow(
+        "Desktop effects may already have happened",
+      );
+    }
   });
 
   it("surfaces reader failures", async () => {
@@ -47,6 +55,9 @@ describe("consumeDemoStream", () => {
         },
       }),
     );
-    await expect(consumeDemoStream(failed, () => {})).rejects.toThrow("reader broke");
+    await expect(consumeDemoStream(failed, () => {})).rejects.toMatchObject({
+      message: expect.stringContaining("reader broke. Desktop effects may already have happened"),
+      cause: expect.objectContaining({ message: "reader broke" }),
+    });
   });
 });

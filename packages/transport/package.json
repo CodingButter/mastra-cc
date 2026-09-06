@@ -25,10 +25,10 @@
     "vitest": "catalog:",
     "@types/node": "^24.10.1",
     "@types/ws": "^8.5.14",
-    "ws": "^8.18.0",
     "@mastra-cc/daemon": "workspace:*"
   },
   "dependencies": {
-    "@mastra-cc/protocol-types": "workspace:*"
+    "@mastra-cc/protocol-types": "workspace:*",
+    "ws": "^8.18.0"
   }
 }

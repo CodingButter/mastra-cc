@@ -10,13 +10,41 @@
 // the moment of the press, out of the same Component interface every other verb
 // in this backend already leans on. A coordinate that came from the caller would
 // be a click on a place; a coordinate computed from bounds read a millisecond
-// earlier is a click on a thing, and the daemon can say afterwards what thing it
-// was.
+// earlier is only best-effort aiming at that thing. Overlays and concurrent
+// changes can redirect the press; neither geometry nor read-back proves identity.
 //
 // `GenerateMouseEvent` takes absolute screen pixels and a name, and like the
 // keyboard half it answers `()` to a press that landed and to a press that went
 // nowhere. So nothing here reports success. The caller reads the element back
 // and compares (ADR-0047, ADR-0067 clause 5).
+
+import { execFile } from "node:child_process";
+import { PointerBlockedError } from "../../../backend.js";
+
+// Query the X display's root, not an application's accessibility rectangle.
+// This is a bounded metadata query, not a screenshot or recipient witness.
+export async function displayBounds(): Promise<ScreenRectangle | undefined> {
+  if (!process.env.DISPLAY) return undefined;
+  return new Promise((resolve) => {
+    execFile("xwininfo", ["-root"], {
+      encoding: "utf8", timeout: 1500, killSignal: "SIGKILL", maxBuffer: 16 * 1024,
+      env: { ...process.env, LC_ALL: "C" },
+    }, (error, stdout) => {
+      if (error) return resolve(undefined);
+      const read = (label: string) => {
+        const matches = [...stdout.matchAll(new RegExp(`^\\s*${label}:\\s*(-?\\d+)\\s*$`, "gm"))];
+        return matches.length === 1 ? Number(matches[0]?.[1]) : NaN;
+      };
+      const x = read("Absolute upper-left X");
+      const y = read("Absolute upper-left Y");
+      const width = read("Width");
+      const height = read("Height");
+      if (![x, y, width, height, x + width, y + height].every(Number.isSafeInteger) ||
+          x !== 0 || y !== 0 || width <= 0 || height <= 0) return resolve(undefined);
+      resolve({ x, y, width, height });
+    });
+  });
+}
 
 const DEVICE_EVENT_CONTROLLER = "org.a11y.atspi.DeviceEventController";
 const REGISTRY_BUS = "org.a11y.atspi.Registry";
@@ -117,6 +145,16 @@ export async function emitClick(
   button: PointerButton,
   count: 1 | 2,
 ): Promise<void> {
+  const bounds = await displayBounds();
+  if (bounds === undefined) {
+    throw new PointerBlockedError("actual display bounds are unavailable on this desk - no pointer event was sent");
+  }
+  const x = Math.round(point.x);
+  const y = Math.round(point.y);
+  if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) ||
+      x < bounds.x || y < bounds.y || x >= bounds.x + bounds.width || y >= bounds.y + bounds.height) {
+    throw new PointerBlockedError("this element's pointer point sits outside the actual display bounds - no pointer event was sent");
+  }
   const gesture = count === 2 ? GESTURES[button].double : GESTURES[button].single;
   await seam.call({
     destination: REGISTRY_BUS,
@@ -124,6 +162,6 @@ export async function emitClick(
     iface: DEVICE_EVENT_CONTROLLER,
     member: "GenerateMouseEvent",
     signature: "iis",
-    body: [Math.round(point.x), Math.round(point.y), gesture],
+    body: [x, y, gesture],
   });
 }

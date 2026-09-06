@@ -1,11 +1,11 @@
-# The workspace globs follow docs/01-ARCHITECTURE.md:88-107. The catalog pins the
+# The workspace globs follow docs/01-ARCHITECTURE.md §3. The catalog pins the
 # toolchain to the destination monorepo's own catalog (docs/04-INTEGRATION-PLAN.md §3);
 # tools/catalog-check.mjs goes red when these drift from the destination.
 packages:
   - daemon
   - packages/*
   - tools
-  # apps/ is the layout's home for an app (docs/01-ARCHITECTURE.md:108). Nothing
+  # apps/ is the layout's home for an app (docs/01-ARCHITECTURE.md §3). Nothing
   # here is published: the demo exists to be run against a real desk, and it is in
   # the workspace so that a protocol change breaks it in CI rather than in a room
   # full of people.

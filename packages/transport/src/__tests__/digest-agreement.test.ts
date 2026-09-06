@@ -36,9 +36,7 @@ function mockServer(onLine: (socket: Socket, line: string) => void): { server: S
 describe("the digest handshake is the same handshake over a websocket", () => {
   // The dial is the only wire-specific code in connect(); everything after it -
   // framing, hello, digest check - is shared. This proves that by driving the
-  // same refusal down the other pipe. `ws` is a devDependency here because a
-  // mock SERVER needs one; the transport's own dial still uses Node's global
-  // WebSocket and takes no runtime dependency.
+  // same refusal down the other pipe.
   let wss: WebSocketServer | null = null;
   afterEach(() => {
     wss?.close();

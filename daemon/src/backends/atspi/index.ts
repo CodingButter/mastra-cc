@@ -24,6 +24,8 @@ import type {
   TypeTextParams,
   TypeTextResult,
   ClearElementTextParams,
+  CaptureElementParams,
+  CaptureElementResult,
   ClickElementParams,
   ClickElementResult,
   ClearElementTextResult,
@@ -46,6 +48,8 @@ import {
   UnperformableElementError,
   UnwatchableElementError,
   WriteNotObservedError,
+  KeyboardHeldElsewhereError,
+  PointerBlockedError,
   WindowScopeAmbiguousError,
   ApplicationScopeAmbiguousError,
   ApplicationScopeUnmatchedError,
@@ -64,8 +68,9 @@ import {
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
+import { capture } from "./capture.js";
 import { emitChord, emitString } from "./rawinput/keys.js";
-import { emitClick, isPointerButton, POINTER_BUTTONS, screenRectangle, type PointerButton } from "./rawinput/pointer.js";
+import { emitClick, isPointerButton, POINTER_BUTTONS, screenRectangle } from "./rawinput/pointer.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { applicationName, nameMatches, normalise } from "./names.js";
 import { aggregateDiscovery, type DiscoveryMetadata } from "../../discovery.js";
@@ -128,6 +133,23 @@ export const TRAVERSAL_LIMITS = {
 // is a text this one will not press through either.
 const CLEAR_MAX_PRESSES = 1024;
 
+// How many counted deletion passes a clear will make before it refuses. Two
+// would cover the address bar measured here; three leaves one spare pass for a
+// field that refills twice, and a fourth pays for the one turnaround a stalled
+// pass is allowed (backwards deletion defeated by a selected autocompletion is
+// retried forwards). Every pass must shorten the text or the loop stops on its
+// own, so this bounds patience, not correctness.
+const CLEAR_MAX_PASSES = 4;
+
+// The neutral roles whose whole purpose is to respond to a press, and which a
+// toolkit therefore greys out when they must not be pressed. Everything else -
+// a page's generic nodes, images, text - publishes enablement inconsistently or
+// not at all, and is not held to it.
+const PRESSABLE_CONTROL_ROLES: ReadonlySet<string> = new Set(["button", "checkbox"]);
+// The published verbs that ACT. A grey control refuses these at both doors;
+// everything else it publishes - taking the focus above all - still answers.
+const ACTIVATING_ACTIONS: ReadonlySet<string> = new Set(["Press", "Click", "Activate", "DoDefault", "Toggle"]);
+
 // Named once, so the refusal for an unknown button lists the vocabulary rather
 // than leaving the caller to guess which three words this desk knows.
 const POINTER_BUTTON_LIST = POINTER_BUTTONS.map((name) => JSON.stringify(name)).join(", ");
@@ -157,6 +179,10 @@ export class AtspiBackend implements Backend {
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
+
+  // How many times a press has been refused at each greyed-out control, so the
+  // second refusal can say something the first one could not (ADR-0083).
+  private readonly greyRefusals = new Map<string, number>();
   // id -> the name of the application whose subtree the element was read from.
   // A tree fact, recorded while the walk already knows it (the application's
   // name is read before its subtree is entered); the server needs it to decide
@@ -225,6 +251,20 @@ export class AtspiBackend implements Backend {
   // way to decide whether that node lies under the watched root is to climb
   // from it. Returns undefined at the top of the tree (AT-SPI parks the root's
   // parent on the null path) and on any element that will not answer.
+  // Does a window above this element hold the keyboard? Walks up, bounded by
+  // the same depth budget the query walk uses, and reads the activation claim
+  // the focus walk reads. A read that fails answers false: this witness may
+  // only ever excuse a press, never cause one to be refused.
+  protected async underActiveWindow(ref: NativeRef): Promise<boolean> {
+    let here: NativeRef | undefined = ref;
+    for (let step = 0; step < this.limits.maxDepth && here !== undefined; step += 1) {
+      const [lower, upper] = await this.statesOf(here);
+      if (claimsKeyboardActivation(lower, upper)) return true;
+      here = await this.parentOf(here);
+    }
+    return false;
+  }
+
   private async parentOf(ref: NativeRef): Promise<NativeRef | undefined> {
     let raw: unknown;
     try {
@@ -421,7 +461,7 @@ export class AtspiBackend implements Backend {
               fastAnswerTrusted = false;
               break;
             }
-            if (params.name !== undefined && !nameMatches(element.name, params.name)) continue;
+            if (params.name !== undefined && !queryNameMatches(element, params.name)) continue;
             fastAnswer.push(element);
           } catch (error) {
             if (error instanceof UnrecordedExchangeError) throw error;
@@ -458,8 +498,8 @@ export class AtspiBackend implements Backend {
         try {
           const element = await this.readElement(ref, applicationName);
           const roleMatches = params.role === undefined || element.role === params.role;
-          const queryNameMatches = params.name === undefined || nameMatches(element.name, params.name);
-          if (roleMatches && queryNameMatches) {
+          const nameMatched = params.name === undefined || queryNameMatches(element, params.name);
+          if (roleMatches && nameMatched) {
             elements.push(element);
             if (params.limit !== undefined && elements.length >= params.limit) return { elements };
           }
@@ -844,8 +884,54 @@ export class AtspiBackend implements Backend {
   // identical read-back; the only difference is what is emitted once focus has
   // been grabbed. What may be in the text was decided in the server before this
   // was reached. Like the chord, nothing else in this file calls it.
+  // TYPING IS THE ONE RAW INPUT WITH SOMETHING TO COMPARE AGAINST.
+  //
+  // A chord can succeed and leave the element reading identically, so it is
+  // handed back with a doubt and no verdict (aimedRawInput). Typing cannot: text
+  // that arrives makes the element's own published text longer. Measured
+  // 2026-09-05 at Plasma's wallpaper chooser, which opens TWO windows of the
+  // same name for one press of "Add Wallpaper Image..." - X reports both, at the
+  // same geometry - keys typed at the twin that was not in front landed nowhere,
+  // the field read back empty, and this verb answered "performed". The errand
+  // above it pressed Open on an empty chooser and reported a wallpaper the desk
+  // never received.
+  //
+  // So: when the element publishes text this daemon can read, and that text is
+  // no longer after the keys than before, the keys did not arrive HERE, and this
+  // verb says so rather than handing back a shrug. A field whose text cannot be
+  // read is treated exactly as before - there is nothing to compare, and the
+  // doubt is all there is to give.
   async typeText(params: TypeTextParams): Promise<TypeTextResult> {
-    return this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
+    const ref = this.answered.get(params.id);
+    const before = ref === undefined ? undefined : clearableLength((await this.readElement(ref)).content);
+    const typed = await this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
+    const after = typed.element === undefined ? undefined : clearableLength(typed.element.content);
+    if (before !== undefined && after !== undefined && params.text.length > 0 && after <= before) {
+      throw new WriteNotObservedError(
+        `the keys were sent, but this element publishes ${after} character(s) where it published ${before} before them - ` +
+          `the text did not arrive here. A key reaches an element only while that element's window is the front one, and ` +
+          `this daemon does not raise windows; a desk can hold two windows of the same name and only one is in front. ` +
+          `Raise this element's window the way a person does - press its application's button on the desktop shell's task ` +
+          `bar with "activateElement" - and type again`,
+      );
+    }
+    // SOME OF THE KEYS ARRIVING IS NOT ALL OF THEM ARRIVING. Measured
+    // 2026-09-05 in Dolphin's location field: "/config/Downloads" was typed
+    // into a field that had just taken the focus, and the field read back
+    // "config/Downloads" - the leading key was eaten while the widget was
+    // still settling. Length-grew-at-all was true, so this verb answered
+    // "performed", and the errand above it navigated somewhere that did not
+    // exist. A count that is short is the same lie as a count that is zero,
+    // only quieter, so it is refused too - and named, so the caller knows to
+    // clear and type again rather than to type the rest on top.
+    if (before !== undefined && after !== undefined && params.text.length > 0 && after - before < params.text.length) {
+      throw new WriteNotObservedError(
+        `${params.text.length} character(s) were sent and this element grew by ${after - before} - some of the keys did ` +
+          `not arrive. A field that has only just been given the focus can swallow the first of them. Empty this field ` +
+          `with "clearElementText" and type it again, rather than typing the missing part on top of what is there`,
+      );
+    }
+    return typed;
   }
 
   // The third raw-input method (ADR-0076). Typing is an APPEND: a field that
@@ -891,47 +977,81 @@ export class AtspiBackend implements Backend {
           `clearing is one key per character, and a text this long is a document rather than a field`,
       );
     }
-    const cleared = await this.performing(params.id, async (target) => {
-      await grabFocus(this.channel, target);
-      if (length === 0) return;
-      // End before the deletions, so the caret is behind the last character
-      // wherever the application left it; then one Backspace per character
-      // that was read. Neither press is aimed - raw input never is - which is
-      // exactly why the comparison below exists.
-      await emitChord(this.channel, "End");
-      for (let pressed = 0; pressed < length; pressed += 1) await emitChord(this.channel, "Backspace");
-    });
-    const remaining = clearableLength(cleared.element.content);
-    if (remaining !== 0) {
-      throw new WriteNotObservedError(
-        `this element read back with ${remaining === undefined ? "text this daemon can no longer read" : `${remaining} characters still in it`} after ` +
-          `${length} deletions - the keys were sent, and either they landed somewhere else or the application put text back. ` +
-          `Nothing here claims the element is empty when it does not read empty`,
-      );
+    if (length === 0) {
+      return this.performing(params.id, async (target) => {
+        await grabFocus(this.channel, target);
+      });
     }
-    return cleared;
+    // Passes, not one pass. Measured on this desk, Chromium's address bar
+    // autocompletes a suffix back in while the deletions are landing, so one
+    // counted pass ends short of empty through no fault of the keys. A pass
+    // that made no progress is not tried again: the field is being refilled at
+    // least as fast as it is emptied, or the keys are landing elsewhere, and
+    // either way pressing on is guessing. The total stays inside the same
+    // press budget the length check above refuses past.
+    //
+    // TWO DIRECTIONS, because one of them is what the refill defeats. Chromium's
+    // address bar autocompletes a suffix and leaves it SELECTED, and a Backspace
+    // aimed at a selection eats the selection rather than a character, so a
+    // backwards pass can spend a key per character and arrive back where it
+    // started (measured 2026-09-05: 78 characters left after 999 deletions).
+    // Forward deletion from the front of the field has no selection to eat and
+    // nothing to autocomplete ahead of it, so when a backwards pass stalls the
+    // next one is turned around. This is not a second contract - the count, the
+    // budget and the read-back are the same - it is the same deletion pressed
+    // from the other end.
+    let remaining: number | undefined = length;
+    let spent = 0;
+    let stalled = false;
+    for (let pass = 0; pass < CLEAR_MAX_PASSES; pass += 1) {
+      const toDelete = remaining as number;
+      if (spent + toDelete > CLEAR_MAX_PRESSES) break;
+      spent += toDelete;
+      const forwards = stalled;
+      const attempt = await this.performing(params.id, async (target) => {
+        await grabFocus(this.channel, target);
+        // End before backwards deletions, so the caret is behind the last
+        // character wherever the application left it; Home before forwards ones,
+        // so it is in front of the first. Then one key per character that was
+        // read. Neither press is aimed - raw input never is - which is exactly
+        // why the comparison below exists.
+        await emitChord(this.channel, forwards ? "Home" : "End");
+        const key = forwards ? "Delete" : "Backspace";
+        for (let pressed = 0; pressed < toDelete; pressed += 1) await emitChord(this.channel, key);
+      });
+      const after = clearableLength(attempt.element.content);
+      if (after === 0) return attempt;
+      if (after === undefined) {
+        remaining = after;
+        break;
+      }
+      const progressed = after < toDelete;
+      remaining = after;
+      // A stalled pass is worth turning around exactly once. A second stall in
+      // the other direction is a field being refilled faster than it can be
+      // emptied, or keys landing in another window, and pressing on is guessing.
+      if (!progressed) {
+        if (stalled) break;
+        stalled = true;
+      }
+    }
+    let sentence =
+      `this element read back with ${remaining === undefined ? "text this daemon can no longer read" : `${remaining} characters still in it`} after ` +
+      `${spent} deletions - the keys were sent, and either they landed somewhere else or the application put text back. ` +
+      `Nothing here claims the element is empty when it does not read empty`;
+    // A field that lost NOT ONE character took none of the keys: asking for the
+    // focus succeeded and the keys still went elsewhere, which on this desk is a
+    // window that was not front. A press lands where it is aimed, so say so -
+    // the caller cannot see which window holds the keyboard.
+    if (remaining === length) {
+      sentence +=
+        `. Not one character went, so the keys are landing in another window - raise this element's window by pressing ` +
+        `its application's button on the desktop shell's task bar with "activateElement", then clear it again`;
+    }
+    throw new WriteNotObservedError(sentence);
   }
 
-  // THE POINTER (ADR-0078). The fourth raw-input method, and the first one that
-  // is aimed at all: a keystroke goes wherever the focus is, but a press goes
-  // exactly where it is sent, so this is the only verb in the class that can
-  // say where it landed before it lands.
-  //
-  // Three refusals, all before anything is pressed:
-  //   - no id this daemon answered: the same refusal as every other verb, and
-  //     byte-identical to an id that never existed.
-  //   - no rectangle: an element with no Component interface, or one that
-  //     answers with something that is not a rectangle, or one with no area.
-  //     There is no default place to press for a thing that has no place.
-  //   - off the screen: a rectangle whose computed point is negative is a
-  //     scrolled-away or hidden element, and pressing at a clamped point would
-  //     be pressing whatever is at the edge of the desk instead.
-  //
-  // The bounds are read HERE rather than taken from the element that was
-  // answered earlier, because a remembered rectangle is a press aimed at where
-  // something used to be. Nothing here grabs focus first: a pointer press is
-  // how focus MOVES on a desk, and grabbing it beforehand would make this verb
-  // a keystroke wearing a pointer's name.
+  // Aim from fresh semantic geometry; read-back is observation, not recipient proof.
   async clickElement(params: ClickElementParams): Promise<ClickElementResult> {
     const button = (params.button ?? "left") as string;
     if (!isPointerButton(button)) {
@@ -939,41 +1059,56 @@ export class AtspiBackend implements Backend {
         `this contract has no pointer button named ${JSON.stringify(button)} - it has ${POINTER_BUTTON_LIST}`,
       );
     }
-    const count = params.count ?? 1;
-    const fractionX = params.x ?? 0.5;
-    const fractionY = params.y ?? 0.5;
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       throw new UnperformableElementError(
         `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
       );
     }
+    const count = params.count ?? 1;
+    const fractionX = params.x ?? 0.5;
+    const fractionY = params.y ?? 0.5;
+    if (count !== 1 && count !== 2) throw new UnperformableElementError("a pointer press performs 1 or 2 clicks");
+    if ([fractionX, fractionY].some((fraction) => !Number.isFinite(fraction) || fraction < 0 || fraction > 1)) {
+      throw new UnperformableElementError("pointer fractions must be finite numbers from 0 through 1");
+    }
+    const before = await this.readElement(ref);
+    await this.refuseGreyControl(params.id, ref);
+    const initial = await screenRectangle(this.channel, ref);
+    if (initial === undefined || initial.width <= 0 || initial.height <= 0) {
+      throw new UnperformableElementError("this element publishes no usable rectangle on this desk - nothing was sent");
+    }
+    if (before.states?.includes("offscreen") || initial.x < 0 || initial.y < 0) {
+      await scrollIntoView(this.channel, ref);
+    }
+    // A non-focusable image can still take a pointer press. Focus failure is
+    // not recipient evidence either way; retain the uncertainty in the answer.
+    await grabFocus(this.channel, ref).catch(() => false);
+    await this.readElement(ref);
+    await this.refuseGreyControl(params.id, ref);
     const rectangle = await screenRectangle(this.channel, ref);
-    if (rectangle === undefined) {
-      throw new UnperformableElementError(
-        `this element publishes no rectangle on this desk, so there is nowhere on the screen this daemon could press ` +
-          `that it could afterwards say was inside it`,
-      );
+    if (rectangle === undefined || rectangle.width <= 0 || rectangle.height <= 0) {
+      throw new UnperformableElementError("this element publishes no usable rectangle on this desk - nothing was sent");
     }
-    if (rectangle.width <= 0 || rectangle.height <= 0) {
-      throw new UnperformableElementError(
-        `this element publishes an empty rectangle (${rectangle.width} by ${rectangle.height}) - it occupies no part of ` +
-          `the screen, so a press inside it is not a place`,
-      );
+    // As in scrollIntoView, fresh geometry can contradict Chromium's stale
+    // offscreen flag. Keep the geometric guard rather than vetoing that witness.
+    if (rectangle.x < 0 || rectangle.y < 0) {
+      throw new PointerBlockedError("this element's rectangle sits off the screen - nothing was sent");
     }
+    // Fractions at 1 select the last pixel INSIDE the rectangle, not a neighbour.
     const point = {
-      x: rectangle.x + rectangle.width * fractionX,
-      y: rectangle.y + rectangle.height * fractionY,
+      x: Math.min(Math.round(rectangle.x + rectangle.width * fractionX), Math.ceil(rectangle.x + rectangle.width) - 1),
+      y: Math.min(Math.round(rectangle.y + rectangle.height * fractionY), Math.ceil(rectangle.y + rectangle.height) - 1),
     };
-    if (point.x < 0 || point.y < 0) {
-      throw new UnperformableElementError(
-        `this element's rectangle sits off the screen (${rectangle.x}, ${rectangle.y}) - pressing at the nearest point ` +
-          `on the desk would press whatever is there instead, so it is refused rather than clamped`,
-      );
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < rectangle.x || point.y < rectangle.y) {
+      throw new PointerBlockedError("this element publishes no usable pointer point - nothing was sent");
     }
-    return this.performing(params.id, async () => {
-      await emitClick(this.channel, point, button as PointerButton, count === 2 ? 2 : 1);
-    });
+    const performed = await this.performing(params.id, () => emitClick(this.channel, point, button, count));
+    const diagnostic = {
+      ...performed.element.diagnostic,
+      "mastra-cc/pointer-aim": "The pointer was sent at this element's freshly read rectangle. Focus and geometry do not prove the input recipient; compare the read-back with the intended result. Overlays or concurrent window changes can redirect a press.",
+    };
+    return { ...performed, element: { ...performed.element, diagnostic } };
   }
 
   private async aimedRawInput(id: string, sent: "key" | "text", emit: () => Promise<void>): Promise<SendKeyChordResult> {
@@ -1007,6 +1142,36 @@ export class AtspiBackend implements Backend {
       // and found nothing focused. Collapsing them would tell a reader something
       // was learned when nothing was.
       const focused = await this.focusedElement().catch(() => null);
+      // THE ONE READING THAT IS GOOD ENOUGH TO REFUSE ON. Everything above is
+      // about the focus read being unreliable INSIDE an application. Across
+      // applications it is not: the walk only reports a focused element under
+      // an ancestor the bus marks active, so a focused element belonging to
+      // another application means the keyboard is in another application's
+      // window. A key sent now lands there - a wallpaper path typed into a
+      // browser's search box, and answered "performed". So it is refused, and
+      // refused BEFORE the emit, because the damage is the sending.
+      // ONE MORE WITNESS BEFORE ACCUSING ANOTHER APPLICATION. The focus walk
+      // above returns the FIRST focused element it finds in registry order, and
+      // more than one application can carry a stale "active" claim at once -
+      // measured 2026-09-05, where a raised settings dialog was told the
+      // keyboard belonged to a Chromium behind it, over and over, and a whole
+      // errand died on a refusal that was wrong. So ask the target's own
+      // ancestry: if a window above this element claims keyboard activation,
+      // the key lands here and there is nothing to refuse.
+      const raised = await this.underActiveWindow(ref).catch(() => false);
+      const mine = raised ? undefined : this.applicationOfElement(id);
+      const theirs = focused === null || focused === undefined ? undefined : this.applicationOfElement(focused.id);
+      if (mine !== undefined && theirs !== undefined && theirs !== mine) {
+        throw new KeyboardHeldElsewhereError(
+          `the keyboard belongs to ${JSON.stringify(theirs)} right now, and this element is inside ` +
+            `${JSON.stringify(mine)} - a ${sent} is not addressed to an element, it goes to whichever window the desk ` +
+            `has given the keyboard to, so this one would have landed in ${JSON.stringify(theirs)}. Nothing was sent. ` +
+            `Bring ${JSON.stringify(mine)} to the front the way a person does - the desktop shell publishes a button ` +
+            `for each running application on its task bar, and pressing that button with 'activateElement' raises the ` +
+            `window and hands it the keyboard - then send the ${sent} again. Pressing inside the window itself does not ` +
+            `raise it: the press lands on whatever is stacked on top of that rectangle.`,
+        );
+      }
       if (!taken || focused === null || focused?.id !== id) {
         doubt =
           `this element was not confirmed to hold the focus when the ${sent} was sent` +
@@ -1038,8 +1203,61 @@ export class AtspiBackend implements Backend {
   // no state to compare here - an action is a bare verb and the element does
   // not publish what it was supposed to change - so the decline is the only
   // reading there is, and discarding it left this verb with none.
+
+  // The same check stands at both doors that press a control: the pointer
+  // one and the element's own published verb (ADR-0081).
+  private async refuseGreyControl(id: string, ref: NativeRef): Promise<void> {
+    // A DISABLED CONTROL IS NOT A PLACE TO SPEND A PRESS. A toolkit control
+    // that answers neither the bus's ENABLED bit nor its SENSITIVE one is
+    // greyed out: a person clicking it gets nothing, and so does this daemon.
+    // Pressing anyway produces a press that "succeeded" over a dead button,
+    // which reads back unchanged and invites a caller to report work it never
+    // did (measured 2026-09-05: the wallpaper page's Apply button published
+    // ["visible"] while every live button beside it published "enabled", and a
+    // press on it left the desktop configuration without a wallpaper key).
+    // Only CONTROL roles are held to this - a web page's generic nodes publish
+    // no enablement at all and are pressed every day.
+    const nativeRole = await this.nativeRoleOf(ref);
+    const { role } = toNeutralRole(nativeRole);
+    if (PRESSABLE_CONTROL_ROLES.has(role)) {
+      const [lower, upper] = await this.statesOf(ref);
+      if (!toNeutralStates(lower, upper).includes("enabled")) {
+        // A SECOND REFUSAL AT THE SAME CONTROL IS A DIFFERENT SENTENCE. The
+        // first one is advice - go and do the step this control is waiting on.
+        // Repeated, the advice is wrong: measured 2026-09-05, Plasma's wallpaper
+        // Apply never gains "enabled" no matter what is pressed beside it, under
+        // this daemon's pointer or a real one, and a caller told the same
+        // hopeful thing three times read the grey as "already done" and reported
+        // a wallpaper the desk never received. So the count is kept, and after
+        // the first the refusal says the road is closed and claims nothing.
+        const refusals = (this.greyRefusals.get(id) ?? 0) + 1;
+        this.greyRefusals.set(id, refusals);
+        let refusal =
+          `this ${role} publishes no "enabled" state, so this desk reads it as disabled - a press there would land on a ` +
+          `control that cannot answer it. Whatever must happen first to wake it has not happened yet`;
+        if (refusals > 1) {
+          refusal +=
+            `. This is refusal ${refusals} at this same control, and nothing you have done has woken it: NOTHING HAS BEEN ` +
+            `APPLIED, and a control that stays grey is not a control that acted quietly. This road is closed - finish the ` +
+            `errand another way`;
+        }
+        throw new UnperformableElementError(refusal);
+      }
+    }
+  }
+
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
     return this.performing(params.id, async (ref) => {
+      // THE SAME GREY, THROUGH THE OTHER DOOR (ADR-0081). A control the desk
+      // greys out cannot act, and it makes no difference whether the press
+      // arrives as a pointer or as the element's own published verb: measured
+      // 2026-09-05, a run that had been refused at Plasma's `Apply` by
+      // `clickElement` simply performed `Press` on it instead, got a bare
+      // success back, and reported a wallpaper the desk never received. So the
+      // enablement check lives at both doors. Actions that do not activate -
+      // taking the focus, above all - are untouched: they are exactly what a
+      // caller does to a form BEFORE the control it feeds ever wakes.
+      if (ACTIVATING_ACTIONS.has(params.action)) await this.refuseGreyControl(params.id, ref);
       const performed = await performAction(this.channel, ref, params.action);
       if (!performed) {
         throw new WriteNotObservedError(
@@ -1131,6 +1349,30 @@ export class AtspiBackend implements Backend {
     return this.performing(params.id, (ref) => setCaretOffset(this.channel, ref, params.offset));
   }
 
+  // Crop the visible desktop at the element's freshly read rectangle. The
+  // caller names an element, not coordinates; overlapping windows may supply
+  // the visible pixels. This is not proof those pixels belong to that element.
+  async captureElement(params: CaptureElementParams): Promise<CaptureElementResult> {
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      throw new UnperformableElementError(`no element with id "${params.id}" was ever answered by this daemon - nothing to look at`);
+    }
+    const rectangle = await screenRectangle(this.channel, ref);
+    if (rectangle === undefined || rectangle.width <= 0 || rectangle.height <= 0) {
+      throw new UnperformableElementError(
+        `this element publishes no rectangle on this desk, so there is no part of the screen that is it - ` +
+          `nothing here could be photographed and truthfully called this element`,
+      );
+    }
+    try {
+      return { image: await capture(rectangle) };
+    } catch (failure) {
+      // A grab that failed is a fact about this desk, not about the element:
+      // said plainly so a caller stops asking rather than retrying forever.
+      throw new UnperformableElementError(failure instanceof Error ? failure.message : String(failure));
+    }
+  }
+
   async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
     return this.performing(params.id, (ref) => scrollIntoView(this.channel, ref));
   }
@@ -1167,6 +1409,22 @@ export class AtspiBackend implements Backend {
  * signals was a false negative, never a false positive - but it is not proof, and
  * a caller reading silence as certainty is reading further than the desk said.
  */
+/**
+ * Whether an element answers to the name a query asked for. Element names are
+ * compared exactly - "OK" and "ok" on a screen are two different labels - with
+ * ONE exception, which is the exception names.ts already documents: an
+ * application's name is the same name in any case. Chromium registers on the
+ * bus as "Chromium" while the operator's permit, the catalog key and every
+ * caller say "chromium" (measured 2026-09-05: a launched browser was refused as
+ * unreadable for thirty seconds while its application node sat there under a
+ * capital C).
+ */
+function queryNameMatches(element: { role: string; name: string }, name: string): boolean {
+  return element.role === "application"
+    ? applicationName(element.name) === applicationName(name)
+    : nameMatches(element.name, name);
+}
+
 function keyAimNote(diagnostic: Diagnostic | undefined, note: string): Diagnostic & { "mastra-cc/key-aim": string } {
   return { ...(diagnostic ?? {}), "mastra-cc/key-aim": note };
 }

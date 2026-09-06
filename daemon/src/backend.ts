@@ -31,6 +31,8 @@ import type {
   ClearElementTextResult,
   ClickElementParams,
   ClickElementResult,
+  CaptureElementParams,
+  CaptureElementResult,
   SetElementValueParams,
   SetElementValueResult,
   SubmitElementParams,
@@ -131,6 +133,26 @@ export class TextOffsetOutOfRangeError extends Error {}
 // that reported that call as an edit would be describing a world that does not
 // exist, so the disagreement is raised rather than smoothed over.
 export class WriteNotObservedError extends Error {}
+
+// A KEY WOULD HAVE GONE TO SOMEBODY ELSE. Raw input is not addressed: it goes
+// to whichever window the display server currently gives the keyboard to, and
+// this daemon does not raise windows. When the desk says the keyboard belongs
+// to a DIFFERENT APPLICATION than the element being aimed at, the key is not
+// merely unverifiable - it is known in advance to land somewhere else, so it
+// is refused BEFORE anything is sent rather than typed into a stranger's
+// window and reported as performed (ADR-0086).
+//
+// Only the cross-application reading refuses. The same-application focus read
+// has been measured naming an unrelated node while the key landed perfectly
+// (see aimedRawInput), so within one application it stays a doubt note.
+export class KeyboardHeldElsewhereError extends Error {}
+
+// A pointer route may refuse a blocked target (ADR-0093). Fresh element bounds
+// and practical reveal/focus checks do not atomically bind raw input to its
+// recipient: overlapping or transparent/input-only windows and changes between
+// checking and delivery can still redirect a press. This error is not a promise
+// that every such case is detected; callers must verify the requested outcome.
+export class PointerBlockedError extends Error {}
 
 // This route cannot enumerate what the machine has installed. A fact about the
 // route, never about the machine: the browser protocol answers for one browser
@@ -234,6 +256,28 @@ export class ApplicationScopeAmbiguousError extends Error {}
 // answer it. Describing a commit means reading the element as it stands and
 // saying which of its own verbs would fire; a server that guessed from the id
 // would be inventing exactly the description this error exists to demand.
+// One application died; the desk did not (ADR-0090).
+//
+// Measured 2026-09-05: a terminal window this daemon had opened crashed
+// mid-run. Every later call aimed at an element inside it came back from the
+// bus as ServiceUnknown or NoReply for that ONE peer, the backend threw, and
+// the server answered "the desktop could not be read by this session's
+// backend" - which reads as a dead desktop. The desktop was fine; a browser, a
+// file manager and a settings window were open on it. The run above read the
+// blanket refusal the only way it could and stopped.
+//
+// A bus error that names a single peer is a fact about that peer. It is
+// carried out of the channel as its own class so the server can say which
+// thing is gone and invite a fresh query, rather than condemning the desk.
+export class PeerGoneError extends Error {}
+
+// The same lesson one level down (ADR-0090, amended): the application is still
+// on the bus, the ELEMENT is not. AT-SPI answers a call aimed at a destroyed
+// node with UnknownObject, which the server used to widen into "the desktop
+// could not be read" - so a run that had merely outlived a closed dialog was
+// told the whole desk had gone dark. Measured 2026-09-05.
+export class ElementGoneError extends Error {}
+
 export class AttestationFailedError extends Error {}
 
 // The daemon's own description of a commit, derived from the element as it
@@ -500,6 +544,15 @@ export interface Backend {
   // caller wanted.
   clickElement(params: ClickElementParams): Promise<ClickElementResult>;
 
+  // The eyes (ADR-0088). Same shape as the pointer and for the same reason: an
+  // element this backend has already answered for, whose rectangle is read from
+  // the platform AT THE MOMENT OF THE GRAB, and pixels cut to it. It is the one
+  // answer in this contract that is not something the platform said - it is
+  // what the platform DREW - and it exists because a page is free to publish an
+  // image with no name and no content, which a caller with only labels reads as
+  // an empty rectangle and then guesses about.
+  captureElement(params: CaptureElementParams): Promise<CaptureElementResult>;
+
   close(): Promise<void>;
 }
 
@@ -524,5 +577,6 @@ export const BACKEND_METHODS = [
   "typeText",
   "clearElementText",
   "clickElement",
+  "captureElement",
   "close",
 ] as const;

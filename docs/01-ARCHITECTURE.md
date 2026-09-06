@@ -36,6 +36,9 @@ single per-connection handler serves both, and the bytes are identical down to
 the trailing newline. The websocket door is off unless `--ws-port` opens it, and
 binds loopback unless `--ws-host` widens it
 ([ADR-0058](02-DECISIONS/0058-the-daemon-serves-one-protocol-through-two-front-doors.md)).
+Transport bounds opening and schema hello with one ten-second startup budget;
+a failed attempt closes without replay, and a successful connection's requests
+retain their existing lifetime ([ADR-0094](02-DECISIONS/0094-a-connection-must-finish-introducing-itself.md)).
 
 There is no third process. A face, a voice, a phone page — any of those is a
 *consumer* built on top of this, in somebody else's repository, and none of them
@@ -44,6 +47,8 @@ is our concern ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-as
 ## 2. The two halves, and what each one is allowed to know
 
 ### Daemon — *the only thing that touches the desktop*
+
+**Native controls have explicit limits ([ADR-0093](02-DECISIONS/0093-useful-native-controls-with-explicit-limits.md)).** Native capture returns visible root-display pixels cropped to an element's bounds, including possible overlaps; fresh-bounds clicks with reveal/focus are not atomically bound to their recipient. Semantic application grants and method capabilities remain, but neither geometry nor PID matching promises pixel/input isolation. The daemon owns native mechanics, portable core instructions own interaction policy, and the demo owns installation configuration. Human control, cancellation and retry safety remain required; restoration is not a claim of completed live proof.
 
 - Owns every read and write against the accessibility layer. No other process in the system may import an accessibility binding. This is enforced by a boundary test, not by convention (§7).
 - Owns every backend behind one seam ([ADR-0017](02-DECISIONS/0017-platform-backends-live-inside-the-daemon.md)): the Linux accessibility backend reads the platform bus (M1), the browser backend reads a Chromium's own debugging protocol ([ADR-0035](02-DECISIONS/0035-the-browser-is-read-through-its-own-protocol.md), M2.2), and each ships with a replay twin that answers the offline test lane from a captured tape. The wire cannot tell which backend answered — the vocabulary is neutral by [ADR-0018](02-DECISIONS/0018-the-protocol-speaks-a-neutral-element-vocabulary.md).

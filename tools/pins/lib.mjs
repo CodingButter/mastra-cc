@@ -19,7 +19,7 @@ export function rootFromArgs(argv) {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : REPO_ROOT;
 }
 
-const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".turbo"]);
+const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".turbo", ".next"]);
 const OWN_DIR = join("tools", "pins") + sep;
 
 // Every listed root must exist. A pin whose scan roots have been deleted out from

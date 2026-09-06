@@ -61,7 +61,7 @@ These are not preferences. Each one is a scar.
 - **The protocol freeze is a CI job**, not a comment. The prototype's schema was frozen in its own commit and then changed twenty-two more times. → [ADR-0002](docs/02-DECISIONS/0002-schema-freeze-is-a-ci-job.md)
 - **One transport package from the first commit.** The prototype grew a second, drifted daemon client and did not notice for a week. → [ADR-0003](docs/02-DECISIONS/0003-one-shared-transport-package.md)
 - **Machine configuration lives in this repository**, in `infra/`, applied by a checked-in script. → [ADR-0001](docs/02-DECISIONS/0001-machine-config-lives-in-the-repo.md)
-- **Raw input is the most restricted class**, off by default, never self-granted, never a fallback — and no such class has been built. → [ADR-0046](docs/02-DECISIONS/0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md)
+- **Raw input requires explicit operator authority**, off by default and never self-granted. Bounded input methods now exist; they do not turn a semantic refusal into permission to bypass the refused action. → [ADR-0046](docs/02-DECISIONS/0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md)
 - **A claim that needs a desktop is proved by an artifact**, produced by a script, committed to the repository. → [ADR-0012](docs/02-DECISIONS/0012-claims-needing-a-desktop-are-proved-by-artifact.md)
 - **Make each gate fail on purpose before trusting it.** A gate that has only ever passed is indistinguishable from one that is not wired up.
 

@@ -149,7 +149,7 @@
   {
     "name": "transport-dies-on-a-non-json-line",
     "file": "packages/transport/src/index.ts",
-    "find": "        terminate(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));\n        wire.drop();\n        return;\n",
+    "find": "        terminate(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));\n        wire.drop(starting);\n        return;\n",
     "cwd": "packages/transport",
     "testFile": "src/__tests__/digest-agreement.test.ts"
   },
@@ -478,7 +478,7 @@
   {
     "name": "reveal-does-not-check-the-element-is-on-screen",
     "file": "daemon/src/backends/atspi/effects.ts",
-    "find": "  if (after.includes(\"offscreen\")) {\n    throw observed(\"bringing this element into view\", \"offscreen\", \"on screen\");\n  }",
+    "find": "  if (after.includes(\"offscreen\") && !(await showsOnScreen(seam, ref))) {\n    throw observed(\"bringing this element into view\", \"offscreen\", \"on screen\");\n  }",
     "cwd": "daemon",
     "testFile": "src/__tests__/effects-are-observed.test.ts"
   },
@@ -1206,7 +1206,7 @@
   {
     "name": "a-clear-that-never-checks-it-emptied",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "    if (remaining !== 0) {\n      throw new WriteNotObservedError(\n        `this element read back with ${remaining === undefined ? \"text this daemon can no longer read\" : `${remaining} characters still in it`} after ` +\n          `${length} deletions - the keys were sent, and either they landed somewhere else or the application put text back. ` +\n          `Nothing here claims the element is empty when it does not read empty`,\n      );\n    }\n",
+    "find": "      if (after === 0) return attempt;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
   },
@@ -1227,14 +1227,14 @@
   {
     "name": "a-clear-that-does-not-put-the-caret-behind-the-text",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "      await emitChord(this.channel, \"End\");\n",
+    "find": "      await emitChord(this.channel, forwards ? \"Home\" : \"End\");\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
   },
   {
     "name": "a-window-scope-that-answers-empty-instead-of-refusing",
     "file": "daemon/src/server.ts",
-    "find": "  if (error instanceof WindowScopeUnmatchedError) return { refusal: WINDOW_SCOPE_UNMATCHED_REFUSAL, refusalClass: \"WindowScopeUnmatched\" };\n",
+    "find": "  if (error instanceof WindowScopeUnmatchedError) return { refusal: `${WINDOW_SCOPE_UNMATCHED_REFUSAL}${asId}`, refusalClass: \"WindowScopeUnmatched\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
   },
@@ -1260,23 +1260,10 @@
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
   },
   {
-    "name": "a-press-at-an-element-with-no-place-on-the-screen",
+    "name": "a-native-press-that-never-sends-the-pointer",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "    if (rectangle === undefined) {\n      throw new UnperformableElementError(\n        `this element publishes no rectangle on this desk, so there is nowhere on the screen this daemon could press ` +\n          `that it could afterwards say was inside it`,\n      );\n    }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
-  },
-  {
-    "name": "a-press-inside-a-rectangle-with-no-area",
-    "file": "daemon/src/backends/atspi/index.ts",
-    "find": "    if (rectangle.width <= 0 || rectangle.height <= 0) {\n      throw new UnperformableElementError(\n        `this element publishes an empty rectangle (${rectangle.width} by ${rectangle.height}) - it occupies no part of ` +\n          `the screen, so a press inside it is not a place`,\n      );\n    }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
-  },
-  {
-    "name": "a-press-clamped-onto-the-desk-from-off-the-screen",
-    "file": "daemon/src/backends/atspi/index.ts",
-    "find": "    if (point.x < 0 || point.y < 0) {\n      throw new UnperformableElementError(\n        `this element's rectangle sits off the screen (${rectangle.x}, ${rectangle.y}) - pressing at the nearest point ` +\n          `on the desk would press whatever is there instead, so it is refused rather than clamped`,\n      );\n    }\n",
+    "find": "() => emitClick(this.channel, point, button, count)",
+    "replace": "async () => {}",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
   },
@@ -1286,5 +1273,303 @@
     "find": "        if (typeof value !== \"number\" || !Number.isFinite(value) || value < 0 || value > 1) {\n          return { refusal: outsideElementRefusal(axis, value), refusalClass: \"MalformedParameter\" as const };\n        }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "a-scope-that-was-an-id-and-was-not-told-so",
+    "file": "daemon/src/server.ts",
+    "find": "  const asId = looksLikeAnsweredId(scope?.window) ? ` - \"${scope?.window}\" is an id this daemon answers WITH, and a window scope is a window's name` : \"\";\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
+  },
+  {
+    "name": "prose-that-lets-an-agent-invent-a-download-folder",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "home directory you have not read",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "a-press-spent-on-a-control-that-is-greyed-out",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (PRESSABLE_CONTROL_ROLES.has(role)) {\n      const [lower, upper] = await this.statesOf(ref);\n      if (!toNeutralStates(lower, upper).includes(\"enabled\")) {\n        // A SECOND REFUSAL AT THE SAME CONTROL IS A DIFFERENT SENTENCE. The\n        // first one is advice - go and do the step this control is waiting on.\n        // Repeated, the advice is wrong: measured 2026-09-05, Plasma's wallpaper\n        // Apply never gains \"enabled\" no matter what is pressed beside it, under\n        // this daemon's pointer or a real one, and a caller told the same\n        // hopeful thing three times read the grey as \"already done\" and reported\n        // a wallpaper the desk never received. So the count is kept, and after\n        // the first the refusal says the road is closed and claims nothing.\n        const refusals = (this.greyRefusals.get(id) ?? 0) + 1;\n        this.greyRefusals.set(id, refusals);\n        let refusal =\n          `this ${role} publishes no \"enabled\" state, so this desk reads it as disabled - a press there would land on a ` +\n          `control that cannot answer it. Whatever must happen first to wake it has not happened yet`;\n        if (refusals > 1) {\n          refusal +=\n            `. This is refusal ${refusals} at this same control, and nothing you have done has woken it: NOTHING HAS BEEN ` +\n            `APPLIED, and a control that stays grey is not a control that acted quietly. This road is closed - finish the ` +\n            `errand another way`;\n        }\n        throw new UnperformableElementError(refusal);\n      }\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "a-launch-budget-too-short-for-a-browser",
+    "file": "daemon/src/server.ts",
+    "find": "const POLL_BUDGET_MS = 60_000;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/container-portability.test.ts"
+  },
+  {
+    "name": "an-application-found-only-when-the-bus-shouts-the-same-way",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "  return element.role === \"application\"\n    ? applicationName(element.name) === applicationName(name)\n    : nameMatches(element.name, name);",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/an-application-answers-to-its-own-name-in-any-case.test.ts"
+  },
+  {
+    "name": "a-clear-that-gives-up-when-the-field-answers-back",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "const CLEAR_MAX_PASSES = 4;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "a-clear-that-does-not-say-the-keys-went-elsewhere",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (remaining === length) {\n      sentence +=\n        `. Not one character went, so the keys are landing in another window - raise this element's window by pressing ` +\n        `its application's button on the desktop shell's task bar with \"activateElement\", then clear it again`;\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "a-reveal-that-believes-a-flag-over-a-rectangle",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": " && !(await showsOnScreen(seam, ref))",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/effects-are-observed.test.ts"
+  },
+  {
+    "name": "a-reveal-that-takes-any-rectangle-for-a-place-on-screen",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "  return rectangle.width > 0 && rectangle.height > 0 && rectangle.x >= 0 && rectangle.y >= 0;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/effects-are-observed.test.ts"
+  },
+  {
+    "name": "a-clear-that-only-ever-deletes-backwards",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "await emitChord(this.channel, forwards ? \"Home\" : \"End\");",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "a-clear-that-never-turns-a-stalled-pass-around",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "const key = forwards ? \"Delete\" : \"Backspace\";",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/clearing-is-counted-and-checked.test.ts"
+  },
+  {
+    "name": "an-owned-application-that-is-never-opened-again",
+    "file": "daemon/src/server.ts",
+    "find": "  if (ours && running === undefined) ours = false;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/an-owned-application-with-nothing-to-show-is-opened-again.test.ts"
+  },
+  {
+    "name": "a-desk-that-guesses-a-home-it-was-never-given",
+    "file": "daemon/src/server.ts",
+    "find": "  if (home === undefined || home === \"\") return {};\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-desk-says-where-its-own-files-live.test.ts"
+  },
+  {
+    "name": "a-download-folder-reported-without-being-seen",
+    "file": "daemon/src/server.ts",
+    "find": "  return exists(downloads) ? { home, downloads } : { home };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-desk-says-where-its-own-files-live.test.ts"
+  },
+  {
+    "name": "a-grey-control-that-keeps-giving-the-same-hope",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "        if (refusals > 1) {\n          refusal +=\n            `. This is refusal ${refusals} at this same control, and nothing you have done has woken it: NOTHING HAS BEEN ` +\n            `APPLIED, and a control that stays grey is not a control that acted quietly. This road is closed - finish the ` +\n            `errand another way`;\n        }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "prose-that-sends-an-agent-hunting-a-download-button",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "missing download button does not rule out saving",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "prose-that-reads-an-empty-answer-as-an-absent-control",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "is not an absent control",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "a-focus-that-only-knows-one-road",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "return await performAction(seam, ref, \"SetFocus\");",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-field-that-names-its-own-way-to-the-focus.test.ts"
+  },
+  {
+    "name": "a-press-that-slips-in-through-the-elements-own-verb",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      if (ACTIVATING_ACTIONS.has(params.action)) await this.refuseGreyControl(params.id, ref);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "a-turn-that-ends-at-a-connection-that-merely-blinked",
+    "file": "apps/desk-demo/src/lib/rate-limit.ts",
+    "find": "  if (bag.isRetryable === true) return true;\n",
+    "cwd": "apps/desk-demo",
+    "testFile": "src/app/api/chat/route.test.ts"
+  },
+  {
+    "name": "a-turn-that-waits-a-whole-quota-window-on-a-dropped-socket",
+    "file": "apps/desk-demo/src/lib/rate-limit.ts",
+    "find": "  if (!isRateLimited(error) && isTransientFault(error)) return 2_000;\n",
+    "cwd": "apps/desk-demo",
+    "testFile": "src/app/api/chat/route.test.ts"
+  },
+  {
+    "name": "a-typing-that-never-looks-at-what-the-field-says-after",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (before !== undefined && after !== undefined && params.text.length > 0 && after <= before) {\n      throw new WriteNotObservedError(\n        `the keys were sent, but this element publishes ${after} character(s) where it published ${before} before them - ` +\n          `the text did not arrive here. A key reaches an element only while that element's window is the front one, and ` +\n          `this daemon does not raise windows; a desk can hold two windows of the same name and only one is in front. ` +\n          `Raise this element's window the way a person does - press its application's button on the desktop shell's task ` +\n          `bar with \"activateElement\" - and type again`,\n      );\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/keys-that-went-to-the-other-window-of-the-same-name.test.ts"
+  },
+  {
+    "name": "prose-that-never-warns-of-two-windows-of-one-name",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "A desk can hold two windows with exactly the same name",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "prose-that-sends-a-stuck-window-to-a-command-line",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "Do not go looking for a command line.",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "a-key-sent-into-whatever-window-happens-to-be-in-front",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      if (mine !== undefined && theirs !== undefined && theirs !== mine) {\n        throw new KeyboardHeldElsewhereError(\n          `the keyboard belongs to ${JSON.stringify(theirs)} right now, and this element is inside ` +\n            `${JSON.stringify(mine)} - a ${sent} is not addressed to an element, it goes to whichever window the desk ` +\n            `has given the keyboard to, so this one would have landed in ${JSON.stringify(theirs)}. Nothing was sent. ` +\n            `Bring ${JSON.stringify(mine)} to the front the way a person does - the desktop shell publishes a button ` +\n            `for each running application on its task bar, and pressing that button with 'activateElement' raises the ` +\n            `window and hands it the keyboard - then send the ${sent} again. Pressing inside the window itself does not ` +\n            `raise it: the press lands on whatever is stacked on top of that rectangle.`,\n        );\n      }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-key-sent-while-another-application-holds-the-keyboard.test.ts"
+  },
+  {
+    "name": "a-picture-cut-without-regard-to-where-the-window-begins",
+    "file": "daemon/src/backends/atspi/capture.ts",
+    "find": " - screen.originX",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-picture-of-one-element-and-no-more.test.ts"
+  },
+  {
+    "name": "a-native-picture-that-never-reads-the-visible-desktop",
+    "file": "daemon/src/backends/atspi/capture.ts",
+    "find": "  return run(\"xwd\", [\"-root\", \"-silent\"]);",
+    "replace": "  throw new CaptureFailedError(\"native capture unavailable\");",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-picture-of-one-element-and-no-more.test.ts"
+  },
+  {
+    "name": "a-look-that-answers-a-blind-desk-as-if-the-desk-were-fine",
+    "file": "daemon/src/server.ts",
+    "find": "        if (failure instanceof UnperformableElementError) return { refusal: failure.message };\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-look-is-a-look-and-not-a-new-authority.test.ts"
+  },
+  {
+    "name": "prose-that-mistakes-visible-pixels-for-owned-pixels",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "Overlapping windows may appear",
+    "replace": "Overlapping windows cannot appear",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "prose-that-acts-on-an-overlay-without-reobserving",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "If a crop shows an overlay, reobserve, raise the target",
+    "replace": "If a crop shows an overlay, act immediately without raising the target",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "prose-that-types-without-confirming-focus",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "confirm focus before typing again",
+    "replace": "type again without checking focus",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "prose-that-mistakes-a-performed-click-for-task-success",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "verify the requested state change",
+    "replace": "assume the requested state change",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "prose-that-leaves-a-run-guessing-at-what-it-cannot-read",
+    "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
+    "find": "Use it the moment naming stops working.",
+    "replace": "Keep guessing names when naming stops working.",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-prose-keeps-what-a-desk-taught-it.test.ts"
+  },
+  {
+    "name": "an-empty-answer-that-never-asks-whether-the-desk-can-still-hear",
+    "file": "daemon/src/server.ts",
+    "find": "    // something has already proved the desk can be heard.\n    if (isEmptyAnswer(answered)) return (await deafDesk(l)) ?? answered;\n",
+    "replace": "    // something has already proved the desk can be heard.\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-desk-that-went-deaf-does-not-answer-as-if-it-were-bare.test.ts"
+  },
+  {
+    "name": "a-layer-switched-back-on-for-a-session-that-was-never-granted-it",
+    "file": "daemon/src/server.ts",
+    "find": "  if (launch.mayAcquireAccessibility !== true || !layer.acquirable) {\n    return { refusal: DEAF_DESK_REFUSAL, refusalClass: \"AccessibilityLostMidSession\" };\n  }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-desk-that-went-deaf-does-not-answer-as-if-it-were-bare.test.ts"
+  },
+  {
+    "name": "a-dead-application-answered-as-a-dead-desk",
+    "file": "daemon/src/server.ts",
+    "find": "    if (error instanceof PeerGoneError) {\n      return { type: \"response\", id: request.id, refusal: APPLICATION_GONE_REFUSAL };\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
+  },
+  {
+    "name": "a-bus-error-never-read-for-the-peer-it-names",
+    "file": "daemon/src/backends/atspi/channel.ts",
+    "find": "  const wire = JSON.stringify(err ?? null);\n  return (\n    wire.includes(\"org.freedesktop.DBus.Error.ServiceUnknown\") ||\n    wire.includes(\"disconnected from message bus\") ||\n    wire.includes(\"org.freedesktop.DBus.Error.NoReply\")\n  );",
+    "replace": "  return false;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
+  },
+  {
+    "name": "a-dead-element-answered-as-a-dead-desk",
+    "file": "daemon/src/server.ts",
+    "find": "    if (error instanceof ElementGoneError) {\n      return { type: \"response\", id: request.id, refusal: ELEMENT_GONE_REFUSAL };\n    }\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
+  },
+  {
+    "name": "a-destroyed-node-never-told-apart-from-a-dead-desk",
+    "file": "daemon/src/backends/atspi/channel.ts",
+    "find": "  return JSON.stringify(err ?? null).includes(\"org.freedesktop.DBus.Error.UnknownObject\");",
+    "replace": "  return false;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
+  },
+  {
+    "name": "a-raised-window-still-accused-of-losing-the-keyboard",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      const raised = await this.underActiveWindow(ref).catch(() => false);",
+    "replace": "      const raised = false;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-key-sent-while-another-application-holds-the-keyboard.test.ts"
+  },
+  {
+    "name": "a-typing-that-counts-only-to-one",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (before !== undefined && after !== undefined && params.text.length > 0 && after - before < params.text.length) {\n      throw new WriteNotObservedError(\n        `${params.text.length} character(s) were sent and this element grew by ${after - before} - some of the keys did ` +\n          `not arrive. A field that has only just been given the focus can swallow the first of them. Empty this field ` +\n          `with \"clearElementText\" and type it again, rather than typing the missing part on top of what is there`,\n      );\n    }\n",
+    "replace": "after - before < 0",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/keys-that-went-to-the-other-window-of-the-same-name.test.ts"
   }
 ]

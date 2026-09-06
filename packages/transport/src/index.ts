@@ -1,5 +1,6 @@
 import { createConnection, type Socket } from "node:net";
 import { join } from "node:path";
+import WebSocket from "ws";
 import {
   SCHEMA_DIGEST,
   type ActivateElementParams,
@@ -12,7 +13,11 @@ import {
   type AcquireAccessibilityParams,
   type AcquireAccessibilityResult,
   type DescribeAccessibilityParams,
+  type DescribeDesktopParams,
   type DescribeAccessibilityResult,
+  type DescribeDesktopResult,
+  type CaptureElementParams,
+  type CaptureElementResult,
   type DiscoverElementsParams,
   type DiscoverElementsResult,
   type ListApplicationsParams,
@@ -129,12 +134,14 @@ export interface TransportClient {
   revealElement(params: RevealElementParams): Promise<RevealElementResult>;
   listApplications(params?: ListApplicationsParams): Promise<ListApplicationsResult>;
   describeAccessibility(params?: DescribeAccessibilityParams): Promise<DescribeAccessibilityResult>;
+  describeDesktop(params?: DescribeDesktopParams): Promise<DescribeDesktopResult>;
   acquireAccessibility(params?: AcquireAccessibilityParams): Promise<AcquireAccessibilityResult>;
   restartApplication(params: RestartApplicationParams): Promise<RestartApplicationResult>;
   sendKeyChord(params: SendKeyChordParams): Promise<SendKeyChordResult>;
   typeText(params: TypeTextParams): Promise<TypeTextResult>;
   clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult>;
   clickElement(params: ClickElementParams): Promise<ClickElementResult>;
+  captureElement(params: CaptureElementParams): Promise<CaptureElementResult>;
   /**
    * Register a listener for pushed change events. Returns a function that
    * removes it. Events are delivered as they arrive and are never buffered:
@@ -156,10 +163,11 @@ interface Wire {
   /** How the peer is named in errors - a path or a URL. */
   readonly peer: string;
   write(line: string): void;
-  /** The hard drop: socket.destroy()'s equivalent. */
-  drop(): void;
+  /** Hard startup teardown; false preserves the established WebSocket close handshake. */
+  drop(hard: boolean): void;
   /** The polite close, what TransportClient.close() performs. */
   end(): void;
+  onOpen(handler: () => void): void;
   onData(handler: (chunk: string) => void): void;
   onError(handler: (error: Error) => void): void;
   onClose(handler: () => void): void;
@@ -172,33 +180,28 @@ function socketWire(socketPath: string): Wire {
     write: (line) => void socket.write(line),
     drop: () => void socket.destroy(),
     end: () => void (socket as Socket).end(),
+    onOpen: (handler) => void socket.once("connect", handler),
     onData: (handler) => void socket.on("data", (chunk) => handler(chunk.toString("utf8"))),
     onError: (handler) => void socket.on("error", handler),
     onClose: (handler) => void socket.on("close", handler),
   };
 }
 
-/**
- * Node's global WebSocket, not the `ws` library - the transport takes no new
- * dependency for a second way to dial. Precedent: daemon/src/backends/cdp.
- */
-async function websocketWire(url: string): Promise<Wire> {
+function websocketWire(url: string): Wire {
   const ws = new WebSocket(url);
-  await new Promise<void>((resolve, reject) => {
-    ws.addEventListener("open", () => resolve(), { once: true });
-    ws.addEventListener("error", () => reject(new Error(`transport: could not open a websocket to ${url}`)), {
-      once: true,
-    });
-  });
   return {
     peer: url,
     write: (line) => void ws.send(line),
-    drop: () => void ws.close(),
+    drop: (hard) => void (hard ? ws.terminate() : ws.close()),
     end: () => void ws.close(),
+    onOpen: (handler) => void ws.addEventListener("open", handler, { once: true }),
     onData: (handler) =>
       void ws.addEventListener("message", (event) => {
-        const data = (event as MessageEvent).data;
-        handler(typeof data === "string" ? data : Buffer.from(data as ArrayBuffer).toString("utf8"));
+        const data = event.data;
+        if (typeof data === "string") handler(data);
+        else if (Array.isArray(data)) handler(Buffer.concat(data).toString("utf8"));
+        else if (data instanceof ArrayBuffer) handler(Buffer.from(data).toString("utf8"));
+        else handler(data.toString("utf8"));
       }),
     onError: (handler) =>
       void ws.addEventListener("error", () => handler(new Error(`transport: websocket to ${url} failed`))),
@@ -207,6 +210,7 @@ async function websocketWire(url: string): Promise<Wire> {
 }
 
 export async function connect(options: { socketPath?: string; url?: string } = {}): Promise<TransportClient> {
+  const deadline = performance.now() + 10_000;
   if (options.socketPath !== undefined && options.url !== undefined) {
     throw new Error(
       "transport: refused at connect - a socket path and a websocket URL were both given; " +
@@ -217,7 +221,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
   try {
     wire =
       options.url !== undefined
-        ? await websocketWire(options.url)
+        ? websocketWire(options.url)
         : socketWire(options.socketPath ?? defaultSocketPath());
   } catch (error) {
     throw connectionError(error instanceof Error ? error : new Error(String(error)));
@@ -230,6 +234,8 @@ export async function connect(options: { socketPath?: string; url?: string } = {
   let helloResolve: ((h: Hello) => void) | null = null;
   let helloReject: ((e: Error) => void) | null = null;
   let terminalError: TransportConnectionError | null = null;
+  let starting = true;
+  let startupTimer: ReturnType<typeof setTimeout> | undefined;
 
   const terminate = (error: Error): TransportConnectionError => {
     if (terminalError) return terminalError;
@@ -241,10 +247,13 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     }
     for (const p of pending.values()) p.reject(terminalError);
     pending.clear();
+    clearTimeout(startupTimer);
+    if (starting) wire.drop(true);
     return terminalError;
   };
 
   wire.onData((chunk) => {
+    if (starting && terminalError) return;
     buffer += chunk;
     let newline = buffer.indexOf("\n");
     while (newline >= 0) {
@@ -260,7 +269,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
         // built for. Refuse loudly and stop, mirroring the daemon's own
         // handling of the same case - never die in an event handler.
         terminate(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));
-        wire.drop();
+        wire.drop(starting);
         return;
       }
       if (message.type === "hello" && helloResolve) {
@@ -300,21 +309,32 @@ export async function connect(options: { socketPath?: string; url?: string } = {
   const serverHello = await new Promise<Hello>((resolve, reject) => {
     helloResolve = resolve;
     helloReject = reject;
-    try {
-      wire.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
-    } catch (error) {
-      reject(terminate(error instanceof Error ? error : new Error(String(error))));
-    }
+    startupTimer = setTimeout(() => {
+      terminate(new Error(`transport: startup at ${peer} timed out after 10000ms`));
+    }, Math.max(0, deadline - performance.now()));
+    wire.onOpen(() => {
+      if (terminalError) return;
+      try {
+        wire.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+      } catch (error) {
+        terminate(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
   });
 
+  if (terminalError) throw terminalError;
+  if (performance.now() >= deadline) {
+    throw terminate(new Error(`transport: startup at ${peer} timed out after 10000ms`));
+  }
   if (serverHello.digest !== SCHEMA_DIGEST) {
     const refusal =
       `transport: refused at connect - this transport was built against schema digest ${SCHEMA_DIGEST} ` +
       `but the daemon speaks schema digest ${serverHello.digest} (digest-agreement check)`;
-    const error = terminate(new Error(refusal));
-    wire.drop();
-    throw error;
+    throw terminate(new Error(refusal));
   }
+  starting = false;
+  clearTimeout(startupTimer);
+  helloReject = null;
 
   function call(method: string, params: unknown): Promise<unknown> {
     if (terminalError) return Promise.reject(terminalError);
@@ -348,6 +368,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     listApplications: (params) => call("listApplications", params ?? {}) as Promise<ListApplicationsResult>,
     describeAccessibility: (params) =>
       call("describeAccessibility", params ?? {}) as Promise<DescribeAccessibilityResult>,
+    describeDesktop: (params) => call("describeDesktop", params ?? {}) as Promise<DescribeDesktopResult>,
     acquireAccessibility: (params) =>
       call("acquireAccessibility", params ?? {}) as Promise<AcquireAccessibilityResult>,
     restartApplication: (params) => call("restartApplication", params) as Promise<RestartApplicationResult>,
@@ -355,6 +376,7 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     typeText: (params) => call("typeText", params) as Promise<TypeTextResult>,
     clearElementText: (params) => call("clearElementText", params) as Promise<ClearElementTextResult>,
     clickElement: (params) => call("clickElement", params) as Promise<ClickElementResult>,
+    captureElement: (params) => call("captureElement", params) as Promise<CaptureElementResult>,
     onChangeEvent: (listener) => {
       listeners.add(listener);
       return () => void listeners.delete(listener);

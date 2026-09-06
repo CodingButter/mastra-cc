@@ -20,6 +20,7 @@ import {
 } from "../../backend.js";
 import { UnrecordedExchangeError } from "./channel.js";
 import { toNeutralStates } from "./roles.js";
+import { screenRectangle } from "./rawinput/pointer.js";
 
 interface CallSeam {
   call(exchange: {
@@ -332,7 +333,27 @@ export async function setValue(seam: CallSeam, ref: NativeRef, value: number): P
 // nothing, so a GrabFocus that returns true has claimed something rather than
 // shown it. Whether focus actually moved is decided by the caller reading the
 // focused element back out of the tree, never here.
+// A toolkit may publish no Component at all on a control that is plainly
+// focusable - measured 2026-09-05 on the KDE file dialog, whose file-name entry
+// carries no Component interface and an Action named `SetFocus`. Refusing there
+// refuses the one field the dialog exists to be given, so when Component is
+// missing the element's OWN published focus action is used instead (ADR-0084).
+// This is not a nearest match: the word is exact, the element named it, and an
+// element that names neither route is still refused in the platform's words.
 export async function grabFocus(seam: CallSeam, ref: NativeRef): Promise<boolean> {
+  const interfaces = await interfacesOf(seam, ref);
+  if (!interfaces.includes(COMPONENT_IFACE)) {
+    if (interfaces.includes(ACTION_IFACE)) {
+      try {
+        return await performAction(seam, ref, "SetFocus");
+      } catch (error) {
+        // An element that publishes actions but not that one has told us it has
+        // no focus route of its own either; it is refused below in the same
+        // words as an element that publishes no actions at all.
+        if (!(error instanceof UnpublishedActionError)) throw error;
+      }
+    }
+  }
   await requireInterface(seam, ref, COMPONENT_IFACE, "being given the focus");
   // The reply is returned rather than dropped. An element may simply decline the
   // focus - a control in a window the display server is not pointing at cannot
@@ -375,7 +396,21 @@ export async function scrollIntoView(seam: CallSeam, ref: NativeRef): Promise<vo
   });
   const [lower, upper] = Array.isArray(states) ? [Number(states[0] ?? 0), Number(states[1] ?? 0)] : [0, 0];
   const after = toNeutralStates(lower, upper);
-  if (after.includes("offscreen")) {
+  // Two witnesses, because the first one lies here. Chromium keeps `offscreen`
+  // set on web content a scroll has just brought into the viewport (measured
+  // 2026-09-05), so a flag still saying offscreen is asked to agree with the
+  // rectangle the element publishes. A reveal is refused only when BOTH say the
+  // element is nowhere on the screen.
+  if (after.includes("offscreen") && !(await showsOnScreen(seam, ref))) {
     throw observed("bringing this element into view", "offscreen", "on screen");
   }
+}
+
+// The rectangle as a second witness: a place on the screen has a size and is
+// not off the top or the left edge of it. Nothing here promises WHERE - only
+// that there is somewhere at all.
+async function showsOnScreen(seam: CallSeam, ref: NativeRef): Promise<boolean> {
+  const rectangle = await screenRectangle(seam, ref).catch(() => undefined);
+  if (rectangle === undefined) return false;
+  return rectangle.width > 0 && rectangle.height > 0 && rectangle.x >= 0 && rectangle.y >= 0;
 }

@@ -79,3 +79,43 @@ built from, and it is a loop the daemon runs once instead of a loop the caller r
 - `protocol/schema.json` at `1.16.0`, and the generated descriptor's `rawInput` class.
 - Measured 2026-09-04: an agent given the errand "find a picture and set it as the wallpaper"
   exhausted 24 of 24 steps clearing an address bar by hand and never searched.
+
+## Amendment, 2026-09-04: a field that answers back gets a second pass
+
+Measured on this desk: Chromium's address bar autocompletes a suffix back in while the
+deletions are landing, so a counted pass ends short of empty through no fault of the keys — 53
+Backspaces left 16 characters, and the verb refused a clear that was working. The bar publishes
+no `EditableText` interface, so there is no semantic replacement to route to instead, and this
+contract still has no held-modifier chord to select with.
+
+So the verb now presses in passes rather than once. Each pass counts the element's own current
+reading and presses that many times: nothing is pressed that was not counted, which is the whole
+of the original decision. A pass that did not shorten the text ends the loop — a field being
+refilled at least as fast as it is emptied is not being emptied, and pressing on would be the
+unbounded destructive run this verb exists to refuse. Three passes is the ceiling, and the total
+stays inside the same `1024` press budget; the refusal names the deletions actually spent.
+
+- `daemon/src/backends/atspi/index.ts` — `CLEAR_MAX_PASSES`, and the loop that breaks on no
+  progress.
+- `daemon/src/__tests__/clearing-is-counted-and-checked.test.ts` — a field that refills once is
+  emptied by the second pass; a field that refills everything is refused after the first.
+
+## Amendment, 2026-09-05: a stalled pass is turned around before it is refused
+
+Measured on this desk, a harder shape than the refill: Chromium's address bar autocompletes a
+suffix and leaves it *selected*, and a Backspace aimed at a selection eats the selection rather
+than a character. Every key landed, every key was counted, and not one character went — 999
+deletions left 78 characters, and the errand stopped on a field a person empties without
+thinking about it.
+
+Deleting forwards has no selection in front of it and nothing to autocomplete ahead of it. So a
+pass that made no progress is now turned around exactly once: `Home` and one `Delete` per
+character, counted from the element's own reading like every other pass. A second stall, in the
+other direction, still refuses — a field that survives deletion from both ends is not being
+emptied by keys, and the refusal still names the deletions actually spent. The ceiling moves
+from three passes to four to pay for the turnaround; the `1024` press budget does not move.
+
+- `daemon/src/backends/atspi/index.ts` — `CLEAR_MAX_PASSES`, and the `forwards` pass.
+- `daemon/src/__tests__/clearing-is-counted-and-checked.test.ts` — a field whose autocompletion
+  eats every backspace is emptied by the turned-around pass; a field that refills from both ends
+  is refused after it.

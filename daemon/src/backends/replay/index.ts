@@ -222,6 +222,10 @@ export class ReplayBackend implements Backend {
     this.refuseToPerform("clear an element's text");
   }
 
+  async captureElement(): Promise<never> {
+    this.refuseToPerform("take a picture of an element");
+  }
+
   async clickElement(): Promise<never> {
     this.refuseToPerform("press a pointer button inside an element");
   }

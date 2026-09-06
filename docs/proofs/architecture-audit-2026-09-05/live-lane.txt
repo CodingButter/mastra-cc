@@ -1,0 +1,24 @@
+dbus-daemon[2445101]: [session uid=1000 pid=2445101] Activating service name='org.gtk.vfs.Daemon' requested by ':1.1' (uid=1000 pid=2445126 comm="yad --title M1 demo window --text M1 demo window -" label="unconfined")
+dbus-daemon[2445101]: [session uid=1000 pid=2445101] Successfully activated service 'org.gtk.vfs.Daemon'
+fusermount3: failed to access mountpoint /run/user/1000/gvfs: Permission denied
+(node:2445165) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+element: role=button name="OK" id=el-b21d7884067a
+(node:2445174) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2445186) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ RUN  v4.1.10 /home/codingbutter/mastra-cc/daemon
+
+(node:2445217) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+············-------------------------------------------
+
+ Test Files  1 passed (1)
+      Tests  12 passed | 43 skipped (55)
+   Start at  20:40:43
+   Duration  482ms (transform 175ms, setup 0ms, import 233ms, tests 164ms, environment 0ms)
+
+A connection to the bus can't be made
+PROOF: GREEN - a real element was read and the at-spi backend conformed on a real accessibility bus
