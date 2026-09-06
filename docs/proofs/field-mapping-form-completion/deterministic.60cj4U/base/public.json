@@ -1,0 +1,91 @@
+{
+  "elements": [
+    {
+      "id": "el-848aebc3543a",
+      "role": "text",
+      "name": "",
+      "states": [
+        "enabled",
+        "visible"
+      ],
+      "content": {
+        "kind": "text",
+        "value": "123.45"
+      },
+      "actions": [
+        {
+          "name": "activate",
+          "availability": "available",
+          "description": "Activates the entry",
+          "localizedName": "Activate"
+        }
+      ],
+      "operations": [
+        {
+          "operation": "setValue",
+          "availability": "not-exposed"
+        },
+        {
+          "operation": "setText",
+          "availability": "available"
+        },
+        {
+          "operation": "setCaret",
+          "availability": "available"
+        },
+        {
+          "operation": "reveal",
+          "availability": "available"
+        }
+      ],
+      "diagnostic": {
+        "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+        "mastra-cc/visibility-route": "accessibility-bus"
+      }
+    },
+    {
+      "id": "el-a30d51ff9cdb",
+      "role": "text",
+      "name": "",
+      "states": [
+        "enabled",
+        "focused",
+        "visible"
+      ],
+      "content": {
+        "kind": "text",
+        "value": "CALIBRATION-7F29"
+      },
+      "actions": [
+        {
+          "name": "activate",
+          "availability": "available",
+          "description": "Activates the entry",
+          "localizedName": "Activate"
+        }
+      ],
+      "operations": [
+        {
+          "operation": "setValue",
+          "availability": "not-exposed"
+        },
+        {
+          "operation": "setText",
+          "availability": "available"
+        },
+        {
+          "operation": "setCaret",
+          "availability": "available"
+        },
+        {
+          "operation": "reveal",
+          "availability": "available"
+        }
+      ],
+      "diagnostic": {
+        "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+        "mastra-cc/visibility-route": "accessibility-bus"
+      }
+    }
+  ]
+}

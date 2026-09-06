@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { LabelReader } from "../labels.js";
 import { AtspiBackend } from "../index.js";
 import { deriveId } from "../identity.js";
-import { UnrecordedExchangeError, type Channel, type Exchange } from "../channel.js";
+import { UnrecordedExchangeError, captureChannel, fixturesDir, type Channel, type Exchange } from "../channel.js";
+import { replayChannel } from "../../replay/index.js";
+import { mkdtempSync, rmSync } from "node:fs";
+import { basename, join } from "node:path";
 
 const root = { busName: ":1.1", objectPath: "/app" };
 const field = { busName: ":1.1", objectPath: "/field" };
@@ -148,6 +151,39 @@ describe("explicit native labels", () => {
     const { reader } = synthetic(() => { throw missing; });
     await expect(reader.read(field, root, { waited: 0 })).rejects.toBe(missing);
   });
+  it.each([true, false])("captures synthetic delayed replies with close-before-settlement=%s", async closeBefore => {
+    const directory = mkdtempSync(join(fixturesDir(), "synthetic-label-timing-"));
+    const { channel } = synthetic(() => [[]]);
+    let settle!: (reply: unknown[]) => void;
+    let pending!: Promise<unknown[]>;
+    channel.call = () => pending = new Promise(resolve => { settle = resolve; });
+    const captured = captureChannel(channel, basename(directory));
+    const reader = new LabelReader(captured);
+    try {
+      const result = await reader.read(field, root, { waited: 0 });
+      expect(result).toEqual(unavailable("unreadable"));
+      if (closeBefore) {
+        reader.close();
+        await captured.close();
+      }
+      settle([[]]);
+      await pending;
+      await new Promise(resolve => setTimeout(resolve, 0));
+      if (!closeBefore) await captured.close();
+      const replay = new LabelReader(replayChannel(basename(directory)));
+      if (closeBefore) {
+        await expect(replay.read(field, root, { waited: 0 })).rejects.toBeInstanceOf(UnrecordedExchangeError);
+        expect(await reader.read(field, root, { waited: 0 })).toEqual(unavailable("unreadable"));
+      } else {
+        expect(await replay.read(field, root, { waited: 0 })).toEqual({ kind: "available", labels: [] });
+      }
+      expect(result).toEqual(unavailable("unreadable"));
+      replay.close();
+    } finally {
+      reader.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
   it("does not schedule when operation waiting is exhausted or the backend closes", async () => {
     const { reader, calls } = synthetic();
     expect(await reader.read(field, root, { waited: 500 })).toEqual(unavailable("limit-exceeded"));
@@ -171,6 +207,7 @@ describe("explicit native labels", () => {
     expect(performance.now() - started).toBeLessThan(600);
     expect(calls).toBe(3);
     expect(answers.slice(0, 2)).toEqual(Array(2).fill({ kind: "available", labels: [] }));
+    expect(answers[2]).toEqual(unavailable("limit-exceeded"));
     expect(answers.slice(3).every(x => x.kind === "unavailable")).toBe(true);
     reader.close();
     await new Promise(resolve => setTimeout(resolve, 190));

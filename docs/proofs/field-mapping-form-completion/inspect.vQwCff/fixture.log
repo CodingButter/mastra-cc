@@ -1,0 +1,2 @@
+
+** (yad:208150): CRITICAL **: 15:49:00.962: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed

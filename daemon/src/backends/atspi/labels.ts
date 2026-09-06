@@ -30,11 +30,13 @@ export class LabelReader {
 
   async read(field: NativeRef, root: NativeRef | undefined, budget: LabelBudget): Promise<Observation> {
     const started = performance.now();
-    const remaining = () => Math.min(250 - (performance.now() - started), 500 - budget.waited);
     const call = async (ref: NativeRef, member: string, property?: string): Promise<unknown> => {
       if (budget.waited >= 500) throw new Unavailable("limit-exceeded");
-      const left = remaining();
-      if (left <= 0) throw new Unavailable("unreadable");
+      const operationRemaining = 500 - budget.waited;
+      const elementRemaining = 250 - (performance.now() - started);
+      const timeoutReason = operationRemaining <= elementRemaining ? "limit-exceeded" : "unreadable";
+      const left = Math.min(operationRemaining, elementRemaining);
+      if (left <= 0) throw new Unavailable(timeoutReason);
       if (this.closed || this.busy) throw new Unavailable("unreadable");
       const exchange: Exchange = { destination: ref.busName, path: ref.objectPath, iface: ACCESSIBLE, member };
       if (property !== undefined) Object.assign(exchange, { iface: "org.freedesktop.DBus.Properties", signature: "ss", body: [ACCESSIBLE, property] });
@@ -48,9 +50,9 @@ export class LabelReader {
         }).finally(() => { this.busy = false; });
         const reply = await Promise.race([
           pending,
-          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Unavailable("unreadable")), left); }),
+          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Unavailable(timeoutReason)), left); }),
         ]);
-        if (performance.now() - before >= left) throw new Unavailable("unreadable");
+        if (performance.now() - before >= left) throw new Unavailable(timeoutReason);
         if (reply.length !== 1) throw new Unavailable("unreadable");
         return property === undefined ? reply[0] : unwrap(reply[0]);
       } finally {
@@ -115,7 +117,8 @@ export class LabelReader {
         if (length > 1024 || total > 4096) throw new Unavailable("limit-exceeded");
         labels.push(name);
       }
-      if (remaining() <= 0) throw new Unavailable("limit-exceeded");
+      if (budget.waited >= 500) throw new Unavailable("limit-exceeded");
+      if (performance.now() - started >= 250) throw new Unavailable("unreadable");
       return { kind: "available", labels };
     } catch (error) {
       if (error instanceof UnrecordedExchangeError) throw error;

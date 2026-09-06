@@ -40,6 +40,18 @@ try {
   }
   if(!address) throw new Error('daemon readiness timeout');
   desk = new MastraCC({url:address});
+  // Daemon readiness does not imply the ordinary application's AT-SPI registration is ready.
+  const application = kind === 'receipt' ? 'yad' : 'exo-desktop-item-edit';
+  const setupTools = desk.getTools();
+  let ready = false;
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const result = await setupTools.queryElements.execute({application, role: 'application', limit: 1});
+    ready = result.elements?.length > 0;
+    log('setup-readiness', {application, attempt, ready});
+    if (ready) break;
+    await sleep(250);
+  }
+  if (!ready) throw new Error('application accessibility readiness timeout');
   const tools=Object.fromEntries(Object.entries(desk.getTools({beforeDispatch:()=>controller.signal.throwIfAborted()})).map(([name,tool])=>[name,{...tool,execute:async(...args)=>{
     controller.signal.throwIfAborted(); const call=++calls; log('call',{call,name,arguments:args[0]});
     try {const result=await tool.execute(...args);log('result',{call,name,result});return result;}

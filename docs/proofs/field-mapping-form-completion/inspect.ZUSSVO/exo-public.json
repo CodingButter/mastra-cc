@@ -1,0 +1,1271 @@
+{
+  "application": "exo-desktop-item-edit",
+  "result": {
+    "elements": [
+      {
+        "id": "app-2bcc53eadc16",
+        "role": "application",
+        "name": "exo-desktop-item-edit",
+        "states": [],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "not-exposed"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "win-27dd7329cca7",
+        "role": "dialog",
+        "name": "Edit Launcher",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-f94a3351feb6",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/2",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-5d35e83ed202",
+        "role": "label",
+        "name": "",
+        "states": [
+          "enabled"
+        ],
+        "content": {
+          "kind": "text",
+          "value": ""
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-a009f8d6ab00",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "separator",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/4",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-c01d4a664120",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/5",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-c1f7a683a639",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "panel",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/7",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-ef83fb73e9da",
+        "role": "checkbox",
+        "name": "Run in terminal",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-0a5a1e6defe4",
+        "role": "checkbox",
+        "name": "Use startup notification",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-9c21fba9a05f",
+        "role": "label",
+        "name": "Options:",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Options:"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-3857add619f1",
+        "role": "button",
+        "name": "No icon",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-4758ded65719",
+        "role": "label",
+        "name": "Icon:",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Icon:"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-a1347ef4ef08",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/17",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-fb7a385aa029",
+        "role": "text",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": ""
+        },
+        "labelObservation": {
+          "kind": "available",
+          "labels": [
+            "Working Directory:"
+          ]
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-f663c1932098",
+        "role": "button",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-8596aa6c6bb0",
+        "role": "label",
+        "name": "Working Directory:",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Working Directory:"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-6ff0da15528d",
+        "role": "text",
+        "name": "",
+        "states": [
+          "enabled"
+        ],
+        "content": {
+          "kind": "text",
+          "value": ""
+        },
+        "labelObservation": {
+          "kind": "available",
+          "labels": [
+            "URL:"
+          ]
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-780427480076",
+        "role": "label",
+        "name": "URL:",
+        "states": [
+          "enabled"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "URL:"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-dfb9a65147a3",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/21",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-7cdf09e1412d",
+        "role": "text",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "/usr/bin/true"
+        },
+        "labelObservation": {
+          "kind": "available",
+          "labels": []
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-4d61ed47c567",
+        "role": "button",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-59238199c574",
+        "role": "label",
+        "name": "Command:",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Command:"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-a6528c7451eb",
+        "role": "text",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Initial comment"
+        },
+        "labelObservation": {
+          "kind": "available",
+          "labels": [
+            "Comment:"
+          ]
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-851caf16a035",
+        "role": "label",
+        "name": "Comment:",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Comment:"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-8e28c83ee175",
+        "role": "text",
+        "name": "",
+        "states": [
+          "enabled",
+          "focused",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Initial name"
+        },
+        "labelObservation": {
+          "kind": "available",
+          "labels": [
+            "Name:"
+          ]
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-8826e3537aad",
+        "role": "label",
+        "name": "Name:",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Name:"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-a7f9b9d88fa6",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/8",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-310717a06030",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/27",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-eab031b53fc6",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.6/org/a11y/atspi/accessible/6",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-7e041c60d428",
+        "role": "button",
+        "name": "Help",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-541806f5ff86",
+        "role": "button",
+        "name": "Cancel",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-7aa7c2d3badd",
+        "role": "button",
+        "name": "Save",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      }
+    ]
+  }
+}

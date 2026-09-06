@@ -1,0 +1,12 @@
+RUN=/home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/deterministic.Zdt32l
+dbus-daemon[333654]: [session uid=1000 pid=333654] Activating service name='org.gtk.vfs.Daemon' requested by ':1.2' (uid=1000 pid=333682 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[333654]: [session uid=1000 pid=333654] Successfully activated service 'org.gtk.vfs.Daemon'
+SETUP_OK: matched hello and both unchanged unnamed calibrated fields
+BASE_RED: expected explicit labelObservation is missing
+A connection to the bus can't be made
+dbus-daemon[333757]: [session uid=1000 pid=333757] Activating service name='org.gtk.vfs.Daemon' requested by ':1.1' (uid=1000 pid=333781 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[333757]: [session uid=1000 pid=333757] Successfully activated service 'org.gtk.vfs.Daemon'
+SETUP_OK: matched hello and both unchanged unnamed calibrated fields
+CANDIDATE_GREEN: explicit associations match independently calibrated fields
+A connection to the bus can't be made
+PROOF: GREEN (base RED and candidate GREEN; no model trials)

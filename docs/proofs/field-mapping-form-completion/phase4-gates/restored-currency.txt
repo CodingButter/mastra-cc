@@ -1,0 +1,7 @@
+t1 GREEN
+t2 GREEN
+t3 GREEN
+t4 GREEN
+t5 GREEN
+t6 GREEN
+48 runtime hashes, 6 loaded instruction hashes and all predeclared harness hashes match restored final candidate.

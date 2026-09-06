@@ -307,6 +307,17 @@ A newline is not text; it is the chord `Enter`, sent separately with
 string carrying one is refused by name before anything is typed. A text is at
 most 1024 characters: a field entry, not a document.
 
+**Locate the form before its fields.** A native form can have role `dialog`, not
+`window`. If a window query is empty, query `dialog` or omit the role filter
+before concluding that the form is absent. An empty filtered result is not a
+permission refusal; preserve actual refusals rather than inferring one from it.
+
+**Locate editable controls across roles.** Native editable fields can have role
+`text` or `textbox`. An empty `textbox` query does not mean no editable fields
+exist: also query `text`, or omit the role filter in the observed application.
+Check each control's published operations for available `setText`; a `text` role
+alone does not prove editability. Then map fields using their observed labels.
+
 **Map fields before submitting.** Returned control order is not visual order or
 requested value order. For unnamed editable fields, establish field/label mapping
 from actual evidence, never position in the returned array. Use an available

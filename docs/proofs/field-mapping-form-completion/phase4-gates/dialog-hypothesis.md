@@ -1,0 +1,7 @@
+# Dialog-role hypothesis — September 6, 2026
+
+The role-coverage batch m.OHtaPo passed t1–t5 and failed ordinary t6. t6/events.jsonl records successful native readiness, then three window-role queries (calls 1, 3, 4) returning empty results and an installed-application inventory (call 2). It never queried dialog or editable roles, never wrote values, and concluded observation was globally disabled. The retained ordinary-app native measurements identify the form as dialog. No grant change is justified: readiness succeeded and the empty queries were not refusals.
+
+The next candidate adds only application-neutral form-location guidance: consider dialog rather than only window, and distinguish empty filtered results from permission refusals. Actual refusals still stand. Both instruction copies match; a prose regression checks these distinctions without claiming obedience. Focused portable tests pass 20/20; workspace build succeeds. Actual loaded INSTRUCTIONS hash from the driver's mastra.mjs import: 1bde87fd2c2f10172cf796993565b75982c0250f506b42f869159694af300410 (previous 1901168808a2ba6269a7d390d4d6ae4f83b171a48a921daea69f2e049f31c863). An initial manual hash check used a nonexistent index.js path; it failed setup, then was corrected to the driver's actual import before any new trial.
+
+Model, tasks, grants, fixture, oracles and harness remain unchanged. Start a fresh predeclared six-trial batch, retaining m.OHtaPo as failed with no pooling. All five receipts and the ordinary-app saved-state and verification checks must pass together.

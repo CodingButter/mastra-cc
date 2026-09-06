@@ -1,6 +1,6 @@
 # Field mapping: explicit labels and verified native tasks
 
-Status: Phase 3 acceptance batch `m.CrBkmf` passes five consecutive fresh receipt trials and one ordinary launcher-editor task, including exact independent oracles, fresh public actual-value readback, and reviewed recording checkpoints. Four earlier candidate batches failed verification requirements and remain visible. This is bounded task evidence, not a reliability percentage. Phase 2's separate deterministic base/candidate proof establishes native label causality. Visual review uses a browser on a separate private Xvfb display, not the personal desktop.
+Status: final acceptance batch `m.SQGqtM` passes five consecutive fresh receipt trials and one ordinary launcher-editor task, including exact independent oracles, fresh public actual-value readback, and reviewed recording checkpoints. All 44 candidate sessions remain visible, including failed and setup-invalid attempts. See [final evidence and limits](phase4.md). This is bounded task evidence, not a reliability percentage. The separate deterministic base/candidate proof establishes native label causality. Visual review uses a browser on a separate private Xvfb display, not the personal desktop.
 
 Phase 3 trial counts, failures, public call ledger, reproduction commands and limits are in [phase3.md](phase3.md).
 

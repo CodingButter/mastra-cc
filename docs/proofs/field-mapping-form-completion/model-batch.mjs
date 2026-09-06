@@ -3,14 +3,14 @@ import path from 'node:path';
 import {randomBytes} from 'node:crypto';
 import {spawn,execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {validateTrial,sha256} from './model-evidence.mjs';
+import {validateTrial,validateBatchDeclaration,sha256} from './model-evidence.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const write=(p,x)=>fs.writeFileSync(p,JSON.stringify(x,null,2)+'\n');
 function size(p) {return fs.readdirSync(p,{withFileTypes:true}).reduce((n,e)=>n+(e.isSymbolicLink()?0:e.isDirectory()?size(path.join(p,e.name)):fs.statSync(path.join(p,e.name)).size),0);}
 if(process.argv[2]==='--review') {
   const batch=path.resolve(process.argv[3]);const plan=JSON.parse(fs.readFileSync(`${batch}/predeclared.json`));
-  if(plan.trials.length!==6) throw new Error('six predeclared trials required');
-  for(const t of plan.trials) write(`${batch}/${t.id}/ledger.json`,validateTrial(`${batch}/${t.id}`,{review:true}));
+  validateBatchDeclaration(plan);
+  for(const t of plan.trials) write(`${batch}/${t.id}/ledger.json`,validateTrial(`${batch}/${t.id}`,{review:true,kind:t.kind}));
   write(`${batch}/outcome.json`,{kind:'GREEN',receiptTrials:5,ordinaryTrials:1});console.log('PROOF: GREEN — five receipts and one ordinary app, reviewed');
 } else {
   const batch=fs.mkdtempSync(`${here}/m.`);console.log(`BATCH=${batch}`);
@@ -39,7 +39,7 @@ if(process.argv[2]==='--review') {
       if(invalid) throw new Error(invalid);
       if(code!==0) throw new Error('INVALID_OR_MODEL_FAILURE: inspect retained events and logs');
       if(trial.kind==='receipt') fs.writeFileSync(`${run}/oracle.txt`,execFileSync(process.execPath,[`${here}/../model-desktop-task-2026-09-06/verify.mjs`,run],{encoding:'utf8'}));
-      result=validateTrial(run);write(`${run}/ledger.json`,result);
+      result=validateTrial(run,{kind:trial.kind});write(`${run}/ledger.json`,result);
     } catch(error) {result={kind:invalid??'FAIL',error:String(error)};}
     outcomes.push({id:trial.id,...result});write(`${batch}/outcomes.json`,outcomes);console.log(`${trial.id}: ${result.kind}`);
     if(result.kind!=='MACHINE_PASS') {write(`${batch}/outcome.json`,{kind:result.kind,attempted:outcomes.length,remaining:'NOT_RUN: batch stopped'});process.exitCode=1;break;}

@@ -107,6 +107,16 @@ describe("what a live desk taught these instructions", () => {
     expect(flat).toMatch(/(?:returned|control) order.{0,40}not visual order.{0,40}requested(?: value)? order/i);
   });
 
+  it("locates native dialogs without treating an empty window query as refusal", () => {
+    expect(teaches("role `dialog`, not", "query `dialog` or omit the role filter")).toBe(true);
+    expect(teaches("An empty filtered result is not a", "preserve actual refusals")).toBe(true);
+  });
+
+  it("covers both native editable roles without treating role alone as editability", () => {
+    expect(teaches("`text` or `textbox`", "also query `text`", "omit the role filter")).toBe(true);
+    expect(teaches("published operations", "available `setText`", "alone does not prove editability")).toBe(true);
+  });
+
   it("maps unnamed fields to visible labels before submitting", () => {
     const flat = prose.replace(/\s+/g, " ");
     expect(teaches("captureElement")).toBe(true);

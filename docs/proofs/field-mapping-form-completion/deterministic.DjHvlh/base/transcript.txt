@@ -1,0 +1,5 @@
+dbus-daemon[298724]: [session uid=1000 pid=298724] Activating service name='org.gtk.vfs.Daemon' requested by ':1.2' (uid=1000 pid=298752 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[298724]: [session uid=1000 pid=298724] Successfully activated service 'org.gtk.vfs.Daemon'
+SETUP_OK: matched hello and both unchanged unnamed calibrated fields
+BASE_RED: expected explicit labelObservation is missing
+A connection to the bus can't be made

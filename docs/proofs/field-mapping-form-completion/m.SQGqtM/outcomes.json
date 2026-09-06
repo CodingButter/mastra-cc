@@ -1,0 +1,203 @@
+[
+  {
+    "id": "t1",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-cdaef692",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 10
+      },
+      {
+        "label": "Total paid",
+        "value": "148.33",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 13
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 16,
+      "time": 1788729495115
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788729498086,
+      "actual": "RCPT-cdaef692|148.33|\n"
+    },
+    "finalEvent": 32
+  },
+  {
+    "id": "t2",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-9bb172f4",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 10
+      },
+      {
+        "label": "Total paid",
+        "value": "143.56",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 13
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 16,
+      "time": 1788729515099
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788729518470,
+      "actual": "RCPT-9bb172f4|143.56|\n"
+    },
+    "finalEvent": 32
+  },
+  {
+    "id": "t3",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-d6b06ad7",
+        "id": "el-f45fbc97b907",
+        "labelCall": 2,
+        "actionCall": 3,
+        "index": 7
+      },
+      {
+        "label": "Total paid",
+        "value": "142.84",
+        "id": "el-2ec47140faca",
+        "labelCall": 2,
+        "actionCall": 4,
+        "index": 10
+      }
+    ],
+    "submission": {
+      "call": 5,
+      "index": 13,
+      "time": 1788729533971
+    },
+    "verification": {
+      "call": 6,
+      "time": 1788729535330,
+      "actual": "RCPT-d6b06ad7|142.84|\n"
+    },
+    "finalEvent": 20
+  },
+  {
+    "id": "t4",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-54841628",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 11
+      },
+      {
+        "label": "Total paid",
+        "value": "62.28",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 14
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 17,
+      "time": 1788729550315
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788729554047,
+      "actual": "RCPT-54841628|62.28|\n"
+    },
+    "finalEvent": 33
+  },
+  {
+    "id": "t5",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-f950de1d",
+        "id": "el-f45fbc97b907",
+        "labelCall": 2,
+        "actionCall": 3,
+        "index": 7
+      },
+      {
+        "label": "Total paid",
+        "value": "188.36",
+        "id": "el-2ec47140faca",
+        "labelCall": 2,
+        "actionCall": 4,
+        "index": 10
+      }
+    ],
+    "submission": {
+      "call": 5,
+      "index": 13,
+      "time": 1788729568780
+    },
+    "verification": {
+      "call": 6,
+      "time": 1788729570148,
+      "actual": "RCPT-f950de1d|188.36|\n"
+    },
+    "finalEvent": 20
+  },
+  {
+    "id": "t6",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Name:",
+        "value": "Launcher-be322b072d",
+        "id": "el-feb70ed96ae4",
+        "labelCall": 12,
+        "actionCall": 14,
+        "index": 35
+      },
+      {
+        "label": "Comment:",
+        "value": "Comment-a02f313022",
+        "id": "el-5f0ca93fbbfc",
+        "labelCall": 12,
+        "actionCall": 15,
+        "index": 38
+      }
+    ],
+    "submission": {
+      "call": 16,
+      "index": 41,
+      "time": 1788729594671
+    },
+    "verification": {
+      "call": 21,
+      "time": 1788729601837,
+      "actual": {
+        "name": "Launcher-be322b072d",
+        "comment": "Comment-a02f313022"
+      }
+    },
+    "finalEvent": 59
+  }
+]

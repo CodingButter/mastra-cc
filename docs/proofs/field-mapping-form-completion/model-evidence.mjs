@@ -46,13 +46,23 @@ export function compareTrial(events, kind, expected, actual, reopened=0) {
   assert.ok(verification,'fresh post-submit public actual-value verification before final text');
   return {kind:'MACHINE_PASS',selected,submission,verification,finalEvent:final};
 }
-export function validateTrial(run,{review=false}={}) {
+export function validateBatchDeclaration(plan) {
+  assert.ok(Array.isArray(plan.trials), 'predeclared trials required');
+  assert.equal(plan.trials.length, 6, 'six predeclared trials required');
+  assert.equal(new Set(plan.trials.map(t => t.id)).size, 6, 'distinct trial IDs required');
+  for (const [index, trial] of plan.trials.entries()) {
+    assert.match(trial.id, /^t[1-6]$/, 'bounded trial directory required');
+    assert.equal(trial.kind, index < 5 ? 'receipt' : 'ordinary', 'five receipts followed by one ordinary trial required');
+  }
+}
+export function validateTrial(run,{review=false,kind:declaredKind}={}) {
   const json=p=>JSON.parse(fs.readFileSync(`${run}/${p}`,'utf8'));
   const metadata=json('metadata.json');
   assert.equal(metadata.model,'google/gemini-2.5-flash');assert.equal(metadata.temperature,0);assert.equal(metadata.maxSteps,24);
   assert.match(metadata.instructionsSha256,/^[a-f0-9]{64}$/);assert.ok(Object.keys(metadata.artifactHashes).length>=8);
   for(const hash of Object.values(metadata.artifactHashes)) assert.match(hash,/^[a-f0-9]{64}$/);
   const kind=fs.existsSync(`${run}/launcher.desktop`)?'ordinary':'receipt';
+  if (declaredKind !== undefined) assert.equal(kind, declaredKind, 'declared trial kind matches evidence');
   const expected=json('expected.json');
   const events=fs.readFileSync(`${run}/events.jsonl`,'utf8').trim().split('\n').map(JSON.parse);
   const result=compareTrial(events,kind,expected,fs.readFileSync(`${run}/${kind==='receipt'?'submission.txt':'launcher.desktop'}`,'utf8'),kind==='ordinary'?Number(fs.readFileSync(`${run}/reopened-ms.txt`,'utf8')):0);

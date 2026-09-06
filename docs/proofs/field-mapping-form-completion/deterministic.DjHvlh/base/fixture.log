@@ -1,0 +1,4 @@
+
+** (yad:298752): CRITICAL **: 16:54:28.383: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed
+
+** (yad:298752): WARNING **: 16:54:28.610: Sort method not implemented yet

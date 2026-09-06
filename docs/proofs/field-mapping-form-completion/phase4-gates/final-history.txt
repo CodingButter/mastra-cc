@@ -1,0 +1,3 @@
+7097282 test: prove labeled form completion with real desktop agents
+55339eb feat: expose explicit native labels without guessing field identity
+0f8a14f test: preserve failed receipt transfers before field identity changes

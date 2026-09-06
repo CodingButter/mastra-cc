@@ -1,0 +1,92 @@
+{
+  "setupOnly": true,
+  "values": {
+    "Name:": "Calibration launcher 7F29",
+    "Comment:": "Calibration comment 82B1"
+  },
+  "exchanges": [
+    {
+      "request": {
+        "destination": "org.a11y.Bus",
+        "path": "/org/a11y/bus",
+        "interface": "org.a11y.Bus",
+        "member": "GetAddress",
+        "type": 1,
+        "serial": 2
+      },
+      "reply": [
+        "unix:path=/tmp/dbus-0vUeeeU4b6,guid=1d710b04fb5b5d307e9791786a9dc3a9"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.6",
+        "path": "/org/a11y/atspi/accessible/25",
+        "interface": "org.a11y.atspi.EditableText",
+        "member": "SetTextContents",
+        "signature": "s",
+        "body": [
+          "Calibration launcher 7F29"
+        ],
+        "type": 1,
+        "serial": 2
+      },
+      "reply": [
+        true
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.6",
+        "path": "/org/a11y/atspi/accessible/23",
+        "interface": "org.a11y.atspi.EditableText",
+        "member": "SetTextContents",
+        "signature": "s",
+        "body": [
+          "Calibration comment 82B1"
+        ],
+        "type": 1,
+        "serial": 3
+      },
+      "reply": [
+        true
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.6",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.a11y.atspi.Action",
+        "member": "GetActions",
+        "type": 1,
+        "serial": 4
+      },
+      "reply": [
+        [
+          [
+            "Click",
+            "Clicks the button",
+            "<Alt>s"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.6",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.a11y.atspi.Action",
+        "member": "DoAction",
+        "signature": "i",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 5
+      },
+      "reply": [
+        true
+      ]
+    }
+  ]
+}

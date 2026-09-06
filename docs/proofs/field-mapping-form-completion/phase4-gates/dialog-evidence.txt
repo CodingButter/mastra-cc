@@ -1,0 +1,18 @@
+[32m✔ retained measured wire identifies fields independently of traversal order [90m(1.162418ms)[39m[39m
+[32m✔ retained calibration and public/visual evidence are complete [90m(3.141752ms)[39m[39m
+[32m✔ receipt oracle rejects missing, swapped, incorrect and extra bytes (synthetic controls) [90m(1.202742ms)[39m[39m
+[32m✔ launcher oracle rejects incorrect and extra saved bytes (synthetic controls) [90m(0.562967ms)[39m[39m
+[32m✔ probe rejects malformed synthetic relations rather than inventing associations [90m(2.870338ms)[39m[39m
+[32m✔ missing artifacts fail closed [90m(0.106955ms)[39m[39m
+[32m✔ synthetic ownership and raw-wire mismatch controls fail [90m(0.95208ms)[39m[39m
+[32m✔ synthetic model evidence rejects unverified success and wrong mappings [90m(0.783341ms)[39m[39m
+[32m✔ batch declaration rejects duplicate, missing and substituted trial kinds [90m(1.051493ms)[39m[39m
+[32m✔ retained model runs reject incomplete artifacts, missing hashes and absent ordinary saved output [90m(6.748662ms)[39m[39m
+[34mℹ tests 10[39m
+[34mℹ suites 0[39m
+[34mℹ pass 10[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 95.129735[39m

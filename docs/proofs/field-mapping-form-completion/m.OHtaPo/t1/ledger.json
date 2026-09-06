@@ -1,0 +1,32 @@
+{
+  "kind": "MACHINE_PASS",
+  "selected": [
+    {
+      "label": "Receipt number",
+      "value": "RCPT-27e8c3f1",
+      "id": "el-f45fbc97b907",
+      "labelCall": 2,
+      "actionCall": 3,
+      "index": 7
+    },
+    {
+      "label": "Total paid",
+      "value": "18.34",
+      "id": "el-2ec47140faca",
+      "labelCall": 2,
+      "actionCall": 4,
+      "index": 10
+    }
+  ],
+  "submission": {
+    "call": 5,
+    "index": 13,
+    "time": 1788729248257
+  },
+  "verification": {
+    "call": 6,
+    "time": 1788729250379,
+    "actual": "RCPT-27e8c3f1|18.34|\n"
+  },
+  "finalEvent": 20
+}

@@ -1,0 +1,35 @@
+{
+  "kind": "GREEN",
+  "selected": [
+    {
+      "label": "Name:",
+      "value": "Launcher-be322b072d",
+      "id": "el-feb70ed96ae4",
+      "labelCall": 12,
+      "actionCall": 14,
+      "index": 35
+    },
+    {
+      "label": "Comment:",
+      "value": "Comment-a02f313022",
+      "id": "el-5f0ca93fbbfc",
+      "labelCall": 12,
+      "actionCall": 15,
+      "index": 38
+    }
+  ],
+  "submission": {
+    "call": 16,
+    "index": 41,
+    "time": 1788729594671
+  },
+  "verification": {
+    "call": 21,
+    "time": 1788729601837,
+    "actual": {
+      "name": "Launcher-be322b072d",
+      "comment": "Comment-a02f313022"
+    }
+  },
+  "finalEvent": 59
+}

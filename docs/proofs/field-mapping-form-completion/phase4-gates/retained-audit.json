@@ -1,0 +1,86 @@
+[
+  {
+    "batch": "m.3kHuSR",
+    "id": "t1",
+    "recorded": "MACHINE_PASS",
+    "review": "Error: ENOENT: no such file or directory, open 'docs/proofs/field-mapping-form-completion/m.3kHuSR/t1/review.json'"
+  },
+  {
+    "batch": "m.3kHuSR",
+    "id": "t2",
+    "recorded": "FAIL",
+    "review": "AssertionError [ERR_ASSERTION]: fresh post-submit public actual-value verification before final text"
+  },
+  {
+    "batch": "m.A4VNF3",
+    "id": "t1",
+    "recorded": "FAIL",
+    "review": "AssertionError [ERR_ASSERTION]: fresh post-submit public actual-value verification before final text"
+  },
+  {
+    "batch": "m.CrBkmf",
+    "id": "t1",
+    "recorded": "MACHINE_PASS",
+    "review": "GREEN"
+  },
+  {
+    "batch": "m.CrBkmf",
+    "id": "t2",
+    "recorded": "MACHINE_PASS",
+    "review": "GREEN"
+  },
+  {
+    "batch": "m.CrBkmf",
+    "id": "t3",
+    "recorded": "MACHINE_PASS",
+    "review": "GREEN"
+  },
+  {
+    "batch": "m.CrBkmf",
+    "id": "t4",
+    "recorded": "MACHINE_PASS",
+    "review": "GREEN"
+  },
+  {
+    "batch": "m.CrBkmf",
+    "id": "t5",
+    "recorded": "MACHINE_PASS",
+    "review": "GREEN"
+  },
+  {
+    "batch": "m.CrBkmf",
+    "id": "t6",
+    "recorded": "MACHINE_PASS",
+    "review": "GREEN"
+  },
+  {
+    "batch": "m.TbkXy3",
+    "id": "t1",
+    "recorded": "MACHINE_PASS",
+    "review": "Error: ENOENT: no such file or directory, open 'docs/proofs/field-mapping-form-completion/m.TbkXy3/t1/review.json'"
+  },
+  {
+    "batch": "m.TbkXy3",
+    "id": "t2",
+    "recorded": "FAIL",
+    "review": "AssertionError [ERR_ASSERTION]: fresh post-submit public actual-value verification before final text"
+  },
+  {
+    "batch": "m.mAhpEr",
+    "id": "t1",
+    "recorded": "MACHINE_PASS",
+    "review": "Error: ENOENT: no such file or directory, open 'docs/proofs/field-mapping-form-completion/m.mAhpEr/t1/review.json'"
+  },
+  {
+    "batch": "m.mAhpEr",
+    "id": "t2",
+    "recorded": "MACHINE_PASS",
+    "review": "Error: ENOENT: no such file or directory, open 'docs/proofs/field-mapping-form-completion/m.mAhpEr/t2/review.json'"
+  },
+  {
+    "batch": "m.mAhpEr",
+    "id": "t3",
+    "recorded": "FAIL",
+    "review": "AssertionError [ERR_ASSERTION]: fresh post-submit public actual-value verification before final text"
+  }
+]

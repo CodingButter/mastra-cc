@@ -1,0 +1,2 @@
+{"ref":[":1.0","/org/a11y/atspi/accessible/9"],"role":"text","name":"","parent":[":1.0","/org/a11y/atspi/accessible/8"],"relations":[[[2,[[":1.0","/org/a11y/atspi/accessible/10"]]]]],"bounds":[358,355,412,34],"labelledTargets":[[":1.0","/org/a11y/atspi/accessible/10"]]}
+{"ref":[":1.0","/org/a11y/atspi/accessible/11"],"role":"text","name":"","parent":[":1.0","/org/a11y/atspi/accessible/8"],"relations":[[[2,[[":1.0","/org/a11y/atspi/accessible/12"]]]]],"bounds":[358,316,412,34],"labelledTargets":[[":1.0","/org/a11y/atspi/accessible/12"]]}

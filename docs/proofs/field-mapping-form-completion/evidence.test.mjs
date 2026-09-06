@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { labelledTargets } from './probe.mjs';
 import { receiptOracle, launcherOracle, associations, inspectEvidence } from './evidence.mjs';
-import { compareTrial, validateTrial } from './model-evidence.mjs';
+import { compareTrial, validateTrial, validateBatchDeclaration } from './model-evidence.mjs';
 import os from 'node:os';
 import path from 'node:path';
 const run = fileURLToPath(new URL('./inspect.0GHLft/', import.meta.url));
@@ -56,6 +56,15 @@ test('synthetic model evidence rejects unverified success and wrong mappings', (
   const discovery=structuredClone(events);discovery[4].name='discoverElements';
   discovery[4].result={entries:discovery[4].result.elements};
   assert.throws(()=>compareTrial(discovery,'receipt',expected,actual));
+});
+test('batch declaration rejects duplicate, missing and substituted trial kinds', () => {
+  const plan = JSON.parse(fs.readFileSync(new URL('./m.CrBkmf/predeclared.json', import.meta.url)));
+  validateBatchDeclaration(plan);
+  for (const trials of [Array(6).fill(plan.trials[0]), plan.trials.slice(0,5), plan.trials.map(t=>({...t,kind:'receipt'})), plan.trials.map(t=>({...t,id:'../t1'}))]) {
+    assert.throws(()=>validateBatchDeclaration({...plan,trials}));
+  }
+  const receiptRun = fileURLToPath(new URL('./m.CrBkmf/t1/', import.meta.url));
+  assert.throws(()=>validateTrial(receiptRun,{kind:'ordinary'}), /declared trial kind/);
 });
 test('retained model runs reject incomplete artifacts, missing hashes and absent ordinary saved output', () => {
   for (const trial of ['t1','t6']) {

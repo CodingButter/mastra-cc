@@ -1,0 +1,172 @@
+[
+  {
+    "id": "t1",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-10fea4b3",
+        "id": "el-f45fbc97b907",
+        "labelCall": 2,
+        "actionCall": 3,
+        "index": 6
+      },
+      {
+        "label": "Total paid",
+        "value": "96.01",
+        "id": "el-2ec47140faca",
+        "labelCall": 2,
+        "actionCall": 4,
+        "index": 9
+      }
+    ],
+    "submission": {
+      "call": 5,
+      "index": 12,
+      "time": 1788728193759
+    },
+    "verification": {
+      "call": 6,
+      "time": 1788728195109,
+      "actual": "RCPT-10fea4b3|96.01|\n"
+    },
+    "finalEvent": 22
+  },
+  {
+    "id": "t2",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-eedc1632",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 9
+      },
+      {
+        "label": "Total paid",
+        "value": "187.79",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 12
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 15,
+      "time": 1788728209896
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788728212736,
+      "actual": "RCPT-eedc1632|187.79|\n"
+    },
+    "finalEvent": 31
+  },
+  {
+    "id": "t3",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-bca1a3a3",
+        "id": "el-f45fbc97b907",
+        "labelCall": 2,
+        "actionCall": 3,
+        "index": 6
+      },
+      {
+        "label": "Total paid",
+        "value": "20.80",
+        "id": "el-2ec47140faca",
+        "labelCall": 2,
+        "actionCall": 4,
+        "index": 9
+      }
+    ],
+    "submission": {
+      "call": 5,
+      "index": 12,
+      "time": 1788728228105
+    },
+    "verification": {
+      "call": 6,
+      "time": 1788728229651,
+      "actual": "RCPT-bca1a3a3|20.80|\n"
+    },
+    "finalEvent": 19
+  },
+  {
+    "id": "t4",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-90249ec4",
+        "id": "el-f45fbc97b907",
+        "labelCall": 2,
+        "actionCall": 3,
+        "index": 6
+      },
+      {
+        "label": "Total paid",
+        "value": "235.08",
+        "id": "el-2ec47140faca",
+        "labelCall": 2,
+        "actionCall": 4,
+        "index": 9
+      }
+    ],
+    "submission": {
+      "call": 5,
+      "index": 12,
+      "time": 1788728241474
+    },
+    "verification": {
+      "call": 6,
+      "time": 1788728243064,
+      "actual": "RCPT-90249ec4|235.08|\n"
+    },
+    "finalEvent": 25
+  },
+  {
+    "id": "t5",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-625eb778",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 9
+      },
+      {
+        "label": "Total paid",
+        "value": "170.18",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 12
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 15,
+      "time": 1788728258526
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788728261741,
+      "actual": "RCPT-625eb778|170.18|\n"
+    },
+    "finalEvent": 31
+  },
+  {
+    "id": "t6",
+    "kind": "FAIL",
+    "error": "Error: ENOENT: no such file or directory, open '/home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/m.2giE49/t6/reopened-ms.txt'"
+  }
+]

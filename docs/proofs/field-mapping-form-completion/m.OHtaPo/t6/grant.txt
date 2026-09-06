@@ -1,0 +1,1 @@
+--backend atspi --grant exo-desktop-item-edit --allow edit --allow activate --allow rawInput
