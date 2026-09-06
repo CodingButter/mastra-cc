@@ -94,6 +94,30 @@ describe("the Mastra adapter", () => {
     }
   });
 
+  it("preserves optional label evidence through server, transport and generated tools", async () => {
+    const backend = new AtspiBackend(replayChannel("gtk-dialog"), "all");
+    const { elements } = await backend.queryElements({ role: "button" });
+    expect(elements.length).toBeGreaterThan(0);
+    const source = elements[0];
+    const expected = [
+      source,
+      { ...source, labelObservation: { kind: "available" as const, labels: [" First ", "Second", "Second"] } },
+      { ...source, labelObservation: { kind: "available" as const, labels: [] } },
+      { ...source, labelObservation: { kind: "unavailable" as const, reason: "out-of-scope" as const } },
+    ];
+    backend.queryElements = async () => ({ elements: expected });
+    const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-labels-")), "daemon.sock");
+    started.push(await startServer({ socketPath, backend }));
+    const client = await connect({ socketPath });
+    try {
+      const execute = desktopTools(client).queryElements.execute;
+      if (!execute) throw new Error("the tool has no execute");
+      const answer = await execute({}, {} as never) as { elements: unknown[] };
+      expect(answer.elements).toEqual(expected);
+      expect(Object.hasOwn(answer.elements[0] as object, "labelObservation")).toBe(false);
+    } finally { client.close(); }
+  });
+
   // C5. The base entry is what a runtime without an agent framework installs.
   // This is a STATIC guard: it walks the base entry's own module graph and
   // refuses any `@mastra/*` specifier, so a peer import added to src/index.ts

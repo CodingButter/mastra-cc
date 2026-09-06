@@ -109,8 +109,10 @@ export const REFUSAL_CLASSES = [
   // the seam's classes (daemon/src/backend.ts), by constructor name
   "AttestationFailedError",
   "EffectUnsupportedError",
+  "KeyboardHeldElsewhereError",
   "MagnitudeOutOfRangeError",
   "OperationNotExposedError",
+  "PointerBlockedError",
   "RecordingNotPerformableError",
   "TextOffsetOutOfRangeError",
   "UnperformableElementError",
@@ -119,6 +121,7 @@ export const REFUSAL_CLASSES = [
   // the server's own refusals, which are sentences and not classes
   "AccessibilityNotAcquirable",
   "AccessibilityNotAcquired",
+  "AccessibilityLostMidSession",
   "AlreadyRunning",
   "BackendUnreadable",
   "CouldNotStart",

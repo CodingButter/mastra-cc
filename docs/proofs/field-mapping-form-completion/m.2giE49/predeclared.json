@@ -1,0 +1,42 @@
+{
+  "created": "2026-09-06T20:56:23.002Z",
+  "hypothesis": "Final-artifact refresh after reviewed operation-budget reason correction and fail-closed batch declaration checks; unchanged fixture, oracle, model and portable instructions.",
+  "commit": "70972823bf77774cde112b6d0bc411602bb46d7c",
+  "trials": [
+    {
+      "id": "t1",
+      "kind": "receipt"
+    },
+    {
+      "id": "t2",
+      "kind": "receipt"
+    },
+    {
+      "id": "t3",
+      "kind": "receipt"
+    },
+    {
+      "id": "t4",
+      "kind": "receipt"
+    },
+    {
+      "id": "t5",
+      "kind": "receipt"
+    },
+    {
+      "id": "t6",
+      "kind": "ordinary"
+    }
+  ],
+  "batchDeadlineMs": 1800000,
+  "killGraceMs": 15000,
+  "trialDeadlineMs": 240000,
+  "trialBytes": 268435456,
+  "batchBytes": 2147483648,
+  "harnessHashes": {
+    "model-batch.mjs": "bffcec8ec17e08da153fc18283624cdc0e531940d93f743846568736ca9391bb",
+    "model-session.sh": "ec3202c3ff8375cc3e410c12b91fd2043de6457ece2acba24d82479f5d1095c5",
+    "model-driver.mjs": "2ff1e094814f0c5d1164d535c9fb7ebc0a8f7a4aca14f8a896303b7a7bf2326b",
+    "model-evidence.mjs": "5ad776b2d5d30049990a51ae19cdd108dc16dda3ef94db40e69c553299d5c604"
+  }
+}

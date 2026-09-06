@@ -1,0 +1,824 @@
+ daemon/src/backends/atspi/__tests__/labels.test.ts |   198 +
+ daemon/src/backends/atspi/index.ts                 |    35 +-
+ daemon/src/backends/atspi/labels.ts                |   125 +
+ docs/01-ARCHITECTURE.md                            |     2 +
+ .../0095-explicit-labels-are-evidence-not-names.md |    62 +
+ docs/02-DECISIONS/README.md                        |     2 +
+ docs/11-AGENT-INSTRUCTIONS.md                      |    28 +
+ .../proofs/field-mapping-form-completion/README.md |    58 +
+ .../field-mapping-form-completion/attempts.json    |   341 +
+ .../field-mapping-form-completion/calibrate.mjs    |    42 +
+ docs/proofs/field-mapping-form-completion/demo.sh  |    81 +
+ .../deterministic.DaiP2I/base-build.log            |   141 +
+ .../deterministic.DaiP2I/base-build.log.raw.gz     |   Bin 0 -> 2509 bytes
+ .../deterministic.DaiP2I/base-worktree.log         |     2 +
+ .../deterministic.DaiP2I/base/a11y.log             |     3 +
+ .../base/calibration-values.json                   |     1 +
+ .../deterministic.DaiP2I/base/calibration.json     |    56 +
+ .../deterministic.DaiP2I/base/daemon.log           |     1 +
+ .../deterministic.DaiP2I/base/display              |     1 +
+ .../deterministic.DaiP2I/base/fixture.log          |     4 +
+ .../deterministic.DaiP2I/base/metadata.json        |    22 +
+ .../deterministic.DaiP2I/base/native-fields.txt    |     2 +
+ .../deterministic.DaiP2I/base/native.json          |  1798 +
+ .../deterministic.DaiP2I/base/openbox.log          |     1 +
+ .../deterministic.DaiP2I/base/public.json          |    91 +
+ .../base/receipt/expected.json                     |     1 +
+ .../deterministic.DaiP2I/base/transcript.txt       |     5 +
+ .../deterministic.DaiP2I/base/xvfb.log             |    42 +
+ .../deterministic.DaiP2I/candidate-build.log       |   120 +
+ .../candidate-build.log.raw.gz                     |   Bin 0 -> 1949 bytes
+ .../deterministic.DaiP2I/candidate/a11y.log        |     3 +
+ .../candidate/calibration-values.json              |     1 +
+ .../candidate/calibration.json                     |    56 +
+ .../deterministic.DaiP2I/candidate/daemon.log      |     1 +
+ .../deterministic.DaiP2I/candidate/display         |     1 +
+ .../deterministic.DaiP2I/candidate/fixture.log     |     4 +
+ .../deterministic.DaiP2I/candidate/metadata.json   |    22 +
+ .../candidate/native-fields.txt                    |     2 +
+ .../deterministic.DaiP2I/candidate/native.json     |  1798 +
+ .../deterministic.DaiP2I/candidate/openbox.log     |     1 +
+ .../deterministic.DaiP2I/candidate/public.json     |   103 +
+ .../candidate/receipt/expected.json                |     1 +
+ .../deterministic.DaiP2I/candidate/transcript.txt  |     5 +
+ .../deterministic.DaiP2I/candidate/xvfb.log        |    23 +
+ .../deterministic.GBmz1F/base-build.log            |   200 +
+ .../deterministic.GBmz1F/base-build.log.raw.gz     |   Bin 0 -> 3427 bytes
+ .../deterministic.GBmz1F/base-worktree.log         |     2 +
+ .../deterministic.UbmhQh/base-build.log            |   141 +
+ .../deterministic.UbmhQh/base-build.log.raw.gz     |   Bin 0 -> 2513 bytes
+ .../deterministic.UbmhQh/base-worktree.log         |     2 +
+ .../deterministic.UbmhQh/base/a11y.log             |     3 +
+ .../base/calibration-values.json                   |     1 +
+ .../deterministic.UbmhQh/base/calibration.json     |    56 +
+ .../deterministic.UbmhQh/base/daemon.log           |     1 +
+ .../deterministic.UbmhQh/base/display              |     1 +
+ .../deterministic.UbmhQh/base/fixture.log          |     4 +
+ .../deterministic.UbmhQh/base/native-fields.txt    |     2 +
+ .../deterministic.UbmhQh/base/native.json          |  1798 +
+ .../deterministic.UbmhQh/base/openbox.log          |     1 +
+ .../deterministic.UbmhQh/base/public.json          |     3 +
+ .../base/receipt/expected.json                     |     1 +
+ .../deterministic.UbmhQh/base/transcript.txt       |    16 +
+ .../deterministic.UbmhQh/base/xvfb.log             |    42 +
+ .../deterministic.UbmhQh/candidate-build.log       |   120 +
+ .../candidate-build.log.raw.gz                     |   Bin 0 -> 1950 bytes
+ .../deterministic.g1tuuI/base-build.log            |   139 +
+ .../deterministic.g1tuuI/base-build.log.raw.gz     |   Bin 0 -> 2423 bytes
+ .../deterministic.g1tuuI/base-worktree.log         |     2 +
+ .../deterministic.g1tuuI/base/a11y.log             |     3 +
+ .../base/calibration-values.json                   |     1 +
+ .../deterministic.g1tuuI/base/calibration.json     |    56 +
+ .../deterministic.g1tuuI/base/daemon.log           |     1 +
+ .../deterministic.g1tuuI/base/display              |     1 +
+ .../deterministic.g1tuuI/base/fixture.log          |     2 +
+ .../deterministic.g1tuuI/base/native-fields.txt    |     2 +
+ .../deterministic.g1tuuI/base/native.json          |  1798 +
+ .../deterministic.g1tuuI/base/openbox.log          |     1 +
+ .../base/receipt/expected.json                     |     1 +
+ .../deterministic.g1tuuI/base/transcript.txt       |    20 +
+ .../deterministic.g1tuuI/base/xvfb.log             |    42 +
+ .../deterministic.g1tuuI/candidate-build.log       |   120 +
+ .../candidate-build.log.raw.gz                     |   Bin 0 -> 1952 bytes
+ .../deterministic.iaMI2I/base-build.log            |   141 +
+ .../deterministic.iaMI2I/base-build.log.raw.gz     |   Bin 0 -> 2512 bytes
+ .../deterministic.iaMI2I/base-worktree.log         |     2 +
+ .../deterministic.iaMI2I/base/a11y.log             |     3 +
+ .../base/calibration-values.json                   |     1 +
+ .../deterministic.iaMI2I/base/calibration.json     |    56 +
+ .../deterministic.iaMI2I/base/daemon.log           |     1 +
+ .../deterministic.iaMI2I/base/display              |     1 +
+ .../deterministic.iaMI2I/base/fixture.log          |     4 +
+ .../deterministic.iaMI2I/base/metadata.json        |    22 +
+ .../deterministic.iaMI2I/base/native-fields.txt    |     2 +
+ .../deterministic.iaMI2I/base/native.json          |  1798 +
+ .../deterministic.iaMI2I/base/openbox.log          |     1 +
+ .../deterministic.iaMI2I/base/public.json          |    91 +
+ .../base/receipt/expected.json                     |     1 +
+ .../deterministic.iaMI2I/base/transcript.txt       |     5 +
+ .../deterministic.iaMI2I/base/xvfb.log             |    42 +
+ .../deterministic.iaMI2I/candidate-build.log       |   120 +
+ .../candidate-build.log.raw.gz                     |   Bin 0 -> 1950 bytes
+ .../deterministic.iaMI2I/candidate/a11y.log        |     3 +
+ .../candidate/calibration-values.json              |     1 +
+ .../candidate/calibration.json                     |    56 +
+ .../deterministic.iaMI2I/candidate/daemon.log      |    23 +
+ .../deterministic.iaMI2I/candidate/display         |     1 +
+ .../deterministic.iaMI2I/candidate/fixture.log     |     2 +
+ .../candidate/native-fields.txt                    |     2 +
+ .../deterministic.iaMI2I/candidate/native.json     |  1798 +
+ .../deterministic.iaMI2I/candidate/openbox.log     |     1 +
+ .../candidate/receipt/expected.json                |     1 +
+ .../deterministic.iaMI2I/candidate/transcript.txt  |    27 +
+ .../deterministic.iaMI2I/candidate/xvfb.log        |    23 +
+ .../deterministic.mjs                              |    46 +
+ .../field-mapping-form-completion/deterministic.sh |    58 +
+ .../field-mapping-form-completion/evidence.mjs     |    50 +
+ .../evidence.test.mjs                              |    78 +
+ .../inspect.0GHLft/a11y.log                        |     3 +
+ .../inspect.0GHLft/display                         |     1 +
+ .../inspect.0GHLft/exo-calibration-input.json      |     1 +
+ .../inspect.0GHLft/exo-calibration.json            |    92 +
+ .../inspect.0GHLft/exo-confirmation-public.json    |  1243 +
+ .../inspect.0GHLft/exo-confirmation.png            |   Bin 0 -> 29960 bytes
+ .../inspect.0GHLft/exo-daemon.log                  |     1 +
+ .../inspect.0GHLft/exo-executable.sha256           |     1 +
+ .../inspect.0GHLft/exo-fields.txt                  |     5 +
+ .../inspect.0GHLft/exo-native.json                 |  4371 ++
+ .../inspect.0GHLft/exo-public.json                 |  1243 +
+ .../inspect.0GHLft/exo-reopen.log                  |     0
+ .../inspect.0GHLft/exo-version.txt                 |     1 +
+ .../inspect.0GHLft/exo.log                         |     2 +
+ .../inspect.0GHLft/exo.png                         |   Bin 0 -> 28055 bytes
+ .../inspect.0GHLft/ffmpeg.log                      |     1 +
+ .../inspect.0GHLft/fixture.log                     |     2 +
+ .../inspect.0GHLft/launcher-before.desktop         |     7 +
+ .../inspect.0GHLft/launcher.desktop                |    10 +
+ .../inspect.0GHLft/openbox.log                     |     1 +
+ .../inspect.0GHLft/receipt-calibration-input.json  |     1 +
+ .../inspect.0GHLft/receipt-calibration.json        |    92 +
+ .../receipt-confirmation-public.json               |   301 +
+ .../inspect.0GHLft/receipt-confirmation.png        |   Bin 0 -> 12899 bytes
+ .../inspect.0GHLft/receipt-daemon.log              |     1 +
+ .../inspect.0GHLft/receipt-fields.txt              |     2 +
+ .../inspect.0GHLft/receipt-native.json             |  1798 +
+ .../inspect.0GHLft/receipt-public.json             |   494 +
+ .../inspect.0GHLft/receipt.png                     |   Bin 0 -> 15715 bytes
+ .../inspect.0GHLft/receipt/expected.json           |     1 +
+ .../inspect.0GHLft/receipt/submission.txt          |     1 +
+ .../inspect.0GHLft/recording.json                  |     5 +
+ .../inspect.0GHLft/screen.mkv                      |   Bin 0 -> 153796 bytes
+ .../inspect.0GHLft/visuals.sha256                  |     3 +
+ .../inspect.0GHLft/xvfb.log                        |    42 +
+ .../inspect.DrOogA/a11y.log                        |     3 +
+ .../inspect.DrOogA/display                         |     1 +
+ .../inspect.DrOogA/document.txt                    |     1 +
+ .../inspect.DrOogA/ffmpeg.log                      |     1 +
+ .../inspect.DrOogA/fixture.log                     |     2 +
+ .../inspect.DrOogA/open-replace.json               |     0
+ .../inspect.DrOogA/openbox.log                     |     1 +
+ .../inspect.DrOogA/pluma-before-fields.txt         |     3 +
+ .../inspect.DrOogA/pluma-before.json               | 62314 +++++++++++++++++
+ .../inspect.DrOogA/pluma-executable.sha256         |     1 +
+ .../inspect.DrOogA/pluma-version.txt               |     1 +
+ .../inspect.DrOogA/pluma.log                       |   182 +
+ .../inspect.DrOogA/receipt-fields.txt              |     2 +
+ .../inspect.DrOogA/receipt-native.json             |  1798 +
+ .../inspect.DrOogA/receipt.png                     |   Bin 0 -> 15408 bytes
+ .../inspect.DrOogA/receipt/expected.json           |     1 +
+ .../inspect.DrOogA/screen.mkv                      |   Bin 0 -> 84320 bytes
+ .../inspect.DrOogA/xvfb.log                        |    23 +
+ .../inspect.QplYRB/a11y.log                        |     3 +
+ .../inspect.QplYRB/display                         |     1 +
+ .../inspect.QplYRB/document.txt                    |     1 +
+ .../inspect.QplYRB/ffmpeg.log                      |     1 +
+ .../inspect.QplYRB/fixture.log                     |     2 +
+ .../inspect.QplYRB/mousepad-before-fields.txt      |     1 +
+ .../inspect.QplYRB/mousepad-before.json            | 40597 ++++++++++++
+ .../inspect.QplYRB/mousepad-executable.sha256      |     1 +
+ .../inspect.QplYRB/mousepad-fields.txt             |     3 +
+ .../inspect.QplYRB/mousepad-native.json            | 45409 +++++++++++++
+ .../inspect.QplYRB/mousepad-version.txt            |     1 +
+ .../inspect.QplYRB/mousepad.log                    |    12 +
+ .../inspect.QplYRB/mousepad.png                    |   Bin 0 -> 39085 bytes
+ .../inspect.QplYRB/open-replace.json               |     2 +
+ .../inspect.QplYRB/openbox.log                     |     1 +
+ .../inspect.QplYRB/receipt-fields.txt              |     2 +
+ .../inspect.QplYRB/receipt-native.json             |  1798 +
+ .../inspect.QplYRB/receipt.png                     |   Bin 0 -> 15474 bytes
+ .../inspect.QplYRB/receipt/expected.json           |     1 +
+ .../inspect.QplYRB/recording.json                  |     5 +
+ .../inspect.QplYRB/screen.mkv                      |   Bin 0 -> 116586 bytes
+ .../inspect.QplYRB/visuals.sha256                  |     3 +
+ .../inspect.QplYRB/xvfb.log                        |    42 +
+ .../inspect.hX0Y1X/a11y.log                        |     3 +
+ .../inspect.hX0Y1X/display                         |     1 +
+ .../inspect.hX0Y1X/document.txt                    |     1 +
+ .../inspect.hX0Y1X/ffmpeg.log                      |     1 +
+ .../inspect.hX0Y1X/fixture.log                     |     2 +
+ .../inspect.hX0Y1X/mousepad-before-fields.txt      |     1 +
+ .../inspect.hX0Y1X/mousepad-before.json            | 40597 ++++++++++++
+ .../inspect.hX0Y1X/mousepad-executable.sha256      |     1 +
+ .../inspect.hX0Y1X/mousepad-version.txt            |     1 +
+ .../inspect.hX0Y1X/mousepad.log                    |     6 +
+ .../inspect.hX0Y1X/open-replace.json               |     1 +
+ .../inspect.hX0Y1X/openbox.log                     |     1 +
+ .../inspect.hX0Y1X/receipt-fields.txt              |     2 +
+ .../inspect.hX0Y1X/receipt-native.json             |  1798 +
+ .../inspect.hX0Y1X/receipt.png                     |   Bin 0 -> 15505 bytes
+ .../inspect.hX0Y1X/receipt/expected.json           |     1 +
+ .../inspect.hX0Y1X/screen.mkv                      |   Bin 0 -> 66487 bytes
+ .../inspect.hX0Y1X/xvfb.log                        |    23 +
+ .../inspect.ilUOed/a11y.log                        |     3 +
+ .../inspect.ilUOed/display                         |     1 +
+ .../inspect.ilUOed/document.txt                    |     1 +
+ .../inspect.ilUOed/ffmpeg.log                      |     1 +
+ .../inspect.ilUOed/fixture.log                     |     2 +
+ .../inspect.ilUOed/open-replace.json               |     2 +
+ .../inspect.ilUOed/openbox.log                     |     1 +
+ .../inspect.ilUOed/pluma-before-fields.txt         |     3 +
+ .../inspect.ilUOed/pluma-before.json               | 62314 +++++++++++++++++
+ .../inspect.ilUOed/pluma-executable.sha256         |     1 +
+ .../inspect.ilUOed/pluma-fields.txt                |     5 +
+ .../inspect.ilUOed/pluma-native.json               | 66361 +++++++++++++++++++
+ .../inspect.ilUOed/pluma-version.txt               |     1 +
+ .../inspect.ilUOed/pluma.log                       |   392 +
+ .../inspect.ilUOed/pluma.png                       |   Bin 0 -> 46695 bytes
+ .../inspect.ilUOed/receipt-fields.txt              |     2 +
+ .../inspect.ilUOed/receipt-native.json             |  1798 +
+ .../inspect.ilUOed/receipt.png                     |   Bin 0 -> 15712 bytes
+ .../inspect.ilUOed/receipt/expected.json           |     1 +
+ .../inspect.ilUOed/recording.json                  |     5 +
+ .../inspect.ilUOed/screen.mkv                      |   Bin 0 -> 137522 bytes
+ .../inspect.ilUOed/visuals.sha256                  |     3 +
+ .../inspect.ilUOed/xvfb.log                        |    42 +
+ .../inspect.jM1cSn/a11y.log                        |     3 +
+ .../inspect.jM1cSn/display                         |     1 +
+ .../inspect.jM1cSn/document.txt                    |     1 +
+ .../inspect.jM1cSn/ffmpeg.log                      |     1 +
+ .../inspect.jM1cSn/fixture.log                     |     2 +
+ .../inspect.jM1cSn/mousepad-executable.sha256      |     1 +
+ .../inspect.jM1cSn/mousepad-version.txt            |     1 +
+ .../inspect.jM1cSn/mousepad.log                    |     4 +
+ .../inspect.jM1cSn/openbox.log                     |     1 +
+ .../inspect.jM1cSn/receipt-fields.txt              |     2 +
+ .../inspect.jM1cSn/receipt-native.json             |  1798 +
+ .../inspect.jM1cSn/receipt.png                     |   Bin 0 -> 15732 bytes
+ .../inspect.jM1cSn/receipt/expected.json           |     1 +
+ .../inspect.jM1cSn/screen.mkv                      |   Bin 0 -> 65235 bytes
+ .../inspect.jM1cSn/xvfb.log                        |    42 +
+ .../inspect.jz39jc/a11y.log                        |     3 +
+ .../inspect.jz39jc/display                         |     1 +
+ .../inspect.jz39jc/document.txt                    |     1 +
+ .../inspect.jz39jc/ffmpeg.log                      |     1 +
+ .../inspect.jz39jc/fixture.log                     |     2 +
+ .../inspect.jz39jc/mousepad-before-fields.txt      |     1 +
+ .../inspect.jz39jc/mousepad-before.json            | 40597 ++++++++++++
+ .../inspect.jz39jc/mousepad-executable.sha256      |     1 +
+ .../inspect.jz39jc/mousepad-version.txt            |     1 +
+ .../inspect.jz39jc/mousepad.log                    |     6 +
+ .../inspect.jz39jc/open-replace.json               |     0
+ .../inspect.jz39jc/openbox.log                     |     1 +
+ .../inspect.jz39jc/receipt-fields.txt              |     2 +
+ .../inspect.jz39jc/receipt-native.json             |  1798 +
+ .../inspect.jz39jc/receipt.png                     |   Bin 0 -> 15339 bytes
+ .../inspect.jz39jc/receipt/expected.json           |     1 +
+ .../inspect.jz39jc/screen.mkv                      |   Bin 0 -> 66399 bytes
+ .../inspect.jz39jc/xvfb.log                        |    23 +
+ .../inspect.pF79GR/a11y.log                        |     3 +
+ .../inspect.pF79GR/checkpoint-0.5.png              |   Bin 0 -> 22249 bytes
+ .../inspect.pF79GR/checkpoint-2.5.png              |   Bin 0 -> 20781 bytes
+ .../inspect.pF79GR/checkpoint-4.5.png              |   Bin 0 -> 38412 bytes
+ .../inspect.pF79GR/checkpoint-7.5.png              |   Bin 0 -> 44121 bytes
+ .../inspect.pF79GR/display                         |     1 +
+ .../inspect.pF79GR/exo-calibration-input.json      |     1 +
+ .../inspect.pF79GR/exo-calibration.json            |    92 +
+ .../inspect.pF79GR/exo-confirmation-public.json    |  1243 +
+ .../inspect.pF79GR/exo-confirmation.png            |   Bin 0 -> 29960 bytes
+ .../inspect.pF79GR/exo-daemon.log                  |     1 +
+ .../inspect.pF79GR/exo-executable.sha256           |     1 +
+ .../inspect.pF79GR/exo-fields.txt                  |     5 +
+ .../inspect.pF79GR/exo-native.json                 |  4371 ++
+ .../inspect.pF79GR/exo-public.json                 |  1243 +
+ .../inspect.pF79GR/exo-reopen.log                  |     0
+ .../inspect.pF79GR/exo-version.txt                 |     1 +
+ .../inspect.pF79GR/exo.log                         |     2 +
+ .../inspect.pF79GR/exo.png                         |   Bin 0 -> 28055 bytes
+ .../inspect.pF79GR/ffmpeg.log                      |     1 +
+ .../inspect.pF79GR/fixture.log                     |     2 +
+ .../inspect.pF79GR/launcher-before.desktop         |     7 +
+ .../inspect.pF79GR/launcher.desktop                |    10 +
+ .../inspect.pF79GR/openbox.log                     |     1 +
+ .../inspect.pF79GR/oracle.json                     |     7 +
+ .../inspect.pF79GR/receipt-calibration-input.json  |     1 +
+ .../inspect.pF79GR/receipt-calibration.json        |    92 +
+ .../receipt-confirmation-public.json               |   301 +
+ .../inspect.pF79GR/receipt-confirmation.png        |   Bin 0 -> 12899 bytes
+ .../inspect.pF79GR/receipt-daemon.log              |     1 +
+ .../inspect.pF79GR/receipt-fields.txt              |     2 +
+ .../inspect.pF79GR/receipt-native.json             |  1798 +
+ .../inspect.pF79GR/receipt-public.json             |   494 +
+ .../inspect.pF79GR/receipt.png                     |   Bin 0 -> 15348 bytes
+ .../inspect.pF79GR/receipt/expected.json           |     1 +
+ .../inspect.pF79GR/receipt/submission.txt          |     1 +
+ .../inspect.pF79GR/recording.json                  |     5 +
+ .../inspect.pF79GR/review-contact.png              |   Bin 0 -> 77179 bytes
+ .../inspect.pF79GR/screen.mkv                      |   Bin 0 -> 150296 bytes
+ .../inspect.pF79GR/visuals.sha256                  |     3 +
+ .../inspect.pF79GR/xvfb.log                        |    61 +
+ .../inspect.r5J5k7/a11y.log                        |     3 +
+ .../inspect.r5J5k7/display                         |     1 +
+ .../inspect.r5J5k7/exo-executable.sha256           |     1 +
+ .../inspect.r5J5k7/exo-fields.txt                  |     5 +
+ .../inspect.r5J5k7/exo-native.json                 |  4371 ++
+ .../inspect.r5J5k7/exo-version.txt                 |     1 +
+ .../inspect.r5J5k7/exo.log                         |     2 +
+ .../inspect.r5J5k7/exo.png                         |   Bin 0 -> 30925 bytes
+ .../inspect.r5J5k7/ffmpeg.log                      |     1 +
+ .../inspect.r5J5k7/fixture.log                     |     2 +
+ .../inspect.r5J5k7/launcher.desktop                |     7 +
+ .../inspect.r5J5k7/openbox.log                     |     1 +
+ .../inspect.r5J5k7/receipt-fields.txt              |     2 +
+ .../inspect.r5J5k7/receipt-native.json             |  1798 +
+ .../inspect.r5J5k7/receipt.png                     |   Bin 0 -> 15458 bytes
+ .../inspect.r5J5k7/receipt/expected.json           |     1 +
+ .../inspect.r5J5k7/recording.json                  |     5 +
+ .../inspect.r5J5k7/screen.mkv                      |   Bin 0 -> 72372 bytes
+ .../inspect.r5J5k7/visuals.sha256                  |     3 +
+ .../inspect.r5J5k7/xvfb.log                        |    42 +
+ .../inspect.sJ788l/a11y.log                        |     3 +
+ .../inspect.sJ788l/display                         |     1 +
+ .../inspect.sJ788l/ffmpeg.log                      |     1 +
+ .../inspect.sJ788l/fixture.log                     |     0
+ .../inspect.sJ788l/mousepad-executable.sha256      |     1 +
+ .../inspect.sJ788l/mousepad-version.txt            |     1 +
+ .../inspect.sJ788l/openbox.log                     |     1 +
+ .../inspect.sJ788l/receipt-fields.txt              |     0
+ .../inspect.sJ788l/receipt/expected.json           |     1 +
+ .../inspect.sJ788l/screen.mkv                      |   Bin 0 -> 27652 bytes
+ .../inspect.sJ788l/xvfb.log                        |    42 +
+ .../inspect.x0DtaI/a11y.log                        |     3 +
+ .../inspect.x0DtaI/display                         |     1 +
+ .../inspect.x0DtaI/document.txt                    |     1 +
+ .../inspect.x0DtaI/ffmpeg.log                      |     1 +
+ .../inspect.x0DtaI/fixture.log                     |     2 +
+ .../inspect.x0DtaI/mousepad-executable.sha256      |     1 +
+ .../inspect.x0DtaI/mousepad-fields.txt             |     0
+ .../mousepad-native.json.failed.json               | 31434 +++++++++
+ .../inspect.x0DtaI/mousepad-version.txt            |     1 +
+ .../inspect.x0DtaI/mousepad.log                    |     6 +
+ .../inspect.x0DtaI/openbox.log                     |     1 +
+ .../inspect.x0DtaI/receipt-fields.txt              |     2 +
+ .../inspect.x0DtaI/receipt-native.json             |  1798 +
+ .../inspect.x0DtaI/receipt.png                     |   Bin 0 -> 15707 bytes
+ .../inspect.x0DtaI/receipt/expected.json           |     1 +
+ .../inspect.x0DtaI/screen.mkv                      |   Bin 0 -> 65896 bytes
+ .../inspect.x0DtaI/xvfb.log                        |    23 +
+ .../inspect.xRQjBi/a11y.log                        |     3 +
+ .../inspect.xRQjBi/display                         |     1 +
+ .../inspect.xRQjBi/document.txt                    |     1 +
+ .../inspect.xRQjBi/ffmpeg.log                      |     1 +
+ .../inspect.xRQjBi/fixture.log                     |     2 +
+ .../inspect.xRQjBi/mousepad-before-fields.txt      |     1 +
+ .../inspect.xRQjBi/mousepad-before.json            | 40597 ++++++++++++
+ .../inspect.xRQjBi/mousepad-executable.sha256      |     1 +
+ .../inspect.xRQjBi/mousepad-version.txt            |     1 +
+ .../inspect.xRQjBi/mousepad.log                    |     6 +
+ .../inspect.xRQjBi/open-replace.json               |     0
+ .../inspect.xRQjBi/openbox.log                     |     1 +
+ .../inspect.xRQjBi/receipt-fields.txt              |     2 +
+ .../inspect.xRQjBi/receipt-native.json             |  1798 +
+ .../inspect.xRQjBi/receipt.png                     |   Bin 0 -> 15171 bytes
+ .../inspect.xRQjBi/receipt/expected.json           |     1 +
+ .../inspect.xRQjBi/screen.mkv                      |   Bin 0 -> 66279 bytes
+ .../inspect.xRQjBi/xvfb.log                        |    23 +
+ .../m.3kHuSR/outcome.json                          |     5 +
+ .../m.3kHuSR/outcomes.json                         |    40 +
+ .../m.3kHuSR/predeclared.json                      |    42 +
+ .../m.3kHuSR/t1/a11y.log                           |     3 +
+ .../m.3kHuSR/t1/after-confirmation.png             |   Bin 0 -> 18381 bytes
+ .../m.3kHuSR/t1/before-fill.png                    |   Bin 0 -> 21358 bytes
+ .../m.3kHuSR/t1/before-submit.png                  |   Bin 0 -> 23572 bytes
+ .../m.3kHuSR/t1/daemon.log                         |     3 +
+ .../m.3kHuSR/t1/display                            |     1 +
+ .../m.3kHuSR/t1/driver.log                         |     0
+ .../m.3kHuSR/t1/events.jsonl                       |    26 +
+ .../m.3kHuSR/t1/expected.json                      |     1 +
+ .../m.3kHuSR/t1/ffmpeg.log                         |     1 +
+ .../m.3kHuSR/t1/fixture.log                        |     4 +
+ .../m.3kHuSR/t1/grant.txt                          |     1 +
+ .../m.3kHuSR/t1/ledger.json                        |    32 +
+ .../m.3kHuSR/t1/metadata.json                      |    18 +
+ .../m.3kHuSR/t1/openbox.log                        |     2 +
+ .../m.3kHuSR/t1/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.3kHuSR/t1/oracle.txt                         |     1 +
+ .../m.3kHuSR/t1/recording-start-ms.txt             |     1 +
+ .../m.3kHuSR/t1/recording.json                     |     5 +
+ .../m.3kHuSR/t1/review-cropped.png                 |   Bin 0 -> 53331 bytes
+ .../m.3kHuSR/t1/screen.mkv                         |   Bin 0 -> 72295 bytes
+ .../m.3kHuSR/t1/session.log                        |     3 +
+ .../m.3kHuSR/t1/submission.txt                     |     1 +
+ .../m.3kHuSR/t1/visual-review.json                 |    23 +
+ .../m.3kHuSR/t1/xvfb.log                           |    23 +
+ .../m.3kHuSR/t2/a11y.log                           |     3 +
+ .../m.3kHuSR/t2/after-confirmation.png             |   Bin 0 -> 17803 bytes
+ .../m.3kHuSR/t2/before-fill.png                    |   Bin 0 -> 20997 bytes
+ .../m.3kHuSR/t2/before-submit.png                  |   Bin 0 -> 22899 bytes
+ .../m.3kHuSR/t2/daemon.log                         |     2 +
+ .../m.3kHuSR/t2/display                            |     1 +
+ .../m.3kHuSR/t2/driver.log                         |     0
+ .../m.3kHuSR/t2/events.jsonl                       |    37 +
+ .../m.3kHuSR/t2/expected.json                      |     1 +
+ .../m.3kHuSR/t2/ffmpeg.log                         |     1 +
+ .../m.3kHuSR/t2/fixture.log                        |     8 +
+ .../m.3kHuSR/t2/grant.txt                          |     1 +
+ .../m.3kHuSR/t2/image-1.bin                        |   Bin 0 -> 11253 bytes
+ .../m.3kHuSR/t2/image-2.bin                        |   Bin 0 -> 8754 bytes
+ .../m.3kHuSR/t2/metadata.json                      |    18 +
+ .../m.3kHuSR/t2/openbox.log                        |     3 +
+ .../m.3kHuSR/t2/openbox.log.raw.gz                 |   Bin 0 -> 205 bytes
+ .../m.3kHuSR/t2/oracle.txt                         |     1 +
+ .../m.3kHuSR/t2/recording-start-ms.txt             |     1 +
+ .../m.3kHuSR/t2/recording.json                     |     5 +
+ .../m.3kHuSR/t2/review-cropped.png                 |   Bin 0 -> 51634 bytes
+ .../m.3kHuSR/t2/screen.mkv                         |   Bin 0 -> 99788 bytes
+ .../m.3kHuSR/t2/session.log                        |     3 +
+ .../m.3kHuSR/t2/submission.txt                     |     1 +
+ .../m.3kHuSR/t2/visual-review.json                 |    23 +
+ .../m.3kHuSR/t2/xvfb.log                           |    23 +
+ .../m.A4VNF3/outcome.json                          |     5 +
+ .../m.A4VNF3/outcomes.json                         |     7 +
+ .../m.A4VNF3/predeclared.json                      |    42 +
+ .../m.A4VNF3/t1/a11y.log                           |     3 +
+ .../m.A4VNF3/t1/after-confirmation.png             |   Bin 0 -> 18217 bytes
+ .../m.A4VNF3/t1/before-fill.png                    |   Bin 0 -> 21262 bytes
+ .../m.A4VNF3/t1/before-submit.png                  |   Bin 0 -> 23189 bytes
+ .../m.A4VNF3/t1/daemon.log                         |     3 +
+ .../m.A4VNF3/t1/display                            |     1 +
+ .../m.A4VNF3/t1/driver.log                         |     0
+ .../m.A4VNF3/t1/events.jsonl                       |    20 +
+ .../m.A4VNF3/t1/expected.json                      |     1 +
+ .../m.A4VNF3/t1/ffmpeg.log                         |     1 +
+ .../m.A4VNF3/t1/fixture.log                        |     2 +
+ .../m.A4VNF3/t1/grant.txt                          |     1 +
+ .../m.A4VNF3/t1/metadata.json                      |    18 +
+ .../m.A4VNF3/t1/openbox.log                        |     3 +
+ .../m.A4VNF3/t1/openbox.log.raw.gz                 |   Bin 0 -> 205 bytes
+ .../m.A4VNF3/t1/oracle.txt                         |     1 +
+ .../m.A4VNF3/t1/recording-start-ms.txt             |     1 +
+ .../m.A4VNF3/t1/recording.json                     |     5 +
+ .../m.A4VNF3/t1/review-cropped.png                 |   Bin 0 -> 52712 bytes
+ .../m.A4VNF3/t1/screen.mkv                         |   Bin 0 -> 63907 bytes
+ .../m.A4VNF3/t1/session.log                        |     3 +
+ .../m.A4VNF3/t1/submission.txt                     |     1 +
+ .../m.A4VNF3/t1/visual-review.json                 |    23 +
+ .../m.A4VNF3/t1/xvfb.log                           |    42 +
+ .../m.CrBkmf/outcome.json                          |     5 +
+ .../m.CrBkmf/outcomes.json                         |   203 +
+ .../m.CrBkmf/predeclared.json                      |    42 +
+ .../m.CrBkmf/review-1-3.png                        |   Bin 0 -> 102151 bytes
+ .../m.CrBkmf/review-4-6.png                        |   Bin 0 -> 180722 bytes
+ .../m.CrBkmf/t1/a11y.log                           |     3 +
+ .../m.CrBkmf/t1/after-confirmation.png             |   Bin 0 -> 18328 bytes
+ .../m.CrBkmf/t1/before-fill.png                    |   Bin 0 -> 21024 bytes
+ .../m.CrBkmf/t1/before-submit.png                  |   Bin 0 -> 23070 bytes
+ .../m.CrBkmf/t1/daemon.log                         |     4 +
+ .../m.CrBkmf/t1/display                            |     1 +
+ .../m.CrBkmf/t1/driver.log                         |     0
+ .../m.CrBkmf/t1/events.jsonl                       |    32 +
+ .../m.CrBkmf/t1/expected.json                      |     1 +
+ .../m.CrBkmf/t1/ffmpeg.log                         |     1 +
+ .../m.CrBkmf/t1/fixture.log                        |     4 +
+ .../m.CrBkmf/t1/grant.txt                          |     1 +
+ .../m.CrBkmf/t1/ledger.json                        |    32 +
+ .../m.CrBkmf/t1/metadata.json                      |    18 +
+ .../m.CrBkmf/t1/openbox.log                        |     2 +
+ .../m.CrBkmf/t1/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.CrBkmf/t1/oracle.txt                         |     1 +
+ .../m.CrBkmf/t1/recording-start-ms.txt             |     1 +
+ .../m.CrBkmf/t1/recording.json                     |     5 +
+ .../m.CrBkmf/t1/review-contact.png                 |   Bin 0 -> 43435 bytes
+ .../m.CrBkmf/t1/review-cropped.png                 |   Bin 0 -> 52402 bytes
+ .../m.CrBkmf/t1/review.json                        |    26 +
+ .../m.CrBkmf/t1/screen.mkv                         |   Bin 0 -> 72062 bytes
+ .../m.CrBkmf/t1/session.log                        |     3 +
+ .../m.CrBkmf/t1/submission.txt                     |     1 +
+ .../m.CrBkmf/t1/xvfb.log                           |    23 +
+ .../m.CrBkmf/t2/a11y.log                           |     4 +
+ .../m.CrBkmf/t2/a11y.log.raw.gz                    |   Bin 0 -> 280 bytes
+ .../m.CrBkmf/t2/after-confirmation.png             |   Bin 0 -> 17865 bytes
+ .../m.CrBkmf/t2/before-fill.png                    |   Bin 0 -> 21111 bytes
+ .../m.CrBkmf/t2/before-submit.png                  |   Bin 0 -> 23212 bytes
+ .../m.CrBkmf/t2/daemon.log                         |     3 +
+ .../m.CrBkmf/t2/display                            |     1 +
+ .../m.CrBkmf/t2/driver.log                         |     0
+ .../m.CrBkmf/t2/events.jsonl                       |    20 +
+ .../m.CrBkmf/t2/expected.json                      |     1 +
+ .../m.CrBkmf/t2/ffmpeg.log                         |     1 +
+ .../m.CrBkmf/t2/fixture.log                        |     0
+ .../m.CrBkmf/t2/grant.txt                          |     1 +
+ .../m.CrBkmf/t2/ledger.json                        |    32 +
+ .../m.CrBkmf/t2/metadata.json                      |    18 +
+ .../m.CrBkmf/t2/openbox.log                        |     3 +
+ .../m.CrBkmf/t2/openbox.log.raw.gz                 |   Bin 0 -> 205 bytes
+ .../m.CrBkmf/t2/oracle.txt                         |     1 +
+ .../m.CrBkmf/t2/recording-start-ms.txt             |     1 +
+ .../m.CrBkmf/t2/recording.json                     |     5 +
+ .../m.CrBkmf/t2/review-contact.png                 |   Bin 0 -> 60873 bytes
+ .../m.CrBkmf/t2/review-cropped.png                 |   Bin 0 -> 52386 bytes
+ .../m.CrBkmf/t2/review.json                        |    26 +
+ .../m.CrBkmf/t2/screen.mkv                         |   Bin 0 -> 62662 bytes
+ .../m.CrBkmf/t2/session.log                        |     3 +
+ .../m.CrBkmf/t2/submission.txt                     |     1 +
+ .../m.CrBkmf/t2/xvfb.log                           |    23 +
+ .../m.CrBkmf/t3/a11y.log                           |     4 +
+ .../m.CrBkmf/t3/a11y.log.raw.gz                    |   Bin 0 -> 279 bytes
+ .../m.CrBkmf/t3/after-confirmation.png             |   Bin 0 -> 17971 bytes
+ .../m.CrBkmf/t3/before-fill.png                    |   Bin 0 -> 21293 bytes
+ .../m.CrBkmf/t3/before-submit.png                  |   Bin 0 -> 23451 bytes
+ .../m.CrBkmf/t3/daemon.log                         |     4 +
+ .../m.CrBkmf/t3/display                            |     1 +
+ .../m.CrBkmf/t3/driver.log                         |     0
+ .../m.CrBkmf/t3/events.jsonl                       |    23 +
+ .../m.CrBkmf/t3/expected.json                      |     1 +
+ .../m.CrBkmf/t3/ffmpeg.log                         |     1 +
+ .../m.CrBkmf/t3/fixture.log                        |     0
+ .../m.CrBkmf/t3/grant.txt                          |     1 +
+ .../m.CrBkmf/t3/ledger.json                        |    32 +
+ .../m.CrBkmf/t3/metadata.json                      |    18 +
+ .../m.CrBkmf/t3/openbox.log                        |     2 +
+ .../m.CrBkmf/t3/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.CrBkmf/t3/oracle.txt                         |     1 +
+ .../m.CrBkmf/t3/recording-start-ms.txt             |     1 +
+ .../m.CrBkmf/t3/recording.json                     |     5 +
+ .../m.CrBkmf/t3/review-contact.png                 |   Bin 0 -> 60850 bytes
+ .../m.CrBkmf/t3/review-cropped.png                 |   Bin 0 -> 52748 bytes
+ .../m.CrBkmf/t3/review.json                        |    26 +
+ .../m.CrBkmf/t3/screen.mkv                         |   Bin 0 -> 67780 bytes
+ .../m.CrBkmf/t3/session.log                        |     3 +
+ .../m.CrBkmf/t3/submission.txt                     |     1 +
+ .../m.CrBkmf/t3/xvfb.log                           |    23 +
+ .../m.CrBkmf/t4/a11y.log                           |     4 +
+ .../m.CrBkmf/t4/a11y.log.raw.gz                    |   Bin 0 -> 279 bytes
+ .../m.CrBkmf/t4/after-confirmation.png             |   Bin 0 -> 18235 bytes
+ .../m.CrBkmf/t4/before-fill.png                    |   Bin 0 -> 21146 bytes
+ .../m.CrBkmf/t4/before-submit.png                  |   Bin 0 -> 22975 bytes
+ .../m.CrBkmf/t4/daemon.log                         |     4 +
+ .../m.CrBkmf/t4/display                            |     1 +
+ .../m.CrBkmf/t4/driver.log                         |     0
+ .../m.CrBkmf/t4/events.jsonl                       |    32 +
+ .../m.CrBkmf/t4/expected.json                      |     1 +
+ .../m.CrBkmf/t4/ffmpeg.log                         |     1 +
+ .../m.CrBkmf/t4/fixture.log                        |     4 +
+ .../m.CrBkmf/t4/grant.txt                          |     1 +
+ .../m.CrBkmf/t4/ledger.json                        |    32 +
+ .../m.CrBkmf/t4/metadata.json                      |    18 +
+ .../m.CrBkmf/t4/openbox.log                        |     2 +
+ .../m.CrBkmf/t4/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.CrBkmf/t4/oracle.txt                         |     1 +
+ .../m.CrBkmf/t4/recording-start-ms.txt             |     1 +
+ .../m.CrBkmf/t4/recording.json                     |     5 +
+ .../m.CrBkmf/t4/review-contact.png                 |   Bin 0 -> 43304 bytes
+ .../m.CrBkmf/t4/review-cropped.png                 |   Bin 0 -> 52391 bytes
+ .../m.CrBkmf/t4/review.json                        |    26 +
+ .../m.CrBkmf/t4/screen.mkv                         |   Bin 0 -> 68663 bytes
+ .../m.CrBkmf/t4/session.log                        |     3 +
+ .../m.CrBkmf/t4/submission.txt                     |     1 +
+ .../m.CrBkmf/t4/xvfb.log                           |    23 +
+ .../m.CrBkmf/t5/a11y.log                           |     4 +
+ .../m.CrBkmf/t5/a11y.log.raw.gz                    |   Bin 0 -> 280 bytes
+ .../m.CrBkmf/t5/after-confirmation.png             |   Bin 0 -> 18209 bytes
+ .../m.CrBkmf/t5/before-fill.png                    |   Bin 0 -> 21184 bytes
+ .../m.CrBkmf/t5/before-submit.png                  |   Bin 0 -> 23159 bytes
+ .../m.CrBkmf/t5/daemon.log                         |     4 +
+ .../m.CrBkmf/t5/display                            |     1 +
+ .../m.CrBkmf/t5/driver.log                         |     0
+ .../m.CrBkmf/t5/events.jsonl                       |    32 +
+ .../m.CrBkmf/t5/expected.json                      |     1 +
+ .../m.CrBkmf/t5/ffmpeg.log                         |     1 +
+ .../m.CrBkmf/t5/fixture.log                        |     4 +
+ .../m.CrBkmf/t5/grant.txt                          |     1 +
+ .../m.CrBkmf/t5/ledger.json                        |    32 +
+ .../m.CrBkmf/t5/metadata.json                      |    18 +
+ .../m.CrBkmf/t5/openbox.log                        |     2 +
+ .../m.CrBkmf/t5/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.CrBkmf/t5/oracle.txt                         |     1 +
+ .../m.CrBkmf/t5/recording-start-ms.txt             |     1 +
+ .../m.CrBkmf/t5/recording.json                     |     5 +
+ .../m.CrBkmf/t5/review-contact.png                 |   Bin 0 -> 43450 bytes
+ .../m.CrBkmf/t5/review-cropped.png                 |   Bin 0 -> 52619 bytes
+ .../m.CrBkmf/t5/review.json                        |    26 +
+ .../m.CrBkmf/t5/screen.mkv                         |   Bin 0 -> 70704 bytes
+ .../m.CrBkmf/t5/session.log                        |     3 +
+ .../m.CrBkmf/t5/submission.txt                     |     1 +
+ .../m.CrBkmf/t5/xvfb.log                           |    23 +
+ .../m.CrBkmf/t6/a11y.log                           |     4 +
+ .../m.CrBkmf/t6/a11y.log.raw.gz                    |   Bin 0 -> 279 bytes
+ .../m.CrBkmf/t6/after-confirmation.png             |   Bin 0 -> 35681 bytes
+ .../m.CrBkmf/t6/app.log                            |    16 +
+ .../m.CrBkmf/t6/before-fill.png                    |   Bin 0 -> 32680 bytes
+ .../m.CrBkmf/t6/before-submit.png                  |   Bin 0 -> 33321 bytes
+ .../m.CrBkmf/t6/daemon.log                         |     3 +
+ .../m.CrBkmf/t6/display                            |     1 +
+ .../m.CrBkmf/t6/driver.log                         |     0
+ .../m.CrBkmf/t6/events.jsonl                       |    46 +
+ .../m.CrBkmf/t6/exo-executable.sha256              |     1 +
+ .../m.CrBkmf/t6/exo-version.txt                    |     1 +
+ .../m.CrBkmf/t6/expected.json                      |     4 +
+ .../m.CrBkmf/t6/ffmpeg.log                         |     1 +
+ .../m.CrBkmf/t6/grant.txt                          |     1 +
+ .../m.CrBkmf/t6/launcher-before.desktop            |     7 +
+ .../m.CrBkmf/t6/launcher.desktop                   |    10 +
+ .../m.CrBkmf/t6/ledger.json                        |    35 +
+ .../m.CrBkmf/t6/metadata.json                      |    18 +
+ .../m.CrBkmf/t6/openbox.log                        |     2 +
+ .../m.CrBkmf/t6/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.CrBkmf/t6/oracle.txt                         |     1 +
+ .../m.CrBkmf/t6/recording-start-ms.txt             |     1 +
+ .../m.CrBkmf/t6/recording.json                     |     5 +
+ .../m.CrBkmf/t6/reopened-ms.txt                    |     1 +
+ .../m.CrBkmf/t6/review-contact.png                 |   Bin 0 -> 100918 bytes
+ .../m.CrBkmf/t6/review-cropped.png                 |   Bin 0 -> 90052 bytes
+ .../m.CrBkmf/t6/review.json                        |    29 +
+ .../m.CrBkmf/t6/screen.mkv                         |   Bin 0 -> 111184 bytes
+ .../m.CrBkmf/t6/session.log                        |     5 +
+ .../m.CrBkmf/t6/task.txt                           |     1 +
+ .../m.CrBkmf/t6/xvfb.log                           |    23 +
+ .../m.TbkXy3/outcome.json                          |     5 +
+ .../m.TbkXy3/outcomes.json                         |    40 +
+ .../m.TbkXy3/predeclared.json                      |    42 +
+ .../m.TbkXy3/t1/a11y.log                           |     3 +
+ .../m.TbkXy3/t1/after-confirmation.png             |   Bin 0 -> 18138 bytes
+ .../m.TbkXy3/t1/before-fill.png                    |   Bin 0 -> 21131 bytes
+ .../m.TbkXy3/t1/before-submit.png                  |   Bin 0 -> 23290 bytes
+ .../m.TbkXy3/t1/daemon.log                         |     3 +
+ .../m.TbkXy3/t1/display                            |     1 +
+ .../m.TbkXy3/t1/driver.log                         |     0
+ .../m.TbkXy3/t1/events.jsonl                       |    26 +
+ .../m.TbkXy3/t1/expected.json                      |     1 +
+ .../m.TbkXy3/t1/ffmpeg.log                         |     1 +
+ .../m.TbkXy3/t1/fixture.log                        |     4 +
+ .../m.TbkXy3/t1/grant.txt                          |     1 +
+ .../m.TbkXy3/t1/ledger.json                        |    32 +
+ .../m.TbkXy3/t1/metadata.json                      |    18 +
+ .../m.TbkXy3/t1/openbox.log                        |     3 +
+ .../m.TbkXy3/t1/openbox.log.raw.gz                 |   Bin 0 -> 205 bytes
+ .../m.TbkXy3/t1/oracle.txt                         |     1 +
+ .../m.TbkXy3/t1/recording-start-ms.txt             |     1 +
+ .../m.TbkXy3/t1/recording.json                     |     5 +
+ .../m.TbkXy3/t1/review-cropped.png                 |   Bin 0 -> 52556 bytes
+ .../m.TbkXy3/t1/screen.mkv                         |   Bin 0 -> 70363 bytes
+ .../m.TbkXy3/t1/session.log                        |     3 +
+ .../m.TbkXy3/t1/submission.txt                     |     1 +
+ .../m.TbkXy3/t1/visual-review.json                 |    23 +
+ .../m.TbkXy3/t1/xvfb.log                           |    23 +
+ .../m.TbkXy3/t2/a11y.log                           |     4 +
+ .../m.TbkXy3/t2/a11y.log.raw.gz                    |   Bin 0 -> 280 bytes
+ .../m.TbkXy3/t2/after-confirmation.png             |   Bin 0 -> 2723 bytes
+ .../m.TbkXy3/t2/before-fill.png                    |   Bin 0 -> 21192 bytes
+ .../m.TbkXy3/t2/before-submit.png                  |   Bin 0 -> 23178 bytes
+ .../m.TbkXy3/t2/daemon.log                         |     4 +
+ .../m.TbkXy3/t2/display                            |     1 +
+ .../m.TbkXy3/t2/driver.log                         |     0
+ .../m.TbkXy3/t2/events.jsonl                       |    44 +
+ .../m.TbkXy3/t2/expected.json                      |     1 +
+ .../m.TbkXy3/t2/ffmpeg.log                         |     1 +
+ .../m.TbkXy3/t2/fixture.log                        |    10 +
+ .../m.TbkXy3/t2/grant.txt                          |     1 +
+ .../m.TbkXy3/t2/image-1.bin                        |   Bin 0 -> 11468 bytes
+ .../m.TbkXy3/t2/metadata.json                      |    18 +
+ .../m.TbkXy3/t2/openbox.log                        |     2 +
+ .../m.TbkXy3/t2/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.TbkXy3/t2/oracle.txt                         |     1 +
+ .../m.TbkXy3/t2/recording-start-ms.txt             |     1 +
+ .../m.TbkXy3/t2/recording.json                     |     5 +
+ .../m.TbkXy3/t2/review-cropped.png                 |   Bin 0 -> 38999 bytes
+ .../m.TbkXy3/t2/screen.mkv                         |   Bin 0 -> 101501 bytes
+ .../m.TbkXy3/t2/session.log                        |     3 +
+ .../m.TbkXy3/t2/submission.txt                     |     1 +
+ .../m.TbkXy3/t2/visual-review.json                 |    23 +
+ .../m.TbkXy3/t2/xvfb.log                           |    23 +
+ .../m.mAhpEr/outcome.json                          |     5 +
+ .../m.mAhpEr/outcomes.json                         |    73 +
+ .../m.mAhpEr/predeclared.json                      |    42 +
+ .../m.mAhpEr/t1/a11y.log                           |     4 +
+ .../m.mAhpEr/t1/a11y.log.raw.gz                    |   Bin 0 -> 278 bytes
+ .../m.mAhpEr/t1/after-confirmation.png             |   Bin 0 -> 2722 bytes
+ .../m.mAhpEr/t1/before-fill.png                    |   Bin 0 -> 21219 bytes
+ .../m.mAhpEr/t1/before-submit.png                  |   Bin 0 -> 23325 bytes
+ .../m.mAhpEr/t1/daemon.log                         |     4 +
+ .../m.mAhpEr/t1/display                            |     1 +
+ .../m.mAhpEr/t1/driver.log                         |     0
+ .../m.mAhpEr/t1/events.jsonl                       |    41 +
+ .../m.mAhpEr/t1/expected.json                      |     1 +
+ .../m.mAhpEr/t1/ffmpeg.log                         |     1 +
+ .../m.mAhpEr/t1/fixture.log                        |     8 +
+ .../m.mAhpEr/t1/grant.txt                          |     1 +
+ .../m.mAhpEr/t1/ledger.json                        |    32 +
+ .../m.mAhpEr/t1/metadata.json                      |    18 +
+ .../m.mAhpEr/t1/openbox.log                        |     2 +
+ .../m.mAhpEr/t1/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.mAhpEr/t1/oracle.txt                         |     1 +
+ .../m.mAhpEr/t1/recording-start-ms.txt             |     1 +
+ .../m.mAhpEr/t1/recording.json                     |     5 +
+ .../m.mAhpEr/t1/review-cropped.png                 |   Bin 0 -> 39140 bytes
+ .../m.mAhpEr/t1/screen.mkv                         |   Bin 0 -> 76395 bytes
+ .../m.mAhpEr/t1/session.log                        |     3 +
+ .../m.mAhpEr/t1/submission.txt                     |     1 +
+ .../m.mAhpEr/t1/visual-review.json                 |    23 +
+ .../m.mAhpEr/t1/xvfb.log                           |    42 +
+ .../m.mAhpEr/t2/a11y.log                           |     4 +
+ .../m.mAhpEr/t2/a11y.log.raw.gz                    |   Bin 0 -> 278 bytes
+ .../m.mAhpEr/t2/after-confirmation.png             |   Bin 0 -> 18260 bytes
+ .../m.mAhpEr/t2/before-fill.png                    |   Bin 0 -> 21095 bytes
+ .../m.mAhpEr/t2/before-submit.png                  |   Bin 0 -> 23132 bytes
+ .../m.mAhpEr/t2/daemon.log                         |     3 +
+ .../m.mAhpEr/t2/display                            |     1 +
+ .../m.mAhpEr/t2/driver.log                         |     0
+ .../m.mAhpEr/t2/events.jsonl                       |    35 +
+ .../m.mAhpEr/t2/expected.json                      |     1 +
+ .../m.mAhpEr/t2/ffmpeg.log                         |     1 +
+ .../m.mAhpEr/t2/fixture.log                        |     8 +
+ .../m.mAhpEr/t2/grant.txt                          |     1 +
+ .../m.mAhpEr/t2/ledger.json                        |    32 +
+ .../m.mAhpEr/t2/metadata.json                      |    18 +
+ .../m.mAhpEr/t2/openbox.log                        |     2 +
+ .../m.mAhpEr/t2/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.mAhpEr/t2/oracle.txt                         |     1 +
+ .../m.mAhpEr/t2/recording-start-ms.txt             |     1 +
+ .../m.mAhpEr/t2/recording.json                     |     5 +
+ .../m.mAhpEr/t2/review-cropped.png                 |   Bin 0 -> 52516 bytes
+ .../m.mAhpEr/t2/screen.mkv                         |   Bin 0 -> 76670 bytes
+ .../m.mAhpEr/t2/session.log                        |     3 +
+ .../m.mAhpEr/t2/submission.txt                     |     1 +
+ .../m.mAhpEr/t2/visual-review.json                 |    23 +
+ .../m.mAhpEr/t2/xvfb.log                           |    23 +
+ .../m.mAhpEr/t3/a11y.log                           |     4 +
+ .../m.mAhpEr/t3/a11y.log.raw.gz                    |   Bin 0 -> 278 bytes
+ .../m.mAhpEr/t3/after-confirmation.png             |   Bin 0 -> 2722 bytes
+ .../m.mAhpEr/t3/before-fill.png                    |   Bin 0 -> 21039 bytes
+ .../m.mAhpEr/t3/before-submit.png                  |   Bin 0 -> 22921 bytes
+ .../m.mAhpEr/t3/daemon.log                         |     4 +
+ .../m.mAhpEr/t3/display                            |     1 +
+ .../m.mAhpEr/t3/driver.log                         |     0
+ .../m.mAhpEr/t3/events.jsonl                       |    47 +
+ .../m.mAhpEr/t3/expected.json                      |     1 +
+ .../m.mAhpEr/t3/ffmpeg.log                         |     1 +
+ .../m.mAhpEr/t3/fixture.log                        |    12 +
+ .../m.mAhpEr/t3/grant.txt                          |     1 +
+ .../m.mAhpEr/t3/metadata.json                      |    18 +
+ .../m.mAhpEr/t3/openbox.log                        |     2 +
+ .../m.mAhpEr/t3/openbox.log.raw.gz                 |   Bin 0 -> 144 bytes
+ .../m.mAhpEr/t3/oracle.txt                         |     1 +
+ .../m.mAhpEr/t3/recording-start-ms.txt             |     1 +
+ .../m.mAhpEr/t3/recording.json                     |     5 +
+ .../m.mAhpEr/t3/review-cropped.png                 |   Bin 0 -> 38630 bytes
+ .../m.mAhpEr/t3/screen.mkv                         |   Bin 0 -> 81820 bytes
+ .../m.mAhpEr/t3/session.log                        |     3 +
+ .../m.mAhpEr/t3/submission.txt                     |     1 +
+ .../m.mAhpEr/t3/visual-review.json                 |    23 +
+ .../m.mAhpEr/t3/xvfb.log                           |    23 +
+ .../field-mapping-form-completion/model-batch.mjs  |    48 +
+ .../field-mapping-form-completion/model-driver.mjs |    53 +
+ .../model-evidence.mjs                             |    71 +
+ .../field-mapping-form-completion/model-session.sh |    57 +
+ .../field-mapping-form-completion/observe.mjs      |    14 +
+ .../field-mapping-form-completion/open-replace.mjs |    28 +
+ .../phase2-gates/build.txt                         |   119 +
+ .../phase2-gates/build.txt.raw.gz                  |   Bin 0 -> 2010 bytes
+ .../phase2-gates/daemon-typecheck.txt              |     1 +
+ .../phase2-gates/daemon-typecheck.txt.raw.gz       |   Bin 0 -> 20 bytes
+ .../phase2-gates/desktop.txt                       |     9 +
+ .../phase2-gates/desktop.txt.raw.gz                |   Bin 0 -> 275 bytes
+ .../phase2-gates/digest.txt                        |     1 +
+ .../phase2-gates/evidence.txt                      |    15 +
+ .../phase2-gates/freeze.txt                        |     1 +
+ .../phase2-gates/generation.txt                    |     1 +
+ .../phase2-gates/labels.txt                        |     9 +
+ .../phase2-gates/labels.txt.raw.gz                 |   Bin 0 -> 260 bytes
+ .../phase2-gates/mutations.txt                     |   229 +
+ .../phase2-gates/transport.txt                     |     9 +
+ .../phase2-gates/transport.txt.raw.gz              |   Bin 0 -> 278 bytes
+ .../phase2-manifest.json                           |   680 +
+ .../phase3-earlier-1.png                           |   Bin 0 -> 105664 bytes
+ .../phase3-earlier-2.png                           |   Bin 0 -> 101915 bytes
+ .../phase3-gates/verification.txt                  |   615 +
+ .../phase3-gates/verification.txt.raw.gz           |   Bin 0 -> 10503 bytes
+ .../phase3-manifest.json                           |  2015 +
+ .../proofs/field-mapping-form-completion/phase3.md |    45 +
+ .../proofs/field-mapping-form-completion/probe.mjs |    72 +
+ .../publication-manifest.json                      |  1335 +
+ docs/proofs/field-mapping-form-completion/with.txt |     1 +
+ .../field-mapping-form-completion/without.txt      |     5 +
+ .../proofs/model-desktop-task-2026-09-06/README.md |   103 +
+ docs/proofs/model-desktop-task-2026-09-06/demo.sh  |    90 +
+ .../model-desktop-task-2026-09-06/driver.mjs       |   132 +
+ .../evidence/attempt-1/expected.json               |     1 +
+ .../evidence/attempt-1/metadata.json               |     1 +
+ .../evidence/attempt-1/recording.json              |    10 +
+ .../evidence/attempt-1/screen.mkv                  |   Bin 0 -> 65530 bytes
+ .../evidence/attempt-1/submission.txt              |     1 +
+ .../evidence/attempt-1/transcript.log              |    26 +
+ .../evidence/attempt-2/expected.json               |     1 +
+ .../evidence/attempt-2/metadata.json               |     1 +
+ .../evidence/attempt-2/recording.json              |    10 +
+ .../evidence/attempt-2/screen.mkv                  |   Bin 0 -> 105114 bytes
+ .../evidence/attempt-2/submission.txt              |     1 +
+ .../evidence/attempt-2/transcript.log              |    45 +
+ .../evidence/attempt-3/expected.json               |     1 +
+ .../evidence/attempt-3/metadata.json               |     1 +
+ .../evidence/attempt-3/recording.json              |    10 +
+ .../evidence/attempt-3/screen.mkv                  |   Bin 0 -> 98777 bytes
+ .../evidence/attempt-3/submission.txt              |     1 +
+ .../evidence/attempt-3/transcript.log              |    41 +
+ .../model-desktop-task-2026-09-06/fixture.sh       |    32 +
+ .../model-desktop-task-2026-09-06/verify.mjs       |    22 +
+ .../desktop/instructions/AGENT-INSTRUCTIONS.md     |    28 +
+ .../src/__tests__/the-adapter-is-optional.test.ts  |    24 +
+ .../the-prose-keeps-what-a-desk-taught-it.test.ts  |    21 +
+ protocol/golden/package.json                       |     2 +-
+ protocol/golden/src/index.ts                       |    27 +-
+ protocol/schema.json                               |    26 +-
+ tools/__tests__/schema.test.mjs                    |     2 +-
+ tools/mutations.json                               |    40 +
+ 823 files changed, 494621 insertions(+), 14 deletions(-)

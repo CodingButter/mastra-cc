@@ -1,0 +1,23 @@
+{
+  "visualReviewed": true,
+  "doesNotChangeOutcome": true,
+  "notes": "Reviewed private-browser image contact sheet of empty fields, correct filled fields and end state. Some end checkpoints show a closed window; no fresh verification is invented. Original failure outcomes remain authoritative.",
+  "recordingSha256": "61b07ee1ae7b60615a0b1ee97057de4f28465d60f5f7fec68102782be25bc2bd",
+  "checkpoints": [
+    {
+      "stage": "before-fill",
+      "file": "before-fill.png",
+      "sha256": "cc2bc17460f7bfec7f0c2bf14d6c8dc542a7e4921199241fb1c6ec47f9ae3ca1"
+    },
+    {
+      "stage": "before-submit",
+      "file": "before-submit.png",
+      "sha256": "659fd784ae8a351429b902c30bdb9a6ebb710e1f3f4a6b5650cf2358b22fc40e"
+    },
+    {
+      "stage": "after-confirmation",
+      "file": "after-confirmation.png",
+      "sha256": "c980db42a85d563c4bd984cb5662f8bb2a083463f3b76ed6063d06f77d25bd28"
+    }
+  ]
+}

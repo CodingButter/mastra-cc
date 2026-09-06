@@ -2,7 +2,8 @@ import { mkdtempSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import WebSocket from "ws";
 import { SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
 import { connect, isTransportConnectionError } from "../index.js";
 
@@ -42,9 +43,12 @@ async function peer(onRequest?: (message: { id: number; method: string }, socket
 }
 
 const peers: Peer[] = [];
-const nativeWebSocket = globalThis.WebSocket;
+vi.mock("ws", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("ws")>();
+  return { ...actual, default: vi.fn(function (url: string) { return new actual.default(url); }) };
+});
 afterEach(async () => {
-  globalThis.WebSocket = nativeWebSocket;
+  vi.mocked(WebSocket).mockReset();
   for (const item of peers.splice(0)) {
     for (const socket of item.sockets) socket.destroy();
     await new Promise<void>((resolve) => item.server.close(() => resolve()));
@@ -74,6 +78,10 @@ class ThrowingWebSocket {
     }
   }
 
+  terminate(): void {
+    this.emit("close", {});
+  }
+
   close(): void {
     this.emit("close", {});
   }
@@ -85,12 +93,11 @@ class ThrowingWebSocket {
 
 function throwingWebSocket(failAt: number): ThrowingWebSocket[] {
   const instances: ThrowingWebSocket[] = [];
-  globalThis.WebSocket = class extends ThrowingWebSocket {
-    constructor() {
-      super(failAt);
-      instances.push(this);
-    }
-  } as unknown as typeof WebSocket;
+  vi.mocked(WebSocket).mockImplementationOnce(function () {
+    const instance = new ThrowingWebSocket(failAt);
+    instances.push(instance);
+    return instance as unknown as WebSocket;
+  });
   return instances;
 }
 

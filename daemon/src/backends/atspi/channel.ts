@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import dbus from "dbus-native";
 import type { DbusBus, DbusWireMessage } from "dbus-native";
+import { ElementGoneError, PeerGoneError } from "../../backend.js";
 import type { BackendChange, ChannelWatch, TapeEvent } from "../../backend.js";
 import { type AtspiWatchAnchor, openSignalStream, type SignalBusOps } from "./signal-stream.js";
 
@@ -44,6 +45,24 @@ export function exchangeKey(x: Exchange): string {
 // is a refusal that must surface. Refuse-on-ignorance, not invention.
 export class UnrecordedExchangeError extends Error {}
 
+
+// The three shapes the bus uses to say "the process you addressed is not
+// there". ServiceUnknown is the tidy one; NoReply with that body is a peer
+// that died mid-call; a disconnected recipient is the same death, seen from
+// the other side of the reply.
+export function namesADeadNode(err: unknown): boolean {
+  return JSON.stringify(err ?? null).includes("org.freedesktop.DBus.Error.UnknownObject");
+}
+
+export function namesADeadPeer(err: unknown): boolean {
+  const wire = JSON.stringify(err ?? null);
+  return (
+    wire.includes("org.freedesktop.DBus.Error.ServiceUnknown") ||
+    wire.includes("disconnected from message bus") ||
+    wire.includes("org.freedesktop.DBus.Error.NoReply")
+  );
+}
+
 function invoke(bus: DbusBus, x: Exchange): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
     bus.invoke(
@@ -56,7 +75,11 @@ function invoke(bus: DbusBus, x: Exchange): Promise<unknown[]> {
         ...(x.body !== undefined ? { body: x.body } : {}),
       },
       (err, ...results) => {
-        if (err) reject(new Error(`d-bus call failed for ${exchangeKey(x)}: ${JSON.stringify(err)}`));
+        if (err) {
+          const detail = `d-bus call failed for ${exchangeKey(x)}: ${JSON.stringify(err)}`;
+          if (namesADeadNode(err)) reject(new ElementGoneError(detail));
+          else reject(namesADeadPeer(err) ? new PeerGoneError(detail) : new Error(detail));
+        }
         else resolve(results);
       },
     );

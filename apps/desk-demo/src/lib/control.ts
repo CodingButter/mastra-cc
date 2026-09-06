@@ -15,7 +15,13 @@ import type { ControlMode } from "./events";
 // An agent that could re-lock the desk on its own could lock a person out of
 // their own machine, and no demo is worth shipping that shape.
 
-type Waiter = { requestId: string; resolve: (note: string) => void };
+type Waiter = {
+  requestId: string;
+  resolve: (note: string) => void;
+  reject: (error: Error) => void;
+};
+
+export class ControlWaitEndedError extends Error {}
 
 let mode: ControlMode = "view";
 let reason: string | undefined;
@@ -42,23 +48,40 @@ function announce() {
 }
 
 /** Hand the desk to the person and wait for them. Resolves only when they say they are done. */
-export function requestControl(why: string, timeoutMs: number): { requestId: string; done: Promise<string> } {
-  // A previous request that nobody answered is abandoned rather than queued: the
-  // desk is already unlocked, and stacking waiters would leave one of them to be
-  // resolved by a Done press meant for the other.
-  waiter?.resolve("superseded by a later request");
+export function requestControl(
+  why: string,
+  timeoutMs: number,
+  signal?: AbortSignal,
+): { requestId: string; done: Promise<string> } {
+  signal?.throwIfAborted();
+  waiter?.reject(new ControlWaitEndedError("handover superseded; this agent must stop"));
   counter += 1;
   const requestId = `handover-${counter}`;
   mode = "interact";
   reason = why;
-  const done = new Promise<string>((resolve) => {
-    waiter = { requestId, resolve };
-    // Bounded, because a tool call that never returns is a hung agent with no
-    // explanation. The timeout is an ANSWER the agent has to read - "nobody
-    // confirmed" - not a silent success.
-    setTimeout(() => {
-      if (waiter?.requestId === requestId) release(requestId, "nobody confirmed within the waiting time");
-    }, timeoutMs).unref?.();
+  const done = new Promise<string>((resolve, reject) => {
+    let settled = false;
+    const finish = (note?: string, error?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
+      if (error) reject(error);
+      else resolve(note!);
+    };
+    const abort = () => finish(undefined, new ControlWaitEndedError("handover wait cancelled; the person still has control"));
+    const timer = setTimeout(() => {
+      finish(undefined, new ControlWaitEndedError("handover timed out; the person still has control until they press Done"));
+    }, timeoutMs);
+    timer.unref?.();
+    // Keep the request ID after the waiter ends: the person's Done button must
+    // still release their control, but cannot revive the stopped agent.
+    waiter = {
+      requestId,
+      resolve: (note) => finish(note),
+      reject: (error) => finish(undefined, error),
+    };
+    signal?.addEventListener("abort", abort, { once: true });
   });
   announce();
   return { requestId, done };

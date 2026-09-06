@@ -1,0 +1,494 @@
+{
+  "application": "yad",
+  "result": {
+    "elements": [
+      {
+        "id": "app-e349585a0186",
+        "role": "application",
+        "name": "yad",
+        "states": [],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "not-exposed"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "win-de81771b4f8b",
+        "role": "window",
+        "name": "Receipt transfer",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-eaacc520dba6",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.0/org/a11y/atspi/accessible/2",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-56ced85291f0",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.0/org/a11y/atspi/accessible/3",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-fbbcc69b161d",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.0/org/a11y/atspi/accessible/5",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-9bdab20e7beb",
+        "role": "label",
+        "name": "RECEIPT\nReceipt number: RCPT-a8374c53\nTotal paid: 264.09",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "RECEIPT\nReceipt number: RCPT-a8374c53\nTotal paid: 264.09"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-2ec47140faca",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "panel",
+          "nativeId": ":1.0/org/a11y/atspi/accessible/8",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-848aebc3543a",
+        "role": "text",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": ""
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-f45fbc97b907",
+        "role": "label",
+        "name": "Total paid",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Total paid"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-a30d51ff9cdb",
+        "role": "text",
+        "name": "",
+        "states": [
+          "enabled",
+          "focused",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": ""
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-2fb8dffa3618",
+        "role": "label",
+        "name": "Receipt number",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "Receipt number"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-23e13b4d9c0f",
+        "role": "generic",
+        "name": "",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "nativeRole": "filler",
+          "nativeId": ":1.0/org/a11y/atspi/accessible/4",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      {
+        "id": "el-307ff2f21c61",
+        "role": "button",
+        "name": "Record receipt",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "click",
+            "availability": "available",
+            "description": "Clicks the button",
+            "localizedName": "Click"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Click\"!=\"click\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      }
+    ]
+  }
+}

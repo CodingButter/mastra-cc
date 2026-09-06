@@ -1,0 +1,7 @@
+BATCH=/home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/m.Gdighx
+t1: MACHINE_PASS
+t2: MACHINE_PASS
+t3: MACHINE_PASS
+t4: MACHINE_PASS
+t5: MACHINE_PASS
+t6: FAIL

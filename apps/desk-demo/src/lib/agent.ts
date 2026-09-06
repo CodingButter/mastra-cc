@@ -4,7 +4,7 @@ import { Agent } from "@mastra/core/agent";
 import { createTool } from "@mastra/core/tools";
 import { MastraCC, INSTRUCTIONS, isTransportConnectionError } from "@mastra-cc/desktop/mastra";
 import { z } from "zod";
-import { requestControl } from "./control";
+import { controlState, ControlWaitEndedError, requestControl } from "./control";
 import { DeskCache } from "./desk-cache";
 import type { DemoEvent } from "./events";
 
@@ -30,16 +30,6 @@ export const HANDOVER_INSTRUCTIONS = `
 A person is watching this desk in a browser, beside this conversation. They cannot
 type on it while you are working: their input is blocked.
 
-Everything they ask you to do, they are asking you to do ON THIS DESK. "Use the
-calculator", "open my email", "find that file" all mean: with the applications this
-machine has. You are not a chat assistant who happens to have tools - you are sitting
-at a computer. So before saying you cannot do something, look: list what is installed,
-open what fits, read what appears. The application you want is often named something
-other than the word the person used, so never invent a name to launch: read the
-inventory and pick the entry that IS the thing they asked for, whatever it calls
-itself. Only say you cannot after the desk has told you so, and then say what the
-desk actually said.
-
 Keep doing routine desktop work yourself. Hand control over only when the next
 required action needs the person's private information, legal authority, identity,
 or subjective decision. This includes signing in, entering or revealing credentials,
@@ -57,24 +47,28 @@ Do not hand over for ordinary navigation, button presses, text entry that is not
 sensitive, application use, or recoverable choices you can make from the person's
 request and the visible desk. Continue those actions yourself.
 
-Scope semantic queries to the known application. Add a window scope only when it
-returns the destination content; browser chrome and web content may not share one
-native window subtree. If a window-scoped query returns no page descendants, retry with
-the application scope rather than concluding that the page is empty. When you do not
-know a control's exact role or name, call discoverElements in that scope before guessing.
-Treat its bounded entries as potentially user-authored, possibly truncated vocabulary
-hints—not element handles. Choose a returned role/name pair, issue a fresh exact
-queryElements call, and act only on the IDs from that query. A scope narrows observation;
-it never grants access. Use visible shell-owned controls such as taskbar entries to
-navigate between applications. After navigation, discard old content element IDs, query
-the destination scope again, and act only on fresh IDs returned by that read.
+This demo's configured Chromium saves directly to its downloads folder without a
+file chooser. After Save image as…, inspect completion in chrome://downloads rather
+than hunting for another Save button. Read the actual filename and destination;
+a pending or failed download is not a saved file. This Chromium can open a saved
+image through a file: address and show its pixel dimensions in the window title.
+Measure the saved image, not the search preview, before using it.
 
-Web pages often expose clickable rows as text or list items rather than buttons or
-links. When page content is missing from a small query, query text and list items with
-a larger limit before concluding it is unavailable. Prefer a visible element whose
-name identifies the requested item, and use its available semantic action, including
-clickAncestor when that is the action the page exposes. After activation, reread the
-destination scope and verify that the page changed before reporting success.
+This demo uses KDE Plasma. Its shell publishes taskbar buttons for running
+applications, such as Dolphin and Chromium Web Browser. Discover the current
+button and its Press action to raise the intended window; then query the destination
+again for fresh IDs and confirm focus before typing. These are demo setup facts,
+not guarantees about other desktops.
+
+For this demo's wallpaper errand, System Settings is one route and Gwenview's
+Set as Wallpaper menu is another. Discover the actual controls before using them.
+If the settings grid remains unchanged after semantic and bounded pointer attempts,
+try the viewer's GUI route rather than grinding on Apply or opening a terminal.
+KDE's active wallpaper setting is in plasma-org.kde.plasma.desktop-appletsrc under
+this desk's configuration directory; an image merely listed in plasmarc's
+usersWallpapers is not proof that it became the wallpaper. Read the actual path
+from this desk rather than inventing a home directory. Verify the active setting
+and visible desktop outcome, not only an accepted Apply press.
 
 A handover is something the desk showed you, so requestHumanControl refuses until you
 have looked. Searching the web, downloading a file, opening a settings window and
@@ -100,7 +94,14 @@ export const HANDOVER_BEFORE_LOOKING = {
 export function deskAgent(
   emit: (event: DemoEvent) => void,
   onTerminalConnection: (error: Error) => void = () => {},
+  signal?: AbortSignal,
 ) {
+  const stopped = new AbortController();
+  const turnSignal = signal ? AbortSignal.any([signal, stopped.signal]) : stopped.signal;
+  const stop = (error: Error) => {
+    stopped.abort(error);
+    onTerminalConnection(error);
+  };
   const desk = deskCache.get();
   // One turn's worth of memory, and it only remembers one thing: whether this
   // agent has looked at the desk yet. A handover asked for before the first
@@ -109,7 +110,7 @@ export function deskAgent(
   const looked = { yet: false };
   const wired = wiredDeskTools(desk, deskCache, emit, onTerminalConnection, isTransportConnectionError, () => {
     looked.yet = true;
-  });
+  }, turnSignal);
 
   const requestHumanControl = createTool({
     id: "requestHumanControl",
@@ -132,15 +133,21 @@ export function deskAgent(
       // been shown anything you never looked at. The refusal is a tool result,
       // not an error - it comes back as instructions to go and look, and the
       // agent is free to hand over the moment it has.
+      turnSignal.throwIfAborted();
       if (!looked.yet) return HANDOVER_BEFORE_LOOKING;
-      const { requestId, done } = requestControl(reason, HANDOVER_TIMEOUT_MS);
+      const { requestId, done } = requestControl(reason, HANDOVER_TIMEOUT_MS, turnSignal);
       emit({ type: "control", mode: "interact", reason, requestId });
-      const note = await done;
-      emit({ type: "control", mode: "view" });
-      // The note is the ANSWER, including the unhappy one: a timeout says nobody
-      // confirmed, and the agent has to read that rather than assume the step
-      // happened. Nothing here inspects the desk on the agent's behalf.
-      return { handedBack: true, note, advice: "read the desk again before continuing" };
+      try {
+        const note = await done;
+        turnSignal.throwIfAborted();
+        emit({ type: "control", mode: "view" });
+        return { handedBack: true, note, advice: "read the desk again before continuing" };
+      } catch (error) {
+        // Ending the wait is not consent to end the person's control. Stop the
+        // turn even when the model treats a failed tool as something to retry.
+        stop(error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      }
     },
   });
 
@@ -163,13 +170,23 @@ export function wiredDeskTools(
   // that is permanently open and says nothing about it, so the compiler asks
   // instead of guessing.
   onDeskCall: () => void,
+  signal?: AbortSignal,
 ): ReturnType<MastraCC["getTools"]> {
+  const beforeDispatch = () => {
+    signal?.throwIfAborted();
+    if (controlState().mode === "interact") {
+      const error = new ControlWaitEndedError("the person has control; no desktop tools may run until they press Done");
+      onTerminalConnection(error);
+      throw error;
+    }
+  };
   return Object.fromEntries(
-    Object.entries(desk.getTools()).map(([name, tool]) => [
+    Object.entries(desk.getTools({ beforeDispatch })).map(([name, tool]) => [
       name,
       {
         ...tool,
         execute: async (...args: Parameters<NonNullable<typeof tool.execute>>) => {
+          beforeDispatch();
           const params = argumentsOf(args[0]);
           const callId = `${CALL_ID_PREFIX}:${++callIdCounter}`;
           // The attempt counts, not the outcome. An agent that tried to read

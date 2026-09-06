@@ -1,0 +1,14 @@
+ARTIFACT /home/codingbutter/mastra-cc/packages/transport/dist/index.mjs
+SHA256 4eacba4a786da58427774990a4c4800b11a3a2cb0cd7ee8708f9b1dcd96c23a3
+RUNTIME v25.2.1
+PASS unix: TransportConnectionError in 10002ms; peer closed; no requests/retry; late activity cannot rescue
+PASS raw: TransportConnectionError in 10005ms; peer closed; no requests/retry; late activity cannot rescue
+PASS ws: TransportConnectionError in 10005ms; peer closed; no requests/retry; late activity cannot rescue
+PASS delayed-ws: TransportConnectionError in 9999ms; peer closed; no requests/retry; late activity cannot rescue
+OBSERVED uncooperative caller rejection: 10002ms
+OBSERVED uncooperative close frame: not received (allowed); underlying TCP close: 0ms after rejection (before harness cleanup)
+PASS uncooperative: bounded rejection AND TCP close; no requests/retry; peer never replies to WebSocket frames
+PASS unix explicit fresh-connect recovery: matching digest; listApplications before and after 10.5s; startup deadline cleared
+PASS ws explicit fresh-connect recovery: matching digest; listApplications before and after 10.5s; startup deadline cleared
+PASS all startup assertions (transport peers only; no desktop effects)
+CLEANUP complete; awaiting natural process exit (outer timeout detects retained handles)

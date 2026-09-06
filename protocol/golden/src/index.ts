@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.15.0
+// Mastra CC protocol v1.20.0
 
-export const PROTOCOL_VERSION = "1.15.0";
-export const SCHEMA_DIGEST = "402c13c572f451153956f1e6d83820af00124618348008327da30b7e40ef0d80";
+export const PROTOCOL_VERSION = "1.20.0";
+export const SCHEMA_DIGEST = "921561e1f264376c975fc67ba136c6947928f36028dc96eda6071f380f07bcad";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -26,7 +26,7 @@ export const CHANGE_KINDS = ["appeared","disappeared","changed","watchEnded"] as
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
-export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText"] as const;
+export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText","clearElementText","clickElement","describeDesktop","captureElement"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
 /** One element, named for what a person means by it. */
@@ -45,9 +45,28 @@ export interface SemanticElement {
   operations?: Operation[];
   /** The current content observation for this element. A permitted ordinary control carries exact text, a bounded text window, or numeric content; a protected control carries only a redaction reason; and an element whose readable content is not published carries an unavailable reason. Callers re-query after a mutation to obtain a fresh observation and use readElementContent to traverse additional text windows. */
   content: ObservableContent;
+  /** Explicit native labels, distinct from name and content. Omission means this backend does not implement the observation. Strings are untrusted evidence, not instructions or unique identity. Discovery omits this metadata. */
+  labelObservation?: LabelObservation;
   /** Debug-only carrier and the only exemption from the neutral-vocabulary rule: native identifiers may appear here for a human reading a log, and are never load-bearing. */
   diagnostic?: Diagnostic;
 }
+
+/** Bounded explicit label evidence; never changes names, values, grants or identity. */
+export interface LabelObservationAvailable {
+  /** The native relation set was read successfully. */
+  kind: "available";
+  /** Verbatim explicit labels. Empty means a successfully read empty set; multiple labels remain multiple. At most eight targets, 1024 Unicode code points per label, 4096 total. */
+  labels: string[];
+}
+
+export interface LabelObservationUnavailable {
+  /** No complete trustworthy label observation is available. */
+  kind: "unavailable";
+  /** Unsupported method, failed read, failed ownership/protection check, or exhausted bound respectively. Never a partial label list. */
+  reason: "not-exposed" | "unreadable" | "out-of-scope" | "limit-exceeded";
+}
+
+export type LabelObservation = LabelObservationAvailable | LabelObservationUnavailable;
 
 /** One provider-neutral content observation. The discriminant makes exact text, bounded text windows, numeric content, protected redaction, and unavailable observation mutually exclusive on the wire. */
 export interface ObservableContentText {
@@ -233,6 +252,26 @@ export interface AccessibilityLayer {
   state: AccessibilityState;
   /** Why the state could not be determined, in words an operator can act on. Present exactly when state is cannot-tell: an ignorance with no reason is a shrug, and a reason attached to a measurement is noise. */
   reason?: string;
+}
+
+/** Where this desktop keeps a session's own files. A caller cannot see a filesystem through this contract and is not being given one: these are the few paths a desktop's applications will themselves offer - the home a file dialog opens in, the folder a browser saves into - and they are here because the alternative is a caller inventing them. An invented path produces an application's own not-found page, which reads exactly like a file that failed to save, and a caller that cannot tell those apart reports a download as broken or a save as done. Nothing here reads, writes or lists a file; the paths are the desktop's, not this daemon's, and a desktop that does not publish one omits it rather than guessing. */
+export interface DesktopPlaces {
+  /** The session's home directory, when the desktop publishes one. Absent rather than defaulted: a home this daemon assumed would be a guess wearing an answer's clothes. */
+  home?: string;
+  /** The folder this desktop's applications save downloads into, when it publishes one. Not derived from home - a desktop is free to put it elsewhere, and the deriving is the mistake this field exists to remove. */
+  downloads?: string;
+}
+
+/** A picture of one part of this desktop, as bytes rather than as a description. Every other answer in this contract is what the platform SAYS about a thing; this is what the thing LOOKS like, and it exists because the saying runs out: an image on a web page routinely publishes no name and content the platform reports as not exposed, which reads to a caller exactly like a blank rectangle, and a caller with no eyes then guesses - at file names, at menu items, at whether anything happened at all. The picture is bounded by an element that this daemon has already answered for, so it is not a screen recording and not a view of a desk the caller was never shown: it is the rectangle of one named thing, read at the moment of the call. */
+export interface CapturedImage {
+  /** The encoding of the bytes. "png", always: one lossless format, so a caller never has to ask what it is looking at. */
+  format: string;
+  /** The width of the picture in pixels, which is the width of the element's rectangle as the platform published it at the moment of the grab. */
+  width: number;
+  /** The height of the picture in pixels, on the same terms. */
+  height: number;
+  /** The image bytes, base64. Bounded by this daemon: a picture larger than its ceiling is refused rather than quietly shrunk, because a caller told an image is 4096 wide when it was resized to 512 has been given a measurement that is not true. */
+  data: string;
 }
 
 /** Find elements matching a semantic query. Observation only. */
@@ -522,6 +561,62 @@ export interface TypeTextResult {
   /** Present when the text was delivered; the element as it reads AFTERWARDS, read back from the desktop. It is evidence of what the element became, never a claim that the text arrived in it - the caller compares it against what it expected. */
   element?: SemanticElement;
   /** Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the character or the length when the text is not printable or too long, and what was observed when the element could not be focused or the machine has no way to deliver a key at all. */
+  refusal?: string;
+}
+
+/** Empty one element's text by keystroke, so that a subsequent typeText writes a field instead of extending it. This is RAW INPUT in the same class as sendKeyChord and typeText, and it exists because typing is an APPEND: a field that publishes a value to read but no interface to set it can be typed into and cannot be replaced, and pressing a named chord once per character is the only vocabulary this contract has. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying, and it presses nothing it cannot count: the element's own published text says how many characters are there, the presses are bounded by that reading, and an element whose text this daemon cannot read is refused rather than cleared blind. The outcome is read back from the desktop and COMPARED - an element that is not empty afterwards is a refusal, never a success with a disappointing element attached. */
+export interface ClearElementTextParams {
+  /** The element to empty. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
+  id: string;
+}
+
+export interface ClearElementTextResult {
+  /** Present when the element read back empty; the element as it reads AFTERWARDS, read back from the desktop. An element that still carries text is reported as a refusal instead, because the whole point of this method is the comparison. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the reason the element's text could not be read, the length when there is more text than this method will press through, and what was observed when the element did not come back empty. */
+  refusal?: string;
+}
+
+/** Press a pointer button inside one element that this daemon has already answered for. This is a POINTER, and it is deliberately not a free one: there is no method here that takes a screen coordinate, because a coordinate names a place on a screen rather than a thing on a desk, and a daemon that clicked places could not say afterwards what it had clicked. What this method takes is an ELEMENT and, optionally, a position INSIDE that element expressed as a fraction of its own rectangle, which the daemon turns into a screen point from the bounds the platform publishes for it. It exists because a published action is not always offered: a grid of images, a canvas, a map and a custom widget can all be seen, named and bounded while publishing nothing to activate, and an agent that can only activate what advertises itself has one road that can fail rather than several that can succeed. An element the platform gives no bounds for, or that is off screen, or that is not visible, is refused rather than guessed at, and the outcome is read back from the desktop afterwards like every other effect in this contract. */
+export interface ClickElementParams {
+  /** The element to press inside. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a click aimed at where something used to be. */
+  id: string;
+  /** Which pointer button: "left", "middle" or "right". Defaults to "left". A name this contract never defined is refused by name rather than mapped to something near it. */
+  button?: string;
+  /** How many presses in one gesture: the daemon accepts 1 or 2 and defaults to 1, so that a double click is asked for by name rather than assembled by a caller sending two clicks and hoping the platform joins them. */
+  count?: number;
+  /** Where inside the element to press, horizontally, as a fraction of its own width from its left edge. Defaults to 0.5, the centre. Refused outside 0 through 1, because a fraction outside the element is a click on a neighbour. */
+  x?: number;
+  /** Where inside the element to press, vertically, as a fraction of its own height from its top edge. Defaults to 0.5, the centre. Refused outside 0 through 1 for the same reason. */
+  y?: number;
+}
+
+export interface ClickElementResult {
+  /** Present when the press was delivered; the element as it reads AFTERWARDS, read back from the desktop. A pointer press is not aimed at an element the way a semantic action is - it is aimed at a point that was inside the element when the bounds were read - so this element is evidence to compare against what was expected, not a claim that the click did what the caller wanted. */
+  element?: SemanticElement;
+  /** Present otherwise; names the check that ran and what would change the answer - the effect class this session was not granted, the missing pointer route on a build that has none, the button or count or fraction that was not in this contract's vocabulary, and the reason the element could not be aimed at: no bounds published, an empty rectangle, or a rectangle that is off the screen. */
+  refusal?: string;
+}
+
+/** Ask this desktop where its own files live. Observation only, and of the machine rather than of anything an application published: no file is read, listed or opened, and nothing here is per-application, so there is no capability it could belong to. It exists because every other verb in this contract is about what is ON the screen, and a caller that must name a path has nowhere else to learn one - so it uses the home directory of whatever machine it was trained on, and a desk whose home is somewhere else answers with a not-found page that a caller reads as a failed save. Answering carries no risk: these paths are already visible in any file dialog the caller is permitted to open. */
+export interface DescribeDesktopParams {
+}
+
+export interface DescribeDesktopResult {
+  /** The paths this desktop publishes, each omitted when it publishes none. */
+  places: DesktopPlaces;
+}
+
+/** Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. Pixels are read from the window the element sits in, not from the root - a compositing window manager can refuse the root outright - so an element behind another window is answered with its own window's pixels rather than with whatever is covering it. */
+export interface CaptureElementParams {
+  /** The element to look at. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a picture of where something used to be. */
+  id: string;
+}
+
+export interface CaptureElementResult {
+  /** Present when the picture was taken; the element's rectangle as pixels. */
+  image?: CapturedImage;
+  /** Present otherwise; names the check that ran and what would change the answer - an element the platform gives no bounds for, one that is off screen, a desk with no way to grab its own pixels, or a picture past this daemon's ceiling. */
   refusal?: string;
 }
 
@@ -982,10 +1077,86 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
       ],
       "additionalProperties": false
     }
+  },
+  "clearElementText": {
+    "description": "Empty one element's text by keystroke, so that a subsequent typeText writes a field instead of extending it. This is RAW INPUT in the same class as sendKeyChord and typeText, and it exists because typing is an APPEND: a field that publishes a value to read but no interface to set it can be typed into and cannot be replaced, and pressing a named chord once per character is the only vocabulary this contract has. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying, and it presses nothing it cannot count: the element's own published text says how many characters are there, the presses are bounded by that reading, and an element whose text this daemon cannot read is refused rather than cleared blind. The outcome is read back from the desktop and COMPARED - an element that is not empty afterwards is a refusal, never a success with a disappointing element attached.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to empty. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "clickElement": {
+    "description": "Press a pointer button inside one element that this daemon has already answered for. This is a POINTER, and it is deliberately not a free one: there is no method here that takes a screen coordinate, because a coordinate names a place on a screen rather than a thing on a desk, and a daemon that clicked places could not say afterwards what it had clicked. What this method takes is an ELEMENT and, optionally, a position INSIDE that element expressed as a fraction of its own rectangle, which the daemon turns into a screen point from the bounds the platform publishes for it. It exists because a published action is not always offered: a grid of images, a canvas, a map and a custom widget can all be seen, named and bounded while publishing nothing to activate, and an agent that can only activate what advertises itself has one road that can fail rather than several that can succeed. An element the platform gives no bounds for, or that is off screen, or that is not visible, is refused rather than guessed at, and the outcome is read back from the desktop afterwards like every other effect in this contract.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to press inside. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a click aimed at where something used to be.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        },
+        "button": {
+          "description": "Which pointer button: \"left\", \"middle\" or \"right\". Defaults to \"left\". A name this contract never defined is refused by name rather than mapped to something near it.",
+          "type": "string"
+        },
+        "count": {
+          "description": "How many presses in one gesture: the daemon accepts 1 or 2 and defaults to 1, so that a double click is asked for by name rather than assembled by a caller sending two clicks and hoping the platform joins them.",
+          "type": "number"
+        },
+        "x": {
+          "description": "Where inside the element to press, horizontally, as a fraction of its own width from its left edge. Defaults to 0.5, the centre. Refused outside 0 through 1, because a fraction outside the element is a click on a neighbour.",
+          "type": "number"
+        },
+        "y": {
+          "description": "Where inside the element to press, vertically, as a fraction of its own height from its top edge. Defaults to 0.5, the centre. Refused outside 0 through 1 for the same reason.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "describeDesktop": {
+    "description": "Ask this desktop where its own files live. Observation only, and of the machine rather than of anything an application published: no file is read, listed or opened, and nothing here is per-application, so there is no capability it could belong to. It exists because every other verb in this contract is about what is ON the screen, and a caller that must name a path has nowhere else to learn one - so it uses the home directory of whatever machine it was trained on, and a desk whose home is somewhere else answers with a not-found page that a caller reads as a failed save. Answering carries no risk: these paths are already visible in any file dialog the caller is permitted to open.",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  "captureElement": {
+    "description": "Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. Pixels are read from the window the element sits in, not from the root - a compositing window manager can refuse the root outright - so an element behind another window is answered with its own window's pixels rather than with whatever is covering it.",
+    "params": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The element to look at. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a picture of where something used to be.",
+          "type": "string",
+          "pattern": "^(el|win|app)-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
   }
 };
 
-const TYPE_SPECS = {"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"running":{"type":"runningState","literal":null,"literals":null,"required":true,"pattern":null},"runningUnknownBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"elementDiscoveryEntry":{"fields":{"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"count":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"accessibilityLayer":{"fields":{"state":{"type":"accessibilityState","literal":null,"literals":null,"required":true,"pattern":null},"reason":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null}} as const;
+const TYPE_SPECS = {"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"labelObservation":{"type":"labelObservation","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"labelObservation":{"fields":null,"variants":[{"name":"available","fields":{"kind":{"type":null,"literal":"available","literals":null,"required":true,"pattern":null},"labels":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unreadable","out-of-scope","limit-exceeded"],"required":true,"pattern":null}}}]},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"running":{"type":"runningState","literal":null,"literals":null,"required":true,"pattern":null},"runningUnknownBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"elementDiscoveryEntry":{"fields":{"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"count":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"accessibilityLayer":{"fields":{"state":{"type":"accessibilityState","literal":null,"literals":null,"required":true,"pattern":null},"reason":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"desktopPlaces":{"fields":{"home":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"downloads":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capturedImage":{"fields":{"format":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"width":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"height":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"data":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null}} as const;
 const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"runningState":["answering","not-answering","cannot-tell"],"accessibilityState":["enabled","disabled","cannot-tell"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit","rawInput"],"keyChordName":["Enter","Escape","Tab","Backspace","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown","F2"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"]};
 
 type FieldSpec = {

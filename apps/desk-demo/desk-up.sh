@@ -27,7 +27,6 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 # different, empty /config, and nothing here can disturb the harness.
 export MASTRA_CC_WEBTOP_PROJECT="${MASTRA_CC_WEBTOP_PROJECT:-mcc-desk-demo}"
 export MASTRA_CC_WEBTOP_PORT="${MASTRA_CC_WEBTOP_PORT:-13320}"
-export MASTRA_CC_WEBTOP_HTTPS_PORT="${MASTRA_CC_WEBTOP_HTTPS_PORT:-13321}"
 export MASTRA_CC_WEBTOP_BIND="${MASTRA_CC_WEBTOP_BIND:-127.0.0.1}"
 export MASTRA_CC_DESKTOP_HOST="${MASTRA_CC_DESKTOP_HOST:-127.0.0.1}"
 . "$ROOT/infra/webtop/common.sh"
@@ -88,6 +87,56 @@ fi
 # Desk preparation, like kcalc above - not the image, not the daemon.
 container_exec bash -lc 'printf "%s\n" "CHROMIUM_FLAGS=\"\$CHROMIUM_FLAGS --force-renderer-accessibility\"" >/etc/chromium.d/90-mcc-accessibility'
 
+# A DOWNLOAD THAT DOES NOT KILL THE BROWSER. Saving an image opens Chromium's
+# GTK file chooser; GTK decodes that dialog's icons through glycin, which reruns
+# the decode inside bubblewrap, and bubblewrap cannot make a user namespace on
+# this host (kernel.apparmor_restrict_unprivileged_userns). GTK turns the failed
+# icon into a fatal assertion, so - measured 2026-09-04 - asking this browser to
+# save a picture killed the browser outright, before any dialog existed for the
+# desk to read or refuse.
+#
+# The dialog is not the point; the file is. Chromium's own policy directory
+# turns the chooser off and names the folder, so "Save image as..." writes
+# straight to ~/Downloads. Desk preparation, like the accessibility flag above:
+# the daemon is unchanged and the agent still reaches the menu item the same
+# way. An operator who wants the picker back deletes this file and gets the
+# crash back with it, until the host allows user namespaces.
+container_exec bash -lc 'mkdir -p /etc/chromium/policies/managed &&
+  printf "%s\n" "{ \"PromptForDownloadLocation\": false, \"DownloadDirectory\": \"/config/Downloads\" }" \
+    >/etc/chromium/policies/managed/90-mcc-downloads.json'
+
+# A BROWSER THAT OPENS ONTO A PAGE, NOT A CONTRACT. On a profile it has never
+# seen, Chromium puts up "Chromium Additional Terms of Service" - a modal that
+# is not published to the accessibility bus at all, so the desk shows a running
+# application with no windows and the daemon refuses the launch as unreadable
+# (measured 2026-09-05: openApplication timed out twice on a fresh desk while
+# the dialog sat there, visible in the noVNC session and invisible to the tree).
+# Chromium treats an existing "First Run" sentinel as the run that already
+# happened, and with it the modal does not appear; the sentinel alone is enough,
+# no preference file is edited. Desk preparation for a new /config, like the
+# flags above.
+container_exec bash -lc 'mkdir -p /config/.config/chromium &&
+  touch "/config/.config/chromium/First Run" &&
+  chown -R abc:abc /config/.config/chromium'
+
+# A DESKTOP THAT CAN BE CHANGED. This image ships its Plasma containments with
+# immutability=1, which locks the desktop's own configuration: System Settings
+# still shows the wallpaper page, still adds an image to the list, and its Apply
+# button still lights - and nothing is written, because the containment refuses
+# the write (measured 2026-09-04: the wallpaper file landed in plasmarc's
+# usersWallpapers and the containment's Image key never appeared). An agent
+# doing this errand cannot tell a locked desk from a failed one, so the desk is
+# unlocked here rather than left to look like a broken daemon.
+appletsrc=/config/.config/plasma-org.kde.plasma.desktop-appletsrc
+if container_exec bash -lc "grep -q '^immutability=1\$' $appletsrc 2>/dev/null"; then
+  container_exec bash -lc "sed -i 's/^immutability=1\$/immutability=0/' $appletsrc"
+  # The lock is read when the shell starts, so the shell is restarted here -
+  # before the daemon is started below, so the accessibility tree the daemon
+  # attaches to is the one the restarted shell publishes.
+  session_exec 'plasmashell --replace >/dev/null 2>&1 & disown' || true
+  sleep 8
+fi
+
 # What this desk lets the agent do, stated in one place so a viewer can read the
 # demo's authority off the screen rather than guessing it. Everything absent from
 # these lists is refused by the daemon, and a refusal is part of the demo.
@@ -120,7 +169,11 @@ mapfile -t ENTRY_NAMES < <(
   elif test -n "${DESK_DEMO_APPS:-}"; then
     printf '%s\n' $DESK_DEMO_APPS
   else
-    printf '%s\n' kcalc kate dolphin konsole chromium systemsettings
+    # gwenview earns its place (an image's own "Set as Wallpaper" menu); konsole
+    # does not. A desktop errand is done on the desktop, and a terminal the
+    # operator hands over is a road the prose forbids and the run takes anyway
+    # (measured 2026-09-05, ADR-0090). Set DESK_DEMO_APPS to put it back.
+    printf '%s\n' kcalc kate dolphin gwenview chromium systemsettings
   fi
 )
 PERMITS=()
@@ -184,12 +237,15 @@ IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}
 cat >"$HERE/.env.local" <<ENV
 # Written by desk-up.sh. The container's address changes when it is recreated.
 MASTRA_CC_URL=ws://$IP:$PORT
-NEXT_PUBLIC_DESKTOP_URL=https://$MASTRA_CC_DESKTOP_HOST:$MASTRA_CC_WEBTOP_HTTPS_PORT
+NEXT_PUBLIC_DESKTOP_URL=http://$MASTRA_CC_DESKTOP_HOST:$MASTRA_CC_WEBTOP_PORT
 ENV
 
 echo
 echo "desk:    ws://$IP:$PORT"
-echo "desktop: https://$MASTRA_CC_DESKTOP_HOST:$MASTRA_CC_WEBTOP_HTTPS_PORT"
+# The compose file publishes ONE port (infra/webtop/compose.yml), the plain
+# http one. A banner naming a TLS port nobody mapped sends a person to a
+# door that does not answer - measured 2026-09-05, when it sent one.
+echo "desktop: http://$MASTRA_CC_DESKTOP_HOST:$MASTRA_CC_WEBTOP_PORT"
 echo "wrote    apps/desk-demo/.env.local"
 echo
 echo "now: GOOGLE_API_KEY=... pnpm --filter @mastra-cc/desk-demo dev"

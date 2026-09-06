@@ -1,0 +1,120 @@
+generate: 3 file(s) emitted to /home/codingbutter/mastra-cc/packages/protocol-types (schema v1.20.0, digest 921561e1f264...)
+
+   • Packages in scope: @mastra-cc/daemon, @mastra-cc/desk-demo, @mastra-cc/desktop, @mastra-cc/protocol-types, @mastra-cc/tools, @mastra-cc/transport
+   • Running build in 6 packages
+   • Remote caching disabled
+
+[36m@mastra-cc/protocol-types:build: [0mcache bypass, force executing [2md3c651a4a588982b[0m
+[36m@mastra-cc/protocol-types:build: [0m
+[36m@mastra-cc/protocol-types:build: [0m> @mastra-cc/protocol-types@1.20.0 build /home/codingbutter/mastra-cc/packages/protocol-types
+[36m@mastra-cc/protocol-types:build: [0m> tsc -p tsconfig.json
+[36m@mastra-cc/protocol-types:build: [0m
+[35m@mastra-cc/daemon:build: [0mcache bypass, force executing [2m3cd3cca7af98c6dd[0m
+[35m@mastra-cc/daemon:build: [0m
+[35m@mastra-cc/daemon:build: [0m> @mastra-cc/daemon@0.0.0 build /home/codingbutter/mastra-cc/daemon
+[35m@mastra-cc/daemon:build: [0m> tsdown && mkdir -p dist/tools/pins && cp ../tools/pins/deny-list.json dist/tools/pins/deny-list.json
+[35m@mastra-cc/daemon:build: [0m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [34mtsdown v0.22.14[39m powered by [91mrolldown v1.2.3[39m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m config file: [4m/home/codingbutter/mastra-cc/daemon/tsdown.config.ts[24m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m entry: [34msrc/index.ts, src/main.ts[39m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m Build start
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m Cleaning 12 files
+[35m@mastra-cc/daemon:build: [0m
+[35m@mastra-cc/daemon:build: [0m[43m WARN [49m TypeScript 7.0 does not yet have a stable API and is experimental. Some options will be unavailable.
+[35m@mastra-cc/daemon:build: [0m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m Emit types with [4mtypescript@7.0.2[24m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m Hint: consider adding [34mdeps.onlyBundle[39m option to avoid unintended bundling of dependencies, or set [34mdeps.onlyBundle: false[39m to disable this hint.
+[35m@mastra-cc/daemon:build: [0mSee more at [4mhttps://tsdown.dev/options/dependencies#deps-onlybundle[24m
+[35m@mastra-cc/daemon:build: [0mDetected dependencies in bundle:
+[35m@mastra-cc/daemon:build: [0m- [34mdbus-native[39m
+[35m@mastra-cc/daemon:build: [0m- [34mxml2js[39m
+[35m@mastra-cc/daemon:build: [0m- [34mxmlbuilder[39m
+[35m@mastra-cc/daemon:build: [0m- [34msax[39m
+[35m@mastra-cc/daemon:build: [0m- [34mws[39m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[1mmain.mjs[22m                       [2m 18.68 kB[22m [2m│ gzip:   6.23 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[1mindex.mjs[22m                      [2m  2.18 kB[22m [2m│ gzip:   0.99 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mreplay-l-UBdNhj.mjs            [2m474.33 kB[22m [2m│ gzip: 107.99 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mserver-_G29Bat0.mjs            [2m124.73 kB[22m [2m│ gzip:  30.90 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mwrapper-DqQbFP8R.mjs           [2m112.25 kB[22m [2m│ gzip:  23.43 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mrolldown-runtime-CMFfr-1z.mjs  [2m  1.31 kB[22m [2m│ gzip:   0.65 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22mverify-CUJThxjQ.mjs            [2m  1.18 kB[22m [2m│ gzip:   0.58 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m                    [2m 59.10 kB[22m [2m│ gzip:  16.33 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mmain.d.mts[22m[39m                     [2m  0.01 kB[22m [2m│ gzip:   0.03 kB[22m
+[35m@mastra-cc/daemon:build: [0m[34mℹ[39m 9 files, total: 793.76 kB
+[35m@mastra-cc/daemon:build: [0m[32m✔[39m Build complete in [32m341ms[39m
+[32m@mastra-cc/transport:build: [0mcache bypass, force executing [2me77c5160202dd5be[0m
+[32m@mastra-cc/transport:build: [0m
+[32m@mastra-cc/transport:build: [0m> @mastra-cc/transport@0.1.0 build /home/codingbutter/mastra-cc/packages/transport
+[32m@mastra-cc/transport:build: [0m> tsdown
+[32m@mastra-cc/transport:build: [0m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m [34mtsdown v0.22.14[39m powered by [91mrolldown v1.2.3[39m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m config file: [4m/home/codingbutter/mastra-cc/packages/transport/tsdown.config.ts[24m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m entry: [34msrc/index.ts[39m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m Build start
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m Cleaning 2 files
+[32m@mastra-cc/transport:build: [0m
+[32m@mastra-cc/transport:build: [0m[43m WARN [49m TypeScript 7.0 does not yet have a stable API and is experimental. Some options will be unavailable.
+[32m@mastra-cc/transport:build: [0m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m Emit types with [4mtypescript@7.0.2[24m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m [2mdist/[22m[1mindex.mjs[22m    [2m8.05 kB[22m [2m│ gzip: 2.38 kB[22m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m  [2m4.15 kB[22m [2m│ gzip: 1.16 kB[22m
+[32m@mastra-cc/transport:build: [0m[34mℹ[39m 2 files, total: 12.20 kB
+[32m@mastra-cc/transport:build: [0m[32m✔[39m Build complete in [32m106ms[39m
+[33m@mastra-cc/desktop:build: [0mcache bypass, force executing [2m7b37f5a1728b6734[0m
+[33m@mastra-cc/desktop:build: [0m
+[33m@mastra-cc/desktop:build: [0m> @mastra-cc/desktop@0.1.0 build /home/codingbutter/mastra-cc/packages/desktop
+[33m@mastra-cc/desktop:build: [0m> tsdown
+[33m@mastra-cc/desktop:build: [0m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m [34mtsdown v0.22.14[39m powered by [91mrolldown v1.2.3[39m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m config file: [4m/home/codingbutter/mastra-cc/packages/desktop/tsdown.config.ts[24m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m entry: [34msrc/index.ts, src/mastra.ts[39m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m Build start
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m Cleaning 4 files
+[33m@mastra-cc/desktop:build: [0m
+[33m@mastra-cc/desktop:build: [0m[43m WARN [49m TypeScript 7.0 does not yet have a stable API and is experimental. Some options will be unavailable.
+[33m@mastra-cc/desktop:build: [0m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m Emit types with [4mtypescript@7.0.2[24m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[1mmastra.mjs[22m    [2m9.03 kB[22m [2m│ gzip: 3.72 kB[22m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[1mindex.mjs[22m     [2m3.90 kB[22m [2m│ gzip: 1.74 kB[22m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mmastra.d.mts[22m[39m  [2m7.42 kB[22m [2m│ gzip: 2.98 kB[22m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m   [2m3.71 kB[22m [2m│ gzip: 1.66 kB[22m
+[33m@mastra-cc/desktop:build: [0m[34mℹ[39m 4 files, total: 24.06 kB
+[33m@mastra-cc/desktop:build: [0m[32m✔[39m Build complete in [32m179ms[39m
+[34m@mastra-cc/desk-demo:build: [0mcache bypass, force executing [2mfd6a59c488f3104a[0m
+[34m@mastra-cc/desk-demo:build: [0m
+[34m@mastra-cc/desk-demo:build: [0m> @mastra-cc/desk-demo@0.0.0 build /home/codingbutter/mastra-cc/apps/desk-demo
+[34m@mastra-cc/desk-demo:build: [0m> next build
+[34m@mastra-cc/desk-demo:build: [0m
+[34m@mastra-cc/desk-demo:build: [0m[1m[38;2;173;127;168m▲ Next.js 16.3.4[39m[22m (Turbopack)
+[34m@mastra-cc/desk-demo:build: [0m- Environments: .env.local
+[34m@mastra-cc/desk-demo:build: [0m[32m[1m✓[22m[39m Running next.config.mjs took 6ms
+[34m@mastra-cc/desk-demo:build: [0m
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Creating an optimized production build ...
+[34m@mastra-cc/desk-demo:build: [0m[32m[1m✓[22m[39m Compiled successfully in 146ms
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Running TypeScript ...
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Finished TypeScript in 289ms ...
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Collecting page data using 6 workers ...
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (0/5) ...
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (1/5)
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (2/5)
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Generating static pages using 6 workers (3/5)
+[34m@mastra-cc/desk-demo:build: [0m[32m[1m✓[22m[39m Generating static pages using 6 workers (5/5) in 582ms
+[34m@mastra-cc/desk-demo:build: [0m[37m[1m [22m[39m Finalizing page optimization ...
+[34m@mastra-cc/desk-demo:build: [0m
+[34m@mastra-cc/desk-demo:build: [0m[4mRoute (app)[24m
+[34m@mastra-cc/desk-demo:build: [0m┌ ○ /
+[34m@mastra-cc/desk-demo:build: [0m├ ○ /_not-found
+[34m@mastra-cc/desk-demo:build: [0m├ ƒ /api/chat
+[34m@mastra-cc/desk-demo:build: [0m└ ƒ /api/control
+[34m@mastra-cc/desk-demo:build: [0m
+[34m@mastra-cc/desk-demo:build: [0m
+[34m@mastra-cc/desk-demo:build: [0m○  (Static)   prerendered as static content
+[34m@mastra-cc/desk-demo:build: [0mƒ  (Dynamic)  server-rendered on demand
+[34m@mastra-cc/desk-demo:build: [0m
+
+[1m Tasks:    [32m[1m5 successful[0m, 5 total[0m
+[1mCached:    [1m0 cached[0m, 5 total[0m
+[1m  Time:    [1m5.005s[0m [0m

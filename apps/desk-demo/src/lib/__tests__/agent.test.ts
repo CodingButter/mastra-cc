@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MastraCC } from "@mastra-cc/desktop/mastra";
+import { MastraCC } from "@mastra-cc/desktop/mastra";
 import { isTransportConnectionError } from "@mastra-cc/desktop/mastra";
 import { HANDOVER_BEFORE_LOOKING, HANDOVER_INSTRUCTIONS, wiredDeskTools } from "../agent";
 import { DeskCache } from "../desk-cache";
@@ -21,21 +21,21 @@ describe("handover instructions", () => {
     expect(HANDOVER_INSTRUCTIONS).toContain("Do not merely say that");
     expect(HANDOVER_INSTRUCTIONS).toContain("Do not finish the turn");
     expect(HANDOVER_INSTRUCTIONS).toContain("Do not hand over for ordinary navigation");
-    expect(HANDOVER_INSTRUCTIONS).toContain("Scope semantic queries to the known application");
-    expect(HANDOVER_INSTRUCTIONS).toContain("browser chrome and web content may not share one");
-    expect(HANDOVER_INSTRUCTIONS).toContain("retry with\nthe application scope");
-    expect(HANDOVER_INSTRUCTIONS).toContain("call discoverElements in that scope before guessing");
-    expect(HANDOVER_INSTRUCTIONS).toContain("possibly truncated vocabulary\nhints—not element handles");
-    expect(HANDOVER_INSTRUCTIONS).toContain("issue a fresh exact\nqueryElements call");
-    expect(HANDOVER_INSTRUCTIONS).toContain("A scope narrows observation;\nit never grants access");
-    expect(HANDOVER_INSTRUCTIONS).toContain("shell-owned controls such as taskbar");
-    expect(HANDOVER_INSTRUCTIONS).toContain("discard old content element IDs");
-    expect(HANDOVER_INSTRUCTIONS).toContain("fresh IDs returned by that read");
-    expect(HANDOVER_INSTRUCTIONS).toContain("query text and list items with");
-    expect(HANDOVER_INSTRUCTIONS).toContain("clickAncestor");
-    expect(HANDOVER_INSTRUCTIONS).toContain("reread the\ndestination scope");
-    expect(HANDOVER_INSTRUCTIONS).toContain("verify that the page changed");
     expect(HANDOVER_INSTRUCTIONS).toContain("read the desk again");
+  });
+
+  it("owns configured browser, taskbar, and KDE facts rather than generic discovery", () => {
+    const flat = HANDOVER_INSTRUCTIONS.replace(/\s+/g, " ");
+    for (const fact of ["without a file chooser", "chrome://downloads", "pixel dimensions",
+      "KDE Plasma", "taskbar buttons", "Press action", "Set as Wallpaper",
+      "plasma-org.kde.plasma.desktop-appletsrc", "usersWallpapers",
+      "not guarantees about other desktops", "pending or failed download is not a saved file",
+      "Verify the active setting and visible desktop outcome"]) {
+      expect(flat).toContain(fact);
+    }
+    expect(HANDOVER_INSTRUCTIONS).not.toContain("discoverElements");
+    expect(HANDOVER_INSTRUCTIONS).not.toContain("clickAncestor");
+    expect(HANDOVER_INSTRUCTIONS).not.toContain("browser chrome and web content");
   });
 
   it("names web search, downloads and settings as ordinary desktop work rather than boundaries", () => {
@@ -96,6 +96,76 @@ describe("a handover asked for before looking", () => {
 });
 
 describe("wiredDeskTools", () => {
+  it.each(["cancel", "handover", "healthy"] as const)("rechecks %s after a delayed connection before real dispatch", async (mode) => {
+    const { requestControl, release } = await import("../control");
+    const desk = new MastraCC();
+    type Client = Awaited<ReturnType<MastraCC["client"]>>;
+    let resolveDial!: (client: Client) => void;
+    const dial = new Promise<Client>((resolve) => { resolveDial = resolve; });
+    const queryElements = vi.fn(async () => ({ elements: [] }));
+    vi.spyOn(desk, "client").mockReturnValue(dial);
+    const cache = new DeskCache<MastraCC>(() => desk);
+    const events: DemoEvent[] = [];
+    const stop = vi.fn();
+    const abort = new AbortController();
+    const wired = wiredDeskTools(cache.get(), cache, event => events.push(event), stop, isTransportConnectionError, () => {}, abort.signal);
+    const pending = wired.queryElements.execute!({ role: "button" } as never, {} as never);
+    expect(queryElements).not.toHaveBeenCalled();
+    expect(events.map(event => event.type)).toEqual(["tool"]);
+    const handover = mode === "handover" ? requestControl("sign in", 1000) : undefined;
+    if (mode === "cancel") abort.abort(new Error("turn cancelled"));
+    try {
+      resolveDial({ queryElements } as unknown as Client);
+      if (mode === "healthy") {
+        await expect(pending).resolves.toEqual({ elements: [] });
+        expect(queryElements).toHaveBeenCalledExactlyOnceWith({ role: "button" });
+      } else {
+        await expect(pending).rejects.toThrow(mode === "cancel" ? "turn cancelled" : "person has control");
+        expect(queryElements).not.toHaveBeenCalled();
+      }
+      expect(stop).toHaveBeenCalledTimes(mode === "handover" ? 1 : 0);
+      expect(cache.get()).toBe(desk);
+      expect(events.map(event => event.type)).toEqual(["tool", "tool-result"]);
+      const calls = events.filter(event => event.type === "tool");
+      const results = events.filter(event => event.type === "tool-result");
+      expect(results[0]!.callId).toBe(calls[0]!.callId);
+    } finally {
+      if (handover) {
+        release(handover.requestId);
+        await handover.done;
+      }
+    }
+  });
+
+  it("does not dispatch a fresh tool after cancellation", async () => {
+    const execute = vi.fn(async () => "ok");
+    const desk = fakeDesk(execute);
+    const cache = new DeskCache<MastraCC>(() => desk);
+    const abort = new AbortController();
+    const wired = wiredDeskTools(desk, cache, () => {}, () => {}, isTransportConnectionError, () => {}, abort.signal);
+    abort.abort(new Error("turn cancelled"));
+    await expect(wired.queryElements.execute!({ role: "button" } as never, {} as never)).rejects.toThrow("turn cancelled");
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("does not dispatch tools while the person controls the desk", async () => {
+    const { requestControl, release } = await import("../control");
+    const execute = vi.fn(async () => "ok");
+    const desk = fakeDesk(execute);
+    const cache = new DeskCache<MastraCC>(() => desk);
+    const stop = vi.fn();
+    const wired = wiredDeskTools(desk, cache, () => {}, stop, isTransportConnectionError, () => {});
+    const { requestId, done } = requestControl("sign in", 1000);
+    try {
+      await expect(wired.queryElements.execute!({ role: "button" } as never, {} as never)).rejects.toThrow("person has control");
+      expect(execute).not.toHaveBeenCalled();
+      expect(stop).toHaveBeenCalledOnce();
+    } finally {
+      release(requestId);
+      await done;
+    }
+  });
+
   it("invalidates a terminally failed desk, aborts once, and does not retry", async () => {
     const terminal = new Error("transport: connection closed");
     const execute = vi.fn(async () => {

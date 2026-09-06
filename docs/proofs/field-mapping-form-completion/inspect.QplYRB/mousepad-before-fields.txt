@@ -1,0 +1,1 @@
+{"ref":[":1.3","/org/a11y/atspi/accessible/121"],"role":"text","name":"","parent":[":1.3","/org/a11y/atspi/accessible/34"],"relations":[[]],"bounds":[2,313,638,447],"labelledTargets":[]}

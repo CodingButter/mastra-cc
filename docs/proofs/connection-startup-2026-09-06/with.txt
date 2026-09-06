@@ -1,0 +1,7 @@
+ARTIFACT /home/codingbutter/mastra-cc/packages/transport/dist/index.mjs
+PASS unix: TransportConnectionError in 10002ms; peer closed; no requests/retry; late activity cannot rescue
+PASS raw: TransportConnectionError in 10003ms; peer closed; no requests/retry; late activity cannot rescue
+PASS ws: TransportConnectionError in 10007ms; peer closed; no requests/retry; late activity cannot rescue
+PASS delayed-ws: TransportConnectionError in 10001ms; peer closed; no requests/retry; late activity cannot rescue
+PASS explicit fresh-connect recovery: matching digest; listApplications before and after 10.5s; startup deadline cleared
+PASS all startup assertions (transport peers only; no desktop effects)

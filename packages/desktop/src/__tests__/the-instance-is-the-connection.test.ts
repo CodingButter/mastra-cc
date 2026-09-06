@@ -1,7 +1,8 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { TransportClient } from "@mastra-cc/transport";
 import { METHOD_NAMES } from "@mastra-cc/protocol-types";
 import { AtspiBackend, replayChannel, startServer } from "@mastra-cc/daemon";
 import { MastraCC } from "../mastra.js";
@@ -41,6 +42,27 @@ function desk(socketPath: string): MastraCC {
 }
 
 describe("MastraCC", () => {
+  it("checks each tool set's guard after the pending dial, without affecting other tool sets", async () => {
+    const instance = new MastraCC();
+    let resolveDial!: (client: TransportClient) => void;
+    const dial = new Promise<TransportClient>((resolve) => { resolveDial = resolve; });
+    const queryElements = vi.fn(async () => ({ elements: [] }));
+    vi.spyOn(instance, "client").mockReturnValue(dial);
+    const abort = new AbortController();
+    const guard = vi.fn(() => abort.signal.throwIfAborted());
+    const guarded = instance.getTools({ beforeDispatch: guard });
+    const healthy = instance.getTools();
+    const pending = guarded.queryElements.execute!({ role: "window" } as never, undefined as never);
+    expect(guard).not.toHaveBeenCalled();
+    abort.abort(new Error("cancelled during dial"));
+    resolveDial({ queryElements } as unknown as TransportClient);
+    await expect(pending).rejects.toThrow("cancelled during dial");
+    expect(guard).toHaveBeenCalledOnce();
+    expect(queryElements).not.toHaveBeenCalled();
+    await expect(healthy.queryElements.execute!({ role: "window" } as never, undefined as never)).resolves.toEqual({ elements: [] });
+    expect(queryElements).toHaveBeenCalledExactlyOnceWith({ role: "window" });
+  });
+
   it("dials once, however many times its surfaces are asked for", async () => {
     const instance = desk(await daemonOnATape());
 

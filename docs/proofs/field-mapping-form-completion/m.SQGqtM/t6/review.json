@@ -1,0 +1,60 @@
+{
+  "visualReviewed": true,
+  "comparisonReviewed": true,
+  "reviewer": "Wren",
+  "method": "Actually viewed extracted full recording checkpoints through browser on private Xvfb; reviewed both contact sheets and ordinary saved-state closeup. Independent evidence validation compares observed label IDs, entered values, actual public post-submit confirmation and exact external oracle before final response.",
+  "eventsSha256": "38f82f4e3678b272ae6593aba6640fd308aa5d20b3854fee07a5d2aab63a2e87",
+  "recordingSha256": "1e27859f8e399ce64e3fcb4b3bca7454627d63da7a414a18bc4d3c59094e94d2",
+  "checkpoints": [
+    {
+      "stage": "before-fill",
+      "file": "checkpoint-1.png",
+      "sha256": "802bedc308becb64aca13d7c05c9b4ba512420c6931fa5cc60bc26f9577d34fd"
+    },
+    {
+      "stage": "before-submit",
+      "file": "checkpoint-2.png",
+      "sha256": "30b90c0cc1dfc2ae7067bbcf9b02333e65b6dfc699c294d2974323e8b1278c0c"
+    },
+    {
+      "stage": "after-confirmation",
+      "file": "checkpoint-3.png",
+      "sha256": "b718c05649bdcd7fdd8f8301a6ce3fe4e718cea2eca80687fffe0ffaf04cb5f1"
+    }
+  ],
+  "comparison": {
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Name:",
+        "value": "Launcher-be322b072d",
+        "id": "el-feb70ed96ae4",
+        "labelCall": 12,
+        "actionCall": 14,
+        "index": 35
+      },
+      {
+        "label": "Comment:",
+        "value": "Comment-a02f313022",
+        "id": "el-5f0ca93fbbfc",
+        "labelCall": 12,
+        "actionCall": 15,
+        "index": 38
+      }
+    ],
+    "submission": {
+      "call": 16,
+      "index": 41,
+      "time": 1788729594671
+    },
+    "verification": {
+      "call": 21,
+      "time": 1788729601837,
+      "actual": {
+        "name": "Launcher-be322b072d",
+        "comment": "Comment-a02f313022"
+      }
+    },
+    "finalEvent": 59
+  }
+}

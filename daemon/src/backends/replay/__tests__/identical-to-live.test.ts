@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ID_PATTERN, type ElementDiscoveryEntry } from "@mastra-cc/protocol-types";
 import { loadTape, ReplayBackend } from "../index.js";
+import { WindowScopeUnmatchedError } from "../../../backend.js";
 
 // Replaying the committed tape must produce the same tree the live capture
 // recorded - checked against the RAW tape data, not against replay's own
@@ -104,13 +105,16 @@ describe("the replay backend answers identically to the live capture", () => {
     expect(JSON.stringify(discovered)).not.toContain("el-");
   });
 
-  it("reports a window the capture does not hold as an empty scope, not as an invented one", async () => {
+  it("refuses a window the capture does not hold, rather than answering about it emptily", async () => {
     const backend = new ReplayBackend("gtk-dialog", "all");
     // The tape records this application's windows, so a name that is not among
     // them is an honest absence rather than a gap in the recording: discovery
-    // says nothing matched, and never manufactures a window to fill it.
-    const answer = await backend.discoverElements({ application: "yad", window: "a window nobody ever captured" });
+    // refuses the scope by name, and never manufactures a window to fill it -
+    // nor an empty answer, which would have read as "that window has nothing
+    // in it" about a window that is not there at all.
+    await expect(backend.discoverElements({ application: "yad", window: "a window nobody ever captured" })).rejects.toBeInstanceOf(
+      WindowScopeUnmatchedError,
+    );
     await backend.close();
-    expect(answer).toEqual({ entries: [], truncated: false });
   });
 });

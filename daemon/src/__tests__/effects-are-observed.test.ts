@@ -48,6 +48,13 @@ interface Staged {
   obeys: boolean;
   /** What the platform answers to DoAction. */
   performs: boolean;
+  /**
+   * The rectangle the element publishes, or undefined for an element with no
+   * place at all. Chromium keeps `offscreen` set on web content a scroll has
+   * just brought into the viewport, so this is the second witness a reveal
+   * asks when the state still says offscreen.
+   */
+  rectangle: [number, number, number, number] | undefined;
   interfaces: string[];
 }
 
@@ -59,6 +66,7 @@ function stage(overrides: Partial<Staged> = {}): { channel: Channel; staged: Sta
     showing: true,
     obeys: true,
     performs: true,
+    rectangle: undefined,
     interfaces: [VALUE_IFACE, TEXT_IFACE, COMPONENT_IFACE, ACTION_IFACE, "org.a11y.atspi.EditableText"],
     ...overrides,
   };
@@ -99,6 +107,9 @@ function stage(overrides: Partial<Staged> = {}): { channel: Channel; staged: Sta
           if (staged.obeys) staged.caret = target;
           return [true];
         }
+        case "GetExtents":
+          if (staged.rectangle === undefined) throw new Error("this element publishes no extents");
+          return [staged.rectangle];
         case "ScrollTo":
           // The measured shape: the platform answers true for a scroll a
           // non-scrolling container never made.
@@ -176,6 +187,18 @@ describe("an operation whose write the platform did not perform is refused, not 
     expect(failure).toBeInstanceOf(WriteNotObservedError);
   });
 
+  it("refuses a reveal whose element still sits above the screen", async () => {
+    // The state says offscreen AND the rectangle agrees: a negative corner is
+    // above or left of the screen. Two witnesses, one story, one refusal.
+    const { channel } = stage({ obeys: false, showing: false, rectangle: [38, -470, 240, 240] });
+    const { backend, id } = await subject(channel);
+
+    const failure = await backend.revealElement({ id }).catch((error: unknown) => error);
+    await backend.close();
+
+    expect(failure).toBeInstanceOf(WriteNotObservedError);
+  });
+
   it("refuses an action the application declined, rather than re-reading and calling it done", async () => {
     // An action is a bare verb: the element publishes no state saying what the
     // verb was supposed to change, so the platform's own `false` is the only
@@ -225,6 +248,20 @@ describe("an operation the platform did perform answers with the element, and sa
 
     expect(element).toBeDefined();
     expect(staged.showing).toBe(true);
+  });
+
+  it("answers a reveal whose element shows on screen even when the state still says offscreen", async () => {
+    // MEASURED ON CHROMIUM: after ScrollTo the node kept `offscreen` and yet
+    // published a rectangle squarely on the screen, and could be pressed
+    // there. Refusing that made revealElement unusable on web content, which
+    // is the one place an agent needs it most.
+    const { channel } = stage({ obeys: false, showing: false, rectangle: [120, 340, 240, 240] });
+    const { backend, id } = await subject(channel);
+
+    const { element } = await backend.revealElement({ id });
+    await backend.close();
+
+    expect(element).toBeDefined();
   });
 
   it("answers a performed action with the element as it reads afterwards", async () => {

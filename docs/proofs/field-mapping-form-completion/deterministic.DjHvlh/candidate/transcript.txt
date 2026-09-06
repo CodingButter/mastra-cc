@@ -1,0 +1,5 @@
+dbus-daemon[298849]: [session uid=1000 pid=298849] Activating service name='org.gtk.vfs.Daemon' requested by ':1.1' (uid=1000 pid=298873 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[298849]: [session uid=1000 pid=298849] Successfully activated service 'org.gtk.vfs.Daemon'
+SETUP_OK: matched hello and both unchanged unnamed calibrated fields
+CANDIDATE_GREEN: explicit associations match independently calibrated fields
+A connection to the bus can't be made

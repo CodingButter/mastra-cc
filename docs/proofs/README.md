@@ -31,6 +31,17 @@ Phase commits: `e355cfb` and `2b97903`, `94b9d6c`, `170ff05` (browser), `502c228
 
 | Artifact | Question |
 |---|---|
+| [Explicit field labels and verified form completion](field-mapping-form-completion/README.md) | Bounded native label evidence, deterministic base RED/candidate GREEN, five verified receipt trials and one exo-desktop-item-edit direct-label completion; retained failures and limits, not general reliability |
+| [Invalid concurrent gates](field-mapping-form-completion/phase4-gates/concurrent-gates-invalid.md) | Why mutation/build overlap is invalid and serial gates replace it |
+| [Readiness retry hypothesis](field-mapping-form-completion/phase4-gates/readiness-hypothesis.md) | Historical ordinary-app readiness investigation |
+| [Editable-role retry hypothesis](field-mapping-form-completion/phase4-gates/role-hypothesis.md) | Historical text/textbox coverage investigation |
+| [Dialog-role retry hypothesis](field-mapping-form-completion/phase4-gates/dialog-hypothesis.md) | Final application-neutral dialog/window distinction |
+| [Final model batch and all retained outcomes](field-mapping-form-completion/phase4.md) | Final five-receipt/one-launcher batch, 44 candidate sessions, reproduction and high-risk review paths |
+| [Model trial ledger and limits](field-mapping-form-completion/phase3.md) | Every Phase 3 attempted batch, public confirmation readback and ordinary-app oracle |
+| [Historical model receipt transfers](model-desktop-task-2026-09-06/README.md) | Three retained prompt-only RED trials preceding native label observations |
+| [Bounded connection startup](connection-startup-2026-09-06/README.md) | One startup deadline, real stalled-peer teardown including an uncooperative WebSocket, and explicit healthy recovery; see retained transcripts for measured results |
+| [Native desktop restoration](native-restoration-2026-09-06/README.md) | Real GTK text readback, independently verified visible screenshot pixels and button callback through the public WebSocket API; restoration GREEN, not merge-base RED |
+| [Architecture audit boundary evidence](architecture-audit-2026-09-05/README.md) | Source-backed capture ownership and handover lifecycle defects, with explicit distinction between defect reproduction and corrected regression evidence |
 | [which condition makes a browser readable](which-condition-makes-a-browser-readable.md) | Q01 — the flag is mandatory; nothing else flips it |
 | [what the browser protocol gives us](what-the-browser-protocol-gives-us.md) | The browser substrate's shape, including per-session re-arming |
 | [what a page-level recorder observes](what-a-page-level-recorder-observes.md) | G6 — 5 of 8 effect paths; instrument, never gate |

@@ -1,0 +1,3 @@
+daemon: websocket listening on 127.0.0.1:42655
+daemon: listening on /home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/m.SQGqtM/t1/runtime/d.sock (backend atspi, schema 921561e1f264...)
+daemon: clickElement failed in the backend: PeerGoneError: d-bus call failed for :1.3|/org/a11y/atspi/accessible/7|org.a11y.atspi.Accessible|GetRoleName|[]: {"name":"DBusError","dbusName":"org.freedesktop.DBus.Error.NoReply","body":["Message recipient disconnected from message bus without replying"],"reply":{"serial":6,"replySerial":485,"errorName":"org.freedesktop.DBus.Error.NoReply","signature":"s","sender":"org.freedesktop.DBus","destination":":1.2","type":3,"flags":1,"body":["Message recipient disconnected from message bus without replying"]}}

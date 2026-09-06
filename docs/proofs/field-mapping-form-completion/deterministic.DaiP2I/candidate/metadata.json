@@ -1,0 +1,22 @@
+{
+  "side": "candidate",
+  "root": "/home/codingbutter/mastra-cc",
+  "commit": "2bfb38074555633cb8e097b9c409d031f247f7d5",
+  "dirtyDiffSha256": "61af62d4dd79729a621c176936cce43428fe97fe8eef5f1baea0c7079cd2d2ac",
+  "schemaSha256": "921561e1f264376c975fc67ba136c6947928f36028dc96eda6071f380f07bcad",
+  "digestHandshake": "connect succeeded with artifact-root client",
+  "artifacts": [
+    {
+      "path": "/home/codingbutter/mastra-cc/daemon/dist/main.mjs",
+      "sha256": "8ac044a2b17913a32cc5f01f4331833413ebf6feb2c072eddb5205e2a6bd5a6c"
+    },
+    {
+      "path": "/home/codingbutter/mastra-cc/packages/desktop/dist/index.mjs",
+      "sha256": "6d903ec2dafe1304e9702c863c097dd0b5285b3014ceb372d9147cc7db2c35d6"
+    },
+    {
+      "path": "/home/codingbutter/mastra-cc/packages/protocol-types/src/index.ts",
+      "sha256": "70fe6235772cc4142164d56e19ef1703ce36ff154fed4ddf32b1b91f3f27dea0"
+    }
+  ]
+}

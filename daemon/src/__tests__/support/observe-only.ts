@@ -38,7 +38,10 @@ export const observeOnlyEffects: Pick<
   | "setElementCaret"
   | "revealElement"
   | "sendKeyChord"
+  | "clickElement"
+  | "captureElement"
   | "typeText"
+  | "clearElementText"
 > = {
   installedApplications: async () => {
     throw new InventoryUnsupportedError("this test double has no machine behind it and cannot enumerate what is installed");
@@ -87,6 +90,17 @@ export const observeOnlyEffects: Pick<
     throw new EffectUnsupportedError("this test double observes only");
   },
   typeText: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  clearElementText: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  clickElement: async () => {
+    throw new EffectUnsupportedError("this test double observes only");
+  },
+  // And a double with no screen cannot photograph one. A picture invented here
+  // would be the same falsehood as an invented keystroke, one sense over.
+  captureElement: async () => {
     throw new EffectUnsupportedError("this test double observes only");
   },
 };

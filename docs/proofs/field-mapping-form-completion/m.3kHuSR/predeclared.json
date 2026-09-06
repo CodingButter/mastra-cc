@@ -1,0 +1,42 @@
+{
+  "created": "2026-09-06T20:25:58.583Z",
+  "hypothesis": "Previous batch inferred success from a Close button without reading submitted values. Portable guidance now explicitly requires querying confirmation content before dismissal, including recovery after application replacement; strict verification oracle unchanged.",
+  "commit": "55339eb5f62321a16d9b2ebc0df1ca9cf64cb79e",
+  "trials": [
+    {
+      "id": "t1",
+      "kind": "receipt"
+    },
+    {
+      "id": "t2",
+      "kind": "receipt"
+    },
+    {
+      "id": "t3",
+      "kind": "receipt"
+    },
+    {
+      "id": "t4",
+      "kind": "receipt"
+    },
+    {
+      "id": "t5",
+      "kind": "receipt"
+    },
+    {
+      "id": "t6",
+      "kind": "ordinary"
+    }
+  ],
+  "batchDeadlineMs": 1800000,
+  "killGraceMs": 15000,
+  "trialDeadlineMs": 240000,
+  "trialBytes": 268435456,
+  "batchBytes": 2147483648,
+  "harnessHashes": {
+    "model-batch.mjs": "239867589d6b5669a111ae2bcc8b3e4c9c3331b875ef29d679b94bb88838fb39",
+    "model-session.sh": "ec3202c3ff8375cc3e410c12b91fd2043de6457ece2acba24d82479f5d1095c5",
+    "model-driver.mjs": "2ff1e094814f0c5d1164d535c9fb7ebc0a8f7a4aca14f8a896303b7a7bf2326b",
+    "model-evidence.mjs": "d1bb2c1a302f3da6eb3a2d1fd936db27650f285eb91aa5ad8a1c29ed81f963ab"
+  }
+}

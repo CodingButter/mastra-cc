@@ -63,7 +63,7 @@ describe("the built daemon remains location-transparent", () => {
 
   it("keeps launch readiness bounded and refuses to pretend spawn means readable", () => {
     const server = readFileSync(join(root, "daemon", "src", "server.ts"), "utf8");
-    expect(server).toContain("POLL_BUDGET_MS = 10_000");
+    expect(server).toContain("POLL_BUDGET_MS = 60_000");
     expect(server).toContain("was opened but did not become readable within");
   });
 });

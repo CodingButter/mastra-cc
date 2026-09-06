@@ -1,0 +1,7 @@
+[
+  {
+    "id": "t1",
+    "kind": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: fresh post-submit public actual-value verification before final text"
+  }
+]

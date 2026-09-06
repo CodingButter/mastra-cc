@@ -1,0 +1,12 @@
+
+(mousepad:194894): GLib-CRITICAL **: 14:36:50.626: g_strjoinv: assertion 'str_array != NULL' failed
+
+(mousepad:194894): GLib-CRITICAL **: 14:36:50.626: g_strjoinv: assertion 'str_array != NULL' failed
+
+** (mousepad:194894): CRITICAL **: 14:36:52.523: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed
+
+(mousepad:194894): Gdk-CRITICAL **: 14:36:52.753: gdk_window_get_window_type: assertion 'GDK_IS_WINDOW (window)' failed
+
+(mousepad:194894): Gtk-CRITICAL **: 14:36:52.776: gtk_accessible_get_widget: assertion 'GTK_IS_ACCESSIBLE (accessible)' failed
+
+** (mousepad:194894): CRITICAL **: 14:36:53.809: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed

@@ -1,0 +1,18 @@
+{
+  "model": "google/gemini-2.5-flash",
+  "temperature": 0,
+  "maxSteps": 24,
+  "modelDeadlineMs": 180000,
+  "task": "Read the receipt shown in the Receipt transfer window. Put the receipt number into Receipt number and its printed total into Total paid, then press Record receipt. Verify the result.",
+  "instructionsSha256": "1901168808a2ba6269a7d390d4d6ae4f83b171a48a921daea69f2e049f31c863",
+  "artifactHashes": {
+    "daemon/dist/main.mjs": "ef802f7ac78c52f4cfeb10cde3078c67943f0c29ee3afdae354e522a009c8bf9",
+    "packages/desktop/dist/mastra.mjs": "42ffe5640205c57c117fadbba7fa815f1709f2b90aca619f975a0a9b2b5550e1",
+    "packages/desktop/dist/index.mjs": "6d903ec2dafe1304e9702c863c097dd0b5285b3014ceb372d9147cc7db2c35d6",
+    "packages/transport/dist/index.mjs": "4eacba4a786da58427774990a4c4800b11a3a2cb0cd7ee8708f9b1dcd96c23a3",
+    "packages/protocol-types/src/index.ts": "70fe6235772cc4142164d56e19ef1703ce36ff154fed4ddf32b1b91f3f27dea0",
+    "docs/proofs/model-desktop-task-2026-09-06/fixture.sh": "6bc513d8a7661f4e082ca560553439cc02bed3610e7cf2eade2ce171d3f0879a",
+    "docs/proofs/model-desktop-task-2026-09-06/verify.mjs": "233c0e598d4b8dca80b0f6b026d5d8bedbfc2b6072bec059da214dd43cc54822",
+    "docs/proofs/field-mapping-form-completion/model-driver.mjs": "76ea020f58003c46112ac562dcfa64b73facbd4c9f4540355d9f4a58448b15ac"
+  }
+}

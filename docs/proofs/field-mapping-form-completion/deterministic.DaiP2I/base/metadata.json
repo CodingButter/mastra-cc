@@ -1,0 +1,22 @@
+{
+  "side": "base",
+  "root": "/tmp/field-label-base.NpzUc5/worktree",
+  "commit": "ab8329678060524858ce6fc20d3c5c4bd68db13a",
+  "dirtyDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "schemaSha256": "9187887e9aebe94ddbfeb7c1b7d3e273415fd58aa7bac6ec2594069510e16e13",
+  "digestHandshake": "connect succeeded with artifact-root client",
+  "artifacts": [
+    {
+      "path": "/tmp/field-label-base.NpzUc5/worktree/daemon/dist/main.mjs",
+      "sha256": "d2cf863ad22be672ceff79f907a08c53a494ceeba72000ab7cb8042f911c8e59"
+    },
+    {
+      "path": "/tmp/field-label-base.NpzUc5/worktree/packages/desktop/dist/index.mjs",
+      "sha256": "6d903ec2dafe1304e9702c863c097dd0b5285b3014ceb372d9147cc7db2c35d6"
+    },
+    {
+      "path": "/tmp/field-label-base.NpzUc5/worktree/packages/protocol-types/src/index.ts",
+      "sha256": "d0c60cce7c4e2c900f836cbb7739432288e97b1df2063c8fc3005d4fe16dd284"
+    }
+  ]
+}

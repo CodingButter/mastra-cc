@@ -1,0 +1,14 @@
+RUN=/home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/inspect.PjrOI3
+dbus-daemon[300540]: [session uid=1000 pid=300540] Activating service name='org.gtk.vfs.Daemon' requested by ':1.2' (uid=1000 pid=300580 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[300540]: [session uid=1000 pid=300540] Successfully activated service 'org.gtk.vfs.Daemon'
+dbus-daemon[300540]: [session uid=1000 pid=300540] Activating service name='org.gtk.vfs.Metadata' requested by ':1.13' (uid=1000 pid=301399 comm="exo-desktop-item-edit /home/codingbutter/mastra-cc" label="unconfined")
+dbus-daemon[300540]: [session uid=1000 pid=300540] Successfully activated service 'org.gtk.vfs.Metadata'
+A connection to the bus can't be made
+{
+  "kind": "EVIDENCE",
+  "setupCalibrationOnly": true,
+  "receiptOrder": "receipt|total|newline",
+  "ordinaryApplication": "exo-desktop-item-edit",
+  "modelTrials": 0
+}
+PROOF: EVIDENCE

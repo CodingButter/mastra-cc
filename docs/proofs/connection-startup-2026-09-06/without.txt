@@ -1,0 +1,8 @@
+ARTIFACT /tmp/mastra-startup-before/index.mjs
+SHA256 60061a741958e40c2bef461a5d71e609f4c6936f7dafc46c5c602304c7059739
+RUNTIME v25.2.1
+ARTIFACT /tmp/mastra-startup-before/index.mjs
+FAIL Error: ASSERTION FAILED [unix]: connect did not reject by deadline (13000ms cap)
+    at Timeout.<anonymous> (file:///home/codingbutter/mastra-cc/docs/proofs/connection-startup-2026-09-06/proof.mjs:31:39)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)

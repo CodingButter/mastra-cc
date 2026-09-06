@@ -1,0 +1,56 @@
+{
+  "setupOnly": true,
+  "values": {
+    "Receipt number": "CALIBRATION-7F29",
+    "Total paid": "123.45"
+  },
+  "exchanges": [
+    {
+      "request": {
+        "destination": "org.a11y.Bus",
+        "path": "/org/a11y/bus",
+        "interface": "org.a11y.Bus",
+        "member": "GetAddress",
+        "type": 1,
+        "serial": 2
+      },
+      "reply": [
+        "unix:path=/tmp/dbus-b1GikDBRfG,guid=9f49518f9c753e32568abe2a6a9dd301"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.a11y.atspi.EditableText",
+        "member": "SetTextContents",
+        "signature": "s",
+        "body": [
+          "CALIBRATION-7F29"
+        ],
+        "type": 1,
+        "serial": 2
+      },
+      "reply": [
+        true
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/9",
+        "interface": "org.a11y.atspi.EditableText",
+        "member": "SetTextContents",
+        "signature": "s",
+        "body": [
+          "123.45"
+        ],
+        "type": 1,
+        "serial": 3
+      },
+      "reply": [
+        true
+      ]
+    }
+  ]
+}

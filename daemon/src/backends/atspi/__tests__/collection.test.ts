@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Channel, Exchange } from "../channel.js";
 import { UnrecordedExchangeError } from "../channel.js";
+import { ApplicationScopeUnmatchedError } from "../../../backend.js";
 import { AtspiBackend } from "../index.js";
 
 // One query tool, one response shape, two instruments. These tests pin that
@@ -103,19 +104,22 @@ describe("backend-selected AT-SPI search", () => {
     await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(/stopped answering/);
   });
 
-  it("discovers nothing in an application this session was never granted", async () => {
+  // An application this session may not see answers exactly as an application
+  // that is not there: the refusal names the search, not the desktop, so it
+  // discloses nothing about what is running behind the visibility line.
+  it("discovers nothing in an application this session was never granted, and says so rather than answering empty", async () => {
     const channel = desktop({ collection: true });
     const backend = new AtspiBackend(channel, new Set(["some-other-app"]));
 
-    await expect(backend.discoverElements({ application: "scripted-app" })).resolves.toEqual({ entries: [], truncated: false });
+    await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(ApplicationScopeUnmatchedError);
     expect(channel.asked.some((exchange) => exchange.path === BUTTON)).toBe(false);
   });
 
-  it("returns nothing for an application selector that does not match, without reading descendants", async () => {
+  it("refuses an application selector that does not match, without reading descendants", async () => {
     const channel = desktop({ collection: true });
     const backend = new AtspiBackend(channel, "all");
 
-    await expect(backend.queryElements({ application: "another-app", role: "textbox" })).resolves.toEqual({ elements: [] });
+    await expect(backend.queryElements({ application: "another-app", role: "textbox" })).rejects.toThrow(ApplicationScopeUnmatchedError);
 
     expect(channel.asked.filter((exchange) => exchange.member === "GetChildren")).toHaveLength(1);
     expect(channel.asked.some((exchange) => exchange.member === "GetMatches")).toBe(false);

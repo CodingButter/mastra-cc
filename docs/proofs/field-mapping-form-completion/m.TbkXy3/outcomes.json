@@ -1,0 +1,40 @@
+[
+  {
+    "id": "t1",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-ec9db0fe",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 9
+      },
+      {
+        "label": "Total paid",
+        "value": "63.23",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 12
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 15,
+      "time": 1788726084426
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788726088592,
+      "actual": "RCPT-ec9db0fe|63.23|\n"
+    },
+    "finalEvent": 25
+  },
+  {
+    "id": "t2",
+    "kind": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: fresh post-submit public actual-value verification before final text"
+  }
+]

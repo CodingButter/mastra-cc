@@ -1,0 +1,1798 @@
+{
+  "application": "yad",
+  "appRoot": [
+    ":1.0",
+    "/org/a11y/atspi/accessible/root"
+  ],
+  "nodes": [
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/root"
+      ],
+      "role": "application",
+      "name": "yad",
+      "parent": [
+        ":1.1",
+        "/org/a11y/atspi/accessible/root"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": null,
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/1"
+      ],
+      "role": "frame",
+      "name": "Receipt transfer",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/root"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        251,
+        230,
+        522,
+        307
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/2"
+      ],
+      "role": "filler",
+      "name": "",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/1"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        254,
+        254,
+        516,
+        276
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/3"
+      ],
+      "role": "filler",
+      "name": "",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/2"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        254,
+        254,
+        516,
+        236
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/4"
+      ],
+      "role": "filler",
+      "name": "",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/2"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        256,
+        494,
+        512,
+        34
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/5"
+      ],
+      "role": "filler",
+      "name": "",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/3"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        254,
+        254,
+        516,
+        236
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/6"
+      ],
+      "role": "push button",
+      "name": "Record receipt",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/4"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        645,
+        494,
+        123,
+        34
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/7"
+      ],
+      "role": "label",
+      "name": "RECEIPT\nReceipt number: RCPT-106cc7e9\nTotal paid: 162.35",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/5"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        254,
+        254,
+        516,
+        57
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/8"
+      ],
+      "role": "panel",
+      "name": "",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/5"
+      ],
+      "relations": [
+        []
+      ],
+      "bounds": [
+        254,
+        316,
+        516,
+        174
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/9"
+      ],
+      "role": "text",
+      "name": "",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/8"
+      ],
+      "relations": [
+        [
+          [
+            2,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/10"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "bounds": [
+        358,
+        355,
+        412,
+        34
+      ],
+      "labelledTargets": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/10"
+        ]
+      ]
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/10"
+      ],
+      "role": "label",
+      "name": "Total paid",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/8"
+      ],
+      "relations": [
+        [
+          [
+            1,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/9"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "bounds": [
+        254,
+        355,
+        99,
+        34
+      ],
+      "labelledTargets": []
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/11"
+      ],
+      "role": "text",
+      "name": "",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/8"
+      ],
+      "relations": [
+        [
+          [
+            2,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/12"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "bounds": [
+        358,
+        316,
+        412,
+        34
+      ],
+      "labelledTargets": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/12"
+        ]
+      ]
+    },
+    {
+      "ref": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/12"
+      ],
+      "role": "label",
+      "name": "Receipt number",
+      "parent": [
+        ":1.0",
+        "/org/a11y/atspi/accessible/8"
+      ],
+      "relations": [
+        [
+          [
+            1,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/11"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "bounds": [
+        254,
+        316,
+        99,
+        34
+      ],
+      "labelledTargets": []
+    }
+  ],
+  "exchanges": [
+    {
+      "request": {
+        "destination": "org.a11y.Bus",
+        "path": "/org/a11y/bus",
+        "interface": "org.a11y.Bus",
+        "member": "GetAddress",
+        "type": 1,
+        "serial": 2
+      },
+      "reply": [
+        "unix:path=/tmp/dbus-XQwHASQzMN,guid=5fcc17fb004ed32aa8ade4cd6a9dd9dc"
+      ]
+    },
+    {
+      "request": {
+        "destination": "org.a11y.atspi.Registry",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 2
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/root"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 3
+      },
+      "reply": [
+        "yad"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 4
+      },
+      "reply": [
+        "application"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 5
+      },
+      "reply": [
+        "yad"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 6
+      },
+      "reply": [
+        [
+          ":1.1",
+          "/org/a11y/atspi/accessible/root"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 7
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 8
+      },
+      "error": {
+        "name": "DBusError",
+        "dbusName": "org.freedesktop.DBus.Error.UnknownMethod",
+        "body": [
+          "Method \"GetExtents\" with signature \"u\" on interface \"org.a11y.atspi.Component\" doesn't exist\n"
+        ],
+        "reply": {
+          "serial": 14,
+          "destination": ":1.2",
+          "errorName": "org.freedesktop.DBus.Error.UnknownMethod",
+          "replySerial": 8,
+          "signature": "s",
+          "sender": ":1.0",
+          "type": 3,
+          "flags": 1,
+          "body": [
+            "Method \"GetExtents\" with signature \"u\" on interface \"org.a11y.atspi.Component\" doesn't exist\n"
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/root",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 9
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/1"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/1",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 10
+      },
+      "reply": [
+        "frame"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/1",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 11
+      },
+      "reply": [
+        "Receipt transfer"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/1",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 12
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/root"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/1",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 13
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/1",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 14
+      },
+      "reply": [
+        [
+          251,
+          230,
+          522,
+          307
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/1",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 15
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/2"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/2",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 16
+      },
+      "reply": [
+        "filler"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/2",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 17
+      },
+      "reply": [
+        ""
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/2",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 18
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/1"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/2",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 19
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/2",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 20
+      },
+      "reply": [
+        [
+          254,
+          254,
+          516,
+          276
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/2",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 21
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/3"
+          ],
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/4"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/3",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 22
+      },
+      "reply": [
+        "filler"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/3",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 23
+      },
+      "reply": [
+        ""
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/3",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 24
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/2"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/3",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 25
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/3",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 26
+      },
+      "reply": [
+        [
+          254,
+          254,
+          516,
+          236
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/3",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 27
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/5"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/4",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 28
+      },
+      "reply": [
+        "filler"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/4",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 29
+      },
+      "reply": [
+        ""
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/4",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 30
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/2"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/4",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 31
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/4",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 32
+      },
+      "reply": [
+        [
+          256,
+          494,
+          512,
+          34
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/4",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 33
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/6"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/5",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 34
+      },
+      "reply": [
+        "filler"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/5",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 35
+      },
+      "reply": [
+        ""
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/5",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 36
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/3"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/5",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 37
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/5",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 38
+      },
+      "reply": [
+        [
+          254,
+          254,
+          516,
+          236
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/5",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 39
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/7"
+          ],
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/8"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/6",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 40
+      },
+      "reply": [
+        "push button"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/6",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 41
+      },
+      "reply": [
+        "Record receipt"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/6",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 42
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/4"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/6",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 43
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/6",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 44
+      },
+      "reply": [
+        [
+          645,
+          494,
+          123,
+          34
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/6",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 45
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/7",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 46
+      },
+      "reply": [
+        "label"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/7",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 47
+      },
+      "reply": [
+        "RECEIPT\nReceipt number: RCPT-106cc7e9\nTotal paid: 162.35"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/7",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 48
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/5"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/7",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 49
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/7",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 50
+      },
+      "reply": [
+        [
+          254,
+          254,
+          516,
+          57
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/7",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 51
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/8",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 52
+      },
+      "reply": [
+        "panel"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/8",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 53
+      },
+      "reply": [
+        ""
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/8",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 54
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/5"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/8",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 55
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/8",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 56
+      },
+      "reply": [
+        [
+          254,
+          316,
+          516,
+          174
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/8",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 57
+      },
+      "reply": [
+        [
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/9"
+          ],
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/10"
+          ],
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/11"
+          ],
+          [
+            ":1.0",
+            "/org/a11y/atspi/accessible/12"
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/9",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 58
+      },
+      "reply": [
+        "text"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/9",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 59
+      },
+      "reply": [
+        ""
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/9",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 60
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/8"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/9",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 61
+      },
+      "reply": [
+        [
+          [
+            2,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/10"
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/9",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 62
+      },
+      "reply": [
+        [
+          358,
+          355,
+          412,
+          34
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/9",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 63
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/10",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 64
+      },
+      "reply": [
+        "label"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/10",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 65
+      },
+      "reply": [
+        "Total paid"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/10",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 66
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/8"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/10",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 67
+      },
+      "reply": [
+        [
+          [
+            1,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/9"
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/10",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 68
+      },
+      "reply": [
+        [
+          254,
+          355,
+          99,
+          34
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/10",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 69
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 70
+      },
+      "reply": [
+        "text"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 71
+      },
+      "reply": [
+        ""
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 72
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/8"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 73
+      },
+      "reply": [
+        [
+          [
+            2,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/12"
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 74
+      },
+      "reply": [
+        [
+          358,
+          316,
+          412,
+          34
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/11",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 75
+      },
+      "reply": [
+        []
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/12",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRoleName",
+        "type": 1,
+        "serial": 76
+      },
+      "reply": [
+        "label"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/12",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Name"
+        ],
+        "type": 1,
+        "serial": 77
+      },
+      "reply": [
+        "Receipt number"
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/12",
+        "interface": "org.freedesktop.DBus.Properties",
+        "member": "Get",
+        "signature": "ss",
+        "body": [
+          "org.a11y.atspi.Accessible",
+          "Parent"
+        ],
+        "type": 1,
+        "serial": 78
+      },
+      "reply": [
+        [
+          ":1.0",
+          "/org/a11y/atspi/accessible/8"
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/12",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetRelationSet",
+        "type": 1,
+        "serial": 79
+      },
+      "reply": [
+        [
+          [
+            1,
+            [
+              [
+                ":1.0",
+                "/org/a11y/atspi/accessible/11"
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/12",
+        "interface": "org.a11y.atspi.Component",
+        "member": "GetExtents",
+        "signature": "u",
+        "body": [
+          0
+        ],
+        "type": 1,
+        "serial": 80
+      },
+      "reply": [
+        [
+          254,
+          316,
+          99,
+          34
+        ]
+      ]
+    },
+    {
+      "request": {
+        "destination": ":1.0",
+        "path": "/org/a11y/atspi/accessible/12",
+        "interface": "org.a11y.atspi.Accessible",
+        "member": "GetChildren",
+        "type": 1,
+        "serial": 81
+      },
+      "reply": [
+        []
+      ]
+    }
+  ]
+}

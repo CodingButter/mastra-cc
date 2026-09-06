@@ -1,0 +1,57 @@
+{
+  "visualReviewed": true,
+  "comparisonReviewed": true,
+  "reviewer": "Wren",
+  "method": "Actually viewed extracted full recording checkpoints through browser on private Xvfb; reviewed both contact sheets and ordinary saved-state closeup. Independent evidence validation compares observed label IDs, entered values, actual public post-submit confirmation and exact external oracle before final response.",
+  "eventsSha256": "3d6dfab62cb05f01249eff8ea84f213aad911dbdc25a8f74cbe26814071be5d3",
+  "recordingSha256": "60d49e31f64b7c63a80ec6aac052fe4093438f1c7a420095ccd6ff4ce09a3641",
+  "checkpoints": [
+    {
+      "stage": "before-fill",
+      "file": "checkpoint-1.png",
+      "sha256": "e948916f90a98a88f9de19f7e3d0da78d85bc39008b613fa3a85c17cd1dda9fc"
+    },
+    {
+      "stage": "before-submit",
+      "file": "checkpoint-2.png",
+      "sha256": "0ba1117fe9d9be1fefd849b4c77b93150ec76f7f9a5997fb093788d04ca299e8"
+    },
+    {
+      "stage": "after-confirmation",
+      "file": "checkpoint-3.png",
+      "sha256": "efe8b14cf1f0a258b74c4327902f101651bb794cd512ac4c6dcc1a91d0268f03"
+    }
+  ],
+  "comparison": {
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-54841628",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 11
+      },
+      {
+        "label": "Total paid",
+        "value": "62.28",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 14
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 17,
+      "time": 1788729550315
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788729554047,
+      "actual": "RCPT-54841628|62.28|\n"
+    },
+    "finalEvent": 33
+  }
+}

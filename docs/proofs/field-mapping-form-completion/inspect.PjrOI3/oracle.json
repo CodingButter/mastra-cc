@@ -1,0 +1,7 @@
+{
+  "kind": "EVIDENCE",
+  "setupCalibrationOnly": true,
+  "receiptOrder": "receipt|total|newline",
+  "ordinaryApplication": "exo-desktop-item-edit",
+  "modelTrials": 0
+}

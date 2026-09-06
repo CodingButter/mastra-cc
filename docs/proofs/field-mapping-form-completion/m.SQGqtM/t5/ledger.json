@@ -1,0 +1,32 @@
+{
+  "kind": "GREEN",
+  "selected": [
+    {
+      "label": "Receipt number",
+      "value": "RCPT-f950de1d",
+      "id": "el-f45fbc97b907",
+      "labelCall": 2,
+      "actionCall": 3,
+      "index": 7
+    },
+    {
+      "label": "Total paid",
+      "value": "188.36",
+      "id": "el-2ec47140faca",
+      "labelCall": 2,
+      "actionCall": 4,
+      "index": 10
+    }
+  ],
+  "submission": {
+    "call": 5,
+    "index": 13,
+    "time": 1788729568780
+  },
+  "verification": {
+    "call": 6,
+    "time": 1788729570148,
+    "actual": "RCPT-f950de1d|188.36|\n"
+  },
+  "finalEvent": 20
+}

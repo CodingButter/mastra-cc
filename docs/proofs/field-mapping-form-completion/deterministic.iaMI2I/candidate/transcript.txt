@@ -1,0 +1,27 @@
+dbus-daemon[229991]: [session uid=1000 pid=229991] Activating service name='org.gtk.vfs.Daemon' requested by ':1.1' (uid=1000 pid=230015 comm="yad --title=Receipt transfer --form --width=520 --" label="unconfined")
+dbus-daemon[229991]: [session uid=1000 pid=229991] Successfully activated service 'org.gtk.vfs.Daemon'
+INVALID_SETUP TransportConnectionError: connect EINVAL /home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/deterministic.iaMI2I/candidate/daemon.sock - Local (undefined:undefined)
+    at connectionError [90m(file:///home/codingbutter/mastra-cc/[39mpackages/transport/dist/index.mjs:21:53[90m)[39m
+    at terminate [90m(file:///home/codingbutter/mastra-cc/[39mpackages/transport/dist/index.mjs:76:19[90m)[39m
+    at Socket.<anonymous> [90m(file:///home/codingbutter/mastra-cc/[39mpackages/transport/dist/index.mjs:122:26[90m)[39m
+[90m    at Socket.emit (node:events:508:28)[39m
+[90m    at emitErrorNT (node:internal/streams/destroy:170:8)[39m
+[90m    at emitErrorCloseNT (node:internal/streams/destroy:129:3)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)[39m {
+  code: [32m'MASTRA_CC_TRANSPORT_TERMINAL'[39m,
+  [cause]: Error: connect EINVAL /home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/deterministic.iaMI2I/candidate/daemon.sock - Local (undefined:undefined)
+  [90m    at internalConnect (node:net:1110:16)[39m
+  [90m    at defaultTriggerAsyncIdScope (node:internal/async_hooks:472:18)[39m
+  [90m    at Socket.connect (node:net:1281:5)[39m
+  [90m    at connect (node:net:245:17)[39m
+      at socketWire [90m(file:///home/codingbutter/mastra-cc/[39mpackages/transport/dist/index.mjs:24:17[90m)[39m
+      at connect [90m(file:///home/codingbutter/mastra-cc/[39mpackages/transport/dist/index.mjs:60:64[90m)[39m
+      at connect [90m(file:///home/codingbutter/mastra-cc/[39mpackages/desktop/dist/index.mjs:66:70[90m)[39m
+      at [90mfile:///home/codingbutter/mastra-cc/[39mdocs/proofs/field-mapping-form-completion/deterministic.mjs:20:18 {
+    errno: [33m-22[39m,
+    code: [32m'EINVAL'[39m,
+    syscall: [32m'connect'[39m,
+    address: [32m'/home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/deterministic.iaMI2I/candidate/daemon.sock'[39m
+  }
+}
+A connection to the bus can't be made

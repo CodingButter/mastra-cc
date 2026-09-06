@@ -1,0 +1,172 @@
+[
+  {
+    "id": "t1",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-a69d9020",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 10
+      },
+      {
+        "label": "Total paid",
+        "value": "34.87",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 13
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 16,
+      "time": 1788728619383
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788728622867,
+      "actual": "RCPT-a69d9020|34.87|\n"
+    },
+    "finalEvent": 29
+  },
+  {
+    "id": "t2",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-572c3539",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 10
+      },
+      {
+        "label": "Total paid",
+        "value": "131.18",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 13
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 16,
+      "time": 1788728639068
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788728642595,
+      "actual": "RCPT-572c3539|131.18|\n"
+    },
+    "finalEvent": 26
+  },
+  {
+    "id": "t3",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-4cfa720b",
+        "id": "el-f45fbc97b907",
+        "labelCall": 2,
+        "actionCall": 3,
+        "index": 7
+      },
+      {
+        "label": "Total paid",
+        "value": "22.35",
+        "id": "el-2ec47140faca",
+        "labelCall": 2,
+        "actionCall": 4,
+        "index": 10
+      }
+    ],
+    "submission": {
+      "call": 5,
+      "index": 13,
+      "time": 1788728657039
+    },
+    "verification": {
+      "call": 6,
+      "time": 1788728658606,
+      "actual": "RCPT-4cfa720b|22.35|\n"
+    },
+    "finalEvent": 20
+  },
+  {
+    "id": "t4",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-e13cbd8c",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 10
+      },
+      {
+        "label": "Total paid",
+        "value": "246.63",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 13
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 16,
+      "time": 1788728671787
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788728674592,
+      "actual": "RCPT-e13cbd8c|246.63|\n"
+    },
+    "finalEvent": 29
+  },
+  {
+    "id": "t5",
+    "kind": "MACHINE_PASS",
+    "selected": [
+      {
+        "label": "Receipt number",
+        "value": "RCPT-17a565b3",
+        "id": "el-f45fbc97b907",
+        "labelCall": 3,
+        "actionCall": 4,
+        "index": 10
+      },
+      {
+        "label": "Total paid",
+        "value": "246.25",
+        "id": "el-2ec47140faca",
+        "labelCall": 3,
+        "actionCall": 5,
+        "index": 13
+      }
+    ],
+    "submission": {
+      "call": 6,
+      "index": 16,
+      "time": 1788728688608
+    },
+    "verification": {
+      "call": 8,
+      "time": 1788728691063,
+      "actual": "RCPT-17a565b3|246.25|\n"
+    },
+    "finalEvent": 29
+  },
+  {
+    "id": "t6",
+    "kind": "FAIL",
+    "error": "Error: INVALID_OR_MODEL_FAILURE: inspect retained events and logs"
+  }
+]

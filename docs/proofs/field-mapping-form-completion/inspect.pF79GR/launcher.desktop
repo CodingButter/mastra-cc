@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Calibration launcher 7F29
+Comment=Calibration comment 82B1
+Exec=/usr/bin/true
+Terminal=false
+Icon=
+Path=
+StartupNotify=false

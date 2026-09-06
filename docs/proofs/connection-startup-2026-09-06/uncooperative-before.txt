@@ -1,0 +1,8 @@
+ARTIFACT /home/codingbutter/mastra-cc/packages/transport/dist/index.mjs
+SHA256 44962b6fb9028ede28a33db6cc31997b07c181767124930437f8362a3d14baa7
+RUNTIME v25.2.1
+OBSERVED uncooperative caller rejection: 10001ms
+OBSERVED uncooperative close frame: 10002ms; underlying TCP close: NOT observed within 55000ms (before harness cleanup)
+FAIL AssertionError [ERR_ASSERTION]: runtime did not close underlying TCP within 55s from connect
+    at probeUncooperative (file:///home/codingbutter/mastra-cc/docs/proofs/connection-startup-2026-09-06/proof.mjs:163:10)
+    at async file:///home/codingbutter/mastra-cc/docs/proofs/connection-startup-2026-09-06/proof.mjs:180:22

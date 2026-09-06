@@ -1,0 +1,8 @@
+BATCH=/home/codingbutter/mastra-cc/docs/proofs/field-mapping-form-completion/m.SQGqtM
+t1: MACHINE_PASS
+t2: MACHINE_PASS
+t3: MACHINE_PASS
+t4: MACHINE_PASS
+t5: MACHINE_PASS
+t6: MACHINE_PASS
+PROOF: REVIEW_PENDING — no GREEN until checkpoint and comparison review

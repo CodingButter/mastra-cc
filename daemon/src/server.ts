@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
@@ -35,8 +35,14 @@ import {
   type RunningState,
   type BackendChange,
   type BackendSubscription,
+  ElementGoneError,
+  PeerGoneError,
   AttestationFailedError,
   IncompleteObservationError,
+  ApplicationScopeAmbiguousError,
+  ApplicationScopeUnmatchedError,
+  WindowScopeAmbiguousError,
+  WindowScopeUnmatchedError,
   InventoryUnsupportedError,
   DeafWatchError,
   EffectUnsupportedError,
@@ -49,6 +55,8 @@ import {
   UnwatchableElementError,
   WatchUnsupportedError,
   WriteNotObservedError,
+  KeyboardHeldElsewhereError,
+  PointerBlockedError,
   runningStateOf,
 } from "./backend.js";
 import type { InventoryEntry } from "./inventory.js";
@@ -337,6 +345,18 @@ export const COULD_NOT_START_REFUSAL = "the application could not be started";
 // a browser this session cannot read.
 export const BACKEND_UNREADABLE_REFUSAL = "the desktop could not be read by this session's backend";
 
+// ...unless what failed names ONE application (ADR-0090). A bus error that
+// says the peer behind an element is gone is a fact about that application,
+// and answering it with the blanket refusal above says the desk is dead when
+// three other windows are open on it. No peer name crosses the wire - that is
+// bus vocabulary - only what it means and what to do about it.
+export const ELEMENT_GONE_REFUSAL =
+  "that element is no longer on the desk - the thing it named has been closed or redrawn since it was answered; " +
+  "ask what is there now and work from the ids in that answer";
+export const APPLICATION_GONE_REFUSAL =
+  "the application this element belonged to is no longer running - ask what is on the desk again and work from the answer, " +
+  "the rest of the desk is still there";
+
 // A role the schema does not name is refused HERE, by name, before any backend
 // is asked. The AT-SPI role table is keyed by the generated ROLES vocabulary
 // and has no entry for anything else, so an unchecked "heading" reached the
@@ -348,6 +368,25 @@ export const QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL = "a window can only be n
 export const DISCOVERY_APPLICATION_REFUSAL = "an application must be named for element discovery";
 export const DISCOVERY_WINDOW_REFUSAL = "a discovery window must be a non-empty name inside an application";
 export const DISCOVERY_LIMIT_REFUSAL = "a discovery limit must be a whole number from 1 through 200";
+
+// A window scope that names no window, or names several, used to answer with
+// an EMPTY list - and an empty list is a sentence about the desktop ("this
+// window has nothing in it") that the daemon had no grounds to say. Measured
+// on a Plasma file dialog, which publishes two visible top-levels called
+// "Open Image" for one dialog on screen: every scoped question about it came
+// back empty, and the agent asking them concluded the dialog had no controls
+// and gave up, while the same question WITHOUT the window answered with the
+// whole dialog. Not-found and ambiguous are separate sentences because they
+// have separate repairs: one is a wrong name, the other is a name that is not
+// enough by itself.
+export const WINDOW_SCOPE_UNMATCHED_REFUSAL =
+  "no visible window of that application answers to that name, so there is nothing this scope could have been asked about - ask without the window to see what windows there are";
+export const WINDOW_SCOPE_AMBIGUOUS_REFUSAL =
+  "more than one visible window of that application answers to that name, so this scope names no single window - ask without the window, or by a name only one of them carries";
+export const APPLICATION_SCOPE_UNMATCHED_REFUSAL =
+  "no application on this desktop answers to that name, so there is nothing this scope could have been asked about - listApplications names every application this desktop has, and an application just launched may not have arrived yet";
+export const APPLICATION_SCOPE_AMBIGUOUS_REFUSAL =
+  "more than one application on this desktop answers to that name, so this scope names no single application - listApplications names them as the desktop publishes them";
 
 // The scope gate (ADR-0037). Schema 1.2.0 defines the edit, activate and
 // submit classes' element methods so a client can ask about them and hear a
@@ -411,10 +450,12 @@ export const REVEAL_SCOPE_REFUSAL =
 // The two raw-input methods share one refusal shape and differ in the name
 // they carry, because the name is what the caller reads back to know which
 // call was turned away (ADR-0070 admits typeText into the same class).
-function rawInputScopeSentence(method: "sendKeyChord" | "typeText"): string {
+type RawInputMethod = "sendKeyChord" | "typeText" | "clearElementText" | "clickElement";
+
+function rawInputScopeSentence(method: RawInputMethod): string {
   return (
     `refused by the scope gate: "${method}" is rawInput-class and this session holds no rawInput authority - ` +
-    `${method === "typeText" ? "typed text is keystrokes, and keystrokes are" : "a key is"} raw input even when it is addressed to one element, ` +
+    `${method === "sendKeyChord" ? "a key is" : method === "typeText" ? "typed text is keystrokes, and keystrokes are" : method === "clearElementText" ? "clearing presses one key per character, and keystrokes are" : "a pointer press is synthesised on the machine, and a synthesised press is"} raw input even when it is addressed to one element, ` +
     "this session was started without the session flag --allow rawInput, and only a session started with it can perform this method"
   );
 }
@@ -435,6 +476,43 @@ export function unknownChordRefusal(chord: string): string {
 
 export const NO_KEY_ROUTE_REFUSAL =
   'refused before the call: "sendKeyChord" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
+
+export const NO_CLEAR_ROUTE_REFUSAL =
+  'refused before the call: "clearElementText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
+
+// The pointer vocabulary, named here rather than imported from the AT-SPI
+// route: the wire's vocabulary is the contract's, not one platform's, and a
+// second backend with a different gesture table must not be able to widen what
+// the wire accepts by existing.
+const POINTER_BUTTON_NAMES: readonly string[] = ["left", "middle", "right"];
+
+export const NO_POINTER_ROUTE_REFUSAL =
+  'refused before the call: "clickElement" cannot be performed by this build on this platform - there is no way to move or press a pointer here, and no setting on this daemon would change that';
+
+// The pointer's own vocabulary refusals (ADR-0078). Each names the thing that
+// was wrong and the set it was not in, for the same reason the chord list is
+// spelled out: a caller told only "invalid" has to guess, and guessing at an
+// input surface is how a caller ends up sending a hundred variants.
+export function unknownButtonRefusal(button: string): string {
+  return (
+    `refused before the call: "clickElement" was given the button ${JSON.stringify(button)}, which this contract does not define - ` +
+    'the buttons it defines are: left, middle, right'
+  );
+}
+
+export function unknownClickCountRefusal(count: unknown): string {
+  return (
+    `refused before the call: "clickElement" was asked for ${JSON.stringify(count)} presses and this contract performs 1 or 2 - ` +
+    "a double click is asked for by name so that the platform makes the gesture, and anything beyond two is a drumroll rather than a click"
+  );
+}
+
+export function outsideElementRefusal(axis: "x" | "y", value: unknown): string {
+  return (
+    `refused before the call: "clickElement" was given ${axis} of ${JSON.stringify(value)}, and a position inside an element ` +
+    "is a fraction of that element's own rectangle from 0 through 1 - a fraction outside that range names a point outside the element, which is a press on a neighbour"
+  );
+}
 
 export const NO_TYPE_ROUTE_REFUSAL =
   'refused before the call: "typeText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
@@ -485,7 +563,7 @@ export function typeTextRefusal(text: string): string | undefined {
 // says plainly that the flag alone is not enough here. The capability report
 // answers the same question with `not-exposed` and names no setting
 // (capabilityFor above), because a report has no room for a sequence.
-export function rawInputScopeRefusal(hasRoute: boolean, method: "sendKeyChord" | "typeText" = "sendKeyChord"): string {
+export function rawInputScopeRefusal(hasRoute: boolean, method: RawInputMethod = "sendKeyChord"): string {
   const sentence = rawInputScopeSentence(method);
   if (hasRoute) return sentence;
   return (
@@ -878,6 +956,55 @@ async function describeAccessibility(launch: LaunchContext): Promise<{ accessibi
   return { accessibility: layer === undefined ? NO_ADAPTER : await layer.report() };
 }
 
+// WHERE THIS DESKTOP KEEPS ITS OWN FILES (ADR-0082). Every other verb here is
+// about what is ON the screen, so a caller asked to name a path has nowhere in
+// this contract to learn one - and what it does instead was measured: it types
+// the home directory of whatever machine it was trained on. On a desk whose
+// home is somewhere else that produces an application's not-found page, which
+// is indistinguishable from a save that failed, and the errand reports a
+// download as broken.
+//
+// Nothing is read, listed or opened. Two paths, each PUBLISHED rather than
+// computed: the environment's own home, and the download folder the desktop
+// names. The XDG file is the desktop's answer when it exists; the spec's own
+// default is used only when that folder IS THERE to be seen, because a path
+// this daemon reasoned its way to is the same guess the caller was making, and
+// an omitted field is a caller that goes and looks instead of believing one.
+function xdgDownloadDir(home: string, read: (path: string) => string | undefined): string | undefined {
+  const named = read(`${home}/.config/user-dirs.dirs`);
+  const line = named?.split("\n").find((entry) => entry.trimStart().startsWith("XDG_DOWNLOAD_DIR="));
+  const value = line?.slice(line.indexOf("=") + 1).trim().replace(/^"|"$/g, "");
+  return value === undefined || value === "" ? undefined : value.replace("$HOME", home);
+}
+
+export function desktopPlaces(
+  environment: Record<string, string | undefined>,
+  read: (path: string) => string | undefined,
+  exists: (path: string) => boolean,
+): { home?: string; downloads?: string } {
+  const home = environment.HOME;
+  if (home === undefined || home === "") return {};
+  const published = environment.XDG_DOWNLOAD_DIR ?? xdgDownloadDir(home, read);
+  const downloads = published ?? `${home}/Downloads`;
+  return exists(downloads) ? { home, downloads } : { home };
+}
+
+function describeDesktop(): { places: { home?: string; downloads?: string } } {
+  return {
+    places: desktopPlaces(
+      process.env,
+      (path) => {
+        try {
+          return readFileSync(path, "utf8");
+        } catch {
+          return undefined;
+        }
+      },
+      (path) => existsSync(path),
+    ),
+  };
+}
+
 // ACQUIRING IT, in the order the two refusals must be asked. The operator's
 // flag first, because a daemon the operator did not arm must not report the
 // platform's shape as its reason - and a machine whose layer this build cannot
@@ -931,6 +1058,56 @@ async function acquireAccessibility(launch: LaunchContext): Promise<Classified<{
   // after the attempt, so a write that was accepted and changed nothing is
   // visible as what it is rather than as success (ADR-0064 clause 6).
   return { accessibility: await layer.report() };
+}
+
+// A DESK THAT WENT DEAF MID-SESSION IS NOT A BARE DESK (ADR-0089).
+//
+// Measured 2026-09-05 on the demo container: a daemon started with authority
+// to switch the accessibility layer on did so, served a run for several
+// minutes, and then something on that desktop wrote IsEnabled back to false
+// underneath it. Every observation after that answered emptily - no
+// applications, no elements - which reads exactly like a desktop with nothing
+// running, and the errand above it concluded the desk was bare and stopped.
+//
+// Two facts are separated here. Emptiness with the layer ON is an answer. The
+// same emptiness with the layer OFF is silence, and answering silence as an
+// answer is the false belief this whole daemon exists to refuse.
+//
+// The authority question is already settled: a session started WITHOUT
+// --acquire-accessibility may not switch anything on, and this does not - it
+// refuses and says the desk went deaf. A session started WITH it was granted
+// that act for its lifetime, and an authority that evaporates the first time
+// the desktop resets a property is not an authority, so that session switches
+// the layer back on and the caller retries. Nothing is retried here on the
+// caller's behalf: what goes back is a refusal that names what happened, so
+// the next call is the caller's decision and its result is its own.
+const DEAF_DESK_REFUSAL =
+  "this desk answered nothing because its accessibility layer is switched off, not because nothing is running - " +
+  "it was switched on for this session and has since been switched back off underneath it";
+const DEAF_DESK_REACQUIRED_REFUSAL =
+  `${DEAF_DESK_REFUSAL}. It has been switched on again for you: ask the same question again`;
+
+async function deafDesk(launch: LaunchContext): Promise<Classified<{ refusal: string }> | undefined> {
+  const layer = launch.accessibility;
+  if (layer === undefined) return undefined;
+  let report: AccessibilityReport;
+  try {
+    report = await layer.report();
+  } catch {
+    // A layer that cannot be read is not a layer that is off, and this route
+    // is not the place that answers that question - describeAccessibility is.
+    return undefined;
+  }
+  if (report.state !== "disabled") return undefined;
+  if (launch.mayAcquireAccessibility !== true || !layer.acquirable) {
+    return { refusal: DEAF_DESK_REFUSAL, refusalClass: "AccessibilityLostMidSession" };
+  }
+  try {
+    await layer.acquire();
+  } catch {
+    return { refusal: DEAF_DESK_REFUSAL, refusalClass: "AccessibilityNotAcquired" };
+  }
+  return { refusal: DEAF_DESK_REACQUIRED_REFUSAL, refusalClass: "AccessibilityLostMidSession" };
 }
 
 // The listing (ADR-0042). Existence and permission are readable; nothing from
@@ -1356,6 +1533,8 @@ async function performEffect(
         error instanceof MagnitudeOutOfRangeError ||
         error instanceof TextOffsetOutOfRangeError ||
         error instanceof WriteNotObservedError ||
+        error instanceof KeyboardHeldElsewhereError ||
+        error instanceof PointerBlockedError ||
         error instanceof EffectUnsupportedError
       ) {
         return { refusal: error.message, refusalClass: error.constructor.name as RefusalClass };
@@ -1554,6 +1733,91 @@ function sendKeyChord(params: { id?: unknown; chord?: unknown }, backend: Backen
 // `not-exposed` has told the CALLER to decide whether to type, and the daemon
 // deciding it for them would be the fallback ADR-0046 clause 3 forbids. The
 // test that pins it is type-blind-read-back.test.ts.
+// CLEARING BLIND, AND THEN LOOKING (ADR-0076). Same gate order as the other
+// two raw-input methods - authority, reach, then the call - and the same
+// borrowed focus. What differs is at the far end: the seam refuses when the
+// element does not read back empty, so this is the one raw-input verb whose
+// success is a comparison rather than a delivery.
+//
+// NOTHING CALLS THIS FUNCTION EXCEPT THE DISPATCH TABLE, and in particular no
+// failed setElementText reaches it: a daemon that emptied a field because a
+// semantic write was refused would be doing by keystroke what it had just been
+// told it may not do (ADR-0046 clause 3).
+function clearElementText(params: { id?: unknown }, backend: Backend, launch: LaunchContext) {
+  const id = typeof params.id === "string" ? params.id : "";
+  return performEffect(
+    "rawInput",
+    "clearElementText",
+    rawInputScopeRefusal(launch.keys !== undefined, "clearElementText"),
+    launch,
+    backend,
+    id,
+    async () => {
+      if (launch.keys === undefined) return { refusal: NO_CLEAR_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
+      const held = await focusBeforeEffect(backend);
+      const answer = await backend.clearElementText({ id });
+      const note = await restoreFocusAfterEffect(backend, held, "clearing");
+      return answer.element === undefined ? answer : { element: withFocusNote(answer.element, note) };
+    },
+  );
+}
+
+// THE POINTER (ADR-0078). Same gate order as the three keyboard verbs -
+// authority, reach, then the vocabulary of what was given - and the same read
+// back afterwards. Two things differ.
+//
+// The first is that no focus is borrowed. A press is how focus MOVES on a desk;
+// grabbing focus before pressing would make the press land on something the
+// daemon had just pulled to the front, which is not what the caller asked for
+// and not what a person's click does.
+//
+// The second is that the vocabulary check here is arithmetic rather than a
+// list: a button name, a count of one or two, and two fractions inside the
+// element's own rectangle. The fractions are refused rather than clamped, for
+// the reason every clamp in this file is refused - a clamped fraction is a
+// press on the neighbour, reported as a press on the element.
+//
+// NOTHING CALLS THIS FUNCTION EXCEPT THE DISPATCH TABLE. In particular a
+// refused activateElement does not fall back to it: an element that published
+// no action has told the CALLER to decide whether to reach for the pointer, and
+// a daemon that decided that on its own would be the fallback ADR-0046 clause 3
+// forbids.
+function clickElement(
+  params: { id?: unknown; button?: unknown; count?: unknown; x?: unknown; y?: unknown },
+  backend: Backend,
+  launch: LaunchContext,
+) {
+  const id = typeof params.id === "string" ? params.id : "";
+  return performEffect(
+    "rawInput",
+    "clickElement",
+    rawInputScopeRefusal(launch.keys !== undefined, "clickElement"),
+    launch,
+    backend,
+    id,
+    async () => {
+      if (launch.keys === undefined) return { refusal: NO_POINTER_ROUTE_REFUSAL, refusalClass: "EffectUnsupportedError" as const };
+      const button = params.button === undefined ? "left" : params.button;
+      if (typeof button !== "string" || !POINTER_BUTTON_NAMES.includes(button)) {
+        return { refusal: unknownButtonRefusal(String(button)), refusalClass: "MalformedParameter" as const };
+      }
+      const count = params.count === undefined ? 1 : params.count;
+      if (count !== 1 && count !== 2) return { refusal: unknownClickCountRefusal(count), refusalClass: "MalformedParameter" as const };
+      const fractions: Array<["x" | "y", unknown]> = [
+        ["x", params.x === undefined ? 0.5 : params.x],
+        ["y", params.y === undefined ? 0.5 : params.y],
+      ];
+      for (const [axis, value] of fractions) {
+        if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+          return { refusal: outsideElementRefusal(axis, value), refusalClass: "MalformedParameter" as const };
+        }
+      }
+      const [[, x], [, y]] = fractions as [["x", number], ["y", number]];
+      return backend.clickElement({ id, button, count, x, y });
+    },
+  );
+}
+
 function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, launch: LaunchContext) {
   const id = typeof params.id === "string" ? params.id : "";
   const text = typeof params.text === "string" ? params.text : "";
@@ -1591,6 +1855,28 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   discoverElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => discoverElements(p, b, l) },
   attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.attestElement((p ?? {}) as never), b, l) },
   readElementContent: { effectClass: "observe", enforcement: "at-result", handler: async (p, b) => b.readElementContent((p ?? {}) as never) },
+  // Observation remains gated by the named semantic element. Native capture
+  // crops visible root-display pixels to its bounds, so overlapping windows may
+  // appear: application grants do not promise per-application pixel isolation
+  // (ADR-0093).
+  captureElement: {
+    effectClass: "observe",
+    enforcement: "at-result",
+    handler: async (p, b) => {
+      try {
+        return await b.captureElement((p ?? {}) as never);
+      } catch (failure) {
+        // Answered in this method's OWN refusal field rather than left to the
+        // generic unreadable-desktop reply, because the two say different
+        // things to a caller: "the desk cannot be read" is a reason to stop,
+        // and "this element has no rectangle" is a reason to look at a
+        // different element. Collapsing them would spend turns on the wrong
+        // recovery.
+        if (failure instanceof UnperformableElementError) return { refusal: failure.message };
+        throw failure;
+      }
+    },
+  },
   subscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, b, _l, k) => subscribeElement((p ?? {}) as never, b, k) },
   unsubscribeElement: { effectClass: "observe", enforcement: "at-result", handler: (p, _b, _l, k) => unsubscribeElement((p ?? {}) as never, k) },
   openApplication: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => openApplication((p ?? {}) as { name?: string }, b, l) },
@@ -1603,8 +1889,14 @@ const DISPATCH: Record<string, { effectClass: string; enforcement: string; handl
   revealElement: { effectClass: "activate", enforcement: "before-call", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },
   sendKeyChord: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => sendKeyChord((p ?? {}) as { id?: unknown; chord?: unknown }, b, l) },
   typeText: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => typeText((p ?? {}) as { id?: unknown; text?: unknown }, b, l) },
+  clickElement: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => clickElement((p ?? {}) as { id?: unknown }, b, l) },
+  clearElementText: { effectClass: "rawInput", enforcement: "before-call", handler: (p, b, l) => clearElementText((p ?? {}) as { id?: unknown }, b, l) },
   listApplications: { effectClass: "observe", enforcement: "at-result", handler: (_p, b, l) => listApplications(b, l) },
   describeAccessibility: { effectClass: "observe", enforcement: "at-result", handler: (_p, _b, l) => describeAccessibility(l) },
+  // Machine-scoped like describeAccessibility, and for the same reason it is
+  // not gated per-application: it names no application and answers nothing an
+  // application published (ADR-0082).
+  describeDesktop: { effectClass: "observe", enforcement: "at-result", handler: async () => describeDesktop() },
   // Its own effect class, not one of the five capability names, because it is
   // not a capability: it is machine-scoped, and the capability list is
   // per-application and exhaustive (ADR-0064 clause 4). The class still gates
@@ -1634,7 +1926,20 @@ async function auditedAcquire(launch: LaunchContext): Promise<Classified<{ acces
   return answer;
 }
 
-const POLL_BUDGET_MS = 10_000; // how long a launched app gets to become readable
+// How long a launched app gets to become readable. Ten seconds was a desktop
+// utility's budget; a browser on a profile it has not opened before takes far
+// longer. Measured 2026-09-05 through this daemon, on a desk whose container
+// had been running for hours: Chromium answered as readable 31.3 seconds after
+// the launch - just past a thirty-second budget, so the errand above it was
+// told the browser never arrived while the browser was, in fact, arriving. It
+// then spent its turns hunting for a browser that was already on screen.
+//
+// Sixty seconds is not a guess at the next machine; it is twice the slowest
+// start measured here, which leaves the refusal meaning what it is for - an
+// application that never arrives - rather than one that is slower than a
+// calculator. The cost of the higher ceiling is paid only by a launch that
+// genuinely fails, and an errand waiting is cheaper than an errand misled.
+const POLL_BUDGET_MS = 60_000;
 const POLL_INTERVAL_MS = 250;
 
 // The appears-as join (ADR-0038). A composed profile identity launches a
@@ -1762,10 +2067,52 @@ async function queryElements(p: unknown, b: Backend, l: LaunchContext): Promise<
   if (params.window !== undefined && params.application === undefined) {
     return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
-  return observedWithConfiguration(await b.queryElements(params as never), b, l);
+  try {
+    const answered = observedWithConfiguration(await b.queryElements(params as never), b, l);
+    // An empty answer is the one shape a switched-off layer and a bare desk
+    // share. Only then is the layer asked about (ADR-0089): a query that found
+    // something has already proved the desk can be heard.
+    if (isEmptyAnswer(answered)) return (await deafDesk(l)) ?? answered;
+    return answered;
+  } catch (error) {
+    const scoped = windowScopeRefusal(error, params as { application?: string; window?: string });
+    if (scoped !== undefined) return scoped;
+    throw error;
+  }
 }
 
-async function discoverElements(p: unknown, b: Backend, _l: LaunchContext): Promise<unknown> {
+// Emptiness, as the two observation routes each publish it.
+function isEmptyAnswer(answered: unknown): boolean {
+  const elements = (answered as { elements?: unknown })?.elements;
+  return Array.isArray(elements) && elements.length === 0;
+}
+
+// An id this daemon minted: the three prefixes it answers with, then hex.
+function looksLikeAnsweredId(value: string | undefined): boolean {
+  return value !== undefined && /^(el|win|app)-[0-9a-f]{6,}$/.test(value);
+}
+
+// One place turns the two scope failures into the two sentences, so the scoped
+// query and scoped discovery cannot drift apart in what they say about the
+// same desktop.
+function windowScopeRefusal(
+  error: unknown,
+  scope?: { application?: string; window?: string },
+):
+  | { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" | "ApplicationScopeUnmatched" | "ApplicationScopeAmbiguous" }
+  | undefined {
+  // A scope is a NAME. An id looks enough like an answer to be reached for as
+  // one, and the bare not-found sentence sends the caller looking for a window
+  // that was never missing, so the id is named as the mistake it is.
+  const asId = looksLikeAnsweredId(scope?.window) ? ` - "${scope?.window}" is an id this daemon answers WITH, and a window scope is a window's name` : "";
+  if (error instanceof WindowScopeUnmatchedError) return { refusal: `${WINDOW_SCOPE_UNMATCHED_REFUSAL}${asId}`, refusalClass: "WindowScopeUnmatched" };
+  if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "WindowScopeAmbiguous" };
+  if (error instanceof ApplicationScopeUnmatchedError) return { refusal: APPLICATION_SCOPE_UNMATCHED_REFUSAL, refusalClass: "ApplicationScopeUnmatched" };
+  if (error instanceof ApplicationScopeAmbiguousError) return { refusal: APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "ApplicationScopeAmbiguous" };
+  return undefined;
+}
+
+async function discoverElements(p: unknown, b: Backend, l: LaunchContext): Promise<unknown> {
   const params = (p ?? {}) as { application?: unknown; window?: unknown; role?: unknown; limit?: unknown };
   if (typeof params.application !== "string" || params.application.length === 0) {
     return { refusal: DISCOVERY_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
@@ -1779,7 +2126,15 @@ async function discoverElements(p: unknown, b: Backend, _l: LaunchContext): Prom
   if (params.limit !== undefined && (typeof params.limit !== "number" || !Number.isInteger(params.limit) || params.limit < 1 || params.limit > 200)) {
     return { refusal: DISCOVERY_LIMIT_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
-  return b.discoverElements({ ...params, limit: params.limit ?? 100 } as never);
+  try {
+    const answered = await b.discoverElements({ ...params, limit: params.limit ?? 100 } as never);
+    if (isEmptyAnswer(answered)) return (await deafDesk(l)) ?? answered;
+    return answered;
+  } catch (error) {
+    const scoped = windowScopeRefusal(error, params as { application?: string; window?: string });
+    if (scoped !== undefined) return scoped;
+    throw error;
+  }
 }
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
@@ -1911,13 +2266,26 @@ async function decideOpenApplication(
   // taken after every refusal that could still fire and immediately before the
   // only thing that can move the focus (ADR-0044 clause 2).
   let held: FocusHeld = { kind: "none" };
-  if (launch.table.ownsName(name) === undefined) {
-    const running = await findApplication(backend, treeName);
-    if (running !== undefined) {
-      // Running, and not ours: refuse, never kill (ADR-0027 - the asking
-      // surface arrives with a later milestone).
-      return { refusal: ALREADY_RUNNING_REFUSAL, refusalClass: "AlreadyRunning", auditApplication: treeName };
-    }
+  let ours = launch.table.ownsName(name) !== undefined;
+  // The desk is asked about OURS as well as about a stranger's copy, because a
+  // process being alive is not the same as an application being there to work
+  // in.
+  const running = await findApplication(backend, treeName);
+  // Ownership is not presence. Measured on this desk 2026-09-05: an agent
+  // closed Chromium's last window, the process stayed up with nothing to
+  // publish, the accessibility bus stopped answering to "Chromium", and every
+  // re-open after that took the idempotent path, started nothing, and refused
+  // as unreadable - a live owned process the caller could neither reach nor
+  // restart. An owned name that publishes nothing is a name to open again: the
+  // desktop entry hands the request to the running instance, which opens a
+  // window, which is what the caller asked for.
+  if (ours && running === undefined) ours = false;
+  if (!ours && running !== undefined) {
+    // Running, and not ours: refuse, never kill (ADR-0027 - the asking
+    // surface arrives with a later milestone).
+    return { refusal: ALREADY_RUNNING_REFUSAL, refusalClass: "AlreadyRunning", auditApplication: treeName };
+  }
+  if (!ours) {
     held = await focusBeforeEffect(backend);
     try {
       await launchApplication(name, launch.catalog, launch.table);
@@ -2268,6 +2636,12 @@ export async function handleRequest(
     console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
     if (entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
+    }
+    if (error instanceof ElementGoneError) {
+      return { type: "response", id: request.id, refusal: ELEMENT_GONE_REFUSAL };
+    }
+    if (error instanceof PeerGoneError) {
+      return { type: "response", id: request.id, refusal: APPLICATION_GONE_REFUSAL };
     }
     return { type: "response", id: request.id, refusal: BACKEND_UNREADABLE_REFUSAL };
   }

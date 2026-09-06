@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+import { LabelReader, type LabelBudget } from "./labels.js";
 import type {
   ActivateElementParams,
   ActivateElementResult,
@@ -23,6 +25,13 @@ import type {
   SetElementTextResult,
   TypeTextParams,
   TypeTextResult,
+  ClearElementTextParams,
+  CaptureElementParams,
+  CaptureElementResult,
+  ClickElementParams,
+  ClickElementResult,
+  ClearElementTextResult,
+  ObservableContent,
   SetElementValueParams,
   SetElementValueResult,
   SubmitElementParams,
@@ -41,6 +50,12 @@ import {
   UnperformableElementError,
   UnwatchableElementError,
   WriteNotObservedError,
+  KeyboardHeldElsewhereError,
+  PointerBlockedError,
+  WindowScopeAmbiguousError,
+  ApplicationScopeAmbiguousError,
+  ApplicationScopeUnmatchedError,
+  WindowScopeUnmatchedError,
 } from "../../backend.js";
 import { desktopEntryDirectories, type InventoryEntry, scanInstalledApplications } from "../../inventory.js";
 import {
@@ -55,7 +70,9 @@ import {
 import { isVisible, type Visibility } from "../../grants.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
+import { capture } from "./capture.js";
 import { emitChord, emitString } from "./rawinput/keys.js";
+import { emitClick, isPointerButton, POINTER_BUTTONS, screenRectangle } from "./rawinput/pointer.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { applicationName, nameMatches, normalise } from "./names.js";
 import { aggregateDiscovery, type DiscoveryMetadata } from "../../discovery.js";
@@ -112,6 +129,43 @@ export const TRAVERSAL_LIMITS = {
   maxNodesTotal: MAX_NODES_TOTAL,
 } as const;
 
+// One key per character, and never more than a field's worth of them
+// (ADR-0076). The bound is the same 1024 typeText carries: the two methods are
+// the two halves of writing a field, and a text longer than one call can type
+// is a text this one will not press through either.
+const CLEAR_MAX_PRESSES = 1024;
+
+// How many counted deletion passes a clear will make before it refuses. Two
+// would cover the address bar measured here; three leaves one spare pass for a
+// field that refills twice, and a fourth pays for the one turnaround a stalled
+// pass is allowed (backwards deletion defeated by a selected autocompletion is
+// retried forwards). Every pass must shorten the text or the loop stops on its
+// own, so this bounds patience, not correctness.
+const CLEAR_MAX_PASSES = 4;
+
+// The neutral roles whose whole purpose is to respond to a press, and which a
+// toolkit therefore greys out when they must not be pressed. Everything else -
+// a page's generic nodes, images, text - publishes enablement inconsistently or
+// not at all, and is not held to it.
+const PRESSABLE_CONTROL_ROLES: ReadonlySet<string> = new Set(["button", "checkbox"]);
+// The published verbs that ACT. A grey control refuses these at both doors;
+// everything else it publishes - taking the focus above all - still answers.
+const ACTIVATING_ACTIONS: ReadonlySet<string> = new Set(["Press", "Click", "Activate", "DoDefault", "Toggle"]);
+
+// Named once, so the refusal for an unknown button lists the vocabulary rather
+// than leaving the caller to guess which three words this desk knows.
+const POINTER_BUTTON_LIST = POINTER_BUTTONS.map((name) => JSON.stringify(name)).join(", ");
+
+// How many characters this element says it is carrying, or `undefined` when it
+// does not say. A protected or unpublished observation is a silence, and a
+// silence is not a zero: an element that will not tell this daemon what is in
+// it cannot be emptied by counting, and cannot be checked afterwards either.
+function clearableLength(content: ObservableContent): number | undefined {
+  if (content.kind === "text") return [...content.value].length;
+  if (content.kind === "text-window") return content.totalLength;
+  return undefined;
+}
+
 interface NativeRef {
   busName: string;
   objectPath: string;
@@ -127,6 +181,13 @@ export class AtspiBackend implements Backend {
   // id -> native ref for every element this backend has answered; attestation
   // re-reads the element live rather than replaying a cached snapshot.
   private readonly answered = new Map<string, NativeRef>();
+  private readonly applicationRootOf = new Map<string, NativeRef>();
+  private readonly labelBudget = new AsyncLocalStorage<LabelBudget>();
+  private readonly labels: LabelReader;
+
+  // How many times a press has been refused at each greyed-out control, so the
+  // second refusal can say something the first one could not (ADR-0083).
+  private readonly greyRefusals = new Map<string, number>();
   // id -> the name of the application whose subtree the element was read from.
   // A tree fact, recorded while the walk already knows it (the application's
   // name is read before its subtree is entered); the server needs it to decide
@@ -147,6 +208,7 @@ export class AtspiBackend implements Backend {
 
   constructor(channel: Channel, visibility: Visibility = new Set(), limits: TraversalLimits = TRAVERSAL_LIMITS) {
     this.channel = channel;
+    this.labels = new LabelReader(channel);
     this.visibility = visibility;
     this.limits = limits;
   }
@@ -195,6 +257,20 @@ export class AtspiBackend implements Backend {
   // way to decide whether that node lies under the watched root is to climb
   // from it. Returns undefined at the top of the tree (AT-SPI parks the root's
   // parent on the null path) and on any element that will not answer.
+  // Does a window above this element hold the keyboard? Walks up, bounded by
+  // the same depth budget the query walk uses, and reads the activation claim
+  // the focus walk reads. A read that fails answers false: this witness may
+  // only ever excuse a press, never cause one to be refused.
+  protected async underActiveWindow(ref: NativeRef): Promise<boolean> {
+    let here: NativeRef | undefined = ref;
+    for (let step = 0; step < this.limits.maxDepth && here !== undefined; step += 1) {
+      const [lower, upper] = await this.statesOf(here);
+      if (claimsKeyboardActivation(lower, upper)) return true;
+      here = await this.parentOf(here);
+    }
+    return false;
+  }
+
   private async parentOf(ref: NativeRef): Promise<NativeRef | undefined> {
     let raw: unknown;
     try {
@@ -254,7 +330,7 @@ export class AtspiBackend implements Backend {
     };
   }
 
-  private async readElement(ref: NativeRef, application?: string): Promise<SemanticElement> {
+  private async readElement(ref: NativeRef, application?: string, applicationRoot?: NativeRef): Promise<SemanticElement> {
     const nativeRole = await this.nativeRoleOf(ref);
     const name = await this.nameOf(ref);
     const [lower, upper] = await this.statesOf(ref);
@@ -269,6 +345,11 @@ export class AtspiBackend implements Backend {
     const magnitudes = await readPublishedOperations(this.channel, ref);
     const content = await readObservableContent(this.channel, ref, nativeRole);
     const id = deriveId(role, ref.busName, ref.objectPath);
+    const root = applicationRoot ?? this.applicationRootOf.get(id);
+    const labelObservation = nativeRole === "text" || nativeRole === "entry" || nativeRole === "textbox"
+      ? await this.labels.read(ref, root, this.labelBudget.getStore() ?? { waited: 0 })
+      : undefined;
+    if (applicationRoot !== undefined) this.applicationRootOf.set(id, applicationRoot);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
     if (application !== undefined) this.applicationOf.set(id, application);
@@ -278,6 +359,7 @@ export class AtspiBackend implements Backend {
       name,
       states: toNeutralStates(lower, upper),
       content,
+      ...(labelObservation === undefined ? {} : { labelObservation }),
       actions: published.actions,
       operations: magnitudes.operations,
       // ADR-0040: every answer names its instrument; the unmapped-role
@@ -312,11 +394,12 @@ export class AtspiBackend implements Backend {
   }
 
   async queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.queryElements(params));
     const elements: SemanticElement[] = [];
     let total = 0;
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
-    const selected: Array<{ root: NativeRef; applicationName: string }> = [];
+    const selected: Array<{ root: NativeRef; applicationRoot: NativeRef; applicationName: string }> = [];
     for (const app of apps) {
       let selectedApplicationName: string;
       try {
@@ -335,17 +418,28 @@ export class AtspiBackend implements Backend {
             if (!states.includes("visible") || states.includes("offscreen")) continue;
             windows.push(candidate);
           }
-          if (windows.length !== 1) continue;
+          // Nothing to scope to, or too much: both are refusals rather than an
+          // empty answer, because the caller asked about a window and an empty
+          // list would have described one instead of the search for it.
+          if (windows.length === 0) throw new WindowScopeUnmatchedError(`no visible window named "${params.window}" in "${selectedApplicationName}"`);
+          if (windows.length > 1) throw new WindowScopeAmbiguousError(`${windows.length} visible windows named "${params.window}" in "${selectedApplicationName}"`);
           root = windows[0] as NativeRef;
         }
-        selected.push({ root, applicationName: selectedApplicationName });
+        selected.push({ root, applicationRoot: app, applicationName: selectedApplicationName });
       } catch (error) {
         if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
+        if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
     }
-    if (params.application !== undefined && selected.length !== 1) return { elements: [] };
+    if (params.application !== undefined && selected.length === 0)
+      throw new ApplicationScopeUnmatchedError(
+        `no application named "${params.application}" is on this desktop's accessibility bus - listApplications names what is`,
+      );
+    if (params.application !== undefined && selected.length > 1)
+      throw new ApplicationScopeAmbiguousError(`${selected.length} applications named "${params.application}" are on this desktop's accessibility bus`);
 
-    for (const { root, applicationName } of selected) {
+    for (const { root, applicationRoot, applicationName } of selected) {
       // The fast instrument, when the application advertises it and the
       // question is one the bus's own role vocabulary can carry. One exchange
       // replaces the walk; the answer goes through the SAME readElement and
@@ -375,12 +469,12 @@ export class AtspiBackend implements Backend {
           }
           total += 1;
           try {
-            const element = await this.readElement(ref, applicationName);
+            const element = await this.readElement(ref, applicationName, applicationRoot);
             if (params.role !== undefined && element.role !== params.role) {
               fastAnswerTrusted = false;
               break;
             }
-            if (params.name !== undefined && !nameMatches(element.name, params.name)) continue;
+            if (params.name !== undefined && !queryNameMatches(element, params.name)) continue;
             fastAnswer.push(element);
           } catch (error) {
             if (error instanceof UnrecordedExchangeError) throw error;
@@ -415,10 +509,10 @@ export class AtspiBackend implements Backend {
         // trees contain dying processes and dead references, and one of them
         // must not take down the whole query.
         try {
-          const element = await this.readElement(ref, applicationName);
+          const element = await this.readElement(ref, applicationName, applicationRoot);
           const roleMatches = params.role === undefined || element.role === params.role;
-          const queryNameMatches = params.name === undefined || nameMatches(element.name, params.name);
-          if (roleMatches && queryNameMatches) {
+          const nameMatched = params.name === undefined || queryNameMatches(element, params.name);
+          if (roleMatches && nameMatched) {
             elements.push(element);
             if (params.limit !== undefined && elements.length >= params.limit) return { elements };
           }
@@ -459,15 +553,25 @@ export class AtspiBackend implements Backend {
             const states = toNeutralStates(lower, upper);
             if (states.includes("visible") && !states.includes("offscreen")) windows.push(candidate);
           }
-          if (windows.length !== 1) continue;
+          // Same rule as the scoped query: a window scope that resolves to
+          // nothing, or to several, is refused rather than answered empty.
+          if (windows.length === 0) throw new WindowScopeUnmatchedError(`no visible window named "${params.window}" in "${application}"`);
+          if (windows.length > 1) throw new WindowScopeAmbiguousError(`${windows.length} visible windows named "${params.window}" in "${application}"`);
           root = windows[0] as NativeRef;
         }
         selected.push({ root, applicationName: application });
       } catch (error) {
         if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
+        if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
     }
-    if (selected.length !== 1) return { entries: [], truncated: false };
+    if (selected.length === 0)
+      throw new ApplicationScopeUnmatchedError(
+        `no application named "${params.application}" is on this desktop's accessibility bus - listApplications names what is`,
+      );
+    if (selected.length > 1)
+      throw new ApplicationScopeAmbiguousError(`${selected.length} applications named "${params.application}" are on this desktop's accessibility bus`);
 
     const metadata: DiscoveryMetadata[] = [];
     let total = 0;
@@ -504,6 +608,7 @@ export class AtspiBackend implements Backend {
   }
 
   async attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.attestElement(params));
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest`, refusalClass: "UnknownElement" };
@@ -658,6 +763,7 @@ export class AtspiBackend implements Backend {
   // focus is an ordinary desktop, and saying so is different from saying the
   // question could not be asked - which is what FocusUnsupportedError is for.
   async focusedElement(): Promise<SemanticElement | undefined> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.focusedElement());
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     for (const app of apps) {
       // The visibility gate, exactly as queryElements applies it: the name is
@@ -692,7 +798,7 @@ export class AtspiBackend implements Backend {
             // Read in full only now, so the element is answered (and its id
             // recorded in the answered map) exactly as any other read would
             // answer it - restoreFocus resolves that same id afterwards.
-            return await this.readElement(ref, applicationName);
+            return await this.readElement(ref, applicationName, app);
           }
           const kids = await this.children(ref);
           if (depth >= this.limits.maxDepth && kids.length > 0) {
@@ -752,6 +858,7 @@ export class AtspiBackend implements Backend {
   // it produced a fresh, honest-looking element after an operation that may
   // have done nothing. The element below is the ANSWER, not the evidence.
   private async performing<T>(id: string, effect: (ref: NativeRef) => Promise<void>): Promise<{ element: SemanticElement } & T> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.performing<T>(id, effect));
     const ref = this.answered.get(id);
     if (ref === undefined) {
       // Byte-identical to the refusal for an element that does not exist: an id
@@ -793,8 +900,234 @@ export class AtspiBackend implements Backend {
   // identical read-back; the only difference is what is emitted once focus has
   // been grabbed. What may be in the text was decided in the server before this
   // was reached. Like the chord, nothing else in this file calls it.
+  // TYPING IS THE ONE RAW INPUT WITH SOMETHING TO COMPARE AGAINST.
+  //
+  // A chord can succeed and leave the element reading identically, so it is
+  // handed back with a doubt and no verdict (aimedRawInput). Typing cannot: text
+  // that arrives makes the element's own published text longer. Measured
+  // 2026-09-05 at Plasma's wallpaper chooser, which opens TWO windows of the
+  // same name for one press of "Add Wallpaper Image..." - X reports both, at the
+  // same geometry - keys typed at the twin that was not in front landed nowhere,
+  // the field read back empty, and this verb answered "performed". The errand
+  // above it pressed Open on an empty chooser and reported a wallpaper the desk
+  // never received.
+  //
+  // So: when the element publishes text this daemon can read, and that text is
+  // no longer after the keys than before, the keys did not arrive HERE, and this
+  // verb says so rather than handing back a shrug. A field whose text cannot be
+  // read is treated exactly as before - there is nothing to compare, and the
+  // doubt is all there is to give.
   async typeText(params: TypeTextParams): Promise<TypeTextResult> {
-    return this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.typeText(params));
+    const ref = this.answered.get(params.id);
+    const before = ref === undefined ? undefined : clearableLength((await this.readElement(ref)).content);
+    const typed = await this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
+    const after = typed.element === undefined ? undefined : clearableLength(typed.element.content);
+    if (before !== undefined && after !== undefined && params.text.length > 0 && after <= before) {
+      throw new WriteNotObservedError(
+        `the keys were sent, but this element publishes ${after} character(s) where it published ${before} before them - ` +
+          `the text did not arrive here. A key reaches an element only while that element's window is the front one, and ` +
+          `this daemon does not raise windows; a desk can hold two windows of the same name and only one is in front. ` +
+          `Raise this element's window the way a person does - press its application's button on the desktop shell's task ` +
+          `bar with "activateElement" - and type again`,
+      );
+    }
+    // SOME OF THE KEYS ARRIVING IS NOT ALL OF THEM ARRIVING. Measured
+    // 2026-09-05 in Dolphin's location field: "/config/Downloads" was typed
+    // into a field that had just taken the focus, and the field read back
+    // "config/Downloads" - the leading key was eaten while the widget was
+    // still settling. Length-grew-at-all was true, so this verb answered
+    // "performed", and the errand above it navigated somewhere that did not
+    // exist. A count that is short is the same lie as a count that is zero,
+    // only quieter, so it is refused too - and named, so the caller knows to
+    // clear and type again rather than to type the rest on top.
+    if (before !== undefined && after !== undefined && params.text.length > 0 && after - before < params.text.length) {
+      throw new WriteNotObservedError(
+        `${params.text.length} character(s) were sent and this element grew by ${after - before} - some of the keys did ` +
+          `not arrive. A field that has only just been given the focus can swallow the first of them. Empty this field ` +
+          `with "clearElementText" and type it again, rather than typing the missing part on top of what is there`,
+      );
+    }
+    return typed;
+  }
+
+  // The third raw-input method (ADR-0076). Typing is an APPEND: a field that
+  // publishes a value and no way to set it can be typed into and never
+  // replaced, and this contract has no held-modifier chord to select with -
+  // the platform's synthesis taps a modifier rather than holding it, so there
+  // is no select-all to press (ADR-0067). What is left is deleting one
+  // character at a time, and the only way to do that honestly is to COUNT
+  // first: the element's own published text says how many characters are
+  // there, and the presses are bounded by that reading rather than by a guess
+  // at how long a field might be.
+  //
+  // Three refusals, all before or instead of a claim of success:
+  //   - text this daemon cannot read: refused, because a blind clear is an
+  //     unbounded number of destructive presses aimed at a window it cannot
+  //     see. Emptiness that cannot be verified is not emptiness.
+  //   - more text than this method will press through: refused by length,
+  //     because a thousand keystrokes to empty a document is not a field entry
+  //     and this is a field-entry verb.
+  //   - not empty afterwards: refused, not returned. Unlike every other
+  //     raw-input method here, this one HAS something to compare against - the
+  //     intended state is "empty" - so the read-back is evidence the seam can
+  //     judge instead of handing the caller an element and a shrug.
+  async clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.clearElementText(params));
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      throw new UnperformableElementError(
+        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    const before = await this.readElement(ref);
+    const length = clearableLength(before.content);
+    if (length === undefined) {
+      throw new UnperformableElementError(
+        `this element does not publish text this daemon can read, so there is no count to press through and no way to ` +
+          `see whether it emptied - clearing it would be an unknown number of destructive keys aimed at a window this ` +
+          `daemon cannot check`,
+      );
+    }
+    if (length > CLEAR_MAX_PRESSES) {
+      throw new UnperformableElementError(
+        `this element publishes ${length} characters and this contract clears at most ${CLEAR_MAX_PRESSES} by keystroke - ` +
+          `clearing is one key per character, and a text this long is a document rather than a field`,
+      );
+    }
+    if (length === 0) {
+      return this.performing(params.id, async (target) => {
+        await grabFocus(this.channel, target);
+      });
+    }
+    // Passes, not one pass. Measured on this desk, Chromium's address bar
+    // autocompletes a suffix back in while the deletions are landing, so one
+    // counted pass ends short of empty through no fault of the keys. A pass
+    // that made no progress is not tried again: the field is being refilled at
+    // least as fast as it is emptied, or the keys are landing elsewhere, and
+    // either way pressing on is guessing. The total stays inside the same
+    // press budget the length check above refuses past.
+    //
+    // TWO DIRECTIONS, because one of them is what the refill defeats. Chromium's
+    // address bar autocompletes a suffix and leaves it SELECTED, and a Backspace
+    // aimed at a selection eats the selection rather than a character, so a
+    // backwards pass can spend a key per character and arrive back where it
+    // started (measured 2026-09-05: 78 characters left after 999 deletions).
+    // Forward deletion from the front of the field has no selection to eat and
+    // nothing to autocomplete ahead of it, so when a backwards pass stalls the
+    // next one is turned around. This is not a second contract - the count, the
+    // budget and the read-back are the same - it is the same deletion pressed
+    // from the other end.
+    let remaining: number | undefined = length;
+    let spent = 0;
+    let stalled = false;
+    for (let pass = 0; pass < CLEAR_MAX_PASSES; pass += 1) {
+      const toDelete = remaining as number;
+      if (spent + toDelete > CLEAR_MAX_PRESSES) break;
+      spent += toDelete;
+      const forwards = stalled;
+      const attempt = await this.performing(params.id, async (target) => {
+        await grabFocus(this.channel, target);
+        // End before backwards deletions, so the caret is behind the last
+        // character wherever the application left it; Home before forwards ones,
+        // so it is in front of the first. Then one key per character that was
+        // read. Neither press is aimed - raw input never is - which is exactly
+        // why the comparison below exists.
+        await emitChord(this.channel, forwards ? "Home" : "End");
+        const key = forwards ? "Delete" : "Backspace";
+        for (let pressed = 0; pressed < toDelete; pressed += 1) await emitChord(this.channel, key);
+      });
+      const after = clearableLength(attempt.element.content);
+      if (after === 0) return attempt;
+      if (after === undefined) {
+        remaining = after;
+        break;
+      }
+      const progressed = after < toDelete;
+      remaining = after;
+      // A stalled pass is worth turning around exactly once. A second stall in
+      // the other direction is a field being refilled faster than it can be
+      // emptied, or keys landing in another window, and pressing on is guessing.
+      if (!progressed) {
+        if (stalled) break;
+        stalled = true;
+      }
+    }
+    let sentence =
+      `this element read back with ${remaining === undefined ? "text this daemon can no longer read" : `${remaining} characters still in it`} after ` +
+      `${spent} deletions - the keys were sent, and either they landed somewhere else or the application put text back. ` +
+      `Nothing here claims the element is empty when it does not read empty`;
+    // A field that lost NOT ONE character took none of the keys: asking for the
+    // focus succeeded and the keys still went elsewhere, which on this desk is a
+    // window that was not front. A press lands where it is aimed, so say so -
+    // the caller cannot see which window holds the keyboard.
+    if (remaining === length) {
+      sentence +=
+        `. Not one character went, so the keys are landing in another window - raise this element's window by pressing ` +
+        `its application's button on the desktop shell's task bar with "activateElement", then clear it again`;
+    }
+    throw new WriteNotObservedError(sentence);
+  }
+
+  // Aim from fresh semantic geometry; read-back is observation, not recipient proof.
+  async clickElement(params: ClickElementParams): Promise<ClickElementResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.clickElement(params));
+    const button = (params.button ?? "left") as string;
+    if (!isPointerButton(button)) {
+      throw new UnperformableElementError(
+        `this contract has no pointer button named ${JSON.stringify(button)} - it has ${POINTER_BUTTON_LIST}`,
+      );
+    }
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      throw new UnperformableElementError(
+        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+      );
+    }
+    const count = params.count ?? 1;
+    const fractionX = params.x ?? 0.5;
+    const fractionY = params.y ?? 0.5;
+    if (count !== 1 && count !== 2) throw new UnperformableElementError("a pointer press performs 1 or 2 clicks");
+    if ([fractionX, fractionY].some((fraction) => !Number.isFinite(fraction) || fraction < 0 || fraction > 1)) {
+      throw new UnperformableElementError("pointer fractions must be finite numbers from 0 through 1");
+    }
+    const before = await this.readElement(ref);
+    await this.refuseGreyControl(params.id, ref);
+    const initial = await screenRectangle(this.channel, ref);
+    if (initial === undefined || initial.width <= 0 || initial.height <= 0) {
+      throw new UnperformableElementError("this element publishes no usable rectangle on this desk - nothing was sent");
+    }
+    if (before.states?.includes("offscreen") || initial.x < 0 || initial.y < 0) {
+      await scrollIntoView(this.channel, ref);
+    }
+    // A non-focusable image can still take a pointer press. Focus failure is
+    // not recipient evidence either way; retain the uncertainty in the answer.
+    await grabFocus(this.channel, ref).catch(() => false);
+    await this.readElement(ref);
+    await this.refuseGreyControl(params.id, ref);
+    const rectangle = await screenRectangle(this.channel, ref);
+    if (rectangle === undefined || rectangle.width <= 0 || rectangle.height <= 0) {
+      throw new UnperformableElementError("this element publishes no usable rectangle on this desk - nothing was sent");
+    }
+    // As in scrollIntoView, fresh geometry can contradict Chromium's stale
+    // offscreen flag. Keep the geometric guard rather than vetoing that witness.
+    if (rectangle.x < 0 || rectangle.y < 0) {
+      throw new PointerBlockedError("this element's rectangle sits off the screen - nothing was sent");
+    }
+    // Fractions at 1 select the last pixel INSIDE the rectangle, not a neighbour.
+    const point = {
+      x: Math.min(Math.round(rectangle.x + rectangle.width * fractionX), Math.ceil(rectangle.x + rectangle.width) - 1),
+      y: Math.min(Math.round(rectangle.y + rectangle.height * fractionY), Math.ceil(rectangle.y + rectangle.height) - 1),
+    };
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < rectangle.x || point.y < rectangle.y) {
+      throw new PointerBlockedError("this element publishes no usable pointer point - nothing was sent");
+    }
+    const performed = await this.performing(params.id, () => emitClick(this.channel, point, button, count));
+    const diagnostic = {
+      ...performed.element.diagnostic,
+      "mastra-cc/pointer-aim": "The pointer was sent at this element's freshly read rectangle. Focus and geometry do not prove the input recipient; compare the read-back with the intended result. Overlays or concurrent window changes can redirect a press.",
+    };
+    return { ...performed, element: { ...performed.element, diagnostic } };
   }
 
   private async aimedRawInput(id: string, sent: "key" | "text", emit: () => Promise<void>): Promise<SendKeyChordResult> {
@@ -828,6 +1161,36 @@ export class AtspiBackend implements Backend {
       // and found nothing focused. Collapsing them would tell a reader something
       // was learned when nothing was.
       const focused = await this.focusedElement().catch(() => null);
+      // THE ONE READING THAT IS GOOD ENOUGH TO REFUSE ON. Everything above is
+      // about the focus read being unreliable INSIDE an application. Across
+      // applications it is not: the walk only reports a focused element under
+      // an ancestor the bus marks active, so a focused element belonging to
+      // another application means the keyboard is in another application's
+      // window. A key sent now lands there - a wallpaper path typed into a
+      // browser's search box, and answered "performed". So it is refused, and
+      // refused BEFORE the emit, because the damage is the sending.
+      // ONE MORE WITNESS BEFORE ACCUSING ANOTHER APPLICATION. The focus walk
+      // above returns the FIRST focused element it finds in registry order, and
+      // more than one application can carry a stale "active" claim at once -
+      // measured 2026-09-05, where a raised settings dialog was told the
+      // keyboard belonged to a Chromium behind it, over and over, and a whole
+      // errand died on a refusal that was wrong. So ask the target's own
+      // ancestry: if a window above this element claims keyboard activation,
+      // the key lands here and there is nothing to refuse.
+      const raised = await this.underActiveWindow(ref).catch(() => false);
+      const mine = raised ? undefined : this.applicationOfElement(id);
+      const theirs = focused === null || focused === undefined ? undefined : this.applicationOfElement(focused.id);
+      if (mine !== undefined && theirs !== undefined && theirs !== mine) {
+        throw new KeyboardHeldElsewhereError(
+          `the keyboard belongs to ${JSON.stringify(theirs)} right now, and this element is inside ` +
+            `${JSON.stringify(mine)} - a ${sent} is not addressed to an element, it goes to whichever window the desk ` +
+            `has given the keyboard to, so this one would have landed in ${JSON.stringify(theirs)}. Nothing was sent. ` +
+            `Bring ${JSON.stringify(mine)} to the front the way a person does - the desktop shell publishes a button ` +
+            `for each running application on its task bar, and pressing that button with 'activateElement' raises the ` +
+            `window and hands it the keyboard - then send the ${sent} again. Pressing inside the window itself does not ` +
+            `raise it: the press lands on whatever is stacked on top of that rectangle.`,
+        );
+      }
       if (!taken || focused === null || focused?.id !== id) {
         doubt =
           `this element was not confirmed to hold the focus when the ${sent} was sent` +
@@ -859,8 +1222,61 @@ export class AtspiBackend implements Backend {
   // no state to compare here - an action is a bare verb and the element does
   // not publish what it was supposed to change - so the decline is the only
   // reading there is, and discarding it left this verb with none.
+
+  // The same check stands at both doors that press a control: the pointer
+  // one and the element's own published verb (ADR-0081).
+  private async refuseGreyControl(id: string, ref: NativeRef): Promise<void> {
+    // A DISABLED CONTROL IS NOT A PLACE TO SPEND A PRESS. A toolkit control
+    // that answers neither the bus's ENABLED bit nor its SENSITIVE one is
+    // greyed out: a person clicking it gets nothing, and so does this daemon.
+    // Pressing anyway produces a press that "succeeded" over a dead button,
+    // which reads back unchanged and invites a caller to report work it never
+    // did (measured 2026-09-05: the wallpaper page's Apply button published
+    // ["visible"] while every live button beside it published "enabled", and a
+    // press on it left the desktop configuration without a wallpaper key).
+    // Only CONTROL roles are held to this - a web page's generic nodes publish
+    // no enablement at all and are pressed every day.
+    const nativeRole = await this.nativeRoleOf(ref);
+    const { role } = toNeutralRole(nativeRole);
+    if (PRESSABLE_CONTROL_ROLES.has(role)) {
+      const [lower, upper] = await this.statesOf(ref);
+      if (!toNeutralStates(lower, upper).includes("enabled")) {
+        // A SECOND REFUSAL AT THE SAME CONTROL IS A DIFFERENT SENTENCE. The
+        // first one is advice - go and do the step this control is waiting on.
+        // Repeated, the advice is wrong: measured 2026-09-05, Plasma's wallpaper
+        // Apply never gains "enabled" no matter what is pressed beside it, under
+        // this daemon's pointer or a real one, and a caller told the same
+        // hopeful thing three times read the grey as "already done" and reported
+        // a wallpaper the desk never received. So the count is kept, and after
+        // the first the refusal says the road is closed and claims nothing.
+        const refusals = (this.greyRefusals.get(id) ?? 0) + 1;
+        this.greyRefusals.set(id, refusals);
+        let refusal =
+          `this ${role} publishes no "enabled" state, so this desk reads it as disabled - a press there would land on a ` +
+          `control that cannot answer it. Whatever must happen first to wake it has not happened yet`;
+        if (refusals > 1) {
+          refusal +=
+            `. This is refusal ${refusals} at this same control, and nothing you have done has woken it: NOTHING HAS BEEN ` +
+            `APPLIED, and a control that stays grey is not a control that acted quietly. This road is closed - finish the ` +
+            `errand another way`;
+        }
+        throw new UnperformableElementError(refusal);
+      }
+    }
+  }
+
   async activateElement(params: ActivateElementParams): Promise<ActivateElementResult> {
     return this.performing(params.id, async (ref) => {
+      // THE SAME GREY, THROUGH THE OTHER DOOR (ADR-0081). A control the desk
+      // greys out cannot act, and it makes no difference whether the press
+      // arrives as a pointer or as the element's own published verb: measured
+      // 2026-09-05, a run that had been refused at Plasma's `Apply` by
+      // `clickElement` simply performed `Press` on it instead, got a bare
+      // success back, and reported a wallpaper the desk never received. So the
+      // enablement check lives at both doors. Actions that do not activate -
+      // taking the focus, above all - are untouched: they are exactly what a
+      // caller does to a form BEFORE the control it feeds ever wakes.
+      if (ACTIVATING_ACTIONS.has(params.action)) await this.refuseGreyControl(params.id, ref);
       const performed = await performAction(this.channel, ref, params.action);
       if (!performed) {
         throw new WriteNotObservedError(
@@ -885,6 +1301,7 @@ export class AtspiBackend implements Backend {
   // can check - and the daemon's own description is what makes the commit
   // reviewable (ADR-0008 rule 2, ADR-0021).
   async submitElement(params: SubmitElementParams): Promise<SubmitElementResult> {
+    if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.submitElement(params));
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       // Byte-identical to every other unperformable id (ADR-0008 rule 6).
@@ -952,6 +1369,30 @@ export class AtspiBackend implements Backend {
     return this.performing(params.id, (ref) => setCaretOffset(this.channel, ref, params.offset));
   }
 
+  // Crop the visible desktop at the element's freshly read rectangle. The
+  // caller names an element, not coordinates; overlapping windows may supply
+  // the visible pixels. This is not proof those pixels belong to that element.
+  async captureElement(params: CaptureElementParams): Promise<CaptureElementResult> {
+    const ref = this.answered.get(params.id);
+    if (ref === undefined) {
+      throw new UnperformableElementError(`no element with id "${params.id}" was ever answered by this daemon - nothing to look at`);
+    }
+    const rectangle = await screenRectangle(this.channel, ref);
+    if (rectangle === undefined || rectangle.width <= 0 || rectangle.height <= 0) {
+      throw new UnperformableElementError(
+        `this element publishes no rectangle on this desk, so there is no part of the screen that is it - ` +
+          `nothing here could be photographed and truthfully called this element`,
+      );
+    }
+    try {
+      return { image: await capture(rectangle) };
+    } catch (failure) {
+      // A grab that failed is a fact about this desk, not about the element:
+      // said plainly so a caller stops asking rather than retrying forever.
+      throw new UnperformableElementError(failure instanceof Error ? failure.message : String(failure));
+    }
+  }
+
   async revealElement(params: RevealElementParams): Promise<RevealElementResult> {
     return this.performing(params.id, (ref) => scrollIntoView(this.channel, ref));
   }
@@ -966,6 +1407,7 @@ export class AtspiBackend implements Backend {
   }
 
   async close(): Promise<void> {
+    this.labels.close();
     // Closing the reader closes what it was watching: a watch outliving its
     // backend would be fed by a channel that is gone.
     for (const watch of this.watches.values()) await watch.close();
@@ -988,6 +1430,22 @@ export class AtspiBackend implements Backend {
  * signals was a false negative, never a false positive - but it is not proof, and
  * a caller reading silence as certainty is reading further than the desk said.
  */
+/**
+ * Whether an element answers to the name a query asked for. Element names are
+ * compared exactly - "OK" and "ok" on a screen are two different labels - with
+ * ONE exception, which is the exception names.ts already documents: an
+ * application's name is the same name in any case. Chromium registers on the
+ * bus as "Chromium" while the operator's permit, the catalog key and every
+ * caller say "chromium" (measured 2026-09-05: a launched browser was refused as
+ * unreadable for thirty seconds while its application node sat there under a
+ * capital C).
+ */
+function queryNameMatches(element: { role: string; name: string }, name: string): boolean {
+  return element.role === "application"
+    ? applicationName(element.name) === applicationName(name)
+    : nameMatches(element.name, name);
+}
+
 function keyAimNote(diagnostic: Diagnostic | undefined, note: string): Diagnostic & { "mastra-cc/key-aim": string } {
   return { ...(diagnostic ?? {}), "mastra-cc/key-aim": note };
 }

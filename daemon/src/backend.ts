@@ -27,6 +27,12 @@ import type {
   SetElementTextResult,
   TypeTextParams,
   TypeTextResult,
+  ClearElementTextParams,
+  ClearElementTextResult,
+  ClickElementParams,
+  ClickElementResult,
+  CaptureElementParams,
+  CaptureElementResult,
   SetElementValueParams,
   SetElementValueResult,
   SubmitElementParams,
@@ -128,6 +134,26 @@ export class TextOffsetOutOfRangeError extends Error {}
 // exist, so the disagreement is raised rather than smoothed over.
 export class WriteNotObservedError extends Error {}
 
+// A KEY WOULD HAVE GONE TO SOMEBODY ELSE. Raw input is not addressed: it goes
+// to whichever window the display server currently gives the keyboard to, and
+// this daemon does not raise windows. When the desk says the keyboard belongs
+// to a DIFFERENT APPLICATION than the element being aimed at, the key is not
+// merely unverifiable - it is known in advance to land somewhere else, so it
+// is refused BEFORE anything is sent rather than typed into a stranger's
+// window and reported as performed (ADR-0086).
+//
+// Only the cross-application reading refuses. The same-application focus read
+// has been measured naming an unrelated node while the key landed perfectly
+// (see aimedRawInput), so within one application it stays a doubt note.
+export class KeyboardHeldElsewhereError extends Error {}
+
+// A pointer route may refuse a blocked target (ADR-0093). Fresh element bounds
+// and practical reveal/focus checks do not atomically bind raw input to its
+// recipient: overlapping or transparent/input-only windows and changes between
+// checking and delivery can still redirect a press. This error is not a promise
+// that every such case is detected; callers must verify the requested outcome.
+export class PointerBlockedError extends Error {}
+
 // This route cannot enumerate what the machine has installed. A fact about the
 // route, never about the machine: the browser protocol answers for one browser
 // and a recorded tape recorded a tree rather than a catalogue, so neither can
@@ -200,6 +226,24 @@ export class FocusUnsupportedError extends Error {}
 // exhausting them is reported rather than smoothed into a short answer.
 export class IncompleteObservationError extends Error {}
 
+// A window scope resolved to no window, or to several. Scope narrows what is
+// OBSERVED, so a scope that resolves to nothing has nothing to observe - and
+// answering that with an empty list would put a claim about the desktop
+// ("that window is empty") in the mouth of a daemon that only failed to find
+// the window. The two cases are distinct classes because they are distinct
+// repairs: a name nothing answers to, and a name too many things answer to.
+export class WindowScopeUnmatchedError extends Error {}
+export class WindowScopeAmbiguousError extends Error {}
+
+// The same lie one level up. An application scope that matches nothing on the
+// bus used to answer with an empty list, which reads as "that application has
+// no controls" - measured 2026-09-04, an agent scoped a query to the launcher
+// id "org.kde.konsole" while the bus published the application as "konsole",
+// was told the terminal was featureless, and gave up in front of a terminal it
+// could have read. The name it needed was one listApplications call away.
+export class ApplicationScopeUnmatchedError extends Error {}
+export class ApplicationScopeAmbiguousError extends Error {}
+
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
 // can review"). This is not a judgement of the caller's attestation - the
@@ -212,6 +256,28 @@ export class IncompleteObservationError extends Error {}
 // answer it. Describing a commit means reading the element as it stands and
 // saying which of its own verbs would fire; a server that guessed from the id
 // would be inventing exactly the description this error exists to demand.
+// One application died; the desk did not (ADR-0090).
+//
+// Measured 2026-09-05: a terminal window this daemon had opened crashed
+// mid-run. Every later call aimed at an element inside it came back from the
+// bus as ServiceUnknown or NoReply for that ONE peer, the backend threw, and
+// the server answered "the desktop could not be read by this session's
+// backend" - which reads as a dead desktop. The desktop was fine; a browser, a
+// file manager and a settings window were open on it. The run above read the
+// blanket refusal the only way it could and stopped.
+//
+// A bus error that names a single peer is a fact about that peer. It is
+// carried out of the channel as its own class so the server can say which
+// thing is gone and invite a fresh query, rather than condemning the desk.
+export class PeerGoneError extends Error {}
+
+// The same lesson one level down (ADR-0090, amended): the application is still
+// on the bus, the ELEMENT is not. AT-SPI answers a call aimed at a destroyed
+// node with UnknownObject, which the server used to widen into "the desktop
+// could not be read" - so a run that had merely outlived a closed dialog was
+// told the whole desk had gone dark. Measured 2026-09-05.
+export class ElementGoneError extends Error {}
+
 export class AttestationFailedError extends Error {}
 
 // The daemon's own description of a commit, derived from the element as it
@@ -456,6 +522,37 @@ export interface Backend {
   // server before this is reached; the backend types what it is given.
   typeText(params: TypeTextParams): Promise<TypeTextResult>;
 
+  // The third raw-input method (ADR-0076), and the only one that both counts
+  // its presses and compares afterwards: typing is an append, so a field with
+  // no editable-text interface can be written to and not replaced. The backend
+  // reads the element's own published text to learn how many characters are
+  // there, presses that many times, and refuses if what it reads back is not
+  // empty. An element whose text this daemon cannot read is refused, because a
+  // blind clear would be pressing a key an unknown number of times at a window
+  // it cannot see.
+  clearElementText(params: ClearElementTextParams): Promise<ClearElementTextResult>;
+
+  // The pointer (ADR-0078). Not a coordinate: an element this backend has
+  // already answered for, plus a fraction of that element's own rectangle. The
+  // backend reads the bounds the platform publishes for the element AT THE
+  // MOMENT OF THE CALL, turns the fraction into a screen point, and presses
+  // there. An element with no bounds, an empty rectangle, or a rectangle off
+  // the screen is refused rather than aimed at, because a pointer that guesses
+  // presses something and cannot say what. Like the raw-input verbs, the press
+  // is not aimed at the element the way a published action is, so the read back
+  // afterwards is the evidence and nothing here claims the click did what the
+  // caller wanted.
+  clickElement(params: ClickElementParams): Promise<ClickElementResult>;
+
+  // The eyes (ADR-0088). Same shape as the pointer and for the same reason: an
+  // element this backend has already answered for, whose rectangle is read from
+  // the platform AT THE MOMENT OF THE GRAB, and pixels cut to it. It is the one
+  // answer in this contract that is not something the platform said - it is
+  // what the platform DREW - and it exists because a page is free to publish an
+  // image with no name and no content, which a caller with only labels reads as
+  // an empty rectangle and then guesses about.
+  captureElement(params: CaptureElementParams): Promise<CaptureElementResult>;
+
   close(): Promise<void>;
 }
 
@@ -478,5 +575,8 @@ export const BACKEND_METHODS = [
   "revealElement",
   "sendKeyChord",
   "typeText",
+  "clearElementText",
+  "clickElement",
+  "captureElement",
   "close",
 ] as const;

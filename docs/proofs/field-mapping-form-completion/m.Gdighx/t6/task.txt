@@ -1,0 +1,1 @@
+In the Edit Launcher window, change Name to Launcher-7327c55794 and Comment to Comment-6e7be5c5ee. Leave all other settings unchanged. Save the launcher, then verify the saved values. The editor will reopen for saved-state inspection. Do not launch it.

@@ -1,0 +1,32 @@
+{
+  "kind": "GREEN",
+  "selected": [
+    {
+      "label": "Receipt number",
+      "value": "RCPT-54841628",
+      "id": "el-f45fbc97b907",
+      "labelCall": 3,
+      "actionCall": 4,
+      "index": 11
+    },
+    {
+      "label": "Total paid",
+      "value": "62.28",
+      "id": "el-2ec47140faca",
+      "labelCall": 3,
+      "actionCall": 5,
+      "index": 14
+    }
+  ],
+  "submission": {
+    "call": 6,
+    "index": 17,
+    "time": 1788729550315
+  },
+  "verification": {
+    "call": 8,
+    "time": 1788729554047,
+    "actual": "RCPT-54841628|62.28|\n"
+  },
+  "finalEvent": 33
+}

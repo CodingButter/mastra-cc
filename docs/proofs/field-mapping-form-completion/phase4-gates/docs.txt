@@ -1,0 +1,5 @@
+
+> mastra-cc@ check-docs /home/codingbutter/mastra-cc
+> node scripts/check-docs.mjs
+
+check-docs: ok - 295 files, every relative link resolves

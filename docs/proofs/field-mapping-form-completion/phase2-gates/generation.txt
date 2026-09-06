@@ -1,0 +1,1 @@
+generate: 3 file(s) emitted to /home/codingbutter/mastra-cc/packages/protocol-types (schema v1.20.0, digest 921561e1f264...)
