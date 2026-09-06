@@ -8,6 +8,8 @@ below. Each measurement
 answers a question in [09-QUESTIONS.md](../09-QUESTIONS.md) that could not be
 answered by argument.
 
+[Mousepad Find/Replace baseline](mousepad-verified-find-replace/README.md) records the verified delivery base and regression gates; native task completion remains unproved.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths
