@@ -1,0 +1,28 @@
+{
+  "scope": "Phase 1 synthetic calibration only; media integrity checked, genuine visual inspection unavailable",
+  "files": {
+    "docs/proofs/mousepad-verified-find-replace/calibrate.mjs": "59837a3e3daf6772aac80a67e380b8569f25121dfdf4562577203a483139c9e6",
+    "docs/proofs/mousepad-verified-find-replace/evidence.mjs": "ebb2fbecaea743ac519ca1c3e80d04a0fffb9e36b816b603f37c3a59babbdd5d",
+    "docs/proofs/mousepad-verified-find-replace/install-consumer.mjs": "58f41229ee9d7325a6231fa95b197c38212145164d570a5649aa811fee7a2b95",
+    "docs/proofs/mousepad-verified-find-replace/evidence.test.mjs": "f56978a2d7c36c18e51042e3c4421a9fade4991639568624fd6d045830c4cea7",
+    "docs/proofs/mousepad-verified-find-replace/inspect-session.sh": "d85b187ce79292e27f618b9f985a046edf2b055ccf3efc587273944a9970e4eb",
+    "docs/proofs/mousepad-verified-find-replace/probe.mjs": "d31a83966479e9dc22e6519da54ea41a0c8853e6361fed232bf638101febd054",
+    "docs/proofs/mousepad-verified-find-replace/inspect-evidence.mjs": "6b99edee540b7d53f96adcf51e7a5da0ab521b8aa86f85a2654fe5449f9f8469",
+    "docs/proofs/mousepad-verified-find-replace/README.md": "92ebedc72a774fc29c0c74a2e82425ce3e6866954fb894e2bc45b4b605f99756",
+    "docs/proofs/mousepad-verified-find-replace/public-inspect.mjs": "8d8bb5595427038a14d95574fff8fa52f6f939add4ae52ffcb130a834c4c8de6",
+    "docs/proofs/mousepad-verified-find-replace/demo.sh": "726ba1e2fdc9a78cd2aaeac1dd5c5e0790b3473828cf6eb9ec1fd1430b618dbe",
+    "docs/proofs/mousepad-verified-find-replace/phase1/gates.txt": "918f37e6355258a6776286fd044e2ef7dfe344a5e48ae152452f23b57bb88bbc",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-p1-public-readback.TqaHNN.tar.gz": "fad9d79cb967add1385de71d28d4245ea7a04f3b5425557879ac10ce9a272830",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-inspect.VLsOvQ.tar.gz": "aed8a712b5875184d174210585703bb3ec34c4ce38e99febf2f92a314d746c77",
+    "docs/proofs/mousepad-verified-find-replace/phase1/archives.json": "6cb1010cdfed883394d96080a2c3fb37944a9822a12ee02d8e6f4ff083aa0921",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-p1-inspect.NGN1xR.tar.gz": "f3a35f0969f5a607d4a0c9acf9f12499f95fa17786b47c8f5cebf0c801425a3c",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-inspect.yVuiUI.tar.gz": "ab766075ff9790bd01049483290a31b268d33218b9b843b3bf3021c3ebc35acd",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-p1-inspect.k1uXPk.tar.gz": "0847d7025abe63020ebac1fde0e83547fecb9e406d7816ce887bc9a038a94c80",
+    "docs/proofs/mousepad-verified-find-replace/phase1/installed-provenance.tar.gz": "0b06abdbb70cecb80d110e77d63d3aa62c957aa56ec471b2dda3407f5b842d5c",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-p1-save.TdwNPp.tar.gz": "56885d235a3572da6b83042b6fce6b7d98b77fb9d4ec0fc2b718fa024abcc0b8",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-p1-public-readback.UZUl2c.tar.gz": "f6e8044b0f2a227ba2685ba5648fdc9aa0decc5b5e1847f74594408cfbe98fe9",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-p1-reopen.YKlngv.tar.gz": "eeed79b18a71d9d8d39c6a45425a39659a7f3b6d50cd3c4259b6f701d6655a9f",
+    "docs/proofs/mousepad-verified-find-replace/phase1/mousepad-p1-save.p8IorP.tar.gz": "eb842a82e071e60bef478ef43e08c2f9c27fc27bdd69073927e6e4adbaae554b",
+    "docs/02-DECISIONS/0096-composite-containment-is-not-a-direct-label.md": "75312f0686b651daaaa9bfada7a876335b489c77920cb617bff3e210e6286357"
+  }
+}

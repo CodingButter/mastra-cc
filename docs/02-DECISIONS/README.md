@@ -110,6 +110,10 @@ Two kinds of record live here, and the difference matters when you are deciding 
 
 | [0095](0095-explicit-labels-are-evidence-not-names.md) | Explicit labels are evidence, not names | Bounded optional native label observations preserve names and authority; measured receipt calibration and ordinary launcher-editor feasibility justify the design, not model success |
 
+## Proposed decisions awaiting acceptance
+
+- [0096 — Composite containment is not a direct label](0096-composite-containment-is-not-a-direct-label.md): measured Mousepad text/menu containment and independent saved-byte calibration; separate optional evidence proposal, **not approved or implemented**. Visual review remains unavailable.
+
 ## Writing a new one
 
 Use the next free number. Keep the four sections: **Context**, **Decision**, **Consequences**, **Evidence**.
