@@ -1,0 +1,6 @@
+
+(mousepad:193300): GLib-CRITICAL **: 14:33:23.664: g_strjoinv: assertion 'str_array != NULL' failed
+
+(mousepad:193300): GLib-CRITICAL **: 14:33:23.664: g_strjoinv: assertion 'str_array != NULL' failed
+
+** (mousepad:193300): CRITICAL **: 14:33:25.530: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed

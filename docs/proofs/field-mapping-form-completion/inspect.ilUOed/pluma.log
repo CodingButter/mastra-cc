@@ -1,0 +1,392 @@
+
+** (pluma:199553): CRITICAL **: 15:10:00.320: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.569: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.569: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.578: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.578: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.578: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.578: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.579: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.579: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.579: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.579: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.580: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.580: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.580: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.580: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.581: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.581: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.581: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.581: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.581: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.581: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.582: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.582: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.582: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.582: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.583: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.583: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.583: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.583: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.584: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.584: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.586: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.586: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.586: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.586: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.588: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.588: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.589: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.589: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.589: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.589: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.590: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.590: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.590: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.590: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.591: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.591: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.591: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.591: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.592: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.592: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.592: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.592: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.593: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.593: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.593: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.593: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.593: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.593: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.594: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.594: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.594: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.594: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.595: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.595: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.595: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.595: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.595: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.595: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.596: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.596: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.597: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.598: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.598: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.598: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.599: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.599: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.599: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.599: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.599: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.599: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.599: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.599: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.600: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.600: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.600: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.600: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.600: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.600: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.600: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.600: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:00.660: gdk_window_get_window_type: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:00.673: gtk_accessible_get_widget: assertion 'GTK_IS_ACCESSIBLE (accessible)' failed
+
+** (pluma:199553): CRITICAL **: 15:10:01.708: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.898: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.898: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.905: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.905: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.905: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.905: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.906: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.906: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.906: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.906: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.907: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.907: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.907: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.907: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.907: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.907: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.908: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.908: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.908: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.908: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.908: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.908: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.909: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.909: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.909: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.909: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.909: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.909: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.909: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.909: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.909: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.909: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.910: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.910: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.910: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.911: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.911: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.911: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.912: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.912: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.912: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.912: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.912: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.912: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.913: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.913: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.913: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.913: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.913: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.913: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.913: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.913: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.913: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.913: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.914: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.914: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.914: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.914: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.914: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.914: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.914: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.914: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.915: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.915: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.915: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.915: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.916: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.916: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.916: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.916: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.916: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.916: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.917: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.917: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.917: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.917: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.917: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.917: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.918: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.918: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.918: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.918: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.919: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.919: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.919: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.919: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.919: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.919: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.920: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.920: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.920: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.920: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.921: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.921: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.921: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.921: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.921: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.921: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.922: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.922: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed
+
+(pluma:199553): Gtk-CRITICAL **: 15:10:01.922: gtk_tree_view_get_cell_area: assertion 'gtk_widget_get_realized (GTK_WIDGET (tree_view))' failed
+
+(pluma:199553): Gdk-CRITICAL **: 15:10:01.922: gdk_window_get_origin: assertion 'GDK_IS_WINDOW (window)' failed

@@ -1,0 +1,2 @@
+
+** (exo-desktop-item-edit:200266): CRITICAL **: 15:11:41.040: impl_GetExtents: assertion 'ATK_IS_COMPONENT (user_data)' failed

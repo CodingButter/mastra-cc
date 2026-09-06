@@ -108,6 +108,8 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | [0093](0093-useful-native-controls-with-explicit-limits.md) | Useful native controls with explicit limits | User-approved practical restoration: fresh-bounds clicks and visible root-display crops retain authority and lifecycle checks without promising pixel/input isolation or completed live proof |
 | [0094](0094-a-connection-must-finish-introducing-itself.md) | A connection must finish introducing itself | One ten-second transport startup budget covers opening and schema hello; failure closes the attempt without replay, while established requests keep their existing lifetime |
 
+| [0095](0095-explicit-labels-are-evidence-not-names.md) | Explicit labels are evidence, not names | Bounded optional native label observations preserve names and authority; measured receipt calibration and ordinary launcher-editor feasibility justify the design, not model success |
+
 ## Writing a new one
 
 Use the next free number. Keep the four sections: **Context**, **Decision**, **Consequences**, **Evidence**.
