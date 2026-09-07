@@ -46,6 +46,10 @@ answered by argument.
 
 [Pre-response fetch recovery](mousepad-verified-find-replace/fetch-retry/README.md) retains one complete machine/visual-reviewed 32-step batch, actual recovered provider failures, installed-SDK RED/GREEN proof and explicit remaining human/reopen boundaries.
 
+[Original 24-step retry](mousepad-verified-find-replace/original24/README.md) retains a rejected original-budget batch without combining successes across experiments.
+
+[Saved-document reopen diagnostic](mousepad-verified-find-replace/reopen/README.md) records a blocked public Open action in a fresh native process, without claiming successful reopening.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

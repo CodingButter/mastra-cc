@@ -1,0 +1,249 @@
+{
+  "source": "/tmp/mousepad-reopen.surd87wx",
+  "artifacts": [
+    {
+      "source": "consumer/model-driver.mjs",
+      "sha256": "34eef6f02142f0eb32ba2a6043faff5f0cf171b704335de0f04a9d21c8c83d83"
+    },
+    {
+      "source": "t1/a11y.log",
+      "sha256": "aa3633c68bfcad835fbc1251e7c33cd6285a1d8e6b12e3ed1d5571ef57f34913"
+    },
+    {
+      "source": "t1/app.log",
+      "sha256": "b7635fc81972e52936d708773ec9fbc32acbb878c11caff163b5b3dff08f640e"
+    },
+    {
+      "source": "t1/before.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t1/daemon-command.txt",
+      "sha256": "5afdabffa795b3ffb133306fc65cdb3b273eef7c930b9cc35e3a55df6220ebfd"
+    },
+    {
+      "source": "t1/daemon.log",
+      "sha256": "34e1232250482bc259f8ff5c17f1e3e112ee5096c4d261c4b1830e43fb6fb0ba"
+    },
+    {
+      "source": "t1/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+    },
+    {
+      "source": "t1/document.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t1/driver.log",
+      "sha256": "c33d72d965900b668c3cf082c1581ba5bdc18d87db7fc47fb0a3e8dfb402cde3"
+    },
+    {
+      "source": "t1/ffmpeg.log",
+      "sha256": "91be48a5075ceca9f02a00343016ebe8faf1dc089693f15902ffe1277c4c1f72"
+    },
+    {
+      "source": "t1/grant.txt",
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d"
+    },
+    {
+      "source": "t1/openbox.log",
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c"
+    },
+    {
+      "source": "t1/outcome.json",
+      "sha256": "9e9ec8a7fcb66d4db48b92b7b809c1a039fbab1e913f679cb1adaef8d76aca1e"
+    },
+    {
+      "source": "t1/recording-start-ms.txt",
+      "sha256": "4290b0f52ee0ac3a0e7a2a1f315ac67f8e75f004925a3560dc489f041f33cd4e"
+    },
+    {
+      "source": "t1/recording.json",
+      "sha256": "986c06c84bb94ad971355a701628d1bf450d0505edf7a6ea96cdff4fa1c791dd"
+    },
+    {
+      "source": "t1/reopen-declaration.json",
+      "sha256": "60470b6878b1c0c49a9b0e8af0fbbf14c96f45d0c5dad30522915b35120b1514"
+    },
+    {
+      "source": "t1/reopen-events.jsonl",
+      "sha256": "1e6b395204e432669ea78febcbf4d93f17622ca3381fd21c4e99829591027813"
+    },
+    {
+      "source": "t1/screen.mkv",
+      "sha256": "4fec392f1d7cecd9e614ed00b0289e23e2d0c0d6a434fd5fe93c0c8e81be5089"
+    },
+    {
+      "source": "t1/session-ended-ms.txt",
+      "sha256": "0d6661b24dcb6d7edb887ce37b7355b7ceb914628a02c2d789d5fd457418bc37"
+    },
+    {
+      "source": "t1/session.txt",
+      "sha256": "b1b7a5812e3fb58bce7576ce26fca515e242f7760f0df13794ba0ee5ba1d24b4"
+    },
+    {
+      "source": "t1/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02"
+    },
+    {
+      "source": "t2/a11y.log",
+      "sha256": "b2898d32932db79f7ce010b610243d5ff4dcf6c1ff3e1beec9e94fb7ecbefb37"
+    },
+    {
+      "source": "t2/app.log",
+      "sha256": "ef357f142dd5799f73d66ac17a45ed89e11b21bd78b7dbcbd73d8a29a0ce0f11"
+    },
+    {
+      "source": "t2/before.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t2/daemon-command.txt",
+      "sha256": "24b4027d17f7cb19d98a6138d520121ef45f4257526388565cdfa8c2dc128c9a"
+    },
+    {
+      "source": "t2/daemon.log",
+      "sha256": "5673c7090070fa7c0c32fac4a00597aa541f8a26008dc34f81501184027e0a6c"
+    },
+    {
+      "source": "t2/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+    },
+    {
+      "source": "t2/document.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t2/driver.log",
+      "sha256": "c33d72d965900b668c3cf082c1581ba5bdc18d87db7fc47fb0a3e8dfb402cde3"
+    },
+    {
+      "source": "t2/ffmpeg.log",
+      "sha256": "ff7832ec519a3fa4e55b6bdf8183be9609f9e8a754a6f30b9088c6437474c046"
+    },
+    {
+      "source": "t2/grant.txt",
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d"
+    },
+    {
+      "source": "t2/openbox.log",
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c"
+    },
+    {
+      "source": "t2/outcome.json",
+      "sha256": "9e9ec8a7fcb66d4db48b92b7b809c1a039fbab1e913f679cb1adaef8d76aca1e"
+    },
+    {
+      "source": "t2/recording-start-ms.txt",
+      "sha256": "b9f2fe8aa431d065e5b4c23d050b745c62554cadb098f74cb643dbc0e821a7b3"
+    },
+    {
+      "source": "t2/recording.json",
+      "sha256": "986c06c84bb94ad971355a701628d1bf450d0505edf7a6ea96cdff4fa1c791dd"
+    },
+    {
+      "source": "t2/reopen-declaration.json",
+      "sha256": "d1a8ad7cecbfb833be58bcd134b2d600e21ca8c51bf7be8a0b349027e8984b23"
+    },
+    {
+      "source": "t2/reopen-events.jsonl",
+      "sha256": "ddf67e25c9381fd991bf4b746cb3f7fda892ecfbb1ca97b9fcb9d5a3d60b3f25"
+    },
+    {
+      "source": "t2/screen.mkv",
+      "sha256": "c479fa935f4e4811a70645657f027cede2ed443f92b173e158e09f7ec00034d4"
+    },
+    {
+      "source": "t2/session-ended-ms.txt",
+      "sha256": "c75bbbc73463a8e45dbb9c9aeba0ffbc938b89f218982ad04acbeaf7ee2c7662"
+    },
+    {
+      "source": "t2/session.txt",
+      "sha256": "14a9b4c26d55d59a1448e3eb4de9203a98ba68e87c442208ffa1922f4a517a4e"
+    },
+    {
+      "source": "t2/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02"
+    },
+    {
+      "source": "t3/a11y.log",
+      "sha256": "43653b05fe97adb072fee53ee2fe9f9776ff5c0323f3c0d5add7657a834a3b08"
+    },
+    {
+      "source": "t3/app.log",
+      "sha256": "79ee80d647d8b0338c33a3541e0868ca471c2ae932d689a3100e298e3ff62d59"
+    },
+    {
+      "source": "t3/before.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t3/daemon-command.txt",
+      "sha256": "accd13d4fb33ced09abd36930de0e86736a6a11857f7220bdc28100b4f3816b5"
+    },
+    {
+      "source": "t3/daemon.log",
+      "sha256": "6ad9b9b90ef9caa48988c0f56d38543946416e42e1385dda213bb64950b92c85"
+    },
+    {
+      "source": "t3/display",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+    },
+    {
+      "source": "t3/document.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t3/driver.log",
+      "sha256": "c33d72d965900b668c3cf082c1581ba5bdc18d87db7fc47fb0a3e8dfb402cde3"
+    },
+    {
+      "source": "t3/ffmpeg.log",
+      "sha256": "544087f67aa3e3d4856609d2bd5926cc95153f5d96ed5f7b4d07bc7c704c8d12"
+    },
+    {
+      "source": "t3/grant.txt",
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d"
+    },
+    {
+      "source": "t3/openbox.log",
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c"
+    },
+    {
+      "source": "t3/outcome.json",
+      "sha256": "9e9ec8a7fcb66d4db48b92b7b809c1a039fbab1e913f679cb1adaef8d76aca1e"
+    },
+    {
+      "source": "t3/recording-start-ms.txt",
+      "sha256": "c6dcec9f4467f46ca5dbca11512d5650a7df7f93c966dfb2dcb48bbbaab1d5ef"
+    },
+    {
+      "source": "t3/recording.json",
+      "sha256": "8b32d29bb36a227977494469edb673f3f76dd34363c99cbcd98f71f862d0198b"
+    },
+    {
+      "source": "t3/reopen-declaration.json",
+      "sha256": "e0100ed61231fab3cf5985ae2dc7904abdb3f19196067b8c2812d1c337b34657"
+    },
+    {
+      "source": "t3/reopen-events.jsonl",
+      "sha256": "c456bf67357749607301311f0e89f2153ccc210baa99fe69d5f0c7134a4e62fe"
+    },
+    {
+      "source": "t3/screen.mkv",
+      "sha256": "6e4c74340b63f7cb3a0ff0098c0eef8e6979d80c088013779dc5d4def05b377a"
+    },
+    {
+      "source": "t3/session-ended-ms.txt",
+      "sha256": "04e36bcff64c5b1949b1ee3474e8403252bcb52383be05e8ce4b880e19c200d3"
+    },
+    {
+      "source": "t3/session.txt",
+      "sha256": "09c18b878c0bc276f1ebeb918eb1bdd62f45e00568e497b2a1f20d993698bb4e"
+    },
+    {
+      "source": "t3/xvfb.log",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "source": "/tmp/mousepad-reopen.bfibys7u",
+  "artifacts": [
+    {
+      "source": "consumer/model-driver.mjs",
+      "sha256": "715aaa5f7fd4a7858e32e80a4c9e2ac0a39de6c1bca70116c8860fcdcf3d2e3a"
+    },
+    {
+      "source": "session.txt",
+      "sha256": "2579775044d4d5fb2b7b16b8f6585cea58833ac082790809ba03835df49fb5ab"
+    },
+    {
+      "source": "t1/a11y.log",
+      "sha256": "7650b3ff0441f858edc7a643134b1f77d5cf939c58d69b66063b6e76791cc2c8"
+    },
+    {
+      "source": "t1/app.log",
+      "sha256": "5fa0cc51748d055c207f5150fedf3b8b70d77f5994eb7e0ec5a5863d81ed2d14"
+    },
+    {
+      "source": "t1/before.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t1/daemon-command.txt",
+      "sha256": "3d171a2181cb8aa8b753e3c4622d7301e9725fc1ffeafbecadfbce72ead67b8b"
+    },
+    {
+      "source": "t1/daemon.log",
+      "sha256": "063240fb068023ecf7fd674e3baa002fa0b8bcd3193b1ce95293a60bfdd5aea1"
+    },
+    {
+      "source": "t1/display",
+      "sha256": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2"
+    },
+    {
+      "source": "t1/document.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t1/driver.log",
+      "sha256": "953e0fb8487ced94d625160a2bfc0cfce80228704117e64a5f335bb2551014db"
+    },
+    {
+      "source": "t1/ffmpeg.log",
+      "sha256": "777965a638f9bf32b5ae6a695f54a1438507c05225f0aafea0b7878d64d9220f"
+    },
+    {
+      "source": "t1/grant.txt",
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d"
+    },
+    {
+      "source": "t1/openbox.log",
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c"
+    },
+    {
+      "source": "t1/recording-start-ms.txt",
+      "sha256": "9eadcb592547a83df8b6862c1ee196eb0767069b75470190015464b8861d6dd3"
+    },
+    {
+      "source": "t1/recording.json",
+      "sha256": "8e1d794b49e35ea828279c6a8c95282bbb9a0787cf5c9385256c2cc9d17baeb7"
+    },
+    {
+      "source": "t1/reopen-declaration.json",
+      "sha256": "ab1218aed88fb2e6a84687858b9315e97e7e1a76c8b33d3f30800b464016a4ee"
+    },
+    {
+      "source": "t1/reopen-events.jsonl",
+      "sha256": "69378a4ace08d578f3f57dbf4e702b8588cdec4a0e3c8c59b10cb3e68862ca09"
+    },
+    {
+      "source": "t1/screen.mkv",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t1/session-ended-ms.txt",
+      "sha256": "66130f52f4ed47a4a3d12e9f1bb183ada39698aea1734550d728a0ec6049a6fa"
+    },
+    {
+      "source": "t1/xvfb.log",
+      "sha256": "33285969f843dba26c443e470bdb384b5520253b248498c093b3d5a6497db145"
+    }
+  ]
+}
