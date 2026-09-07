@@ -1,9 +1,77 @@
+import {fixture as traceFixture} from './model-evidence.test.mjs';
+import {validateVisual, reviewBatch, digest} from './model-review.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { compositeWitness, measuredComboContainment, unchangedWitness, exactSavedBytes, validatePublicSetup } from './evidence.mjs';
+
+function batchFixture(t) {
+  const base=fs.mkdtempSync(path.join(os.tmpdir(),'mousepad-batch-test-'));t.after(()=>fs.rmSync(base,{recursive:true,force:true}));
+  const root=`${base}/root`,batch=`${base}/batch`,consumer=`${batch}/installed/consumer`;
+  const put=(file,value)=>{fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,value);};
+  const save=(file,value)=>put(file,JSON.stringify(value));
+  fs.mkdirSync(`${root}/docs/proofs/mousepad-verified-find-replace`,{recursive:true});
+  const files=['daemon/dist/main.mjs','protocol/schema.json','pnpm-lock.yaml','packages/desktop/instructions/AGENT-INSTRUCTIONS.md','docs/proofs/mousepad-verified-find-replace/model-review.mjs'];
+  const artifacts=Object.fromEntries(files.map(file=>{put(`${root}/${file}`,'synthetic '+file);return [file,digest(fs.readFileSync(`${root}/${file}`))];}));
+  put(`${consumer}/module.mjs`,'synthetic module');put(`${batch}/installed/consumer-lock.json`,'{}');
+  const settings={model:'google/gemini-2.5-flash',temperature:0,maxSteps:24,modelDeadlineMs:180000};
+  const trials=['t1','t2','t3'].map(id=>{
+    const dir=`${batch}/${id}`,segments=['North ','\n',' middle ',' south\n'],source='SOURCE',replacement='VALUE';
+    const before=segments.join(source),expected=segments.join(replacement);
+    const trial={id,kind:'mousepad-literal-replacement',count:3,source,replacement,segments,beforeSha256:digest(Buffer.from(before)),expectedSha256:digest(Buffer.from(expected))};
+    save(`${dir}/trial.json`,trial);put(`${dir}/before.txt`,before);put(`${dir}/expected.txt`,expected);put(`${dir}/document.txt`,expected);
+    const events=[{event:'model-started',time:2000},...traceFixture()];events.forEach((e,i)=>e.sequence=i+1);put(`${dir}/events.jsonl`,events.map(e=>JSON.stringify(e)).join('\n'));
+    save(`${dir}/metadata.json`,{...settings,consumer,handshake:'accepted',instructionsSha256:artifacts[files[3]],imports:Object.fromEntries(['@mastra-cc/desktop','@mastra-cc/desktop/mastra','@mastra/core/agent','@mastra-cc/transport','@mastra-cc/protocol-types'].map(n=>[n,`${consumer}/module.mjs`]))});
+    save(`${dir}/attempt.json`,{code:0,reason:null});return trial;
+  });
+  const declaration={created:1000,artifacts,trials,...settings,consumerLockSha256:digest(Buffer.from('{}'))};save(`${batch}/declaration.json`,declaration);
+  return {root,batch,save,declaration};
+}
+test('three synthetic machine passes remain REVIEW_PENDING without reviews',t=>{const {root,batch}=batchFixture(t);const result=reviewBatch(batch,root);assert.equal(result.verdict,'REVIEW_PENDING');assert.ok(result.results.every(r=>r.machine==='GREEN'&&r.independentOracle==='GREEN'&&r.humanApproval==='PENDING'));});
+for(const [name,mutate] of [
+ ['stale runtime',f=>fs.appendFileSync(`${f.root}/daemon/dist/main.mjs`,'changed')],
+ ['stale instructions',f=>fs.appendFileSync(`${f.root}/packages/desktop/instructions/AGENT-INSTRUCTIONS.md`,'changed')],
+ ['stale harness',f=>fs.appendFileSync(`${f.root}/docs/proofs/mousepad-verified-find-replace/model-review.mjs`,'changed')],
+ ['missing artifact hash',f=>{delete f.declaration.artifacts['daemon/dist/main.mjs'];f.save(`${f.batch}/declaration.json`,f.declaration);}],
+ ['wrong actual kind',f=>f.save(`${f.batch}/t1/trial.json`,{...f.declaration.trials[0],kind:'receipt'})],
+ ['wrong count',f=>{f.declaration.trials[0].count=2;f.save(`${f.batch}/declaration.json`,f.declaration);f.save(`${f.batch}/t1/trial.json`,f.declaration.trials[0]);}],
+ ['mutated saved bytes',f=>fs.appendFileSync(`${f.batch}/t1/document.txt`,'bad')],
+ ['UI-only unsaved success',f=>fs.copyFileSync(`${f.batch}/t1/before.txt`,`${f.batch}/t1/document.txt`)],
+ ['failed attempt',f=>f.save(`${f.batch}/t1/attempt.json`,{code:1,reason:null})],
+ ['workspace import',f=>{const file=`${f.batch}/t1/metadata.json`,m=JSON.parse(fs.readFileSync(file));m.imports['@mastra/core/agent']=`${f.root}/daemon/dist/main.mjs`;f.save(file,m);}],
+]) test(`batch rejects ${name}`,t=>{const f=batchFixture(t);mutate(f);assert.throws(()=>reviewBatch(f.batch,f.root));});
+
+function reviewFixture(t) {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mousepad-review-test-'));
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const trial={id:'t1',source:'SOURCE',replacement:'VALUE'};
+  for(const file of ['events.jsonl','trial.json','document.txt','screen.mkv','pre.png','filled.png','result.png','verified.png']) {
+    fs.writeFileSync(path.join(dir,file),`SYNTHETIC TEST ONLY ${file}`);fs.utimesSync(path.join(dir,file),1,1);
+  }
+  fs.writeFileSync(`${dir}/session-ended-ms.txt`,'1000');
+  const record=file=>({path:file,sha256:digest(fs.readFileSync(path.join(dir,file)))});
+  const review={trialId:'t1',reviewer:'SYNTHETIC VALIDATOR FIXTURE, NOT ACTUAL INSPECTION',inspectedAt:new Date(2000).toISOString(),eventsSha256:record('events.jsonl').sha256,trialSha256:record('trial.json').sha256,savedSha256:record('document.txt').sha256,verificationCall:6,limitations:[],recording:record('screen.mkv'),checkpoints:['pre-action','filled','result','verified'].map((stage,i)=>({...record(['pre.png','filled.png','result.png','verified.png'][i]),stage,comparison:'synthetic comparison',matches:true,searchValue:'SOURCE',replacementValue:'VALUE',evidenceCall:6}))};
+  return {dir,review,trial};
+}
+test('visual record validates independently hashed synthetic fixture, never writes review.json',t=>{
+  const {dir,review,trial}=reviewFixture(t);assert.equal(validateVisual(dir,review,{verification:6},trial),'COMPLETE');assert.ok(!fs.existsSync(`${dir}/review.json`));
+});
+for(const [name,mutate] of [
+  ['missing recording',r=>delete r.recording],['missing checkpoints',r=>r.checkpoints.pop()],
+  ['missing hash',r=>delete r.checkpoints[0].sha256],['mismatched hash',r=>r.recording.sha256='0'.repeat(64)],
+  ['review before capture',r=>r.inspectedAt=new Date(500).toISOString()],['wrong trial',r=>r.trialId='t2'],
+  ['wrong journal hash',r=>r.eventsSha256='0'.repeat(64)],['wrong saved hash',r=>r.savedSha256='0'.repeat(64)],
+  ['wrong verification call',r=>r.verificationCall=99],['missing comparison',r=>r.checkpoints[0].comparison=''],
+  ['wrong field value',r=>r.checkpoints[1].searchValue='WRONG'],['unresolved limitation',r=>r.limitations=['unreadable']],
+  ['aliased checkpoint',r=>Object.assign(r.checkpoints[1],{path:r.checkpoints[0].path,sha256:r.checkpoints[0].sha256})],
+]) test(`visual validator rejects ${name}`,t=>{const {dir,review,trial}=reviewFixture(t);mutate(review);assert.throws(()=>validateVisual(dir,review,{verification:6},trial));});
+test('recording bytes are rehashed rather than trusting supplied hash',t=>{const {dir,review,trial}=reviewFixture(t);fs.appendFileSync(`${dir}/screen.mkv`,'mutated');assert.throws(()=>validateVisual(dir,review,{verification:6},trial),/hash mismatch/);});
+for(const [name,ids] of [['duplicate IDs',['t1','t1','t3']],['wrong trial count',['t1','t2']]]) test(`batch rejects ${name}`,t=>{
+  const {dir}=reviewFixture(t);fs.writeFileSync(`${dir}/declaration.json`,JSON.stringify({trials:ids.map(id=>({id}))}));assert.throws(()=>reviewBatch(dir,dir),/three distinct/);
+});
+test('batch rejects aliased directories',t=>{const {dir}=reviewFixture(t);fs.mkdirSync(`${dir}/t1`);fs.symlinkSync(`${dir}/t1`,`${dir}/t2`);fs.mkdirSync(`${dir}/t3`);fs.writeFileSync(`${dir}/declaration.json`,JSON.stringify({trials:['t1','t2','t3'].map(id=>({id}))}));assert.throws(()=>reviewBatch(dir,dir),/aliased/);});
 
 const expected = Buffer.from('North VALUE_73 east\nVALUE_73 centre VALUE_73 south.\n');
 test('independently authored saved bytes and occurrence count agree', () => {

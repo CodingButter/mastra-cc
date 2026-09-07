@@ -1202,9 +1202,22 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
       (name) => launch.table.ownsName(name) !== undefined,
     ),
   );
+  // Runtime names are query scopes, not evidence that an installed entry's
+  // alias carries authority. Publish only names directly visible to this
+  // session, without adding them to the launch/permission claim index.
+  const runtime = [...census.observable]
+    .filter((name) => isVisible(launch.visibility ?? new Set(), name)
+      && !index.entries.some((entry) => applicationName(entry.name) === applicationName(name)))
+    .map((name) => ({
+      name,
+      capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(
+        launch, capability, name, capability === "observe" ? undefined : index,
+      )),
+      launchable: findRecipe(name, launch.catalog) !== undefined,
+      running: "answering" as const,
+    }));
   return {
     applications: [...index.entries]
-      .sort((left, right) => left.name.localeCompare(right.name))
       .map((entry) => ({
         name: entry.name,
         capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(launch, capability, entry.name, index)),
@@ -1213,7 +1226,9 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
         launchable: findRecipe(entry.name, launch.catalog) !== undefined,
         ...runningFieldsFor(launch, census, entry, index, heard, ownedAndLive),
         ...(entry.diagnostic === undefined ? {} : { diagnostic: entry.diagnostic }),
-      })),
+      }))
+      .concat(runtime)
+      .sort((left, right) => left.name.localeCompare(right.name)),
   };
 }
 

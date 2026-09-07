@@ -34,6 +34,8 @@ answered by argument.
 
 [Mousepad and remediation follow-ups](mousepad-verified-find-replace/FOLLOWUPS.md) records remaining acceptance and roadmap gaps.
 
+[Mousepad runtime discovery repair](mousepad-verified-find-replace/discovery-repair/README.md) records the regression repair, fresh forced gates and quota-blocked live batch.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

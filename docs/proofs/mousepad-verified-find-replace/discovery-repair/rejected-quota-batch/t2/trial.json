@@ -1,0 +1,15 @@
+{
+  "id": "t2",
+  "kind": "mousepad-literal-replacement",
+  "source": "TOKEN_b1d9e32ffd",
+  "replacement": "VALUE_cd856dbc59",
+  "count": 3,
+  "segments": [
+    "Birch ledger [",
+    "]\nCedar ledger [",
+    "]\nElm ledger [",
+    "]\n"
+  ],
+  "beforeSha256": "119c60eb6129d01372920e991c01aeb0706e3aff805ad150653fc2fb32edb5b6",
+  "expectedSha256": "1d6ededc3f0498c06c0841ae25e464a8bccccb54d88a0b21ba5422fbe65ce4e7"
+}

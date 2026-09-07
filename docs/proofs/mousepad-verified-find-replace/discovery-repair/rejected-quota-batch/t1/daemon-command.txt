@@ -1,0 +1,1 @@
+node /tmp/mastra-cc-mousepad-verified-find-replace/daemon/dist/main.mjs --backend atspi --grant mousepad --allow edit --allow activate --allow rawInput --socket /tmp/mousepad-handoff.5Wd48F/t1/runtime/d.sock --ws-host 127.0.0.1 --ws-port 0 

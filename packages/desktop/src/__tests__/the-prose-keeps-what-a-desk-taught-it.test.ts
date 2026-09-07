@@ -30,6 +30,14 @@ function teaches(...phrases: string[]): boolean {
 }
 
 describe("what a live desk taught these instructions", () => {
+  it("separates catalog identity and launch availability from live observation", () => {
+    expect(teaches("observed `name`, not its catalog `id`", "running status is unknown", "Respect actual authority refusals")).toBe(true);
+  });
+
+  it("verifies saved document text rather than a title or replacement input", () => {
+    expect(teaches("After saving a text document", "A clean window title", "Read the document, not the search field", "before claiming the edit is verified")).toBe(true);
+  });
+
   // Measured 2026-09-05: errands only ran when the HUMAN's prompt opened with
   // "you have a real desktop". A prompt that has to say so is a page that did
   // not, and the page is the part every operator gets for free.

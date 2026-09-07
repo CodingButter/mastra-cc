@@ -1,0 +1,15 @@
+{
+  "id": "t3",
+  "kind": "mousepad-literal-replacement",
+  "source": "TOKEN_be25bdbebf",
+  "replacement": "VALUE_f0b6000945",
+  "count": 3,
+  "segments": [
+    "Morning record — ",
+    "\nNoon record — ",
+    "\nEvening record — ",
+    "\n"
+  ],
+  "beforeSha256": "da8351030e9d0db74551aa816aa02c3b3a7cda53cac71749658794fd056cb6f7",
+  "expectedSha256": "828eb63b6965e0f68982add4ac6cc6ec0d0d6ffa6aeea05d0c4547a559ebbb9f"
+}

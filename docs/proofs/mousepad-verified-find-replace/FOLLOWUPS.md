@@ -1,5 +1,13 @@
 # Remaining acceptance work
 
+## September 7, 2026 — final discovery checkpoint BLOCKED
+
+The runtime-discovery regression is repaired: directly granted native names are listed without adding aliases to launch authority or exposing ungranted runtime identities. Native replay round-trip and privacy regressions pass. Fresh forced build/lint/typecheck/test passed 19/19 tasks, zero cache hits. This is not live task acceptance.
+
+The fixed-settings batch `/tmp/mousepad-handoff.5Wd48F` failed all three trials. Each driver log records HTTP 429 Google input-token quota exhaustion; all saved-file oracles failed and all attempts report verified owned-group cleanup. Raw harness categories remain `model-failure`; the external quota diagnosis does not rewrite them. Retained recordings, journals, declarations, expected/actual files and logs: [discovery repair](discovery-repair/README.md). No successful visual review was created. Restore quota for the approved model, then run a new complete predeclared batch on unchanged final artifacts and genuinely review its recordings/checkpoints. Do not pool prior successes or substitute fixture tests.
+
+Full final-candidate mutation sweep and live acceptance remain outstanding. The later finish-and-handoff instruction supersedes the historical authorization below to start other workstreams: reliability integration and its CC-01–CC-09 follow-ups belong to the other agent. Preserve the existing roadmap audit below; do not duplicate those implementations.
+
 ## September 7, 2026 — repaired-monitor retry remains rejected
 
 - Fresh fixed-settings batch `/tmp/mousepad-model.cksXvd` completed all three trials after repair commit `58ae793`. All three attempts persisted and reported verified owned-group cleanup. t1 and t3 matched exact saved bytes; t2 did not. The batch remains REJECTED; no visual acceptance is claimed and successes must not be pooled.

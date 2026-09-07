@@ -1,0 +1,22 @@
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='org.freedesktop.portal.Desktop' requested by ':1.1' (uid=1000 pid=1194573 comm="mousepad --disable-server /tmp/mousepad-handoff.5W" label="unconfined")
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='org.freedesktop.portal.Documents' requested by ':1.2' (uid=1000 pid=1194594 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='org.freedesktop.impl.portal.PermissionStore' requested by ':1.3' (uid=1000 pid=1194600 comm="/usr/libexec/xdg-document-portal" label="unconfined")
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'org.freedesktop.impl.portal.PermissionStore'
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'org.freedesktop.portal.Documents'
+Ignoring invalid max threads value 4294967295 > max (100000).
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='org.freedesktop.impl.portal.desktop.gnome' requested by ':1.2' (uid=1000 pid=1194594 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+Non-compatible display server, exposing settings only.
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='org.gtk.vfs.Daemon' requested by ':1.5' (uid=1000 pid=1194616 comm="/usr/libexec/xdg-desktop-portal-gnome" label="unconfined")
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'org.gtk.vfs.Daemon'
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'org.freedesktop.impl.portal.desktop.gnome'
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='org.freedesktop.impl.portal.desktop.gtk' requested by ':1.2' (uid=1000 pid=1194594 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'org.freedesktop.impl.portal.desktop.gtk'
+
+(/usr/libexec/xdg-desktop-portal:1194594): xdg-desktop-portal-WARNING **: 16:48:53.654: Failed connect to PipeWire: Couldn't connect to PipeWire
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='org.freedesktop.secrets' requested by ':1.2' (uid=1000 pid=1194594 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+** Message: 16:48:53.664: couldn't access control socket: /tmp/mousepad-handoff.5Wd48F/t2/runtime/keyring/control: No such file or directory
+discover_other_daemon: 0dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'org.freedesktop.secrets'
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'org.freedesktop.portal.Desktop'
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Activating service name='ca.desrt.dconf' requested by ':1.1' (uid=1000 pid=1194573 comm="mousepad --disable-server /tmp/mousepad-handoff.5W" label="unconfined")
+dbus-daemon[1194553]: [session uid=1000 pid=1194553] Successfully activated service 'ca.desrt.dconf'
+A connection to the bus can't be made

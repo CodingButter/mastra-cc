@@ -104,6 +104,25 @@ const entry = (applications: InstalledApplication[], name: string) =>
   applications.find((application) => application.name === name) as InstalledApplication;
 
 describe("the listing says what is answering, not just what is installed", () => {
+  it("publishes an explicitly granted runtime name even without an installed identity", async () => {
+    const applications = await listing({ visibility: new Set(["runtime-editor"]) }, wholeDesk("runtime-editor", "private-editor"));
+    expect(entry(applications, "runtime-editor")).toMatchObject({
+      name: "runtime-editor", running: "answering", launchable: false,
+      capabilities: expect.arrayContaining([{ capability: "observe", availability: "available" }]),
+    });
+    expect(entry(applications, "private-editor")).toBeUndefined();
+  });
+
+  it("does not disclose ungranted runtime-only identities", async () => {
+    const applications = await listing({ visibility: new Set() }, wholeDesk("private-editor"));
+    expect(entry(applications, "private-editor")).toBeUndefined();
+    expect(applications).toEqual(await listing({ visibility: new Set() }, wholeDesk()));
+  });
+
+  it("does not duplicate installed identities when the census uses the same name", async () => {
+    const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
+    expect(applications.filter(application => application.name === "ordinary")).toHaveLength(1);
+  });
   it("a granted application that is on the bus reports observable", async () => {
     const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
 

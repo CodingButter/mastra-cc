@@ -1,0 +1,23 @@
+## Must fix
+
+No code or privacy must-fix found in the reviewed patch. The strengthened checks are directionally sufficient: entire-reply equality protects ungranted identities, and element-to-scope matching prevents cross-application leakage.
+
+## Risks & questions
+
+- **Checkpoint is not yet eligible for an unblocked commit.** The live fixed-settings batch is still running, and `README.md:68-74` explicitly requires real-agent sessions, provider execution, genuine visual review, and review records before acceptance. Until those complete, the checkpoint must remain pending/blocked; no acceptance claim is justified.
+- **`docs/proofs/mousepad-verified-find-replace/discovery-repair/docs.txt:5` records a failed documentation command** (`tools/check-docs.mjs` missing). The parent proof README correctly explains at `README.md:66` that this was a command-path error and that `pnpm check-docs` subsequently passed, so this is not a product defect. However, the retained evidence directory contains no successful docs-check transcript, and `discovery-repair/` has no README of its own. A cold reviewer cannot prove the successful check from that directory alone.
+- **The instruction changes are mirrored byte-for-byte in the two reviewed files** (`docs/11-AGENT-INSTRUCTIONS.md:1-579` and `packages/desktop/instructions/AGENT-INSTRUCTIONS.md:1-579`), which is good for parity, but the checkpoint still needs the actual dirty-file scope recorded in the eventual local commit. Do not include reliability, protocol-schema, or composite-foundation changes.
+- **The proof README still names broader outstanding gates** at `README.md:68`: full mutation/regression ship checks and independent review. If this local checkpoint is deliberately only a blocked Phase 3 checkpoint, label it that way rather than implying the branch is acceptance-ready.
+
+## Suggested improvements
+
+- Preserve the local checkpoint only with an explicit message/state such as **“Mousepad Phase 3 discovery repair — blocked pending live batch and visual acceptance”** if either gate fails, or while they remain incomplete.
+- If the live batch succeeds, require the final evidence to demonstrate:
+  - all predeclared trials completed on the fresh installed artifacts;
+  - exact saved-byte and fresh-readback criteria;
+  - provider execution succeeded;
+  - visual review has distinct, hashed checkpoints with empty limitations;
+  - every queried element’s application matches the returned runtime scope;
+  - no ungranted runtime identity appears anywhere in the response.
+- Retain `docs.txt` as a clearly labelled failed command attempt, but add or reference the successful `pnpm check-docs` output in the checkpoint evidence so the documentation gate is independently auditable.
+- Keep the existing acceptance boundary: a passing forced build/lint/typecheck/test suite proves regression safety, not real-agent or visual acceptance.

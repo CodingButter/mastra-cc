@@ -1,0 +1,4 @@
+
+(mousepad:1194763): GLib-CRITICAL **: 16:48:57.207: g_strjoinv: assertion 'str_array != NULL' failed
+
+(mousepad:1194763): GLib-CRITICAL **: 16:48:57.207: g_strjoinv: assertion 'str_array != NULL' failed

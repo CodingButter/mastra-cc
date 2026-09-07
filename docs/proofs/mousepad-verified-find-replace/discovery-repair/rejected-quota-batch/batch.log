@@ -1,0 +1,6 @@
+INSTALLED_IMPORTS_GREEN: 151 locked runtime packages; /tmp/mousepad-handoff.5Wd48F/installed/consumer
+PREDECLARED: /tmp/mousepad-handoff.5Wd48F t1 t2 t3
+t1: model-failure; saved bytes do not match; cleanup verified
+t2: model-failure; saved bytes do not match; cleanup verified
+t3: model-failure; saved bytes do not match; cleanup verified
+REJECTED: failed or invalid trial; retain all attempts

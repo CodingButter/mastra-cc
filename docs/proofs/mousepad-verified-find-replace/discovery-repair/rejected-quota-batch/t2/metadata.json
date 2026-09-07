@@ -1,0 +1,16 @@
+{
+  "imports": {
+    "@mastra-cc/desktop": "/tmp/mousepad-handoff.5Wd48F/installed/consumer/node_modules/@mastra-cc/desktop/dist/index.mjs",
+    "@mastra-cc/desktop/mastra": "/tmp/mousepad-handoff.5Wd48F/installed/consumer/node_modules/@mastra-cc/desktop/dist/mastra.mjs",
+    "@mastra/core/agent": "/tmp/mousepad-handoff.5Wd48F/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/@mastra/core/dist/agent/index.js",
+    "@mastra-cc/transport": "/tmp/mousepad-handoff.5Wd48F/installed/consumer/node_modules/@mastra-cc/transport/dist/index.mjs",
+    "@mastra-cc/protocol-types": "/tmp/mousepad-handoff.5Wd48F/installed/consumer/node_modules/@mastra-cc/protocol-types/dist/index.js"
+  },
+  "consumer": "/tmp/mousepad-handoff.5Wd48F/installed/consumer",
+  "handshake": "accepted",
+  "instructionsSha256": "85b02f10d8ac64898ffd82d39a104553bece18a8c9ece4dcd1427e516355e1c5",
+  "model": "google/gemini-2.5-flash",
+  "temperature": 0,
+  "maxSteps": 24,
+  "modelDeadlineMs": 180000
+}
