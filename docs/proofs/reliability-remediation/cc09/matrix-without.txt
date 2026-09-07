@@ -1,0 +1,1 @@
+PROOF: RED — instrumentation missing: all 24 workload cases validated, phase costs unavailable

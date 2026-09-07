@@ -1,5 +1,26 @@
 [
   {
+    "name": "capture-matrix-accepts-missing-cases",
+    "file": "docs/proofs/reliability-remediation/cc09/verify-matrix.mjs",
+    "find": "  assert.equal(rows.length, 24, 'matrix must contain all 24 cases');\n",
+    "cwd": "tools",
+    "testFile": "__tests__/capture-matrix.test.mjs"
+  },
+  {
+    "name": "capture-matrix-accepts-missing-attempts",
+    "file": "docs/proofs/reliability-remediation/cc09/verify-matrix.mjs",
+    "find": "      assert.equal(entry.count, ['queueWait', 'requestWork'].includes(phase) ? 15 + 12 / row.concurrency : 15);\n",
+    "cwd": "tools",
+    "testFile": "__tests__/capture-matrix.test.mjs"
+  },
+  {
+    "name": "capture-matrix-accepts-wrong-png-byte-totals",
+    "file": "docs/proofs/reliability-remediation/cc09/verify-matrix.mjs",
+    "find": "    else assert.equal(row.metrics.captureBytes.total, row.imageBytes);\n",
+    "cwd": "tools",
+    "testFile": "__tests__/capture-matrix.test.mjs"
+  },
+  {
     "name": "cost-counter-forgets-attempts",
     "file": "daemon/src/costs.ts",
     "find": "  entry.count += 1;\n",
