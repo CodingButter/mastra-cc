@@ -6,7 +6,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-const root = fileURLToPath(new URL('../../../', import.meta.url));
+const root = process.argv[3] ? fs.realpathSync(process.argv[3]) : fileURLToPath(new URL('../../../', import.meta.url));
 const out = path.resolve(process.argv[2]);
 assert.ok(!fs.existsSync(out), 'use a fresh installation directory');
 fs.mkdirSync(out, { recursive: true });

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "base-installed-provenance.tar.gz",
+    "sha256": "3a145c2df2544c8a4b25aeae3da67a533ec2bdcafe7ce4e2799bda5bdf5a645d"
+  },
+  {
+    "file": "base-run.tar.gz",
+    "sha256": "c34dfc6acc4828399271d7cb67e4d27a599cf0bcd4d7fedde69492411a17af4c"
+  },
+  {
+    "file": "candidate-installed-provenance.tar.gz",
+    "sha256": "7eff43f8c04e3f793898ec58af9dd83a3b82bd3bc9fd8547cbc0c81398172396"
+  },
+  {
+    "file": "candidate-run.tar.gz",
+    "sha256": "dc5b016afae72210dfb50806cb871609c4e6955335c964edb35c1fd1a27bb3b0"
+  },
+  {
+    "file": "mousepad-p2-base-setup.log.gz",
+    "sha256": "35981c19dd52821ccebc52e66c3bff762c7d6371a8e3bc3d3900238eeda876d6"
+  },
+  {
+    "file": "mousepad-p2-deterministic.log.gz",
+    "sha256": "85882b286ed5d1561e9273e344c32a742059cc9bb2b6544dc8251b7c2126169f"
+  },
+  {
+    "file": "mousepad-p2-final-gates-force.log.gz",
+    "sha256": "df6f78b3b3b6507ff3c78a6b799d3576b2d124833c41b9d2ac6f7b18884a050c"
+  },
+  {
+    "file": "mousepad-p2-final-gates.log.gz",
+    "sha256": "880e3578af3308f4aa25b95d5b9b64630a19b06122991f943b7f713c7e353b92"
+  },
+  {
+    "file": "mousepad-p2-mutations.log.gz",
+    "sha256": "b3e3b2f32f5b93f1be33130331d938c9a6bf384b5200a0fec4dbfa7b943a44d9"
+  },
+  {
+    "file": "runs.json",
+    "sha256": "17bd831b3b89034564e7d6074875f0d5f266d62b39a5ab1bfbd688df8401d957"
+  }
+]

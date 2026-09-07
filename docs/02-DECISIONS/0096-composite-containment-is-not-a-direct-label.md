@@ -1,6 +1,6 @@
 # 0096 — Composite containment is not a direct label
 
-Status: **proposed, awaiting Jamie's explicit contract acceptance**. Phase 1 outcome **(b)**, not implementation authorization. Does not supersede ADR-0095.
+Status: **accepted September 7, 2026**, including the separately approved neutral provenance literal `immediate-combo-parent`. Additive schema version 1.21.0. The implementation reads AT-SPI evidence; wire provenance stays platform-neutral and B10 remains unchanged. Does not supersede ADR-0095.
 
 ## Context
 
@@ -21,7 +21,7 @@ Exact proposed wire union:
 ```ts
 type CompositeObservation =
   | { kind: "available";
-      provenance: "atspi-immediate-combo-parent";
+      provenance: "immediate-combo-parent";
       parentRole: "combo box";
       relation: "labelled-by";
       label: string;

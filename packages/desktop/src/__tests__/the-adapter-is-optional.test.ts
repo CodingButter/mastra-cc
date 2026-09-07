@@ -104,6 +104,8 @@ describe("the Mastra adapter", () => {
       { ...source, labelObservation: { kind: "available" as const, labels: [" First ", "Second", "Second"] } },
       { ...source, labelObservation: { kind: "available" as const, labels: [] } },
       { ...source, labelObservation: { kind: "unavailable" as const, reason: "out-of-scope" as const } },
+      { ...source, labelObservation: { kind: "available" as const, labels: [] }, compositeObservation: { kind: "available" as const, provenance: "immediate-combo-parent" as const, parentRole: "combo box" as const, relation: "labelled-by" as const, label: " Search for: ", immediateChildCount: 2 as const, editableChildCount: 1 as const, siblingRole: "menu" as const } },
+      ...(["not-exposed", "ambiguous", "out-of-scope", "unreadable", "limit-exceeded"] as const).map(reason => ({ ...source, compositeObservation: { kind: "unavailable" as const, reason } })),
     ];
     backend.queryElements = async () => ({ elements: expected });
     const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-labels-")), "daemon.sock");

@@ -40,7 +40,7 @@ printf 'North VALUE_73 east\nVALUE_73 centre VALUE_73 south.\n' >"$RUN/expected.
 mousepad --disable-server "$RUN/document.txt" >"$RUN/app.log" 2>&1 & app=$!; pids+=("$app")
 sleep 1
 printf '%s\n' '--backend atspi --grant mousepad (observe only; mutation belongs to independent native calibration)' >"$RUN/grant.txt"
-node "$ROOT/daemon/dist/main.mjs" --backend atspi --grant mousepad --socket "$XDG_RUNTIME_DIR/d.sock" --ws-host 127.0.0.1 --ws-port 0 >"$RUN/daemon.log" 2>&1 & pids+=("$!")
+node "${MOUSEPAD_PROOF_DAEMON:-$ROOT/daemon/dist/main.mjs}" --backend atspi --grant mousepad --socket "$XDG_RUNTIME_DIR/d.sock" --ws-host 127.0.0.1 --ws-port 0 >"$RUN/daemon.log" 2>&1 & pids+=("$!")
 node "$HERE/calibrate.mjs" "$RUN" "$CONSUMER" >"$RUN/calibrate.log" 2>&1
 mv "$RUN/native-exchanges.json" "$RUN/calibration-native-exchanges.json"
 kill -TERM "$app"

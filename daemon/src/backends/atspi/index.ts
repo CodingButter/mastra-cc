@@ -346,9 +346,9 @@ export class AtspiBackend implements Backend {
     const content = await readObservableContent(this.channel, ref, nativeRole);
     const id = deriveId(role, ref.busName, ref.objectPath);
     const root = applicationRoot ?? this.applicationRootOf.get(id);
-    const labelObservation = nativeRole === "text" || nativeRole === "entry" || nativeRole === "textbox"
-      ? await this.labels.read(ref, root, this.labelBudget.getStore() ?? { waited: 0 })
-      : undefined;
+    const labelEvidence = nativeRole === "text" || nativeRole === "entry" || nativeRole === "textbox"
+      ? await this.labels.readEnriched(ref, root, this.labelBudget.getStore() ?? { waited: 0 })
+      : {};
     if (applicationRoot !== undefined) this.applicationRootOf.set(id, applicationRoot);
     this.answered.set(id, ref);
     this.byNative.set(`${ref.busName}\0${ref.objectPath}`, { id, role });
@@ -359,7 +359,7 @@ export class AtspiBackend implements Backend {
       name,
       states: toNeutralStates(lower, upper),
       content,
-      ...(labelObservation === undefined ? {} : { labelObservation }),
+      ...labelEvidence,
       actions: published.actions,
       operations: magnitudes.operations,
       // ADR-0040: every answer names its instrument; the unmapped-role

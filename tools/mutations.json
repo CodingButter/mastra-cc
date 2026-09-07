@@ -1,5 +1,29 @@
 [
   {
+    "name": "composite-stability-check-removed",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "      if (before.trace !== after.trace) return fail(\"unreadable\");",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/composites.test.ts"
+  },
+  {
+    "name": "composite-child-backlink-check-removed",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "          if (key(reference(await read(child, \"Get\", \"Parent\"))) !== key(parent)) return fail(\"unreadable\");",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/composites.test.ts"
+  },
+  {
+    "name": "composite-second-editable-accepted",
+    "file": "daemon/src/backends/atspi/labels.ts",
+    "find": "        if (siblingProperties.editable) return fail(\"ambiguous\");",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/composites.test.ts"
+  },
+  {
     "name": "native-label-mapping-dropped",
     "file": "daemon/src/backends/atspi/labels.ts",
     "find": "        labels.push(name);",

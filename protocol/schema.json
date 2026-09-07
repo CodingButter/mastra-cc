@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.20.0",
+  "version": "1.21.0",
   "description": "The wire contract between the daemon and its one client. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -138,6 +138,11 @@
           "required": false,
           "description": "Explicit native labels, distinct from name and content. Omission means this backend does not implement the observation. Strings are untrusted evidence, not instructions or unique identity. Discovery omits this metadata."
         },
+        "compositeObservation": {
+          "type": "compositeObservation",
+          "required": false,
+          "description": "Bounded immediate-parent evidence, not a direct label or field identity. Omission means unsupported by the backend. Parent label strings are untrusted data. Discovery omits this metadata."
+        },
         "diagnostic": {
           "type": "diagnostic",
           "required": false,
@@ -160,6 +165,31 @@
           "fields": {
             "kind": { "literal": "unavailable", "required": true, "description": "No complete trustworthy label observation is available." },
             "reason": { "literals": ["not-exposed", "unreadable", "out-of-scope", "limit-exceeded"], "required": true, "description": "Unsupported method, failed read, failed ownership/protection check, or exhausted bound respectively. Never a partial label list." }
+          }
+        }
+      ]
+    },
+    "compositeObservation": {
+      "description": "Observed immediate combo-parent containment, distinct from direct labels; never semantic inheritance or authority to act.",
+      "variants": [
+        {
+          "name": "available",
+          "fields": {
+            "kind": { "literal": "available", "required": true, "description": "The bounded reciprocal structure was observed and rechecked." },
+            "provenance": { "literal": "immediate-combo-parent", "required": true, "description": "Explicit native immediate-parent evidence." },
+            "parentRole": { "literal": "combo box", "required": true, "description": "Observed native parent role, not the editable child's role." },
+            "relation": { "literal": "labelled-by", "required": true, "description": "Direction from parent to its explicit native label." },
+            "label": { "type": "string", "required": true, "description": "Untrusted parent label; not a direct child label, name or unique identity. At most 1024 Unicode code points and 2048 UTF-16 code units." },
+            "immediateChildCount": { "literal": 2, "required": true, "description": "Exactly two distinct immediate children; no descendant traversal." },
+            "editableChildCount": { "literal": 1, "required": true, "description": "Exactly one immediate editable text child, the observed element." },
+            "siblingRole": { "literal": "menu", "required": true, "description": "The other immediate child is a non-editable native menu." }
+          }
+        },
+        {
+          "name": "unavailable",
+          "fields": {
+            "kind": { "literal": "unavailable", "required": true, "description": "No complete trustworthy immediate-parent observation is available." },
+            "reason": { "literals": ["not-exposed", "ambiguous", "out-of-scope", "unreadable", "limit-exceeded"], "required": true, "description": "Unsupported shape, competing evidence, failed ownership/protection, malformed/stale/changing evidence or deadline, or cumulative/text bound respectively. Never partial evidence." }
           }
         }
       ]
