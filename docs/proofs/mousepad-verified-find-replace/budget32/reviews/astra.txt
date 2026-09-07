@@ -1,0 +1,11 @@
+## Must fix
+None identified in the inspected budget changes.
+
+## Risks & questions
+- Source-only review: no Git diff against `c5f8235` or test execution available here. No fresh-batch outcome verified.
+- The approved budget is validated and forwarded consistently (`docs/proofs/mousepad-verified-find-replace/model-driver.mjs:32–33,56,69`); review requires matching metadata and retains separate visual acceptance (`model-review.mjs:55,74–75,88–98`). No acceptance weakening found beyond the explicitly authorized step increase.
+
+## Suggested improvements
+- Add a driver-level regression asserting the declared budget reaches `agent.generate`. Current new tests exercise reviewer acceptance and rejection, not runtime forwarding (`docs/proofs/mousepad-verified-find-replace/evidence.test.mjs:43–55`).
+
+Voice synthesis is unavailable in this session.

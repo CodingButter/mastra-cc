@@ -40,6 +40,20 @@ test('predeclared Anthropic trials still require visual review and reject mixed 
  const file=`${f.batch}/t2/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model:'google/gemini-2.5-flash'});
  assert.throws(()=>reviewBatch(f.batch,f.root));
 });
+test('32-step experiment remains bounded, declared and requires post-save readback',t=>{
+ const f=batchFixture(t);f.declaration.maxSteps=32;f.save(`${f.batch}/declaration.json`,f.declaration);
+ assert.throws(()=>reviewBatch(f.batch,f.root));
+ for(const id of ['t1','t2','t3']) {const file=`${f.batch}/${id}/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),maxSteps:32});}
+ assert.equal(reviewBatch(f.batch,f.root).verdict,'REVIEW_PENDING');
+ const journal=`${f.batch}/t1/events.jsonl`,events=fs.readFileSync(journal,'utf8').split('\n').map(JSON.parse);
+ const reads=events.filter(e=>e.event==='call'&&e.name==='queryElements'&&e.call>5).map(e=>e.call);
+ const without=events.filter(e=>!reads.includes(e.call));without.forEach((e,i)=>e.sequence=i+1);fs.writeFileSync(journal,without.map(e=>JSON.stringify(e)).join('\n'));
+ assert.throws(()=>reviewBatch(f.batch,f.root),/fresh document/);
+});
+for(const maxSteps of [0,25,33,Infinity,'32',null])test(`reject unapproved step budget ${maxSteps}`,t=>{
+ const f=batchFixture(t);f.declaration.maxSteps=maxSteps;f.save(`${f.batch}/declaration.json`,f.declaration);
+ assert.throws(()=>reviewBatch(f.batch,f.root),/unapproved step budget/);
+});
 test('paced policy must be predeclared and match every trial',t=>{
  const f=batchFixture(t);f.declaration.model='anthropic/claude-sonnet-4-5-20250929';f.declaration.ratePolicy=RATE_POLICY;f.save(`${f.batch}/declaration.json`,f.declaration);
  for(const id of ['t1','t2','t3']) {const file=`${f.batch}/${id}/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model:f.declaration.model,ratePolicy:RATE_POLICY});const journal=`${f.batch}/${id}/events.jsonl`;const events=fs.readFileSync(journal,'utf8').split('\n').map(JSON.parse);events.splice(1,0,{event:'provider-request',time:2001,startedMs:0,attempt:0,bytes:100});events.forEach((e,i)=>e.sequence=i+1);fs.writeFileSync(journal,events.map(e=>JSON.stringify(e)).join('\n'));}

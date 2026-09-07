@@ -1,5 +1,9 @@
 # Remaining acceptance work
 
+## September 7, 2026 — bounded 32-step experiment removes observed cutoff; full batches still rejected
+
+[32-step results](budget32/README.md): two separately declared unchanged-artifact batches each had two exact-save/fresh-readback passes and one provider connection failure. All successful trials finished normally after 25–28 calls; all cleanup verified. No success pooling, visual approval or 24-step acceptance claim. Each batch retains 75 hash-verified artifacts. Next investigate bounded retry only when fetch rejects before returning any response, without replaying generation or desktop actions. Keep the original deadline, finite attempt budget and full-batch requirement. Native notification/cancellation measurement design is documented separately; the Docker runner is unavailable and client close does not acknowledge native operation cancellation.
+
 ## September 7, 2026 — content-only readback repaired; one bounded-completion gap remains
 
 [Readback repair](readback-repair/README.md) distinguishes the previous t3 validator-shape defect from t1's genuinely missing post-save read. The new batch saved exact bytes in all three trials; t2/t3 passed machine readback, while t1 again saved at call 24 with no remaining read. All cleanup verified; 73 artifacts retained; 112 focused tests, 19/19 forced tasks and 231 mutations pass. Full acceptance remains rejected, with no visual approval or pooled historical successes. Further reduce observation overhead without dropping fresh readback, planned reopen evidence or visual checks. CC-09 producer-only latency/retention/event-loop/local-stop measurements proceeded separately; do not mislabel them native end-to-end latency or cancellation proof.

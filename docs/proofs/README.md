@@ -42,6 +42,8 @@ answered by argument.
 
 [Protocol-shaped Mousepad readback](mousepad-verified-find-replace/readback-repair/README.md) distinguishes genuinely missing post-save evidence from a content-only response discarded by the validator.
 
+[Bounded 32-step experiment](mousepad-verified-find-replace/budget32/README.md) tests additional completion steps with unchanged deadlines and acceptance oracles; all live attempts are retained separately.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

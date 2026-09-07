@@ -29,7 +29,8 @@ function log(event, data = {}) {
 let desk;
 const controller = new AbortController();
 try {
-  const {model,ratePolicy=null} = JSON.parse(fs.readFileSync(`${run}/../declaration.json`, 'utf8'));
+  const {model,ratePolicy=null,maxSteps} = JSON.parse(fs.readFileSync(`${run}/../declaration.json`, 'utf8'));
+  assert.ok([24,32].includes(maxSteps), 'unapproved step budget');
   if(ratePolicy) {
     assert.ok(model.startsWith('anthropic/')); assert.deepEqual(ratePolicy,RATE_POLICY);
     globalThis.fetch=pacedFetch(originalFetch,{signal:controller.signal,record:log});
@@ -52,7 +53,7 @@ try {
     if(result.elements?.length === 1) {ready=true;break;} await sleep(200);
   }
   assert.ok(ready, 'Mousepad readiness timeout');
-  const metadata = {imports, consumer, handshake:'accepted', instructionsSha256:hash(INSTRUCTIONS), model, ratePolicy, temperature:0, maxSteps:24, modelDeadlineMs:180000};
+  const metadata = {imports, consumer, handshake:'accepted', instructionsSha256:hash(INSTRUCTIONS), model, ratePolicy, temperature:0, maxSteps, modelDeadlineMs:180000};
   fs.writeFileSync(`${run}/metadata.json`, JSON.stringify(metadata,null,2)+'\n');
   const tools = Object.fromEntries(Object.entries(desk.getTools({beforeDispatch:()=>controller.signal.throwIfAborted()})).filter(([name])=>!ratePolicy || ratePolicy.tools.includes(name)).map(([name,tool])=>[name,{...tool,execute:async(...args)=>{
     controller.signal.throwIfAborted(); const call=++calls; active++; log('call',{call,name,arguments:args[0]});
@@ -65,7 +66,7 @@ try {
   log('model-started');
   timer=setTimeout(()=>{log('deadline');controller.abort(new Error('180-second model deadline'));},180000);
   // Await actual settlement. The outer owned process group is the hard deadline.
-  const answer=await agent.generate(fs.readFileSync(`${run}/task.txt`,'utf8'),{maxSteps:24,abortSignal:controller.signal,modelSettings:{temperature:0,...(ratePolicy?{maxRetries:0}:{})},onStepFinish:step=>log('step-finished',{text:step.text,finishReason:step.finishReason,usage:step.usage})});
+  const answer=await agent.generate(fs.readFileSync(`${run}/task.txt`,'utf8'),{maxSteps,abortSignal:controller.signal,modelSettings:{temperature:0,...(ratePolicy?{maxRetries:0}:{})},onStepFinish:step=>log('step-finished',{text:step.text,finishReason:step.finishReason,usage:step.usage})});
   controller.signal.throwIfAborted(); assert.equal(active,0,'unfinished tools');
   log('model-finished',{text:String(answer.text??''),finishReason:answer.finishReason});
 } catch(error) {log('failure',{error:String(error)});process.exitCode=1;}

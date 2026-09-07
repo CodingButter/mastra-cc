@@ -1,0 +1,27 @@
+## Must fix
+
+None identified.
+
+The budget change is bounded and internally consistent:
+
+- `model-batch.mjs:39` predeclares `maxSteps:32`.
+- `model-driver.mjs:32-33,56,69` validates the budget, records the same value, and passes it to `Agent.generate`.
+- `model-review.mjs:55,74-75` permits only `24` or `32` and requires declaration/metadata equality.
+- The existing `180000` model deadline remains unchanged (`model-driver.mjs:56,67`; `model-review.mjs:74`).
+- Exact saved bytes and fresh post-save readback remain delegated to `validateTrace`; removing the read is rejected by the added regression coverage.
+
+No acceptance weakening is apparent. The immutable batch declaration explicitly records the separate 32-step hypothesis and does not claim an outcome.
+
+## Risks & questions
+
+- `model-batch.mjs:39` hardcodes `32` rather than accepting a validated experiment parameter. This is safe for the explicitly requested experiment, but future reuse could silently run the expanded budget unless the command’s purpose remains clearly 32-step-specific.
+
+- Allowing `32` in `model-review.mjs:55` is safe only because the declaration and executed harness hashes are authenticated at `:56-60,77-79`. Any alternate producer of declarations must remain unable to bypass those checks.
+
+- The running `/tmp/mousepad-budget32.89as9tuc` batch is not evidence until its immutable artifacts pass review. In particular, a machine-complete 32-step run still requires exact save bytes, fresh post-save readback, and later visual/human acceptance.
+
+## Suggested improvements
+
+- Put the permitted budget set in one shared constant or helper used by batch creation, driver validation, and review validation to reduce future drift. This is an improvement, not a current defect.
+
+- Add the explicit “32-step experiment” wording to the batch runner’s invocation/help text if it is not already present, so the expanded budget cannot be mistaken for the default acceptance budget.

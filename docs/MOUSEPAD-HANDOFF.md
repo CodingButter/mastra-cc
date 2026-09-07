@@ -1,6 +1,14 @@
 # Mousepad blocked-checkpoint handoff — September 7, 2026
 
-## Latest checkpoint: readback validator repaired, all three save, acceptance still BLOCKED
+## Latest checkpoint: bounded 32-step experiment; provider connection failures block full-batch acceptance
+
+The [32-step experiment](proofs/mousepad-verified-find-replace/budget32/README.md) predeclares eight additional steps while retaining the 180-second deadline and all acceptance oracles. The driver forwards the declared budget into actual generation; three driver smoke tests and 98 evidence tests pass, with 19/19 forced workspace tasks and 231 caught mutations. The new runtime test fails against the previous driver.
+
+Two fresh unchanged-artifact batches were retained separately, 75 hash-verified artifacts each. First batch: t1/t2 passed exact save and fresh readback; t3 failed with provider connection closure. Second batch: t2/t3 passed exact save and fresh readback; t1 failed with the same connection error. Every normally completed trial used 25–28 tool calls and finished normally; all cleanup verified. Neither complete batch passed, and successes are not pooled. Next investigate bounded pre-response fetch rejection handling without replaying agent/tool calls. Visual/reopen acceptance remains outstanding.
+
+CC-09 follow-up source inspection confirms client close is not native cancellation acknowledgement. The native container runner is unavailable here; an isolated-Xvfb no-model persistence measurement design is documented in the reliability worktree, not claimed as a measured native result.
+
+## Earlier checkpoint: readback validator repaired, all three save, acceptance BLOCKED
 
 The prior t3 rejection was a validator defect: `readElementContent` returns content without an element wrapper. It now binds that response to the requested ID's preceding public text-element evidence, retaining exact-text and after-save ordering checks. Prior t1 really lacked post-save readback. Six new positive/negative regressions cover the distinction, and mirrored instructions address observed scope-toggle search overhead.
 
