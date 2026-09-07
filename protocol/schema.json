@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.24.0",
+  "version": "1.24.1",
   "description": "The wire contract between the daemon and its clients. The first effect attempt claims a connection-bound driver; other connections may observe under existing grants but cannot issue effects until that driver disconnects and its operation settles. Disconnected queued work is discarded. This does not cancel already-issued effects or serialize multiple tasks sharing one connection. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -468,7 +468,7 @@
       }
     },
     "subscription": {
-      "description": "A live watch on one element and everything beneath it. Holding one means the daemon will push a change event whenever the watched subtree changes, until the subscription is ended by the client, by the element vanishing, or by the connection closing.",
+      "description": "A live watch on one element and descendants whose membership the route can establish. A live stream does not prove complete subtree coverage. Native membership is checked afresh with at most 24 parent reads per signal; unreadable, cyclic or deeper ancestry is unknown and emits no pointer. Reobserve to establish current state rather than treating silence as proof that nothing changed. Watches end when closed by the client or connection; route-specific element removal handling may also end them.",
       "fields": {
         "subscriptionId": {
           "type": "string",

@@ -1,5 +1,19 @@
 [
   {
+    "name": "watch-probe-failure-leaves-pending-work-live",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "\n    open = false;\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "watch-forgets-cycle-detection",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": " || visited.has(here)",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
     "name": "capture-returns-partial-images-without-provenance",
     "file": "daemon/src/backends/atspi/capture.ts",
     "find": "if (rectangle !== undefined && (wanted.originX !== rectangle.x || wanted.originY !== rectangle.y ||\n      wanted.width !== rectangle.width || wanted.height !== rectangle.height))",
@@ -484,21 +498,21 @@
   {
     "name": "a-deaf-subscription-is-returned-anyway",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
-    "find": "  if (unheard.size > 0) {\n    detach();\n    pending = null;\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(\", \")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
+    "find": "  if (unheard.size > 0) {\n    open = false;\n    detach();\n    pending = null;\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(\", \")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
   {
     "name": "a-watch-that-speaks-for-the-whole-application",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
-    "find": "      if (!(await withinSubtree(signal.path))) return;\n",
+    "find": "      if ((await withinSubtree(signal.path)) !== \"inside\" || !open) return;\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
   {
-    "name": "an-ancestry-climb-that-stops-at-the-first-step",
+    "name": "an-ancestry-climb-that-forgets-visited-nodes",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
-    "find": "      climbed.push(here);\n      const parent = await anchor.parentOf(anchor.busName, here);\n",
+    "find": "      visited.add(here);\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },

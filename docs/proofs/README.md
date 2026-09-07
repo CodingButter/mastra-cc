@@ -24,6 +24,8 @@ answered by argument.
 
 [Partial capture safety](reliability-remediation/cc07/README.md) records real native pixel acquisition with scripted accessibility geometry: complete images remain available, four edge-clipped images are refused until crop provenance exists.
 
+[Fresh watch membership](reliability-remediation/cc08/README.md) records seam-level RED/GREEN verification of reparenting, recovered parent reads, bounded climbs and pending-close suppression; live native reparenting proof remains deferred.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

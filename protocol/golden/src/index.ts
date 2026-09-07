@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.24.0
+// Mastra CC protocol v1.24.1
 
-export const PROTOCOL_VERSION = "1.24.0";
-export const SCHEMA_DIGEST = "8aef057d92e92100285157f64857c5a34f7a5679f6d50b15897a8ff3a0e82c06";
+export const PROTOCOL_VERSION = "1.24.1";
+export const SCHEMA_DIGEST = "78b09a65e306529c26f853d554a69a5dc84f3ac4b6d014c41a9d3bc78344f711";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -225,7 +225,7 @@ export interface Capability {
   disabledBy?: string;
 }
 
-/** A live watch on one element and everything beneath it. Holding one means the daemon will push a change event whenever the watched subtree changes, until the subscription is ended by the client, by the element vanishing, or by the connection closing. */
+/** A live watch on one element and descendants whose membership the route can establish. A live stream does not prove complete subtree coverage. Native membership is checked afresh with at most 24 parent reads per signal; unreadable, cyclic or deeper ancestry is unknown and emits no pointer. Reobserve to establish current state rather than treating silence as proof that nothing changed. Watches end when closed by the client or connection; route-specific element removal handling may also end them. */
 export interface Subscription {
   /** Names this watch for the life of the connection. Ending a watch and matching an event to it both use this. */
   subscriptionId: string;

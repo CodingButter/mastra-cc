@@ -578,6 +578,11 @@ that — an unverified result reported as a success is worse than an honest
 
 ## Change origin and wake policy
 
+A live subscription does not prove complete subtree coverage. Native membership
+is checked afresh with at most 24 parent reads per signal. Unreadable, cyclic or
+deeper ancestry is unknown and emits no pointer; reobserve rather than treating
+silence as evidence that nothing changed.
+
 A change pointer is evidence to reobserve, not proof of who caused it. Native
 changes are `unattributed` even during your own operation or after it returns.
 Application identity and timing are not causal witnesses; separate client

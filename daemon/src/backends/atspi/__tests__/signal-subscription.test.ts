@@ -228,9 +228,7 @@ describe("the accessibility stream", () => {
     await watch.close();
   });
 
-  it("asks the bus for a node's ancestry once, then remembers the verdict", async () => {
-    // A busy document emits a signal per keystroke. Climbing the tree afresh
-    // every time would put the watch's cost on the typist.
+  it("rechecks ancestry for each signal rather than retaining stale verdicts", async () => {
     const bus = fakeBus();
     const changes: BackendChange[] = [];
     const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
@@ -243,9 +241,105 @@ describe("the accessibility stream", () => {
     // The 100ms backstop collapses the burst into one pointer, which is the
     // point of the backstop; the ancestry cost is what this test watches.
     expect(changes.length).toBeGreaterThanOrEqual(1);
-    // Two edges: DEEP_PATH -> KNOWN_PATH -> ROOT_PATH. Never re-walked.
-    expect(parentCalls).toBe(2);
+    // Two fresh edges per signal, including signals collapsed by the backstop.
+    expect(parentCalls).toBe(8);
     await watch.close();
+  });
+
+  it.each([true, false])("rechecks membership after reparenting (initially inside: %s)", async (inside) => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    let parent = inside ? ROOT_PATH : APP_ROOT_PATH;
+    const watch = await openSignalStream(bus.ops, KNOWN.id, {
+      ...anchor,
+      parentOf: async (busName, path) => path === KNOWN_PATH ? { busName, objectPath: parent } : undefined,
+    }, (change) => changes.push(change), 50);
+    bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(changes).toHaveLength(inside ? 1 : 0);
+    changes.length = 0;
+    parent = inside ? APP_ROOT_PATH : ROOT_PATH;
+    await new Promise((resolve) => setTimeout(resolve, 110));
+    bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(changes).toHaveLength(inside ? 0 : 1);
+    await watch.close();
+  });
+
+  it("retries unreadable ancestry on the next signal", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    let readable = false;
+    const watch = await openSignalStream(bus.ops, KNOWN.id, {
+      ...anchor,
+      parentOf: async (busName) => readable ? { busName, objectPath: ROOT_PATH } : undefined,
+    }, (change) => changes.push(change), 50);
+    bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(changes).toHaveLength(0);
+    readable = true;
+    bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(changes).toHaveLength(1);
+    await watch.close();
+  });
+
+  it("does not emit when close occurs during a pending parent read", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    let finish!: (parent: { busName: string; objectPath: string }) => void;
+    const parent = new Promise<{ busName: string; objectPath: string }>((resolve) => { finish = resolve; });
+    const watch = await openSignalStream(bus.ops, KNOWN.id, {
+      ...anchor, parentOf: () => parent,
+    }, (change) => changes.push(change), 50);
+    bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    await watch.close();
+    finish({ busName: APP_SENDER, objectPath: ROOT_PATH });
+    await settle();
+    expect(changes).toEqual([]);
+  });
+
+  it.each(["cycle", "depth", "throw"])("bounds %s ancestry and processes a later root signal", async (mode) => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    let reads = 0;
+    const watch = await openSignalStream(bus.ops, KNOWN.id, {
+      ...anchor,
+      parentOf: async (busName, objectPath) => {
+        reads += 1;
+        if (mode === "throw") throw new Error("parent temporarily unavailable");
+        return { busName, objectPath: mode === "cycle" ? objectPath : `${objectPath}/next` };
+      },
+    }, (change) => changes.push(change), 50);
+    bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    for (let turn = 0; turn < 64; turn += 1) await Promise.resolve();
+    expect(changes).toHaveLength(0);
+    expect(reads).toBe(mode === "depth" ? 24 : 1);
+    bus.inject(stateChanged(APP_SENDER, ROOT_PATH));
+    await settle();
+    expect(changes).toHaveLength(1);
+    await watch.close();
+  });
+
+  it("retires a pending parent read when the stream probe refuses", async () => {
+    const bus = fakeBus({ deaf: true });
+    const changes: BackendChange[] = [];
+    let finish!: (parent: { busName: string; objectPath: string }) => void;
+    let entered = false;
+    const parent = new Promise<{ busName: string; objectPath: string }>((resolve) => { finish = resolve; });
+    const opening = openSignalStream(bus.ops, KNOWN.id, {
+      ...anchor, parentOf: () => { entered = true; return parent; },
+    }, (change) => changes.push(change), 30);
+    const rejection = expect(opening).rejects.toBeInstanceOf(DeafWatchError);
+    await settle();
+    bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(entered).toBe(true);
+    await rejection;
+    finish({ busName: APP_SENDER, objectPath: ROOT_PATH });
+    await settle();
+    expect(changes).toEqual([]);
   });
 
   it("delivers nothing after close", async () => {
