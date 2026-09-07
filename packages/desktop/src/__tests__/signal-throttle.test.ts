@@ -33,6 +33,32 @@ it("expires quiet entries without further events", async () => {
   expect(throttle.retainedCount).toBe(1);
   await vi.advanceTimersByTimeAsync(1000); expect(throttle.retainedCount).toBe(0);
 });
+it.each([250, 1750])("delivers and expires a quiet key at a nondefault %s ms gap", async (gap) => {
+  const deliver = vi.fn(), throttle = new SignalThrottle(gap, deliver);
+  throttle.push(event("quiet"));
+  await vi.advanceTimersByTimeAsync(100); throttle.push(event("quiet"));
+  await vi.advanceTimersByTimeAsync(gap - 101); expect(deliver).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(1); expect(deliver).toHaveBeenCalledTimes(2);
+  expect(deliver.mock.calls[1][0].subscriptionId).toBe("quiet");
+  await vi.advanceTimersByTimeAsync(Math.max(gap, 1000) - 1);
+  expect(throttle.retainedCount).toBe(1);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(throttle.retainedCount).toBe(0); expect(vi.getTimerCount()).toBe(0);
+});
+it.each([250, 1750])("requires both renewed budget and the %s ms per-key gap", async (gap) => {
+  const deliver = vi.fn(), throttle = new SignalThrottle(gap, deliver);
+  for (let repeat = 0; repeat < 2; repeat++) {
+    for (let key = 0; key < SIGNAL_WAKE_LIMIT; key++) throttle.push(event(`key-${key}`));
+  }
+  expect(deliver).toHaveBeenCalledTimes(SIGNAL_WAKE_LIMIT);
+  await vi.advanceTimersByTimeAsync(Math.max(gap, 1000) - 1);
+  expect(deliver).toHaveBeenCalledTimes(SIGNAL_WAKE_LIMIT);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(deliver).toHaveBeenCalledTimes(SIGNAL_WAKE_LIMIT * 2);
+  expect(new Set(deliver.mock.calls.slice(SIGNAL_WAKE_LIMIT).map(([pointer]) => pointer.subscriptionId)).size).toBe(SIGNAL_WAKE_LIMIT);
+  await vi.advanceTimersByTimeAsync(Math.max(gap, 1000));
+  expect(throttle.retainedCount).toBe(0); expect(vi.getTimerCount()).toBe(0);
+});
 it("retains no entries with throttling disabled", () => {
   const throttle = new SignalThrottle(0, vi.fn());
   for (let i = 0; i < 1000; i++) throttle.push(event(`sub-${i}`));

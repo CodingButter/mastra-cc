@@ -64,3 +64,9 @@ pnpm turbo run build lint typecheck test --force
 
 The focused mutation table is `tools/mutations.json` filtered to names beginning
 with `signals-`. Compressed transcripts use `gzip -n` (no timestamp in headers).
+
+## Nondefault gap boundary follow-up — September 7, 2026
+
+Four additional cases cover 250 ms and 1750 ms gaps: exact trailing-delivery boundaries, idle expiry, and saturated-budget renewal. With 32 pending keys, both the one-second aggregate budget and the configured per-key interval must permit delivery. Final direct throttle suite: 13 passing cases, recorded in `nondefault-with.txt.gz`.
+
+`nondefault-without.txt.gz` is a deliberate negative control, **not a historical baseline**: assigning `this.gapMs = 1000` after constructor validation makes three of the four new cases fail. The 250 ms saturated-budget case remains correct under that mutation because its effective lower bound is already one second. Source was restored byte-for-byte and the passing suite rerun. `nondefault-workspace.txt.gz` retains the forced workspace gates. This closes test coverage, not a new production behavior change; framework lifecycle and final-observation follow-ups above remain open.
