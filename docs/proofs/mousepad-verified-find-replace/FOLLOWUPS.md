@@ -1,0 +1,28 @@
+# Remaining acceptance work
+
+## September 7, 2026 — monitor repair and roadmap audit
+
+- Monitor failure handling, log-open error recording, independent-trial continuation, interruption evidence, and bounded process-group teardown now have runnable regressions in `model-supervisor.test.mjs` and `model-lifecycle.test.mjs`; see [repair proof](monitor-repair/README.md). This repairs the harness, not the failed task. The old incomplete batch remains rejected.
+- Source checked: `/tmp/mastra-cc-remediation-plan.md`, copied from Bigbeast. It contains **CC-01 through CC-09 only**, not CC-10 or later. Section 13 (lines 318–363) explicitly calls the packaged desktop specialist a separate feature proposal, not required remediation scope. Do not invent numbered tasks from section numbers 10–14.
+- CC-09 capture/queue instrumentation and the 24-case native workload matrix are committed on `fix/reliability-remediation` (measurement commit `3d32bc2`, matrix commit `523431e`), not merged into this Mousepad branch. Re-running `verify-matrix.mjs` against retained `matrix-with.jsonl` passed all 24 cases. This establishes measured synthetic capture workloads, not production latency targets.
+- Remaining CC-09 acceptance: representative event-to-notification latency, event-loop delay, retained-cache sizing and cancellation-responsiveness measurements; select budgets only after relevant baselines. Source lines 310–316 also require preserving deployment/authentication and authority boundaries. No parallel native effects or widened network grants are authorized by benchmark needs.
+- Other bounded remediation slices remain on the separate branch. Outstanding full-acceptance work includes CC-02 live input-method/focus and post-emission failure characterization; CC-05 human takeover/native cancellation; CC-06 unknown-origin task-state accounting and replacement wake policy; CC-07 normalized crop provenance/freshness beyond conservative refusal; CC-08 live reparenting and complete/degraded watch reporting. Unit tests do not satisfy those live/system-level requirements.
+- Future feature follow-ups (section 13): consumer-neutral packaged specialist and task interface; shared single-driver runtime with evidence-bearing terminal outcomes; one thin verified Mastra Code/Factory or direct-user adapter; curated skill storage/retrieval, evidence-backed promotion, provenance and rollback. These need architecture/authority design first, not an invented existing plugin API or a second mandatory memory store.
+- Infrastructure limitations: arbitrary synchronous filesystem stalls, descendants intentionally escaping the owned process group, or an unwritable evidence filesystem require stronger isolation/storage guarantees. Current tests prove the owned-group/error-returning filesystem boundary only.
+
+## September 7, 2026 — restored provider probe and rejected fresh batch
+
+- A same-model image capability probe returned HTTP 200 and a screenshot description. Raw evidence: `/tmp/mousepad-vision-capability-probe.json`. This is not visual task acceptance; no review record was manufactured.
+- Fresh fixed-settings batch `/tmp/mousepad-model.ZA1hPS` remains rejected. t1 stopped after reporting unavailable application capabilities and did not save expected bytes; t2 saved exact expected bytes but has no accepted visual review. Never pool this success with other batches.
+- The batch monitor crashed while scanning `t3/runtime/doc/by-app` with `ECONNABORTED`; t3 has no attempt record. Treat the incomplete batch as INVALID as well as functionally rejected. Fix monitor exception handling and cleanup before another attempt. A subsequent process-list check found no command containing this batch path; this is not comprehensive process-tree cleanup proof.
+- A forced workspace build/lint/typecheck/test subsequently passed all 19 tasks with zero cache hits (`/tmp/mousepad-restored-provider-workspace.log`); focused evidence suites passed 97/97. Build was started before batch termination had been positively established, so this run cannot establish an uninterrupted final-artifact acceptance window even aside from the failures above.
+- Logs: `/tmp/mousepad-restored-provider-batch.log`, `/tmp/mousepad-restored-provider-review.txt`. Existing older checkpoints below remain historical, not current provider availability claims.
+
+September 7, 2026: fresh forced workspace build/lint/typecheck/test passed 19/19 tasks, zero cached (log `/tmp/mousepad-current-forced-gates.log`, 02:56). Offline evidence tests remain 80/80 and documentation validation passes. These gates do not establish live task acceptance.
+
+- Phase 3: run a fresh predeclared t1–t3 batch only when a genuine visual inspection route is available. Prior provider quota failures do not prove present unavailability; no new provider run was attempted during this checkpoint.
+- Record actual recording/checkpoint inspection, not image hashes or extraction as a substitute. Current file viewer returned binary text; no review record was fabricated.
+- Keep both retained batches rejected; do not pool successes or edit historical declarations.
+- After live acceptance: publication inventory, content/secret scan, Phase 3 commit, full mutation sweep, independent final review and human handoff remain due.
+
+Jamie authorized moving to other project work when blocked without prompting. The remediation document was found on Bigbeast at `/home/codingbutter/Downloads/mastra-cc-remediation-plan.md` and copied read-only to `/tmp/mastra-cc-remediation-plan.md`. Its findings require verification against source before implementation. Mousepad remains unaccepted while this separate work proceeds.

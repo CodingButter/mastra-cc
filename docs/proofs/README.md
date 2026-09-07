@@ -30,6 +30,10 @@ answered by argument.
 
 [Native cost baseline](reliability-remediation/cc09/README.md) records built-daemon queue and real Xvfb capture phase measurements with fixed content-free counters; no latency SLA or production-load claim. [Native notification and cancellation measurement boundaries](reliability-remediation/cc09/native-measurement-boundary.md) records source-verified follow-up design, not native timing results. [Native event-to-storage latency](reliability-remediation/cc09/native-latency/README.md) measures ten real Mousepad mutations reaching SQLite with zero model calls (median 8.0 ms request-to-row, polling-inclusive upper bound); no wake claim. [Cancellation ownership and acknowledgement](reliability-remediation/cc09/cancellation/README.md) measures five real Mousepad clears cancelled by driver close: stopped at the next emitted-key boundary, ownership retired in under a millisecond, successor admitted at 24.9/28.2/34.4 ms, emitted count equal to settled loss; keys already accepted by the registry are not retracted.
 
+[Mousepad monitor repair](mousepad-verified-find-replace/monitor-repair/README.md) records failure persistence and owned-process teardown proof, not task acceptance.
+
+[Mousepad and remediation follow-ups](mousepad-verified-find-replace/FOLLOWUPS.md) records remaining acceptance and roadmap gaps.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

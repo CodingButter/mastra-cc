@@ -1,0 +1,5 @@
+PROOF: RED — old unguarded callback crashes (isolated reproduction, not a historical checkout run)
+{"session":1,"reason":"artifact-monitor-error","code":null,"cleanupVerified":true,"persisted":true}
+{"session":2,"reason":null,"code":0,"cleanupVerified":true,"persisted":true}
+Retained lifecycle evidence: /tmp/mousepad-monitor-demo.v7ffV1
+PROOF: GREEN — monitor error persisted, owned group stopped, independent session ran; no model acceptance claim
