@@ -18,6 +18,8 @@ answered by argument.
 
 [Bounded signal retention](reliability-remediation/cc04/README.md) records built-library RED/GREEN delivery counters, hard retention bounds and trailing invalidation; immediate watch-end cleanup remains follow-up.
 
+[Connection-bound desktop driver](reliability-remediation/cc05/README.md) records real Unix/WebSocket peer exclusion against a scripted effect sink; human takeover and task-level serialization remain follow-up.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

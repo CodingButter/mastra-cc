@@ -93,6 +93,7 @@ import { isVisible, type Visibility } from "./grants.js";
 import { CATALOG, contendsForBrowserEndpoint, type LaunchCatalog } from "./launch/recipes.js";
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
+import { driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
 // then requests dispatched through the effect-class gate. Accessibility access
@@ -2571,6 +2572,7 @@ export async function handleRequest(
   backend: Backend,
   launch: LaunchContext = NO_PERMITS,
   book?: SubscriptionBook,
+  driver?: { authority: DriverAuthority; connection: DriverConnection },
 ): Promise<HandledResponse> {
   const entry = DISPATCH[request.method];
   if (!entry) {
@@ -2598,8 +2600,12 @@ export async function handleRequest(
     // No receipt, same reason: the backstop fires before the handler runs
     // (class EnforcementUnrepresentable).
   }
+  const ownershipRefusal = driver?.authority.refusal(driver.connection, entry.effectClass !== "observe");
+  if (ownershipRefusal !== undefined) return { type: "response", id: request.id, refusal: ownershipRefusal };
   try {
     const result = await serialised<unknown>(async () => {
+      const retired = driver?.authority.enter(driver.connection, entry.effectClass !== "observe");
+      if (retired !== undefined) return { refusal: retired };
       // An effect-class verb is a cause: it gets an id, and it is open for
       // exactly as long as it runs. Observe-class methods are not causes, so
       // they leave the daemon quiet and changes during them read as external.
@@ -2608,6 +2614,7 @@ export async function handleRequest(
         return await entry.handler(request.params, backend, launch, book);
       } finally {
         inFlight = undefined;
+        driver?.authority.leave(driver.connection);
       }
     });
     // THE THIRD AUDIT CALL SITE, and the one the artifact turns on. ADR-0026's
@@ -2707,6 +2714,8 @@ export function serveConnection(
   options: { backend: Backend; launch?: LaunchContext; visibility: Visibility },
 ): void {
   const { backend, launch, visibility } = options;
+  const authority = driverAuthority(backend);
+  const driver = { authority, connection: authority.connect() };
   let buffer = "";
   let helloDone = false;
   // The server-initiated direction (ADR-0039). An event answers nothing, so
@@ -2719,6 +2728,7 @@ export function serveConnection(
   // goes, the watches go with it - closed at the BACKEND, not merely
   // forgotten here: a forgotten watch is still being fed.
   const teardown = () => {
+    authority.disconnect(driver.connection);
     void book.closeAll();
   };
   pipe.onClose(teardown);
@@ -2760,7 +2770,7 @@ export function serveConnection(
         continue;
       }
       if (message.type === "request" && typeof message.id === "number" && typeof message.method === "string") {
-        void handleRequest(message as Request, backend, launch, book).then((response) => {
+        void handleRequest(message as Request, backend, launch, book, driver).then((response) => {
           if (!pipe.closed) pipe.write(`${JSON.stringify(response)}\n`);
         });
       } else {

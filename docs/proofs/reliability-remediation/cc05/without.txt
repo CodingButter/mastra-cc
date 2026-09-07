@@ -1,0 +1,2 @@
+{"attempts":12,"failures":12,"unauthorizedEffects":12,"surface":"built daemon and transport; real Unix/WebSocket peers; scripted effect sink"}
+PROOF: RED — competing connection reached the effect sink

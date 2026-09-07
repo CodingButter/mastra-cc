@@ -1,5 +1,34 @@
 [
   {
+    "name": "driver-forgets-connection-owner",
+    "file": "daemon/src/driver.ts",
+    "find": "    if (effect) this.#owner = connection;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-desktop-driver.test.ts"
+  },
+  {
+    "name": "driver-releases-before-quiescence",
+    "file": "daemon/src/driver.ts",
+    "find": " && this.#running !== connection",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-desktop-driver.test.ts"
+  },
+  {
+    "name": "driver-accepts-disconnected-queued-work",
+    "file": "daemon/src/driver.ts",
+    "find": "    if (connection.closed) return DRIVER_CLOSED;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-desktop-driver.test.ts"
+  },
+  {
+    "name": "driver-authority-not-shared-between-pipes",
+    "file": "daemon/src/driver.ts",
+    "find": "  let authority = authorities.get(backend);",
+    "replace": "  let authority: DriverAuthority | undefined;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-desktop-driver.test.ts"
+  },
+  {
     "name": "composite-stability-check-removed",
     "file": "daemon/src/backends/atspi/labels.ts",
     "find": "      if (before.trace !== after.trace) return fail(\"unreadable\");",
@@ -381,7 +410,7 @@
   {
     "name": "connection-close-leaks-subscriptions",
     "file": "daemon/src/server.ts",
-    "find": "  const teardown = () => {\n    void book.closeAll();\n  };\n  pipe.onClose(teardown);\n",
+    "find": "    void book.closeAll();\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-lifetime.test.ts"
   },
