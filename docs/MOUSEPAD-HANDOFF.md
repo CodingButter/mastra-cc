@@ -1,10 +1,16 @@
 # Mousepad blocked-checkpoint handoff — September 7, 2026
 
-## Outcome: BLOCKED, not approved live completion
+## Latest checkpoint: separate Anthropic series, still BLOCKED
+
+The supplied Anthropic key authenticated successfully. A new predeclared t1–t3 batch using `anthropic/claude-sonnet-4-5-20250929` then hit its 500,000 input-token/minute rate limit: t1 after eleven public calls, t2/t3 before any public calls. All saved-file oracles failed; all owned process groups report verified cleanup. No visual acceptance is claimed. Google remains the default; provider selection is allowlisted and metadata must match the declaration. The existing step/deadline/file/UI/visual gates were not relaxed.
+
+The complete post-batch mutation sweep now passes: **231 mutations, none survived**. See the [Anthropic series report](proofs/mousepad-verified-find-replace/anthropic-series/README.md) for final deterministic gate receipts, independent reviews and the retained 72-file rejected batch. No source/build changes overlapped the batch. Authentication success did not establish sustained quota capacity. Investigate bounded, predeclared request pacing/token volume before another complete trial batch; increased quota is an alternative, not a proven prerequisite. Historical Google results and lane ownership below remain unchanged. No push, PR or merge has been performed.
+
+## Earlier outcome: BLOCKED, not approved live completion
 
 Runtime discovery now exposes already-granted native query names without widening observation grants or contaminating launch authority. Fresh deterministic gates pass. Approved real-agent acceptance does not: all three final trials encountered Google HTTP 429 input-token quota exhaustion, failed saved-byte oracles and have no accepted visual review. Do not merge or label Phase 3 complete on this evidence.
 
-## Git checkpoint and ownership
+## Historical Google checkpoint and ownership (before the Anthropic series)
 
 - Worktree: `/tmp/mastra-cc-mousepad-verified-find-replace`.
 - Branch: `feat/mousepad-verified-find-replace`.
@@ -15,7 +21,9 @@ Runtime discovery now exposes already-granted native query names without widenin
 - Publication: these checkpoint commits are local only; no push, PR, merge or remote mutation performed. Existing remote patch equivalence was not assessed.
 - Before this documentation commit the worktree was clean, including all seven formerly dirty tracked files and the native regression. No unrelated worktree cleanup or reliability edits occurred.
 
-## Verification and evidence
+## Historical Google verification and evidence
+
+The 91-test receipt below belongs to the earlier discovery checkpoint. The current Anthropic checkpoint passed 93 focused tests (`anthropic-series/evidence-final.txt`), 19/19 forced workspace tasks with zero cached (`workspace-final.txt`), 231 mutations (`mutations.txt`) and documentation validation (`docs-final.txt`). These paths are relative to `docs/proofs/mousepad-verified-find-replace/anthropic-series/` except the explicitly prefixed evidence path.
 
 - Fresh `pnpm turbo run build lint typecheck test --force`: 19/19 tasks, zero cached, 15.068 seconds. Retained transcript: `docs/proofs/mousepad-verified-find-replace/discovery-repair/workspace.txt`.
 - Focused native replay/discovery regressions: 29 passed. Pre-fix regression transcript: one failure, 27 passed. See `regression-red.txt` and `regression-green.txt` in that directory.
@@ -32,7 +40,7 @@ The harness used a run-private display allocated by Xvfb, separate session/acces
 
 ## Smallest dependency to resume
 
-Restore available quota for the approved `google/gemini-2.5-flash` settings. Then run a new complete predeclared t1–t3 batch against unchanged final artifacts and genuinely inspect recordings/checkpoints. Final-candidate mutation sweep and final acceptance review remain outstanding; they were not replaced by unit-test success. Historical failed attempts remain rejected. See [FOLLOWUPS](proofs/mousepad-verified-find-replace/FOLLOWUPS.md).
+Investigate the observed Anthropic request/token rate before another batch: bounded predeclared pacing is an unverified experiment; increased quota is an alternative. Keep the task, deadlines and acceptance oracles intact. Then run a new complete predeclared t1–t3 batch on unchanged final artifacts and genuinely inspect its recordings/checkpoints. The final-candidate 231-mutation sweep is complete; live acceptance and genuine visual review remain outstanding. Historical failed attempts remain rejected. See [FOLLOWUPS](proofs/mousepad-verified-find-replace/FOLLOWUPS.md).
 
 ## Reliability lane: account for next, do not duplicate
 

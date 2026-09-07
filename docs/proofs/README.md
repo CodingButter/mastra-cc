@@ -36,6 +36,8 @@ answered by argument.
 
 [Mousepad runtime discovery repair](mousepad-verified-find-replace/discovery-repair/README.md) records the regression repair, fresh forced gates and quota-blocked live batch.
 
+[Separate Anthropic Mousepad series](mousepad-verified-find-replace/anthropic-series/README.md) records provider-bound validator proof, final mutation gates and the rejected rate-limited batch; not live acceptance.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

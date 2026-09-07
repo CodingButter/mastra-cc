@@ -1,0 +1,17 @@
+## Must fix
+
+- `docs/MOUSEPAD-HANDOFF.md:41` is stale and contradicts the same document’s current checkpoint at lines 7 and 26–30. It says the **final-candidate mutation sweep remains outstanding**, although the updated evidence records 231 mutations with none surviving. Change this to state that the sweep is complete and that only live acceptance/visual review remain.
+- `docs/proofs/mousepad-verified-find-replace/FOLLOWUPS.md:13` has the same contradiction: it says the full mutation sweep remains outstanding immediately after line 5 says the 231-mutation sweep superseded that status. Mark the sentence as historical or remove the obsolete claim.
+- `docs/MOUSEPAD-HANDOFF.md:28` reports “Evidence/supervisor/lifecycle suites: 91 passed,” while the checkpoint request says the final focused result is 93 passed. The retained `discovery-repair/evidence-tests.txt:94-97` independently records 91 tests, so the documentation must identify which receipt is authoritative rather than silently mixing counts. If 93 is the newer combined result, retain its actual receipt and update the count; otherwise keep 91 and correct the checkpoint summary.
+
+## Risks & questions
+
+- The actual Anthropic receipt supports the documented rejection: `t1/driver.log:1-2,23-31` records the 500,000 input-token/minute refusal, `t2/events.jsonl:2-5` shows failure before any public call, and `attempts.json:7-29` records cleanup verified for all three. No visual-review artifact is present. This is correctly described as blocked/rejected, not acceptance.
+- The retained logs expose provider operational metadata—organization/workspace IDs, request IDs, and rate-limit headers—in `t1/driver.log:25-32,40` and corresponding event logs. I found no API key or credential value in the inspected artifacts, consistent with the pattern-scan claim. These identifiers are not secrets equivalent to the key, but consider redacting them before public publication.
+- `anthropic-series/README.md:27` correctly says raw SDK logs bypass the journal redactor and that the scan is not comprehensive. That limitation should remain attached to any publication decision.
+
+## Suggested improvements
+
+- Keep the bounded pacing/token-volume investigation phrased as an experiment, not a remedy. `anthropic-series/README.md:27` and `FOLLOWUPS.md:5` do this correctly; the handoff should use the same wording consistently.
+- Preserve the distinction among authentication success, provider rate-limit failure, machine rejection, and absent visual review. The Anthropic series README and durable batch receipts currently maintain that separation.
+- Before local commit, perform a documentation-only consistency pass for “91/93,” “mutation outstanding,” and “final acceptance outstanding”; no native rerun or production/harness change is warranted.

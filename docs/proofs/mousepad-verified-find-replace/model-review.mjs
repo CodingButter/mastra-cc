@@ -50,6 +50,7 @@ export function reviewBatch(batch, root) {
   assert.deepEqual(declaration.trials.map(t => t.id), ['t1', 't2', 't3'], 'exactly three distinct trial IDs');
   const dirs = declaration.trials.map(t => inside(batch, `${batch}/${t.id}`));
   assert.equal(new Set(dirs).size, 3, 'aliased trial directories');
+  assert.ok(['google/gemini-2.5-flash','anthropic/claude-sonnet-4-5-20250929'].includes(declaration.model), 'unapproved model');
   const required = ['daemon/dist/main.mjs', 'protocol/schema.json', 'pnpm-lock.yaml', 'packages/desktop/instructions/AGENT-INSTRUCTIONS.md',
     ...fs.readdirSync(path.join(root, 'docs/proofs/mousepad-verified-find-replace')).filter(f => /\.(mjs|sh)$/.test(f)).map(f => `docs/proofs/mousepad-verified-find-replace/${f}`)];
   for (const file of required) checked(root, {path: file, sha256: declaration.artifacts[file]});
@@ -66,7 +67,7 @@ export function reviewBatch(batch, root) {
     const metadata = json(`${dir}/metadata.json`);
     assert.equal(metadata.handshake, 'accepted');
     assert.equal(metadata.instructionsSha256, declaration.artifacts['packages/desktop/instructions/AGENT-INSTRUCTIONS.md'], 'stale loaded instructions');
-    for (const [key, value] of Object.entries({model:'google/gemini-2.5-flash', temperature:0, maxSteps:24, modelDeadlineMs:180000})) {
+    for (const [key, value] of Object.entries({model:declaration.model, temperature:0, maxSteps:24, modelDeadlineMs:180000})) {
       assert.equal(metadata[key], value); assert.equal(declaration[key], value);
     }
     const consumer = inside(batch, `${batch}/installed/consumer`);

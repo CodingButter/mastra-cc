@@ -30,6 +30,19 @@ function batchFixture(t) {
   return {root,batch,save,declaration};
 }
 test('three synthetic machine passes remain REVIEW_PENDING without reviews',t=>{const {root,batch}=batchFixture(t);const result=reviewBatch(batch,root);assert.equal(result.verdict,'REVIEW_PENDING');assert.ok(result.results.every(r=>r.machine==='GREEN'&&r.independentOracle==='GREEN'&&r.humanApproval==='PENDING'));});
+test('predeclared Anthropic trials still require visual review and reject mixed models',t=>{
+ const f=batchFixture(t);const model='anthropic/claude-sonnet-4-5-20250929';
+ f.declaration.model=model;f.save(`${f.batch}/declaration.json`,f.declaration);
+ for(const id of ['t1','t2','t3']) {const file=`${f.batch}/${id}/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model});}
+ assert.equal(reviewBatch(f.batch,f.root).verdict,'REVIEW_PENDING');
+ const file=`${f.batch}/t2/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model:'google/gemini-2.5-flash'});
+ assert.throws(()=>reviewBatch(f.batch,f.root));
+});
+test('matching but unapproved model names cannot pass declaration validation',t=>{
+ const f=batchFixture(t);f.declaration.model='unapproved/model';f.save(`${f.batch}/declaration.json`,f.declaration);
+ for(const id of ['t1','t2','t3']) {const file=`${f.batch}/${id}/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model:f.declaration.model});}
+ assert.throws(()=>reviewBatch(f.batch,f.root));
+});
 for(const [name,mutate] of [
  ['stale runtime',f=>fs.appendFileSync(`${f.root}/daemon/dist/main.mjs`,'changed')],
  ['stale instructions',f=>fs.appendFileSync(`${f.root}/packages/desktop/instructions/AGENT-INSTRUCTIONS.md`,'changed')],

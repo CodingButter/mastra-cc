@@ -1,0 +1,21 @@
+## Must fix
+
+- **No blocking defect found in the scoped changes.** The reviewed paths enforce the intended model boundary:
+  - `model-batch.mjs:21-22` allowlists the unchanged Google default and the exact Anthropic snapshot.
+  - `model-driver.mjs:30-32` reads the declared model and selects the corresponding credential variable.
+  - `model-review.mjs:53` rejects models outside the same allowlist.
+  - `model-review.mjs:67-71` requires trial metadata to match the declaration for model, temperature, step count, and deadline.
+  - `evidence.test.mjs:33-45` covers Anthropic `REVIEW_PENDING`, mixed-model rejection, and unapproved-model rejection.
+
+## Risks & questions
+
+- **Live proof remains pending.** The test fixtures and provider-green result demonstrate validation behavior, not successful Anthropic Mousepad completion. The batch must still be independently reviewed after PID `1207695` exits; do not treat the current tests as acceptance.
+- **Duplicated allowlists are a drift risk.** The exact model set appears independently in `model-batch.mjs:22`, `model-review.mjs:53`, and `model-driver.mjs:31`. A future update could allow declaration creation while rejecting execution or review. This is not a current defect, but it weakens long-term provider consistency.
+- **Credential selection is presence-only.** `model-driver.mjs:32` checks that the selected environment variable is truthy, but does not establish that the credential belongs to the declared provider beyond the variable name. That is appropriate for the supplied-key boundary, but provider authentication remains proven only by the separate provider test, not by these files.
+- **Secret redaction depends on length.** `model-driver.mjs:14` redacts only credential-like environment values longer than 12 characters. The authorized Anthropic key is expected to exceed that threshold, but the general safeguard is not comprehensive for shorter secret values.
+
+## Suggested improvements
+
+- Centralize the provider/model allowlist in one shared declaration or module used by batch generation, the driver, and review. Preserve the Google default and exact Anthropic snapshot while removing the duplicated literals.
+- Add a test that verifies the selected credential variable directly for both providers, while asserting that credential values never appear in metadata, declaration files, or event output.
+- After the live batch finishes, verify the saved batch artifacts and run the read-only review with the exact final declaration. Report the visual-review and human-approval state separately from machine/oracle results.

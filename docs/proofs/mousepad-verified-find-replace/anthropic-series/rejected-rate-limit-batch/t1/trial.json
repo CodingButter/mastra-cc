@@ -1,0 +1,15 @@
+{
+  "id": "t1",
+  "kind": "mousepad-literal-replacement",
+  "source": "TOKEN_0c5ee179ad",
+  "replacement": "VALUE_384c65c847",
+  "count": 3,
+  "segments": [
+    "North harbour: ",
+    "\nEast orchard: ",
+    "\nSouth ridge: ",
+    ".\n"
+  ],
+  "beforeSha256": "d9790cdec57e7f14155efcf8fb76b39c4cd74938efab65c0e81b279d1a3472fc",
+  "expectedSha256": "e8bb154dc635bd76aca46dfad9f71bd5f00ca573294c7e6faa27e7c41e8f8435"
+}

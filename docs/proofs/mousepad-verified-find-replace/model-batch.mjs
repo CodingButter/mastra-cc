@@ -18,6 +18,8 @@ if(process.argv[2]==='--review') {
   } catch(error) {console.error(`INVALID: ${error.message}`);process.exit(1);}
 }
 assert.equal(process.argv[2],'--run','use --run [fresh-directory]');
+const model=process.env.MOUSEPAD_MODEL??'google/gemini-2.5-flash';
+assert.ok(['google/gemini-2.5-flash','anthropic/claude-sonnet-4-5-20250929'].includes(model),'unapproved model');
 fs.mkdirSync(batch,{recursive:true});
 assert.ok(!fs.existsSync(`${batch}/declaration.json`),'never reuse an attempt');
 const install=`${batch}/installed`;
@@ -33,7 +35,7 @@ const trials=segments.map((parts,i)=>{
   fs.writeFileSync(`${dir}/task.txt`,`In the open Mousepad document, use Find and Replace to replace all three literal occurrences of ${source} with ${replacement}. Preserve all other text. Save the document and verify its resulting text with fresh UI evidence before reporting success. Use literal, case-sensitive matching over the whole document, not regular expressions. Keep UTF-8 encoding and existing newlines.\n`);
   const trial={id,kind:'mousepad-literal-replacement',source,replacement,count:3,segments:parts,beforeSha256:hash(fs.readFileSync(`${dir}/before.txt`)),expectedSha256:hash(fs.readFileSync(`${dir}/expected.txt`))};save(`${dir}/trial.json`,trial);return trial;
 });
-save(`${batch}/declaration.json`,{created:Date.now(),hypothesis:process.env.MOUSEPAD_HYPOTHESIS??'Initial fixed-settings installed-consumer completion measurement',artifacts,trials,consumerLockSha256:hash(fs.readFileSync(`${install}/consumer-lock.json`)),model:'google/gemini-2.5-flash',temperature:0,maxSteps:24,modelDeadlineMs:180000});
+save(`${batch}/declaration.json`,{created:Date.now(),hypothesis:process.env.MOUSEPAD_HYPOTHESIS??'Initial fixed-settings installed-consumer completion measurement',artifacts,trials,consumerLockSha256:hash(fs.readFileSync(`${install}/consumer-lock.json`)),model,temperature:0,maxSteps:24,modelDeadlineMs:180000});
 console.log(`PREDECLARED: ${batch} t1 t2 t3`);
 const started=performance.now();
 const attempts=await runTrials(trials.map(trial=>`${batch}/${trial.id}`),dir=>({

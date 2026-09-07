@@ -1,0 +1,117 @@
+[32m✔ requires saved bytes and independent preceding public trace [90m(1.268135ms)[39m[39m
+[32m✔ rejects unknown actionable ID [90m(0.460107ms)[39m[39m
+[32m✔ rejects wrong field selection [90m(0.523046ms)[39m[39m
+[32m✔ rejects private native evidence only [90m(0.119847ms)[39m[39m
+[32m✔ rejects no save [90m(0.127668ms)[39m[39m
+[32m✔ rejects title instead of fresh content [90m(0.118898ms)[39m[39m
+[32m✔ rejects misleading banner [90m(0.121781ms)[39m[39m
+[32m✔ rejects verification after final claim [90m(0.13215ms)[39m[39m
+[32m✔ rejects incomplete journal [90m(0.146325ms)[39m[39m
+[32m✔ rejects unfinished tool [90m(0.159058ms)[39m[39m
+[32m✔ rejects failed model [90m(0.13621ms)[39m[39m
+[32m✔ rejects model never finished [90m(0.100683ms)[39m[39m
+[32m✔ rejects background tool continuation [90m(0.114202ms)[39m[39m
+[32m✔ rejects explicit refusal [90m(0.075046ms)[39m[39m
+[32m✔ rejects duplicate call [90m(0.075351ms)[39m[39m
+[32m✔ rejects incorrect saved bytes despite perfect model trace [90m(0.465074ms)[39m[39m
+[32m✔ rejects wrong task declaration [90m(0.309279ms)[39m[39m
+[32m✔ three synthetic machine passes remain REVIEW_PENDING without reviews [90m(3.813471ms)[39m[39m
+[31m✖ predeclared Anthropic trials still require visual review and reject mixed models [90m(3.171843ms)[39m[39m
+[32m✔ matching but unapproved model names cannot pass declaration validation [90m(1.838816ms)[39m[39m
+[32m✔ batch rejects stale runtime [90m(1.67769ms)[39m[39m
+[32m✔ batch rejects stale instructions [90m(1.401944ms)[39m[39m
+[32m✔ batch rejects stale harness [90m(1.3147ms)[39m[39m
+[32m✔ batch rejects missing artifact hash [90m(1.390015ms)[39m[39m
+[32m✔ batch rejects wrong actual kind [90m(1.94754ms)[39m[39m
+[32m✔ batch rejects wrong count [90m(1.573355ms)[39m[39m
+[32m✔ batch rejects mutated saved bytes [90m(2.067548ms)[39m[39m
+[32m✔ batch rejects UI-only unsaved success [90m(1.708898ms)[39m[39m
+[32m✔ batch rejects failed attempt [90m(1.476818ms)[39m[39m
+[32m✔ batch rejects workspace import [90m(1.211099ms)[39m[39m
+[32m✔ visual record validates independently hashed synthetic fixture, never writes review.json [90m(0.911283ms)[39m[39m
+[32m✔ visual validator rejects missing recording [90m(0.496614ms)[39m[39m
+[32m✔ visual validator rejects missing checkpoints [90m(0.473156ms)[39m[39m
+[32m✔ visual validator rejects missing hash [90m(0.396713ms)[39m[39m
+[32m✔ visual validator rejects mismatched hash [90m(0.62415ms)[39m[39m
+[32m✔ visual validator rejects review before capture [90m(0.366969ms)[39m[39m
+[32m✔ visual validator rejects wrong trial [90m(0.350864ms)[39m[39m
+[32m✔ visual validator rejects wrong journal hash [90m(0.487683ms)[39m[39m
+[32m✔ visual validator rejects wrong saved hash [90m(0.566798ms)[39m[39m
+[32m✔ visual validator rejects wrong verification call [90m(0.777412ms)[39m[39m
+[32m✔ visual validator rejects missing comparison [90m(0.508512ms)[39m[39m
+[32m✔ visual validator rejects wrong field value [90m(0.504307ms)[39m[39m
+[32m✔ visual validator rejects unresolved limitation [90m(0.409488ms)[39m[39m
+[32m✔ visual validator rejects aliased checkpoint [90m(0.424384ms)[39m[39m
+[32m✔ recording bytes are rehashed rather than trusting supplied hash [90m(0.779708ms)[39m[39m
+[32m✔ batch rejects duplicate IDs [90m(0.583185ms)[39m[39m
+[32m✔ batch rejects wrong trial count [90m(0.387813ms)[39m[39m
+[32m✔ batch rejects aliased directories [90m(0.543078ms)[39m[39m
+[32m✔ independently authored saved bytes and occurrence count agree [90m(0.116812ms)[39m[39m
+[32m✔ saved-byte oracle rejects unchanged document [90m(0.089023ms)[39m[39m
+[32m✔ saved-byte oracle rejects partial replacement [90m(0.043663ms)[39m[39m
+[32m✔ saved-byte oracle rejects extra bytes [90m(0.037297ms)[39m[39m
+[32m✔ saved-byte oracle rejects altered surrounding text [90m(0.034431ms)[39m[39m
+[32m✔ oracle rejects a wrong declared count [90m(0.069827ms)[39m[39m
+[32m✔ correct in-memory text does not rescue unsaved disk bytes [90m(0.076806ms)[39m[39m
+[32m✔ a strict synthetic reciprocal witness is containment, not inherited identity [90m(0.200074ms)[39m[39m
+[32m✔ synthetic witness rejects missing parent [90m(0.099893ms)[39m[39m
+[32m✔ synthetic witness rejects contradictory backlink [90m(0.064871ms)[39m[39m
+[32m✔ synthetic witness rejects multiple children [90m(0.065809ms)[39m[39m
+[32m✔ synthetic witness rejects nested target [90m(0.066306ms)[39m[39m
+[32m✔ synthetic witness rejects ownership mismatch [90m(0.056262ms)[39m[39m
+[32m✔ synthetic witness rejects protected target [90m(0.050551ms)[39m[39m
+[32m✔ synthetic witness rejects missing target [90m(0.048809ms)[39m[39m
+[32m✔ synthetic witness rejects missing label [90m(0.055214ms)[39m[39m
+[32m✔ synthetic witness rejects defunct child [90m(0.05907ms)[39m[39m
+[32m✔ synthetic witness rejects stale parent [90m(0.047921ms)[39m[39m
+[32m✔ synthetic witness rejects defunct label [90m(0.050566ms)[39m[39m
+[32m✔ synthetic witness rejects missing state [90m(0.044961ms)[39m[39m
+[32m✔ measured menu and editable child establish only reciprocal containment [90m(0.404259ms)[39m[39m
+[32m✔ measured containment rejects second editable child [90m(0.091092ms)[39m[39m
+[32m✔ measured containment rejects nested target [90m(0.074925ms)[39m[39m
+[32m✔ measured containment rejects absent parent [90m(0.05339ms)[39m[39m
+[32m✔ measured containment rejects foreign sibling [90m(0.054586ms)[39m[39m
+[32m✔ measured containment rejects foreign label [90m(0.057714ms)[39m[39m
+[32m✔ measured containment rejects wrong sibling backlink [90m(0.053543ms)[39m[39m
+[32m✔ measured containment rejects stale sibling [90m(0.052928ms)[39m[39m
+[32m✔ measured containment rejects duplicate child [90m(0.050548ms)[39m[39m
+[32m✔ measured containment rejects third child [90m(0.056701ms)[39m[39m
+[32m✔ measured containment rejects protected target [90m(0.060109ms)[39m[39m
+[32m✔ measured containment rejects unknown sibling role [90m(0.114144ms)[39m[39m
+[32m✔ changing relationships invalidate an earlier witness [90m(0.159363ms)[39m[39m
+[32m✔ public setup checks require handshake, every import, and realpath containment [90m(1.280933ms)[39m[39m
+[34mℹ tests 82[39m
+[34mℹ suites 0[39m
+[34mℹ pass 81[39m
+[34mℹ fail 1[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 97.78473[39m
+
+[31m✖ failing tests:[39m
+
+test at docs/proofs/mousepad-verified-find-replace/evidence.test.mjs:33:1
+[31m✖ predeclared Anthropic trials still require visual review and reject mixed models [90m(3.171843ms)[39m[39m
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  [32mactual[39m [31mexpected[39m
+  
+  [39m'[39m[32ma[39m[32mn[39m[32mt[39m[32mh[39m[32mr[39m[31mg[39m[39mo[39m[32mp[39m[32mi[39m[32mc[39m[32m/[39m[32mc[39m[31mo[39m[31mg[39m[39ml[39m[32ma[39m[32mu[39m[32md[39m[39me[39m[32m-[39m[32ms[39m[32mo[39m[32mn[39m[32mn[39m[31m/[39m[31mg[39m[39me[39m[32mt[39m[31mm[39m[31mi[39m[31mn[39m[31mi[39m[39m-[39m[32m4[39m[32m-[39m[32m5[39m[32m-[39m[39m2[39m[32m0[39m[32m2[39m[31m.[39m[39m5[39m[32m0[39m[32m9[39m[32m2[39m[32m9[39m[31m-[39m[31mf[39m[31ml[39m[31ma[39m[31ms[39m[31mh[39m[39m'[39m
+  
+      at [90mfile:///tmp/mastra-cc-mousepad-verified-find-replace/[39mdocs/proofs/mousepad-verified-find-replace/model-review.mjs:70:14
+      at Array.map (<anonymous>)
+      at reviewBatch [90m(file:///tmp/mastra-cc-mousepad-verified-find-replace/[39mdocs/proofs/mousepad-verified-find-replace/model-review.mjs:58:38[90m)[39m
+      at TestContext.<anonymous> [90m(file:///tmp/mastra-cc-mousepad-verified-find-replace/[39mdocs/proofs/mousepad-verified-find-replace/evidence.test.mjs:37:15[90m)[39m
+  [90m    at Test.runInAsyncScope (node:async_hooks:213:14)[39m
+  [90m    at Test.run (node:internal/test_runner/test:1106:25)[39m
+  [90m    at Test.processPendingSubtests (node:internal/test_runner/test:788:18)[39m
+  [90m    at Test.postRun (node:internal/test_runner/test:1235:19)[39m
+  [90m    at Test.run (node:internal/test_runner/test:1163:12)[39m
+  [90m    at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)[39m {
+    generatedMessage: [33mtrue[39m,
+    code: [32m'ERR_ASSERTION'[39m,
+    actual: [32m'anthropic/claude-sonnet-4-5-20250929'[39m,
+    expected: [32m'google/gemini-2.5-flash'[39m,
+    operator: [32m'strictEqual'[39m,
+    diff: [32m'simple'[39m
+  }

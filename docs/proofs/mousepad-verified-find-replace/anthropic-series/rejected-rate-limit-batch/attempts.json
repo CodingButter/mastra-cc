@@ -1,0 +1,32 @@
+[
+  {
+    "code": 1,
+    "signal": null,
+    "reason": null,
+    "detail": null,
+    "cleanupVerified": true,
+    "category": "model-failure",
+    "exactSavedBytes": false,
+    "ended": 1788816029011
+  },
+  {
+    "code": 1,
+    "signal": null,
+    "reason": null,
+    "detail": null,
+    "cleanupVerified": true,
+    "category": "model-failure",
+    "exactSavedBytes": false,
+    "ended": 1788816031451
+  },
+  {
+    "code": 1,
+    "signal": null,
+    "reason": null,
+    "detail": null,
+    "cleanupVerified": true,
+    "category": "model-failure",
+    "exactSavedBytes": false,
+    "ended": 1788816033874
+  }
+]

@@ -27,7 +27,9 @@ function log(event, data = {}) {
 let desk;
 const controller = new AbortController();
 try {
-  assert.ok(process.env.GOOGLE_API_KEY, 'provider credential missing');
+  const {model} = JSON.parse(fs.readFileSync(`${run}/../declaration.json`, 'utf8'));
+  assert.ok(['google/gemini-2.5-flash','anthropic/claude-sonnet-4-5-20250929'].includes(model), 'unapproved model');
+  assert.ok(process.env[model.startsWith('anthropic/') ? 'ANTHROPIC_API_KEY' : 'GOOGLE_API_KEY'], 'provider credential missing');
   let address;
   for(let i=0;i<80;i++) {
     const match = /websocket listening on (127\.0\.0\.1:\d+)/.exec(fs.existsSync(`${run}/daemon.log`) ? fs.readFileSync(`${run}/daemon.log`,'utf8') : '');
@@ -44,7 +46,7 @@ try {
     if(result.elements?.length === 1) {ready=true;break;} await sleep(200);
   }
   assert.ok(ready, 'Mousepad readiness timeout');
-  const metadata = {imports, consumer, handshake:'accepted', instructionsSha256:hash(INSTRUCTIONS), model:'google/gemini-2.5-flash', temperature:0, maxSteps:24, modelDeadlineMs:180000};
+  const metadata = {imports, consumer, handshake:'accepted', instructionsSha256:hash(INSTRUCTIONS), model, temperature:0, maxSteps:24, modelDeadlineMs:180000};
   fs.writeFileSync(`${run}/metadata.json`, JSON.stringify(metadata,null,2)+'\n');
   const tools = Object.fromEntries(Object.entries(desk.getTools({beforeDispatch:()=>controller.signal.throwIfAborted()})).map(([name,tool])=>[name,{...tool,execute:async(...args)=>{
     controller.signal.throwIfAborted(); const call=++calls; active++; log('call',{call,name,arguments:args[0]});

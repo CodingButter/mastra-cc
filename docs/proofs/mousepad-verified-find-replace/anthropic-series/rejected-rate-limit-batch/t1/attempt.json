@@ -1,0 +1,10 @@
+{
+  "code": 1,
+  "signal": null,
+  "reason": null,
+  "detail": null,
+  "cleanupVerified": true,
+  "category": "model-failure",
+  "exactSavedBytes": false,
+  "ended": 1788816029011
+}

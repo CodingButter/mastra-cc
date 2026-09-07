@@ -1,0 +1,103 @@
+[32m✔ requires saved bytes and independent preceding public trace [90m(1.423932ms)[39m[39m
+[32m✔ rejects unknown actionable ID [90m(0.490241ms)[39m[39m
+[32m✔ rejects wrong field selection [90m(0.516875ms)[39m[39m
+[32m✔ rejects private native evidence only [90m(0.142421ms)[39m[39m
+[32m✔ rejects no save [90m(0.11867ms)[39m[39m
+[32m✔ rejects title instead of fresh content [90m(0.16529ms)[39m[39m
+[32m✔ rejects misleading banner [90m(0.132992ms)[39m[39m
+[32m✔ rejects verification after final claim [90m(0.152193ms)[39m[39m
+[32m✔ rejects incomplete journal [90m(0.138735ms)[39m[39m
+[32m✔ rejects unfinished tool [90m(0.190633ms)[39m[39m
+[32m✔ rejects failed model [90m(0.128509ms)[39m[39m
+[32m✔ rejects model never finished [90m(0.128699ms)[39m[39m
+[32m✔ rejects background tool continuation [90m(0.122969ms)[39m[39m
+[32m✔ rejects explicit refusal [90m(0.085167ms)[39m[39m
+[32m✔ rejects duplicate call [90m(0.073337ms)[39m[39m
+[32m✔ rejects incorrect saved bytes despite perfect model trace [90m(0.451167ms)[39m[39m
+[32m✔ rejects wrong task declaration [90m(0.178293ms)[39m[39m
+[32m✔ three synthetic machine passes remain REVIEW_PENDING without reviews [90m(4.145748ms)[39m[39m
+[32m✔ predeclared Anthropic trials still require visual review and reject mixed models [90m(4.256686ms)[39m[39m
+[32m✔ matching but unapproved model names cannot pass declaration validation [90m(1.64499ms)[39m[39m
+[32m✔ batch rejects stale runtime [90m(1.936068ms)[39m[39m
+[32m✔ batch rejects stale instructions [90m(2.076598ms)[39m[39m
+[32m✔ batch rejects stale harness [90m(1.830839ms)[39m[39m
+[32m✔ batch rejects missing artifact hash [90m(1.742796ms)[39m[39m
+[32m✔ batch rejects wrong actual kind [90m(2.526029ms)[39m[39m
+[32m✔ batch rejects wrong count [90m(2.553977ms)[39m[39m
+[32m✔ batch rejects mutated saved bytes [90m(2.254701ms)[39m[39m
+[32m✔ batch rejects UI-only unsaved success [90m(1.933048ms)[39m[39m
+[32m✔ batch rejects failed attempt [90m(1.609421ms)[39m[39m
+[32m✔ batch rejects workspace import [90m(2.669188ms)[39m[39m
+[32m✔ visual record validates independently hashed synthetic fixture, never writes review.json [90m(1.038725ms)[39m[39m
+[32m✔ visual validator rejects missing recording [90m(0.632099ms)[39m[39m
+[32m✔ visual validator rejects missing checkpoints [90m(0.587787ms)[39m[39m
+[32m✔ visual validator rejects missing hash [90m(0.520023ms)[39m[39m
+[32m✔ visual validator rejects mismatched hash [90m(0.603802ms)[39m[39m
+[32m✔ visual validator rejects review before capture [90m(0.409761ms)[39m[39m
+[32m✔ visual validator rejects wrong trial [90m(0.425774ms)[39m[39m
+[32m✔ visual validator rejects wrong journal hash [90m(1.191065ms)[39m[39m
+[32m✔ visual validator rejects wrong saved hash [90m(0.917758ms)[39m[39m
+[32m✔ visual validator rejects wrong verification call [90m(0.605883ms)[39m[39m
+[32m✔ visual validator rejects missing comparison [90m(0.74634ms)[39m[39m
+[32m✔ visual validator rejects wrong field value [90m(0.755646ms)[39m[39m
+[32m✔ visual validator rejects unresolved limitation [90m(0.61914ms)[39m[39m
+[32m✔ visual validator rejects aliased checkpoint [90m(0.589684ms)[39m[39m
+[32m✔ recording bytes are rehashed rather than trusting supplied hash [90m(0.991235ms)[39m[39m
+[32m✔ batch rejects duplicate IDs [90m(0.67585ms)[39m[39m
+[32m✔ batch rejects wrong trial count [90m(0.651593ms)[39m[39m
+[32m✔ batch rejects aliased directories [90m(0.998228ms)[39m[39m
+[32m✔ independently authored saved bytes and occurrence count agree [90m(0.176782ms)[39m[39m
+[32m✔ saved-byte oracle rejects unchanged document [90m(0.123893ms)[39m[39m
+[32m✔ saved-byte oracle rejects partial replacement [90m(0.063845ms)[39m[39m
+[32m✔ saved-byte oracle rejects extra bytes [90m(0.053215ms)[39m[39m
+[32m✔ saved-byte oracle rejects altered surrounding text [90m(0.064182ms)[39m[39m
+[32m✔ oracle rejects a wrong declared count [90m(0.154115ms)[39m[39m
+[32m✔ correct in-memory text does not rescue unsaved disk bytes [90m(0.165098ms)[39m[39m
+[32m✔ a strict synthetic reciprocal witness is containment, not inherited identity [90m(0.295139ms)[39m[39m
+[32m✔ synthetic witness rejects missing parent [90m(0.104731ms)[39m[39m
+[32m✔ synthetic witness rejects contradictory backlink [90m(0.072214ms)[39m[39m
+[32m✔ synthetic witness rejects multiple children [90m(0.086972ms)[39m[39m
+[32m✔ synthetic witness rejects nested target [90m(0.077055ms)[39m[39m
+[32m✔ synthetic witness rejects ownership mismatch [90m(0.067375ms)[39m[39m
+[32m✔ synthetic witness rejects protected target [90m(0.050455ms)[39m[39m
+[32m✔ synthetic witness rejects missing target [90m(0.050857ms)[39m[39m
+[32m✔ synthetic witness rejects missing label [90m(0.064916ms)[39m[39m
+[32m✔ synthetic witness rejects defunct child [90m(0.085189ms)[39m[39m
+[32m✔ synthetic witness rejects stale parent [90m(0.084009ms)[39m[39m
+[32m✔ synthetic witness rejects defunct label [90m(0.111739ms)[39m[39m
+[32m✔ synthetic witness rejects missing state [90m(0.059493ms)[39m[39m
+[32m✔ measured menu and editable child establish only reciprocal containment [90m(0.283831ms)[39m[39m
+[32m✔ measured containment rejects second editable child [90m(0.090932ms)[39m[39m
+[32m✔ measured containment rejects nested target [90m(0.067632ms)[39m[39m
+[32m✔ measured containment rejects absent parent [90m(0.058645ms)[39m[39m
+[32m✔ measured containment rejects foreign sibling [90m(0.062143ms)[39m[39m
+[32m✔ measured containment rejects foreign label [90m(0.070617ms)[39m[39m
+[32m✔ measured containment rejects wrong sibling backlink [90m(0.191518ms)[39m[39m
+[32m✔ measured containment rejects stale sibling [90m(0.089753ms)[39m[39m
+[32m✔ measured containment rejects duplicate child [90m(0.597281ms)[39m[39m
+[32m✔ measured containment rejects third child [90m(0.099622ms)[39m[39m
+[32m✔ measured containment rejects protected target [90m(0.115501ms)[39m[39m
+[32m✔ measured containment rejects unknown sibling role [90m(0.092902ms)[39m[39m
+[32m✔ changing relationships invalidate an earlier witness [90m(0.213811ms)[39m[39m
+[32m✔ public setup checks require handshake, every import, and realpath containment [90m(0.966114ms)[39m[39m
+[32m✔ monitor failure and log-open failure persist independently; next trial runs [90m(50.352821ms)[39m[39m
+[32m✔ malformed events are retained as invalid and do not prevent later trials [90m(72.171938ms)[39m[39m
+{"directory":"/tmp/trial-proof-PziP4b/t1","attempt":{"code":0,"signal":null,"reason":"evidence-write-error","detail":"EISDIR","cleanupVerified":true,"category":"harness/resource-invalid","exactSavedBytes":true,"ended":1788816411818,"priorReason":null,"persistenceFailed":true}}
+{"directory":"/tmp/trial-proof-PziP4b/t2","attempt":{"code":null,"reason":"evidence-write-error","category":"harness/resource-invalid","exactSavedBytes":false,"cleanupVerified":true,"notStarted":true,"ended":1788816411818,"priorReason":"batch-aborted","detail":"EISDIR","persistenceFailed":true}}
+[32m✔ unwritable attempt paths return infrastructure evidence and skip all remaining trials [90m(19.002547ms)[39m[39m
+[32m✔ external interruption during cleanup persists current and aborted trial evidence [90m(73.628676ms)[39m[39m
+[32m✔ a failed session is recorded and the next session can run [90m(61.281675ms)[39m[39m
+[32m✔ spawn failure resolves with explicit evidence [90m(1.959978ms)[39m[39m
+[32m✔ monitor ECONNABORTED terminates a stubborn owned child and grandchild [90m(98.99084ms)[39m[39m
+[32m✔ timeout is bounded and produces teardown evidence [90m(110.482075ms)[39m[39m
+[32m✔ resource limit becomes an explicit refusal [90m(15.942971ms)[39m[39m
+[32m✔ artifact scanning counts regular files but not symlinks [90m(0.488136ms)[39m[39m
+[32m✔ portal mount is not traversed; unreadable same-device directory fails closed [90m(0.36955ms)[39m[39m
+[34mℹ tests 93[39m
+[34mℹ suites 0[39m
+[34mℹ pass 93[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 346.028328[39m

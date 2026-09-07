@@ -1,0 +1,12 @@
+
+(mousepad:1207798): GLib-CRITICAL **: 17:19:44.681: g_strjoinv: assertion 'str_array != NULL' failed
+
+(mousepad:1207798): GLib-CRITICAL **: 17:19:44.681: g_strjoinv: assertion 'str_array != NULL' failed
+
+(mousepad:1207798): Gdk-CRITICAL **: 17:19:56.012: gdk_window_get_window_type: assertion 'GDK_IS_WINDOW (window)' failed
+
+(mousepad:1207798): Gtk-CRITICAL **: 17:19:56.037: gtk_accessible_get_widget: assertion 'GTK_IS_ACCESSIBLE (accessible)' failed
+
+** (mousepad:1207798): WARNING **: 17:19:59.621: Sort method not implemented yet
+
+** (mousepad:1207798): WARNING **: 17:20:22.117: Sort method not implemented yet

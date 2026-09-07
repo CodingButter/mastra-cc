@@ -1,12 +1,16 @@
 # Remaining acceptance work
 
+## September 7, 2026 — separate Anthropic series, rate-limited
+
+The user-supplied Anthropic credential authenticated, but the predeclared `anthropic/claude-sonnet-4-5-20250929` batch exhausted its 500,000 input-token/minute limit. t1 made eleven public calls; t2/t3 failed before any public calls. All trials remain rejected, all saved-byte oracles failed, and all report verified owned-group cleanup. [Retained evidence and next experiment](anthropic-series/README.md) distinguish rate exhaustion from authentication failure. Consider bounded predeclared pacing/token-volume investigation before retrying, rather than assuming more quota is the only remedy. No visual review was fabricated. The complete post-batch final-candidate mutation sweep passed **231 mutations, none survived**, superseding the historical outstanding-mutation statements below. Live acceptance remains outstanding; no historical success is pooled.
+
 ## September 7, 2026 — final discovery checkpoint BLOCKED
 
 The runtime-discovery regression is repaired: directly granted native names are listed without adding aliases to launch authority or exposing ungranted runtime identities. Native replay round-trip and privacy regressions pass. Fresh forced build/lint/typecheck/test passed 19/19 tasks, zero cache hits. This is not live task acceptance.
 
 The fixed-settings batch `/tmp/mousepad-handoff.5Wd48F` failed all three trials. Each driver log records HTTP 429 Google input-token quota exhaustion; all saved-file oracles failed and all attempts report verified owned-group cleanup. Raw harness categories remain `model-failure`; the external quota diagnosis does not rewrite them. Retained recordings, journals, declarations, expected/actual files and logs: [discovery repair](discovery-repair/README.md). No successful visual review was created. Restore quota for the approved model, then run a new complete predeclared batch on unchanged final artifacts and genuinely review its recordings/checkpoints. Do not pool prior successes or substitute fixture tests.
 
-Full final-candidate mutation sweep and live acceptance remain outstanding. The later finish-and-handoff instruction supersedes the historical authorization below to start other workstreams: reliability integration and its CC-01–CC-09 follow-ups belong to the other agent. Preserve the existing roadmap audit below; do not duplicate those implementations.
+At that earlier Google checkpoint the final-candidate mutation sweep was outstanding; the subsequent Anthropic checkpoint completed all 231 mutations. Live acceptance remains outstanding. Reliability integration and its CC-01–CC-09 follow-ups belong to the other agent. Preserve the existing roadmap audit below; do not duplicate those implementations.
 
 ## September 7, 2026 — repaired-monitor retry remains rejected
 
