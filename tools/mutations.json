@@ -855,9 +855,31 @@
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
   {
+    "name": "signals-concurrent-starts-not-coalesced",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "    if (this.#starting !== undefined) return this.#starting;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-lifecycle.test.ts"
+  },
+  {
+    "name": "signals-stop-does-not-retire-generation",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "    this.#generation++;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-lifecycle.test.ts"
+  },
+  {
+    "name": "signals-retired-callbacks-still-notify",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "        if (generation !== this.#generation) return;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-lifecycle.test.ts"
+  },
+  {
     "name": "signals-never-attaches-the-listener",
     "file": "packages/desktop/src/signals.ts",
-    "find": "    this.#detach = client.onChangeEvent((event) => {\n      void this.#onChange(event);\n    });",
+    "find": "      const client = await this.#client();",
+    "replace": "      const client = await this.#client(); return;",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },

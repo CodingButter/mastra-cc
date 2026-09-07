@@ -10,6 +10,8 @@ answered by argument.
 
 [Mousepad Find/Replace baseline](mousepad-verified-find-replace/README.md) records the verified delivery base and regression gates; native task completion remains unproved.
 
+[Signal lifecycle remediation](reliability-remediation/cc03/README.md) records controlled RED/GREEN regressions, retained real-socket coverage, and signal mutation checks.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

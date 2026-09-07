@@ -91,6 +91,8 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
   /** Last wake per (subscription, element, kind), in epoch ms. */
   readonly #lastWake = new Map<string, number>();
   #detach: (() => void) | undefined;
+  #starting: Promise<void> | undefined;
+  #generation = 0;
 
   constructor(deps: DesktopSignalsDeps) {
     super();
@@ -112,10 +114,29 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
    */
   async start(): Promise<void> {
     if (this.#detach !== undefined) return;
-    const client = await this.#client();
-    this.#detach = client.onChangeEvent((event) => {
-      void this.#onChange(event);
-    });
+    if (this.#starting !== undefined) return this.#starting;
+    const generation = this.#generation;
+    const starting = (async () => {
+      const client = await this.#client();
+      if (generation !== this.#generation) return;
+      let reportedFailure = false;
+      const detach = client.onChangeEvent((event) => {
+        if (generation !== this.#generation) return;
+        void this.#onChange(event).catch(() => {
+          if (reportedFailure) return;
+          reportedFailure = true;
+          console.warn("[mastra-cc-desktop] Notification delivery failed; further failures for this listener are suppressed. No retry was attempted.");
+        });
+      });
+      if (generation !== this.#generation) detach();
+      else this.#detach = detach;
+    })();
+    this.#starting = starting;
+    try {
+      await starting;
+    } finally {
+      if (this.#starting === starting) this.#starting = undefined;
+    }
   }
 
   /**
@@ -123,6 +144,8 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
    * instance, which may still be serving tools long after signals are done.
    */
   override stop(): void {
+    this.#generation++;
+    this.#starting = undefined;
     this.#detach?.();
     this.#detach = undefined;
     this.#lastWake.clear();
