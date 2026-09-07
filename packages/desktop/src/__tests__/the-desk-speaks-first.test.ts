@@ -1,7 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Attribution, ChangeEvent, ChangeKind } from "@mastra-cc/protocol-types";
 import { type Backend, startServer } from "@mastra-cc/daemon";
 import type { SendNotificationSignalInput } from "@mastra/core/notifications";
@@ -304,11 +304,15 @@ describe("what the provider refuses to wake the agent for", () => {
   it("wakes again once the window has passed", async () => {
     // The other direction matters as much: a throttle that never reopens is
     // an off switch.
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
     const stream = providerOnAStubStream({ dedupeWindowMs: 1000 });
-    await stream.provider.start();
-    await stream.emit(event({ at: 1_754_000_000_000 }));
-    await stream.emit(event({ at: 1_754_000_001_001 }));
-    expect(stream.sent).toHaveLength(2);
+    try {
+      await stream.provider.start();
+      await stream.emit(event({ at: 1_754_000_000_000 }));
+      clock.mockReturnValue(1001);
+      await stream.emit(event({ at: 1_754_000_000_000 }));
+      expect(stream.sent).toHaveLength(2);
+    } finally { stream.provider.stop(); clock.mockRestore(); }
   });
 
   it("throttles per element and per kind, not per subscription", async () => {

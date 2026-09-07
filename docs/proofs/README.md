@@ -16,6 +16,8 @@ answered by argument.
 
 [Typing uncertainty remediation](reliability-remediation/cc02/README.md) records Unicode and insertion-counterexample regressions, one-emission checks and retained resource bounds.
 
+[Bounded signal retention](reliability-remediation/cc04/README.md) records built-library RED/GREEN delivery counters, hard retention bounds and trailing invalidation; immediate watch-end cleanup remains follow-up.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

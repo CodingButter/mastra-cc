@@ -841,11 +841,53 @@
     "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
   },
   {
-    "name": "signals-throttle-window-opened",
-    "file": "packages/desktop/src/signals.ts",
-    "find": "      if (last !== undefined && event.at - last < this.#dedupeWindowMs) return;",
+    "name": "signals-hot-keys-starve-pending-work",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": "      this.#entries.delete(key);\n      this.#entries.set(key, entry);",
     "cwd": "packages/desktop",
-    "testFile": "src/__tests__/the-desk-speaks-first.test.ts"
+    "testFile": "src/__tests__/signal-throttle.test.ts"
+  },
+  {
+    "name": "signals-retention-cap-removed",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": "this.#entries.delete(oldest);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-throttle.test.ts"
+  },
+  {
+    "name": "signals-expiration-removed",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": "      if (entry.pending === undefined && now - entry.at >= Math.max(this.gapMs, WAKE_INTERVAL_MS)) this.#entries.delete(key);",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-throttle.test.ts"
+  },
+  {
+    "name": "signals-wake-budget-removed",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": " || this.#wakes >= SIGNAL_WAKE_LIMIT",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-retention.test.ts"
+  },
+  {
+    "name": "signals-trailing-wake-lost",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": "this.#flush(performance.now());",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-retention.test.ts"
+  },
+  {
+    "name": "signals-overflow-invalidation-lost",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": "        if (pending !== undefined && (this.#overflow === undefined || pending.priority === \"high\" || this.#overflow.priority === \"low\")) this.#overflow = pending;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-retention.test.ts"
+  },
+  {
+    "name": "signals-throttle-window-opened",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": " || now - entry.at < this.gapMs",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/signal-retention.test.ts"
   },
   {
     "name": "signals-priority-rewritten-on-the-way-through",
@@ -869,9 +911,9 @@
     "testFile": "src/__tests__/signal-lifecycle.test.ts"
   },
   {
-    "name": "signals-retired-callbacks-still-notify",
+    "name": "signals-events-never-reach-throttle",
     "file": "packages/desktop/src/signals.ts",
-    "find": "        if (generation !== this.#generation) return;",
+    "find": "        throttle.push(event);",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/signal-lifecycle.test.ts"
   },

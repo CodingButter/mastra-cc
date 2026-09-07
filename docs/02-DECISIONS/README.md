@@ -12,6 +12,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 
 | # | Decision | One-line reason |
 |---|---|---|
+| [0099](0099-signal-throttling-retains-bounded-dirty-pointers.md) | Signal throttling retains bounded dirty pointers | Receipt-time gaps, a capped queue and trailing invalidation avoid permanent suppression |
 | [0098](0098-typing-attempts-are-not-insertion-proofs.md) | Typing attempts are not insertion proofs | Selection and publication timing make length-based delivery verdicts unsafe |
 | [0097](0097-capture-describes-visible-clipped-pixels.md) | Capture describes visible, possibly clipped pixels | Generated tool descriptions must not promise hidden-window isolation or full-element dimensions |
 | [0001](0001-machine-config-lives-in-the-repo.md) | Machine configuration lives in the repository | Three outages came from config no test could see |
