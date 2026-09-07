@@ -1,0 +1,17 @@
+## Must fix
+
+None identified from the updated code and evidence.
+
+## Risks & questions
+
+- **The SDK probe does not exercise the driver’s full abort/deadline path.** `paced-series/sdk-probe.mjs:15` invokes `Agent.generate` with `maxRetries:0`, but does not pass an abort signal or test restoration through an exception. The actual driver does pass the signal and restores fetch in `model-driver.mjs:68-72`; this is a coverage gap, not a demonstrated production defect.
+
+- **The 3-second evidence check assumes event order equals request-start order.** `model-review.mjs:84-85` compares adjacent `provider-request` events. That is valid while the wrapper’s serialized queue is the only producer, but the validator does not independently sort or reject duplicate/out-of-order timestamps. The current wrapper appears to enforce serialization; this is an evidence-hardening concern.
+
+- **The probe proves request interception and response decoding, not live cache effectiveness.** `paced-series/sdk-probe.mjs:11-15` confirms top-level `cache_control` receives HTTP 200 and the result decodes. It does not—and should not claim to—prove a cache hit or savings. The README qualification is appropriate.
+
+## Suggested improvements
+
+- Add one offline SDK-probe case that aborts during the queued retry delay and asserts no subsequent provider request occurs, plus a `finally` assertion that `globalThis.fetch` is restored.
+
+- Make the spacing validator sort by `startedMs` or explicitly assert monotonic event order before comparing intervals. This would make malformed evidence fail closed rather than relying on logging order.

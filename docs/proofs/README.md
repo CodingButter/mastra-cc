@@ -38,6 +38,8 @@ answered by argument.
 
 [Separate Anthropic Mousepad series](mousepad-verified-find-replace/anthropic-series/README.md) records provider-bound validator proof, final mutation gates and the rejected rate-limited batch; not live acceptance.
 
+[Paced Anthropic Mousepad experiment](mousepad-verified-find-replace/paced-series/README.md) records bounded transport retries, cancellation and installed-SDK interception checks; not desktop acceptance.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

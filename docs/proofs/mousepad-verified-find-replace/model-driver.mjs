@@ -6,6 +6,8 @@ import { createHash } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { MastraCC, INSTRUCTIONS } from '@mastra-cc/desktop/mastra';
 import { Agent } from '@mastra/core/agent';
+import { RATE_POLICY, pacedFetch } from './model-rate.mjs';
+const originalFetch=globalThis.fetch;
 const run = process.argv[2];
 const hash = b => createHash('sha256').update(b).digest('hex');
 const consumer = fs.realpathSync(fileURLToPath(new URL('.', import.meta.url)));
@@ -27,7 +29,11 @@ function log(event, data = {}) {
 let desk;
 const controller = new AbortController();
 try {
-  const {model} = JSON.parse(fs.readFileSync(`${run}/../declaration.json`, 'utf8'));
+  const {model,ratePolicy=null} = JSON.parse(fs.readFileSync(`${run}/../declaration.json`, 'utf8'));
+  if(ratePolicy) {
+    assert.ok(model.startsWith('anthropic/')); assert.deepEqual(ratePolicy,RATE_POLICY);
+    globalThis.fetch=pacedFetch(originalFetch,{signal:controller.signal,record:log});
+  }
   assert.ok(['google/gemini-2.5-flash','anthropic/claude-sonnet-4-5-20250929'].includes(model), 'unapproved model');
   assert.ok(process.env[model.startsWith('anthropic/') ? 'ANTHROPIC_API_KEY' : 'GOOGLE_API_KEY'], 'provider credential missing');
   let address;
@@ -46,20 +52,21 @@ try {
     if(result.elements?.length === 1) {ready=true;break;} await sleep(200);
   }
   assert.ok(ready, 'Mousepad readiness timeout');
-  const metadata = {imports, consumer, handshake:'accepted', instructionsSha256:hash(INSTRUCTIONS), model, temperature:0, maxSteps:24, modelDeadlineMs:180000};
+  const metadata = {imports, consumer, handshake:'accepted', instructionsSha256:hash(INSTRUCTIONS), model, ratePolicy, temperature:0, maxSteps:24, modelDeadlineMs:180000};
   fs.writeFileSync(`${run}/metadata.json`, JSON.stringify(metadata,null,2)+'\n');
-  const tools = Object.fromEntries(Object.entries(desk.getTools({beforeDispatch:()=>controller.signal.throwIfAborted()})).map(([name,tool])=>[name,{...tool,execute:async(...args)=>{
+  const tools = Object.fromEntries(Object.entries(desk.getTools({beforeDispatch:()=>controller.signal.throwIfAborted()})).filter(([name])=>!ratePolicy || ratePolicy.tools.includes(name)).map(([name,tool])=>[name,{...tool,execute:async(...args)=>{
     controller.signal.throwIfAborted(); const call=++calls; active++; log('call',{call,name,arguments:args[0]});
     try {const result=await tool.execute(...args);log('result',{call,name,result});return result;}
     catch(error){log('tool-error',{call,name,error:String(error)});throw error;}
     finally {active--;}
   }}]));
+  if(ratePolicy) assert.deepEqual(Object.keys(tools).sort(),[...ratePolicy.tools].sort(),'declared tool set missing');
   const agent = new Agent({id:'mousepad-completion-proof',name:'mousepad-completion-proof',instructions:INSTRUCTIONS,model:metadata.model,tools});
   log('model-started');
   timer=setTimeout(()=>{log('deadline');controller.abort(new Error('180-second model deadline'));},180000);
   // Await actual settlement. The outer owned process group is the hard deadline.
-  const answer=await agent.generate(fs.readFileSync(`${run}/task.txt`,'utf8'),{maxSteps:24,abortSignal:controller.signal,modelSettings:{temperature:0},onStepFinish:step=>log('step-finished',{text:step.text,finishReason:step.finishReason})});
+  const answer=await agent.generate(fs.readFileSync(`${run}/task.txt`,'utf8'),{maxSteps:24,abortSignal:controller.signal,modelSettings:{temperature:0,...(ratePolicy?{maxRetries:0}:{})},onStepFinish:step=>log('step-finished',{text:step.text,finishReason:step.finishReason,usage:step.usage})});
   controller.signal.throwIfAborted(); assert.equal(active,0,'unfinished tools');
   log('model-finished',{text:String(answer.text??''),finishReason:answer.finishReason});
 } catch(error) {log('failure',{error:String(error)});process.exitCode=1;}
-finally {clearTimeout(timer);controller.abort();await desk?.close();log('closed',{active});}
+finally {clearTimeout(timer);controller.abort();globalThis.fetch=originalFetch;await desk?.close();log('closed',{active});}

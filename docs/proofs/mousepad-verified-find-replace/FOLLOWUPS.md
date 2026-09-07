@@ -1,5 +1,9 @@
 # Remaining acceptance work
 
+## September 7, 2026 — paced series removes quota failure, not acceptance gaps
+
+The [paced-series report](paced-series/README.md) supersedes quota exhaustion as the current blocker: 70 provider requests completed without backoff and recorded cache hits. t1/t3 saved exact bytes but failed the independent post-save fresh-document oracle; t2 failed saved bytes after exhausting 24 steps. All cleanup verified; the entire batch remains rejected, with 74 retained artifacts and no visual acceptance. Investigate interaction efficiency and post-save/reopen public evidence without changing limits, pooling successes or weakening acceptance. Tests pass: 106 focused, 19 workspace tasks, 231 full-suite and seven targeted mutations caught. CC-09 latency/queue/cancellation characterization remains separate; source inspection confirmed the producer exposes retained counts, but producer-only timing must not be mislabeled end-to-end native notification latency.
+
 ## September 7, 2026 — separate Anthropic series, rate-limited
 
 The user-supplied Anthropic credential authenticated, but the predeclared `anthropic/claude-sonnet-4-5-20250929` batch exhausted its 500,000 input-token/minute limit. t1 made eleven public calls; t2/t3 failed before any public calls. All trials remain rejected, all saved-byte oracles failed, and all report verified owned-group cleanup. [Retained evidence and next experiment](anthropic-series/README.md) distinguish rate exhaustion from authentication failure. Consider bounded predeclared pacing/token-volume investigation before retrying, rather than assuming more quota is the only remedy. No visual review was fabricated. The complete post-batch final-candidate mutation sweep passed **231 mutations, none survived**, superseding the historical outstanding-mutation statements below. Live acceptance remains outstanding; no historical success is pooled.

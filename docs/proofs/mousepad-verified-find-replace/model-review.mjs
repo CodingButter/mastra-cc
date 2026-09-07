@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { validateTrace } from './model-evidence.mjs';
+import { RATE_POLICY } from './model-rate.mjs';
 
 export const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const json = file => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -66,16 +67,23 @@ export function reviewBatch(batch, root) {
     }
     const metadata = json(`${dir}/metadata.json`);
     assert.equal(metadata.handshake, 'accepted');
+    if(declaration.ratePolicy) {assert.ok(declaration.model.startsWith('anthropic/'));assert.deepEqual(declaration.ratePolicy,RATE_POLICY,'unapproved rate policy');}
+    assert.deepEqual(metadata.ratePolicy??null,declaration.ratePolicy??null,'rate policy mismatch');
     assert.equal(metadata.instructionsSha256, declaration.artifacts['packages/desktop/instructions/AGENT-INSTRUCTIONS.md'], 'stale loaded instructions');
     for (const [key, value] of Object.entries({model:declaration.model, temperature:0, maxSteps:24, modelDeadlineMs:180000})) {
       assert.equal(metadata[key], value); assert.equal(declaration[key], value);
     }
     const consumer = inside(batch, `${batch}/installed/consumer`);
     assert.equal(fs.realpathSync(metadata.consumer), consumer);
+    for(const file of ['model-driver.mjs','model-rate.mjs']) assert.equal(digest(fs.readFileSync(inside(consumer,`${consumer}/${file}`))),declaration.artifacts[`docs/proofs/mousepad-verified-find-replace/${file}`],'executed harness copy mismatch');
     for (const name of ['@mastra-cc/desktop','@mastra-cc/desktop/mastra','@mastra/core/agent','@mastra-cc/transport','@mastra-cc/protocol-types']) inside(consumer, metadata.imports[name]);
     const attempt = json(`${dir}/attempt.json`); assert.equal(attempt.code, 0, 'failed model'); assert.equal(attempt.reason, null, 'resource-invalid');
     const events = fs.readFileSync(`${dir}/events.jsonl`, 'utf8').trim().split('\n').map(JSON.parse);
     assert.ok(events.some(e => e.event === 'model-started' && e.time >= declaration.created), 'model must start after declaration');
+    if(declaration.ratePolicy) {
+      const requests=events.filter(e=>e.event==='provider-request');assert.ok(requests.length,'missing provider interception');
+      requests.forEach((e,i)=>{assert.ok(Number.isFinite(e.startedMs)&&e.bytes>0&&Number.isInteger(e.attempt)&&e.attempt>=0&&e.attempt<=RATE_POLICY.retries,'invalid provider evidence');if(i)assert.ok(e.startedMs-requests[i-1].startedMs>=RATE_POLICY.intervalMs,'request spacing violated');});
+    }
     const trace = validateTrace(events, trial, fs.readFileSync(`${dir}/document.txt`), fs.readFileSync(`${dir}/expected.txt`));
     const result = {trialId:trial.id, machine:trace.machine, independentOracle:trace.oracle, visual:'REVIEW_PENDING', humanApproval:'PENDING'};
     if (fs.existsSync(`${dir}/review.json`)) {

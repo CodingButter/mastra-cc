@@ -1,0 +1,38 @@
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: offline fixture
+      at file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:2348:11
+      at async postToApi (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:2233:24)
+      at async AnthropicMessagesLanguageModel.doGenerate (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:13116:71)
+      at async AISDKV6LanguageModel.doGenerate (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/llm-CZxUqViJ.js:107:18)
+      at async retryResult.default.retries (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/agent-B8m3ps7U.js:23353:13)
+      at async Module.pRetry (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/e03f927146447015aba4/node_modules/[4mp-retry[24m/index.js:197:19)
+      at async createStream (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/agent-B8m3ps7U.js:23352:25)
+      at async Object.start (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/trip-wire-DAqbhTgq.js:2496:20) {
+    cause: [90mundefined[39m,
+    url: [32m'https://api.anthropic.com/v1/messages'[39m,
+    requestBodyValues: {
+      model: [32m'claude-sonnet-4-5-20250929'[39m,
+      max_tokens: [33m64000[39m,
+      temperature: [90mundefined[39m,
+      top_k: [90mundefined[39m,
+      top_p: [90mundefined[39m,
+      stop_sequences: [90mundefined[39m,
+      system: [36m[Array][39m,
+      messages: [36m[Array][39m,
+      tools: [90mundefined[39m,
+      tool_choice: [90mundefined[39m,
+      stream: [90mundefined[39m
+    },
+    statusCode: [33m500[39m,
+    responseHeaders: { [32m'content-type'[39m: [32m'application/json'[39m },
+    responseBody: [32m'{"type":"error","error":{"type":"api_error","message":"offline fixture"}}'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { type: [32m'error'[39m, error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'ea126042-3dc9-46c7-8c8c-83a869b8b512'[39m,
+  provider: [32m'anthropic'[39m,
+  modelId: [32m'claude-sonnet-4-5-20250929'[39m
+}
+GREEN: installed Mastra/Anthropic generate intercepted; identical 429 retry, headers preserved, JSON success decoded; persistent 500 makes one request; no network or desktop effects

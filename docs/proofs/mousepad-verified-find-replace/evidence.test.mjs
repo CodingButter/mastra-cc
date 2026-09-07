@@ -1,4 +1,5 @@
 import {fixture as traceFixture} from './model-evidence.test.mjs';
+import {RATE_POLICY} from './model-rate.mjs';
 import {validateVisual, reviewBatch, digest} from './model-review.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,8 +14,9 @@ function batchFixture(t) {
   const put=(file,value)=>{fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,value);};
   const save=(file,value)=>put(file,JSON.stringify(value));
   fs.mkdirSync(`${root}/docs/proofs/mousepad-verified-find-replace`,{recursive:true});
-  const files=['daemon/dist/main.mjs','protocol/schema.json','pnpm-lock.yaml','packages/desktop/instructions/AGENT-INSTRUCTIONS.md','docs/proofs/mousepad-verified-find-replace/model-review.mjs'];
+  const files=['daemon/dist/main.mjs','protocol/schema.json','pnpm-lock.yaml','packages/desktop/instructions/AGENT-INSTRUCTIONS.md','docs/proofs/mousepad-verified-find-replace/model-review.mjs','docs/proofs/mousepad-verified-find-replace/model-driver.mjs','docs/proofs/mousepad-verified-find-replace/model-rate.mjs'];
   const artifacts=Object.fromEntries(files.map(file=>{put(`${root}/${file}`,'synthetic '+file);return [file,digest(fs.readFileSync(`${root}/${file}`))];}));
+  for(const file of ['model-driver.mjs','model-rate.mjs']) put(`${consumer}/${file}`,fs.readFileSync(`${root}/docs/proofs/mousepad-verified-find-replace/${file}`));
   put(`${consumer}/module.mjs`,'synthetic module');put(`${batch}/installed/consumer-lock.json`,'{}');
   const settings={model:'google/gemini-2.5-flash',temperature:0,maxSteps:24,modelDeadlineMs:180000};
   const trials=['t1','t2','t3'].map(id=>{
@@ -38,12 +40,23 @@ test('predeclared Anthropic trials still require visual review and reject mixed 
  const file=`${f.batch}/t2/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model:'google/gemini-2.5-flash'});
  assert.throws(()=>reviewBatch(f.batch,f.root));
 });
+test('paced policy must be predeclared and match every trial',t=>{
+ const f=batchFixture(t);f.declaration.model='anthropic/claude-sonnet-4-5-20250929';f.declaration.ratePolicy=RATE_POLICY;f.save(`${f.batch}/declaration.json`,f.declaration);
+ for(const id of ['t1','t2','t3']) {const file=`${f.batch}/${id}/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model:f.declaration.model,ratePolicy:RATE_POLICY});const journal=`${f.batch}/${id}/events.jsonl`;const events=fs.readFileSync(journal,'utf8').split('\n').map(JSON.parse);events.splice(1,0,{event:'provider-request',time:2001,startedMs:0,attempt:0,bytes:100});events.forEach((e,i)=>e.sequence=i+1);fs.writeFileSync(journal,events.map(e=>JSON.stringify(e)).join('\n'));}
+ assert.equal(reviewBatch(f.batch,f.root).verdict,'REVIEW_PENDING');
+ const file=`${f.batch}/t2/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),ratePolicy:null});
+ assert.throws(()=>reviewBatch(f.batch,f.root),/rate policy mismatch/);
+ f.declaration.ratePolicy={...RATE_POLICY,retries:99};f.save(`${f.batch}/declaration.json`,f.declaration);
+ assert.throws(()=>reviewBatch(f.batch,f.root),/unapproved rate policy/);
+});
 test('matching but unapproved model names cannot pass declaration validation',t=>{
  const f=batchFixture(t);f.declaration.model='unapproved/model';f.save(`${f.batch}/declaration.json`,f.declaration);
  for(const id of ['t1','t2','t3']) {const file=`${f.batch}/${id}/metadata.json`;f.save(file,{...JSON.parse(fs.readFileSync(file)),model:f.declaration.model});}
  assert.throws(()=>reviewBatch(f.batch,f.root));
 });
 for(const [name,mutate] of [
+ ['modified executed driver',f=>fs.appendFileSync(`${f.batch}/installed/consumer/model-driver.mjs`,'changed')],
+ ['modified executed rate helper',f=>fs.appendFileSync(`${f.batch}/installed/consumer/model-rate.mjs`,'changed')],
  ['stale runtime',f=>fs.appendFileSync(`${f.root}/daemon/dist/main.mjs`,'changed')],
  ['stale instructions',f=>fs.appendFileSync(`${f.root}/packages/desktop/instructions/AGENT-INSTRUCTIONS.md`,'changed')],
  ['stale harness',f=>fs.appendFileSync(`${f.root}/docs/proofs/mousepad-verified-find-replace/model-review.mjs`,'changed')],

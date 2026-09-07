@@ -1,6 +1,12 @@
 # Mousepad blocked-checkpoint handoff — September 7, 2026
 
-## Latest checkpoint: separate Anthropic series, still BLOCKED
+## Latest checkpoint: paced Anthropic series, task acceptance still BLOCKED
+
+The bounded paced series completed all 70 provider requests without quota failure and recorded actual cache hits. This removes provider-rate failure as the explanation for this batch, not the desktop acceptance requirements. t1/t3 saved exact expected bytes but failed the independent fresh-document evidence oracle; t2 exhausted its step budget without saving expected bytes. All owned groups were cleaned up. No visual acceptance is claimed.
+
+See the [paced-series report](proofs/mousepad-verified-find-replace/paced-series/README.md): 74 retained hash-verified artifacts, 106 focused tests, 19/19 uncached workspace gates, 231 full-suite plus seven targeted mutations caught, and installed-SDK interception/retry checks. The original 24-step/180-second limits and all file/UI/visual oracles remain unchanged. Next investigation is bounded interaction efficiency and post-save/reopen evidence, not an unverified demand for more quota. Broader CC-09 measurement work remains separate.
+
+## Earlier checkpoint: unpaced Anthropic series, BLOCKED
 
 The supplied Anthropic key authenticated successfully. A new predeclared t1–t3 batch using `anthropic/claude-sonnet-4-5-20250929` then hit its 500,000 input-token/minute rate limit: t1 after eleven public calls, t2/t3 before any public calls. All saved-file oracles failed; all owned process groups report verified cleanup. No visual acceptance is claimed. Google remains the default; provider selection is allowlisted and metadata must match the declaration. The existing step/deadline/file/UI/visual gates were not relaxed.
 
