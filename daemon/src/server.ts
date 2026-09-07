@@ -3,6 +3,7 @@ import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { measureAsyncCost, recordCost } from "./costs.js";
 // Type-only here; the value is reached through a dynamic import inside
 // startWebSocketServer, so a daemon nobody asked for a port never pays to load
 // the library. Laziness is not what makes it resolvable, though: the installed
@@ -2520,7 +2521,12 @@ export interface HandledResponse {
 // Serialise every backend call: one at a time, in arrival order.
 let chain: Promise<unknown> = Promise.resolve();
 function serialised<T>(work: () => Promise<T>): Promise<T> {
-  const next = chain.then(work, work);
+  const queued = performance.now();
+  const measured = () => {
+    recordCost("queueWait", performance.now() - queued);
+    return measureAsyncCost("requestWork", work);
+  };
+  const next = chain.then(measured, measured);
   chain = next.catch(() => undefined);
   return next;
 }

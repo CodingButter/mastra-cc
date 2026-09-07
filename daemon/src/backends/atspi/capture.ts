@@ -3,6 +3,7 @@
 
 import { spawn } from "node:child_process";
 import { deflateSync } from "node:zlib";
+import { measureAsyncCost, measureCost, recordCost } from "../../costs.js";
 
 /** How much screen this daemon will hand back in one answer. A whole desk at
  *  1024x768 encodes to a few hundred kilobytes; a run of these would be the
@@ -240,8 +241,11 @@ export async function capture(
   grab: (rectangle: CaptureRectangle | undefined) => Promise<Buffer> = grabPixels,
 ): Promise<CapturedImage> {
   if (rectangle !== undefined) validateRectangle(rectangle);
-  const screen = decodeXwd(await grab(rectangle));
-  const wanted = rectangle === undefined ? screen : cropScreen(screen, rectangle);
+  const pixels = await measureAsyncCost("captureAcquire", () => grab(rectangle));
+  const wanted = measureCost("captureDecodeCrop", () => {
+    const screen = decodeXwd(pixels);
+    return rectangle === undefined ? screen : cropScreen(screen, rectangle);
+  });
   if (rectangle !== undefined && (wanted.originX !== rectangle.x || wanted.originY !== rectangle.y ||
       wanted.width !== rectangle.width || wanted.height !== rectangle.height)) {
     throw new CaptureFailedError(
@@ -250,7 +254,8 @@ export async function capture(
       "Reobserve after bringing the entire element onto the display",
     );
   }
-  const png = encodePng(wanted);
+  const png = measureCost("captureEncode", () => encodePng(wanted));
+  recordCost("captureBytes", png.length);
   if (png.length > CAPTURE_MAX_BYTES) {
     throw new CaptureFailedError(
       `that picture encodes to ${png.length} bytes and this daemon answers with at most ${CAPTURE_MAX_BYTES} - ` +

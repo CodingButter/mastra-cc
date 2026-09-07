@@ -1,5 +1,19 @@
 [
   {
+    "name": "cost-counter-forgets-attempts",
+    "file": "daemon/src/costs.ts",
+    "find": "  entry.count += 1;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/costs.test.ts"
+  },
+  {
+    "name": "cost-counter-forgets-queue-wait",
+    "file": "daemon/src/server.ts",
+    "find": "    recordCost(\"queueWait\", performance.now() - queued);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/costs.test.ts"
+  },
+  {
     "name": "watch-probe-failure-leaves-pending-work-live",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
     "find": "\n    open = false;\n",
