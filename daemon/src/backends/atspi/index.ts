@@ -900,55 +900,18 @@ export class AtspiBackend implements Backend {
   // identical read-back; the only difference is what is emitted once focus has
   // been grabbed. What may be in the text was decided in the server before this
   // was reached. Like the chord, nothing else in this file calls it.
-  // TYPING IS THE ONE RAW INPUT WITH SOMETHING TO COMPARE AGAINST.
-  //
-  // A chord can succeed and leave the element reading identically, so it is
-  // handed back with a doubt and no verdict (aimedRawInput). Typing cannot: text
-  // that arrives makes the element's own published text longer. Measured
-  // 2026-09-05 at Plasma's wallpaper chooser, which opens TWO windows of the
-  // same name for one press of "Add Wallpaper Image..." - X reports both, at the
-  // same geometry - keys typed at the twin that was not in front landed nowhere,
-  // the field read back empty, and this verb answered "performed". The errand
-  // above it pressed Open on an empty chooser and reported a wallpaper the desk
-  // never received.
-  //
-  // So: when the element publishes text this daemon can read, and that text is
-  // no longer after the keys than before, the keys did not arrive HERE, and this
-  // verb says so rather than handing back a shrug. A field whose text cannot be
-  // read is treated exactly as before - there is nothing to compare, and the
-  // doubt is all there is to give.
+  // Without a stable caret/selection witness, length changes cannot establish
+  // an insertion postcondition. Preserve readback but do not prescribe replay
+  // after input already emitted (ADR-0098).
   async typeText(params: TypeTextParams): Promise<TypeTextResult> {
     if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.typeText(params));
-    const ref = this.answered.get(params.id);
-    const before = ref === undefined ? undefined : clearableLength((await this.readElement(ref)).content);
     const typed = await this.aimedRawInput(params.id, "text", () => emitString(this.channel, params.text));
-    const after = typed.element === undefined ? undefined : clearableLength(typed.element.content);
-    if (before !== undefined && after !== undefined && params.text.length > 0 && after <= before) {
-      throw new WriteNotObservedError(
-        `the keys were sent, but this element publishes ${after} character(s) where it published ${before} before them - ` +
-          `the text did not arrive here. A key reaches an element only while that element's window is the front one, and ` +
-          `this daemon does not raise windows; a desk can hold two windows of the same name and only one is in front. ` +
-          `Raise this element's window the way a person does - press its application's button on the desktop shell's task ` +
-          `bar with "activateElement" - and type again`,
-      );
-    }
-    // SOME OF THE KEYS ARRIVING IS NOT ALL OF THEM ARRIVING. Measured
-    // 2026-09-05 in Dolphin's location field: "/config/Downloads" was typed
-    // into a field that had just taken the focus, and the field read back
-    // "config/Downloads" - the leading key was eaten while the widget was
-    // still settling. Length-grew-at-all was true, so this verb answered
-    // "performed", and the errand above it navigated somewhere that did not
-    // exist. A count that is short is the same lie as a count that is zero,
-    // only quieter, so it is refused too - and named, so the caller knows to
-    // clear and type again rather than to type the rest on top.
-    if (before !== undefined && after !== undefined && params.text.length > 0 && after - before < params.text.length) {
-      throw new WriteNotObservedError(
-        `${params.text.length} character(s) were sent and this element grew by ${after - before} - some of the keys did ` +
-          `not arrive. A field that has only just been given the focus can swallow the first of them. Empty this field ` +
-          `with "clearElementText" and type it again, rather than typing the missing part on top of what is there`,
-      );
-    }
-    return typed;
+    if (typed.element === undefined) return typed;
+    const note = "mastra-cc/typing-unverified: Input emission was attempted; delivery and the intended resulting value " +
+      "are unverified. Caret, selection and publication timing are not established. " +
+      "Observe before deciding whether to retry; do not automatically resend or clear text.";
+    const diagnostic = { ...typed.element.diagnostic, "mastra-cc/typing-unverified": note };
+    return { ...typed, element: { ...typed.element, diagnostic } };
   }
 
   // The third raw-input method (ADR-0076). Typing is an APPEND: a field that

@@ -14,6 +14,8 @@ answered by argument.
 
 [Visible-pixel capture contract](reliability-remediation/cc01/README.md) records generated-description RED/GREEN evidence and clipped, covering-pixel fixtures without claiming live desktop validation.
 
+[Typing uncertainty remediation](reliability-remediation/cc02/README.md) records Unicode and insertion-counterexample regressions, one-emission checks and retained resource bounds.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

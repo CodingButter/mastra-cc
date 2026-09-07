@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.21.1
+// Mastra CC protocol v1.21.2
 
-export const PROTOCOL_VERSION = "1.21.1";
-export const SCHEMA_DIGEST = "e2ade3ca28803dd299441b88afece403939166d1c1e6c59f8e2c67d7af123acd";
+export const PROTOCOL_VERSION = "1.21.2";
+export const SCHEMA_DIGEST = "dca04028f7c03181cff49d07ce834023addf615c067d1598a343f7bb73a7dfff";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -584,12 +584,12 @@ export interface SendKeyChordResult {
 export interface TypeTextParams {
   /** The element the text is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
   id: string;
-  /** The printable text to type, at most 1024 characters, containing no control characters. It is delivered as keystrokes, so it lands wherever the machine's focus is; the element is how it is aimed, not a guarantee of where it arrives. */
+  /** The printable text to type, at most 1024 UTF-16 code units, containing no control characters or unpaired surrogates. Supplementary characters occupy two units; combining sequences are not counted as one grapheme. Valid text is not normalized. It is delivered as keystrokes, so it lands wherever the machine's focus is; the element is how it is aimed, not a guarantee of where it arrives. */
   text: string;
 }
 
 export interface TypeTextResult {
-  /** Present when the text was delivered; the element as it reads AFTERWARDS, read back from the desktop. It is evidence of what the element became, never a claim that the text arrived in it - the caller compares it against what it expected. */
+  /** Present after input emission was attempted; the element as it reads AFTERWARDS. Delivery and the intended value remain unverified without trustworthy caret, selection and timing evidence. Length growth alone proves neither arrival nor failure. Observe before deciding whether to retry; never automatically resend or clear text following an uncertain attempt. */
   element?: SemanticElement;
   /** Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the character or the length when the text is not printable or too long, and what was observed when the element could not be focused or the machine has no way to deliver a key at all. */
   refusal?: string;
@@ -1098,7 +1098,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
           "pattern": "^(el|win|app)-[0-9a-f]{12}$"
         },
         "text": {
-          "description": "The printable text to type, at most 1024 characters, containing no control characters. It is delivered as keystrokes, so it lands wherever the machine's focus is; the element is how it is aimed, not a guarantee of where it arrives.",
+          "description": "The printable text to type, at most 1024 UTF-16 code units, containing no control characters or unpaired surrogates. Supplementary characters occupy two units; combining sequences are not counted as one grapheme. Valid text is not normalized. It is delivered as keystrokes, so it lands wherever the machine's focus is; the element is how it is aimed, not a guarantee of where it arrives.",
           "type": "string"
         }
       },

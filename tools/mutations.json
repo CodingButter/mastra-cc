@@ -1208,7 +1208,7 @@
   {
     "name": "a-text-of-any-length-is-a-field-entry",
     "file": "daemon/src/server.ts",
-    "find": "  if (text.length > TYPE_TEXT_MAX_LENGTH) {\n    return `refused before the call: \"typeText\" was given ${text.length} characters and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;\n  }\n",
+    "find": "  if (text.length > TYPE_TEXT_MAX_LENGTH) {\n    return `refused before the call: \"typeText\" was given ${text.length} UTF-16 code units and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
   },
@@ -1508,11 +1508,12 @@
     "testFile": "src/app/api/chat/route.test.ts"
   },
   {
-    "name": "a-typing-that-never-looks-at-what-the-field-says-after",
+    "name": "typing-drops-unverified-evidence",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "    if (before !== undefined && after !== undefined && params.text.length > 0 && after <= before) {\n      throw new WriteNotObservedError(\n        `the keys were sent, but this element publishes ${after} character(s) where it published ${before} before them - ` +\n          `the text did not arrive here. A key reaches an element only while that element's window is the front one, and ` +\n          `this daemon does not raise windows; a desk can hold two windows of the same name and only one is in front. ` +\n          `Raise this element's window the way a person does - press its application's button on the desktop shell's task ` +\n          `bar with \"activateElement\" - and type again`,\n      );\n    }\n",
+    "find": "    const diagnostic = { ...typed.element.diagnostic, \"mastra-cc/typing-unverified\": note };",
     "cwd": "daemon",
-    "testFile": "src/__tests__/keys-that-went-to-the-other-window-of-the-same-name.test.ts"
+    "testFile": "src/__tests__/keys-that-went-to-the-other-window-of-the-same-name.test.ts",
+    "replace": "    const diagnostic = { ...typed.element.diagnostic };"
   },
   {
     "name": "prose-that-never-warns-of-two-windows-of-one-name",
@@ -1651,10 +1652,10 @@
     "testFile": "src/__tests__/a-key-sent-while-another-application-holds-the-keyboard.test.ts"
   },
   {
-    "name": "a-typing-that-counts-only-to-one",
+    "name": "typing-replays-input-during-verification",
     "file": "daemon/src/backends/atspi/index.ts",
-    "find": "    if (before !== undefined && after !== undefined && params.text.length > 0 && after - before < params.text.length) {\n      throw new WriteNotObservedError(\n        `${params.text.length} character(s) were sent and this element grew by ${after - before} - some of the keys did ` +\n          `not arrive. A field that has only just been given the focus can swallow the first of them. Empty this field ` +\n          `with \"clearElementText\" and type it again, rather than typing the missing part on top of what is there`,\n      );\n    }\n",
-    "replace": "after - before < 0",
+    "find": "    const typed = await this.aimedRawInput(params.id, \"text\", () => emitString(this.channel, params.text));",
+    "replace": "    await this.aimedRawInput(params.id, \"text\", () => emitString(this.channel, params.text));\n    const typed = await this.aimedRawInput(params.id, \"text\", () => emitString(this.channel, params.text));",
     "cwd": "daemon",
     "testFile": "src/__tests__/keys-that-went-to-the-other-window-of-the-same-name.test.ts"
   }

@@ -530,10 +530,16 @@ export const TYPE_TEXT_MAX_LENGTH = 1024;
 export function typeTextRefusal(text: string): string | undefined {
   if (text.length === 0) return 'refused before the call: "typeText" was given no text - an empty string types nothing, and a call that does nothing is refused rather than performed';
   if (text.length > TYPE_TEXT_MAX_LENGTH) {
-    return `refused before the call: "typeText" was given ${text.length} characters and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;
+    return `refused before the call: "typeText" was given ${text.length} UTF-16 code units and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;
   }
   for (let index = 0; index < text.length; index += 1) {
     const code = text.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = text.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) { index += 1; continue; }
+      return 'refused before the call: "typeText" contains an unpaired surrogate';
+    }
+    if (code >= 0xdc00 && code <= 0xdfff) return 'refused before the call: "typeText" contains an unpaired surrogate';
     // C0, DEL and C1: every code point a keyboard has no printable glyph for.
     if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) {
       const which =

@@ -305,7 +305,16 @@ The order is fixed, and you do not skip steps:
 A newline is not text; it is the chord `Enter`, sent separately with
 `sendKeyChord` after the read-back. The same goes for `Tab` and `Escape`. A
 string carrying one is refused by name before anything is typed. A text is at
-most 1024 characters: a field entry, not a document.
+most 1024 UTF-16 code units: a field entry, not a document. A supplementary
+Unicode character uses two units; a combining sequence can contain multiple
+scalars and is not one counted unit. Unpaired surrogates are refused without
+emission; valid text is not normalized.
+
+Typing reports attempted delivery, not verified insertion. Without trustworthy
+caret and selection evidence, length growth cannot establish the intended value.
+Readback may be delayed or transformed. Observe before deciding whether to retry:
+do not automatically resend, clear, or replace text after an uncertain attempt.
+Use a bounded observation-only recheck; if uncertainty remains, report it.
 
 **Locate the form before its fields.** A native form can have role `dialog`, not
 `window`. If a window query is empty, query `dialog` or omit the role filter
