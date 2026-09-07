@@ -26,9 +26,8 @@ test('honors HTTP-date Retry-After and refuses excessive delay rather than retry
 test('retry count bounded and invalid hints use finite backoff',async()=>{
  const f=fixture(Array(4).fill({status:429,headers:{'retry-after':'invalid'}}));assert.equal((await f.run(url,init)).status,429);assert.equal(f.calls.length,RATE_POLICY.retries+1);assert.deepEqual(f.calls.map(x=>x.time),[0,3000,6000]);
 });
-test('does not replay success, non-rate failure, or ambiguous transport failure',async()=>{
+test('does not replay success or non-rate HTTP failure',async()=>{
  for(const status of [200,400,401,500]) {const f=fixture([status]);assert.equal((await f.run(url,init)).status,status);assert.equal(f.calls.length,1);}
- let calls=0;const run=pacedFetch(async()=>{calls++;throw new Error('network');});await assert.rejects(run(url,init),/network/);assert.equal(calls,1);
 });
 test('aborted and queued calls cannot reach fetch',async()=>{
  const f=fixture();f.controller.abort();await assert.rejects(f.run(url,init),{name:'AbortError'});await new Promise(setImmediate);assert.equal(f.calls.length,0);

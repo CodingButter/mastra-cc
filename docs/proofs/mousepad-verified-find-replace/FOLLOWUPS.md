@@ -1,6 +1,12 @@
 # Remaining acceptance work
 
-## September 7, 2026 — bounded 32-step experiment removes observed cutoff; full batches still rejected
+## September 7, 2026 — complete bounded batch passes machine and model-assisted visual review
+
+[Fetch-retry results](fetch-retry/README.md): all three trials in one unchanged-artifact 32-step batch passed exact saved bytes, fresh post-save public readback and genuine Gemini video/image review. Two real pre-response connection failures recovered within the shared finite retry budget. Human approval remains PENDING; planned explicit reopen verification, original 24-step acceptance and native CC-09 notification/cancellation measurements are not established. Keep the original contradictory visual transcriptions and explicit evidence-ownership resolutions; do not describe model-assisted inspection as human approval or exact Unicode inference from pixels. 128 artifacts hash-verified; 114 focused tests, 19/19 forced gates, 231 full-suite and three targeted mutations pass.
+
+The installed CLI declarations confirm `notifications.deliveryPolicy.decide: () => 'persist'` and direct `listNotifications({threadId})` storage polling for the next no-model native experiment. Adapter setup and real native event-to-storage correlation remain work, not measured latency. Client close is still not cancellation acknowledgement.
+
+## Historical September 7, 2026 — bounded 32-step experiment removes observed cutoff; full batches still rejected
 
 [32-step results](budget32/README.md): two separately declared unchanged-artifact batches each had two exact-save/fresh-readback passes and one provider connection failure. All successful trials finished normally after 25–28 calls; all cleanup verified. No success pooling, visual approval or 24-step acceptance claim. Each batch retains 75 hash-verified artifacts. Next investigate bounded retry only when fetch rejects before returning any response, without replaying generation or desktop actions. Keep the original deadline, finite attempt budget and full-batch requirement. Native notification/cancellation measurement design is documented separately; the Docker runner is unavailable and client close does not acknowledge native operation cancellation.
 

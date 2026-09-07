@@ -1,0 +1,27 @@
+{
+  "verdict": "GREEN",
+  "results": [
+    {
+      "trialId": "t1",
+      "machine": "GREEN",
+      "independentOracle": "GREEN",
+      "visual": "COMPLETE",
+      "humanApproval": "PENDING"
+    },
+    {
+      "trialId": "t2",
+      "machine": "GREEN",
+      "independentOracle": "GREEN",
+      "visual": "COMPLETE",
+      "humanApproval": "PENDING"
+    },
+    {
+      "trialId": "t3",
+      "machine": "GREEN",
+      "independentOracle": "GREEN",
+      "visual": "COMPLETE",
+      "humanApproval": "PENDING"
+    }
+  ],
+  "humanApproval": "PENDING"
+}

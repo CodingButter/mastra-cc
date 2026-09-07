@@ -44,6 +44,8 @@ answered by argument.
 
 [Bounded 32-step experiment](mousepad-verified-find-replace/budget32/README.md) tests additional completion steps with unchanged deadlines and acceptance oracles; all live attempts are retained separately.
 
+[Pre-response fetch recovery](mousepad-verified-find-replace/fetch-retry/README.md) retains one complete machine/visual-reviewed 32-step batch, actual recovered provider failures, installed-SDK RED/GREEN proof and explicit remaining human/reopen boundaries.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

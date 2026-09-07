@@ -1,6 +1,6 @@
 import {setTimeout as sleep} from 'node:timers/promises';
 
-export const RATE_POLICY = Object.freeze({intervalMs:3000, retries:2, maxWaitMs:30000, cache:'ephemeral', tools:['listApplications','queryElements','discoverElements','readElementContent','attestElement','activateElement','setElementText','setElementCaret','revealElement','sendKeyChord','captureElement']});
+export const RATE_POLICY = Object.freeze({intervalMs:3000, retries:2, retryBeforeResponse:true, maxWaitMs:30000, cache:'ephemeral', tools:['listApplications','queryElements','discoverElements','readElementContent','attestElement','activateElement','setElementText','setElementCaret','revealElement','sendKeyChord','captureElement']});
 
 // Only the isolated driver installs this transport. Never replay agent/tool calls.
 export function pacedFetch(fetch, {signal, record=()=>{}, now=()=>performance.now(), wallNow=()=>Date.now(), wait=(ms,s)=>sleep(ms,undefined,{signal:s})}={}) {
@@ -22,7 +22,17 @@ export function pacedFetch(fetch, {signal, record=()=>{}, now=()=>performance.no
         while(next>now()) {await wait(next-now(),abort);abort.throwIfAborted();}
         abort.throwIfAborted(); const startedMs=now();next=startedMs+RATE_POLICY.intervalMs;
         record('provider-request',{attempt,bytes:Buffer.byteLength(text),startedMs});
-        const response=await fetch(new Request(request,{body:text,headers,signal:abort}));
+        const outgoing=new Request(request,{body:text,headers,signal:abort});
+        let response;
+        try {response=await fetch(outgoing);}
+        catch(error) {
+          abort.throwIfAborted();
+          if(!RATE_POLICY.retryBeforeResponse || attempt>=RATE_POLICY.retries) throw error;
+          const delay=1000*2**attempt;
+          record('provider-fetch-retry',{attempt,delayMs:delay});
+          next=Math.max(next,now()+delay);
+          continue;
+        }
         if(response.status!==429 || attempt>=RATE_POLICY.retries) return response;
         const header=response.headers.get('retry-after');
         const hint=header===null ? 0 : /^\d+(\.\d+)?$/.test(header) ? Number(header)*1000 : Date.parse(header)-wallNow();

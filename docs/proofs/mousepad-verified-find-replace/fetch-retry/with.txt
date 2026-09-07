@@ -1,0 +1,11 @@
+Error in agent stream {
+  error: TypeError: other side closed
+      at globalThis.fetch.pacedFetch.now (file:///tmp/fetch-retry-proof.pBj8QB/branch/sdk-probe.mjs:13:62)
+      at run (file:///tmp/fetch-retry-proof.pBj8QB/branch/model-rate.mjs:27:29),
+  runId: [32m'58736f2e-0612-4197-a8b3-1c8f7927db54'[39m,
+  provider: [32m'anthropic'[39m,
+  modelId: [32m'claude-sonnet-4-5-20250929'[39m
+}
+GREEN: installed SDK retries only pre-response fetch; identical request, 3000ms spacing; persistent failure capped at three attempts; no network or desktop effects
+
+PROOF: GREEN — installed SDK recovers before-response failure within original retry bound

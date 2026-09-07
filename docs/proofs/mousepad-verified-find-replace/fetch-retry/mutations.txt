@@ -1,0 +1,4 @@
+caught: no retry
+caught: unbounded retry
+caught: no pacing
+GREEN: 3 mutations caught in scratch copies; workspace source never modified

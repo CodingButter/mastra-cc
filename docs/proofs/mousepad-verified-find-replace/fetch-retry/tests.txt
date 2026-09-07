@@ -1,0 +1,14 @@
+[32m✔ fetch rejection retries identical provider request before response only [90m(17.833725ms)[39m[39m
+[32m✔ fetch errors and 429 share one finite attempt budget [90m(1.238325ms)[39m[39m
+[32m✔ abort during network retry wait sends no additional request [90m(0.622105ms)[39m[39m
+[32m✔ request abort during pending fetch keeps original reason and sends once [90m(3.044684ms)[39m[39m
+[32m✔ response body failure is never replayed [90m(0.863196ms)[39m[39m
+[32m✔ non-rate HTTP failures and other origins are not retried [90m(0.357725ms)[39m[39m
+[34mℹ tests 6[39m
+[34mℹ suites 0[39m
+[34mℹ pass 6[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 59.459878[39m
