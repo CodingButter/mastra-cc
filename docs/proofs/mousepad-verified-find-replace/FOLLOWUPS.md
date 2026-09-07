@@ -1,5 +1,9 @@
 # Remaining acceptance work
 
+## September 7, 2026 — content-only readback repaired; one bounded-completion gap remains
+
+[Readback repair](readback-repair/README.md) distinguishes the previous t3 validator-shape defect from t1's genuinely missing post-save read. The new batch saved exact bytes in all three trials; t2/t3 passed machine readback, while t1 again saved at call 24 with no remaining read. All cleanup verified; 73 artifacts retained; 112 focused tests, 19/19 forced tasks and 231 mutations pass. Full acceptance remains rejected, with no visual approval or pooled historical successes. Further reduce observation overhead without dropping fresh readback, planned reopen evidence or visual checks. CC-09 producer-only latency/retention/event-loop/local-stop measurements proceeded separately; do not mislabel them native end-to-end latency or cancellation proof.
+
 ## September 7, 2026 — paced series removes quota failure, not acceptance gaps
 
 The [paced-series report](paced-series/README.md) supersedes quota exhaustion as the current blocker: 70 provider requests completed without backoff and recorded cache hits. t1/t3 saved exact bytes but failed the independent post-save fresh-document oracle; t2 failed saved bytes after exhausting 24 steps. All cleanup verified; the entire batch remains rejected, with 74 retained artifacts and no visual acceptance. Investigate interaction efficiency and post-save/reopen public evidence without changing limits, pooling successes or weakening acceptance. Tests pass: 106 focused, 19 workspace tasks, 231 full-suite and seven targeted mutations caught. CC-09 latency/queue/cancellation characterization remains separate; source inspection confirmed the producer exposes retained counts, but producer-only timing must not be mislabeled end-to-end native notification latency.

@@ -40,6 +40,8 @@ answered by argument.
 
 [Paced Anthropic Mousepad experiment](mousepad-verified-find-replace/paced-series/README.md) records bounded transport retries, cancellation and installed-SDK interception checks; not desktop acceptance.
 
+[Protocol-shaped Mousepad readback](mousepad-verified-find-replace/readback-repair/README.md) distinguishes genuinely missing post-save evidence from a content-only response discarded by the validator.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

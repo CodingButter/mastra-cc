@@ -1,0 +1,50 @@
+[31m✖ accepts protocol content-only readback of a previously observed text element after save [90m(1.608261ms)[39m[39m
+[32m✔ rejects unknown readback ID [90m(0.325054ms)[39m[39m
+[32m✔ rejects window readback [90m(0.149022ms)[39m[39m
+[32m✔ rejects wrong readback bytes [90m(0.119504ms)[39m[39m
+[32m✔ rejects partial readback [90m(0.144473ms)[39m[39m
+[32m✔ rejects readback before save [90m(0.14287ms)[39m[39m
+[32m✔ requires saved bytes and independent preceding public trace [90m(0.161836ms)[39m[39m
+[32m✔ rejects unknown actionable ID [90m(0.175779ms)[39m[39m
+[32m✔ rejects wrong field selection [90m(3.792508ms)[39m[39m
+[32m✔ rejects private native evidence only [90m(0.197041ms)[39m[39m
+[32m✔ rejects no save [90m(0.682611ms)[39m[39m
+[32m✔ rejects title instead of fresh content [90m(0.146864ms)[39m[39m
+[32m✔ rejects misleading banner [90m(0.115307ms)[39m[39m
+[32m✔ rejects verification after final claim [90m(0.114074ms)[39m[39m
+[32m✔ rejects incomplete journal [90m(0.120214ms)[39m[39m
+[32m✔ rejects unfinished tool [90m(0.088038ms)[39m[39m
+[32m✔ rejects failed model [90m(0.074113ms)[39m[39m
+[32m✔ rejects model never finished [90m(0.062499ms)[39m[39m
+[32m✔ rejects background tool continuation [90m(0.072082ms)[39m[39m
+[32m✔ rejects explicit refusal [90m(0.081515ms)[39m[39m
+[32m✔ rejects duplicate call [90m(0.058541ms)[39m[39m
+[32m✔ rejects incorrect saved bytes despite perfect model trace [90m(0.442732ms)[39m[39m
+[32m✔ rejects wrong task declaration [90m(0.157313ms)[39m[39m
+[34mℹ tests 23[39m
+[34mℹ suites 0[39m
+[34mℹ pass 22[39m
+[34mℹ fail 1[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 50.972586[39m
+
+[31m✖ failing tests:[39m
+
+test at docs/proofs/mousepad-verified-find-replace/model-evidence.test.mjs:21:1
+[31m✖ accepts protocol content-only readback of a previously observed text element after save [90m(1.608261ms)[39m[39m
+  AssertionError [ERR_ASSERTION]: fresh document text after save before final answer
+      at validateTrace [90m(file:///tmp/mastra-cc-mousepad-verified-find-replace/[39mdocs/proofs/mousepad-verified-find-replace/model-evidence.mjs:51:58[90m)[39m
+      at TestContext.<anonymous> [90m(file:///tmp/mastra-cc-mousepad-verified-find-replace/[39mdocs/proofs/mousepad-verified-find-replace/model-evidence.test.mjs:21:113[90m)[39m
+  [90m    at Test.runInAsyncScope (node:async_hooks:213:14)[39m
+  [90m    at Test.run (node:internal/test_runner/test:1106:25)[39m
+  [90m    at Test.start (node:internal/test_runner/test:1003:17)[39m
+  [90m    at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17)[39m {
+    generatedMessage: [33mfalse[39m,
+    code: [32m'ERR_ASSERTION'[39m,
+    actual: [90mundefined[39m,
+    expected: [33mtrue[39m,
+    operator: [32m'=='[39m,
+    diff: [32m'simple'[39m
+  }

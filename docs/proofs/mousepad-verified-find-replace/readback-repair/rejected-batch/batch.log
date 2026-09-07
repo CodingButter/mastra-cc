@@ -1,0 +1,6 @@
+INSTALLED_IMPORTS_GREEN: 151 locked runtime packages; /tmp/mousepad-readback.8bxz7huw/installed/consumer
+PREDECLARED: /tmp/mousepad-readback.8bxz7huw t1 t2 t3
+t1: verification-pending; saved bytes match; cleanup verified
+t2: verification-pending; saved bytes match; cleanup verified
+t3: verification-pending; saved bytes match; cleanup verified
+REVIEW_PENDING: capture is not completion proof

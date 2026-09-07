@@ -34,6 +34,10 @@ describe("what a live desk taught these instructions", () => {
     expect(teaches("observed `name`, not its catalog `id`", "running status is unknown", "Respect actual authority refusals")).toBe(true);
   });
 
+  it("budgets completion and observes scope-dependent replacement actions", () => {
+    expect(teaches("Budget interactions for saving and post-save readback", "Inspect a dialog's controls together", '"Replace all in:" checkbox changes "Replace" to "Replace All"', "re-observe the action after toggling")).toBe(true);
+  });
+
   it("verifies saved document text rather than a title or replacement input", () => {
     expect(teaches("After saving a text document", "A clean window title", "Read the document, not the search field", "before claiming the edit is verified")).toBe(true);
   });

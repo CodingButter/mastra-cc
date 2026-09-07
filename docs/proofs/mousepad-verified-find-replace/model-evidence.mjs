@@ -43,7 +43,8 @@ export function validateTrace(events, trial, saved, expected) {
       }
       if(call.name==='activateElement'&&prior?.name?.trim()==='Save') {assert.ok(replace,'replacement before save');save=event;}
       if(save&&['readElementContent','queryElements'].includes(call.name)&&call.sequence>save.sequence) {
-        if(elements(event.result).some(e=>['text','textbox'].includes(e.role)&&e.content?.kind==='text'&&e.content.value===expected.toString('utf8')))verified=event;
+        const observations=call.name==='readElementContent' ? [{role:prior?.role,content:event.result?.content}] : elements(event.result);
+        if(observations.some(e=>['text','textbox'].includes(e.role)&&e.content?.kind==='text'&&e.content.value===expected.toString('utf8')))verified=event;
       }
       for(const element of elements(event.result))known.set(element.id,{element,call:event.call,sequence:event.sequence});
     }

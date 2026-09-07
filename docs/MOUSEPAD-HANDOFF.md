@@ -1,6 +1,12 @@
 # Mousepad blocked-checkpoint handoff — September 7, 2026
 
-## Latest checkpoint: paced Anthropic series, task acceptance still BLOCKED
+## Latest checkpoint: readback validator repaired, all three save, acceptance still BLOCKED
+
+The prior t3 rejection was a validator defect: `readElementContent` returns content without an element wrapper. It now binds that response to the requested ID's preceding public text-element evidence, retaining exact-text and after-save ordering checks. Prior t1 really lacked post-save readback. Six new positive/negative regressions cover the distinction, and mirrored instructions address observed scope-toggle search overhead.
+
+In the new complete batch, all three trials saved exact bytes; t2/t3 passed the fresh-document machine oracle at call 24. t1 again saved on call 24 without a subsequent read, so the batch remains rejected. All cleanup was verified; no visual approval is claimed. See the [readback repair report](proofs/mousepad-verified-find-replace/readback-repair/README.md), 73 hash-verified artifacts, 112 focused tests, 19/19 forced workspace tasks and 231 mutations caught. Work continued on producer-only CC-09 timing/retention measurements in the separate reliability worktree; native notification and cancellation measurements remain incomplete.
+
+## Earlier checkpoint: paced Anthropic series, task acceptance BLOCKED
 
 The bounded paced series completed all 70 provider requests without quota failure and recorded actual cache hits. This removes provider-rate failure as the explanation for this batch, not the desktop acceptance requirements. t1/t3 saved exact expected bytes but failed the independent fresh-document evidence oracle; t2 exhausted its step budget without saving expected bytes. All owned groups were cleaned up. No visual acceptance is claimed.
 

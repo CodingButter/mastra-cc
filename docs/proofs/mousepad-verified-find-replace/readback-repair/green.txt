@@ -1,0 +1,31 @@
+[32m✔ accepts protocol content-only readback of a previously observed text element after save [90m(1.525609ms)[39m[39m
+[32m✔ rejects unknown readback ID [90m(0.476327ms)[39m[39m
+[32m✔ rejects window readback [90m(0.154294ms)[39m[39m
+[32m✔ rejects wrong readback bytes [90m(0.12484ms)[39m[39m
+[32m✔ rejects partial readback [90m(0.135165ms)[39m[39m
+[32m✔ rejects readback before save [90m(0.146426ms)[39m[39m
+[32m✔ requires saved bytes and independent preceding public trace [90m(0.097681ms)[39m[39m
+[32m✔ rejects unknown actionable ID [90m(0.124795ms)[39m[39m
+[32m✔ rejects wrong field selection [90m(0.592558ms)[39m[39m
+[32m✔ rejects private native evidence only [90m(0.199142ms)[39m[39m
+[32m✔ rejects no save [90m(3.876953ms)[39m[39m
+[32m✔ rejects title instead of fresh content [90m(0.158355ms)[39m[39m
+[32m✔ rejects misleading banner [90m(0.107748ms)[39m[39m
+[32m✔ rejects verification after final claim [90m(0.142224ms)[39m[39m
+[32m✔ rejects incomplete journal [90m(0.129428ms)[39m[39m
+[32m✔ rejects unfinished tool [90m(0.080098ms)[39m[39m
+[32m✔ rejects failed model [90m(0.067576ms)[39m[39m
+[32m✔ rejects model never finished [90m(0.071376ms)[39m[39m
+[32m✔ rejects background tool continuation [90m(0.093084ms)[39m[39m
+[32m✔ rejects explicit refusal [90m(0.068868ms)[39m[39m
+[32m✔ rejects duplicate call [90m(0.068016ms)[39m[39m
+[32m✔ rejects incorrect saved bytes despite perfect model trace [90m(0.443849ms)[39m[39m
+[32m✔ rejects wrong task declaration [90m(0.155582ms)[39m[39m
+[34mℹ tests 23[39m
+[34mℹ suites 0[39m
+[34mℹ pass 23[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 47.974793[39m

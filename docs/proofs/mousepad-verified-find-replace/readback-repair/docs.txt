@@ -1,0 +1,5 @@
+
+> mastra-cc@ check-docs /tmp/mastra-cc-mousepad-verified-find-replace
+> node scripts/check-docs.mjs
+
+check-docs: ok - 304 files, every relative link resolves

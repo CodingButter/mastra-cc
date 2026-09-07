@@ -126,6 +126,14 @@ on a freshly observed document element. A clean window title or a successful sav
 call does not verify the resulting text. Read the document, not the search field
 or replacement field, before claiming the edit is verified.
 
+Budget interactions for saving and post-save readback, not just the edit itself.
+Inspect a dialog's controls together before spending separate queries on guessed
+button names. A scope checkbox can change an action's name: in Mousepad, the
+observed "Replace all in:" checkbox changes "Replace" to "Replace All". Confirm
+that control and its state from current public evidence, then re-observe the
+action after toggling; do not repeatedly search for an absent "Replace All"
+button or assume a successful click verified the whole task.
+
 **An empty answer often means "not yet".** A window that was just launched, or a
 surface that a click was meant to open, arrives on its own schedule; a query
 fired immediately gets an honest empty answer that is indistinguishable from

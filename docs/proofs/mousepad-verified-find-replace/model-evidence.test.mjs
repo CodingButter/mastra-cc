@@ -14,6 +14,18 @@ export function fixture(){
   tool('queryElements',{}, {elements:[element('document','',{content:{kind:'text',value:expected.toString()}})]});
   emit({event:'model-finished',text:'Saved and verified'});emit({event:'closed',active:0});return events;
 }
+function readbackFixture(){
+ const e=fixture();e[1].result.elements.push({id:'document',role:'text',name:'',content:{kind:'text',value:'old document'}});
+ e[10].name=e[11].name='readElementContent';e[10].arguments={id:'document',offset:0,limit:500};e[11].result={content:{kind:'text',value:expected.toString()}};return e;
+}
+test('accepts protocol content-only readback of a previously observed text element after save',()=>assert.equal(validateTrace(readbackFixture(),trial,expected,expected).machine,'GREEN'));
+for(const [name,mutate] of [
+ ['unknown readback ID',e=>e[10].arguments.id='unseen'],
+ ['window readback',e=>e[1].result.elements.at(-1).role='window'],
+ ['wrong readback bytes',e=>e[11].result.content.value='saved'],
+ ['partial readback',e=>e[11].result.content.kind='text-window'],
+ ['readback before save',e=>{const read=e.splice(10,2);e.splice(8,0,...read);e.forEach((v,i)=>v.sequence=i+1);}],
+])test(`rejects ${name}`,()=>{const e=readbackFixture();mutate(e);assert.throws(()=>validateTrace(e,trial,expected,expected));});
 test('requires saved bytes and independent preceding public trace',()=>assert.equal(validateTrace(fixture(),trial,expected,expected).machine,'GREEN'));
 for(const [name,mutate]of [
  ['unknown actionable ID',e=>e[2].arguments.id='native-private'],
