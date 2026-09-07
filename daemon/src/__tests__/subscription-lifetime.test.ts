@@ -142,9 +142,8 @@ describe("a watch lives and dies with the connection that asked for it", () => {
     expect(pushed.id).toBeUndefined();
     expect(pushed.event?.id).toBe(WATCHED);
     expect(pushed.event?.kind).toBe("changed");
-    // Nothing of ours was in flight, so the change is news - labelled, never
-    // flagged (ADR-0032 clause 4).
-    expect(pushed.event?.attribution).toBe("external");
+    // A quiet request queue does not rule out delayed effects.
+    expect(pushed.event?.attribution).toBe("unattributed");
     expect(pushed.event?.causeId).toBeUndefined();
     expect(pushed.event?.priority).toBe("low");
   });

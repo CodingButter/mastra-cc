@@ -81,12 +81,10 @@ export function desktopTools(client: TransportClient): DesktopTools {
 /**
  * One desk, held as one object.
  *
- * The instance IS the connection (ADR-0060, as amended). There is no agent id
- * anywhere on this surface: the identity of the agent is the instance it is
- * holding, so two agents are two instances and therefore two sockets, which is
- * what keeps the daemon's `self` attribution true without asking the daemon to
- * change. Everything obtained from one instance - the tools and the signal
- * provider - is bound to that instance's single dial.
+ * The instance IS the connection (ADR-0060, amended by ADR-0101). Its tools
+ * and signal provider share that dial and its subscriptions. Separate sockets
+ * isolate subscriptions, not event causality. Native changes remain unattributed
+ * without a causal witness, including events concurrent with this instance's effects.
  *
  * It lives here in the `/mastra` subpath rather than in the base entry because
  * a signal provider is a value import of `@mastra/core`, and the base entry has

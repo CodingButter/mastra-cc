@@ -400,17 +400,10 @@ export interface Backend {
   // state it, because it is a fact about the tree (the seam's own words at
   // BackendSubscription above).
   //
-  // It exists because a verb cannot be attributed to itself without it. The
-  // server mints a cause id for every effect verb, but attribute() answers
-  // `self` only when the cause NAMES the application the change happened in;
-  // with no name it answers `unattributed`, which is the honest answer to "we
-  // do not know" and the wrong one for a change the daemon just caused. This is
-  // the question openApplication answers from the catalog and an element verb
-  // has no catalog to ask.
-  //
-  // Deliberately not a promise of knowledge: an id this backend never answered
-  // gets undefined, the verb names nothing, and every concurrent change stays
-  // unattributed. The daemon abstains rather than guessing (ADR-0039).
+  // Used by capability checks and operation audit receipts. Application
+  // membership is not evidence that a native change was caused by a request.
+  // Unknown ids return undefined; native event origin remains unattributed
+  // even when this method names an application (ADR-0101).
   applicationOfElement(id: string): string | undefined;
 
   // What this machine has installed, read from OUTSIDE every application

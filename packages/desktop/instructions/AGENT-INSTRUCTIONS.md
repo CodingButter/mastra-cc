@@ -574,6 +574,20 @@ that — an unverified result reported as a success is worse than an honest
 "I could not confirm it".
 
 
+## Change origin and wake policy
+
+A change pointer is evidence to reobserve, not proof of who caused it. Native
+changes are `unattributed` even during your own operation or after it returns.
+Application identity and timing are not causal witnesses; separate client
+connections do not make a change `self`. Never discard unknown-origin pointers
+from an active task's state accounting just because they should not wake a planner.
+
+Raw transport event consumers receive authorized pointers independently
+of signal-provider filtering. The provider still defaults to `external` only,
+so native unknown-origin changes do not automatically wake the agent. Widening
+`deliver` is an explicit policy choice: a bounded rate does not prevent a repeated
+action/wake loop. Whole-task state integration remains the caller's responsibility.
+
 ## Refusals
 
 A refusal is an answer. `readElementContent` on an id the daemon never issued

@@ -167,9 +167,27 @@ function providerOnAStubStream(options?: ConstructorParameters<typeof DesktopSig
 }
 
 describe("a change on the desk reaches the agent without the agent asking", () => {
+  it("delivers unknown-origin pointers to active consumers without default planning wakes", async () => {
+    const desk = await daemonWithAWatchableDesk();
+    const provider = desk.instance.getSignalProvider({ threadId: "active", resourceId: "r" });
+    const { agent, sent } = fakeAgent();
+    provider.connect(agent as never);
+    await provider.start();
+    const client = await desk.instance.client();
+    const raw: ChangeEvent[] = [];
+    const off = client.onChangeEvent(event => raw.push(event));
+    try {
+      await client.subscribeElement({ id: WATCHED, priority: "high" });
+      for (let i = 0; i < 20; i++) desk.push({ id: WATCHED, role: "textbox", kind: "changed" });
+      await settle();
+      expect(raw).toHaveLength(20);
+      expect(raw.every(event => event.attribution === "unattributed" && event.causeId === undefined)).toBe(true);
+      expect(sent).toHaveLength(0);
+    } finally { off(); provider.stop(); }
+  });
   it("carries a pushed daemon event into the connected agent's thread", async () => {
     const desk = await daemonWithAWatchableDesk();
-    const provider = desk.instance.getSignalProvider({ threadId: "thread-1", resourceId: "resource-1" });
+    const provider = desk.instance.getSignalProvider({ threadId: "thread-1", resourceId: "resource-1" }, { deliver: ["unattributed"] });
     const { agent, sent } = fakeAgent();
     provider.connect(agent as never);
     await provider.start();
@@ -186,7 +204,7 @@ describe("a change on the desk reaches the agent without the agent asking", () =
     expect(sent).toHaveLength(1);
     expect(sent[0].notification.source).toBe("mastra-cc-desktop");
     expect(sent[0].notification.attributes?.subscriptionId).toBe(subscription?.subscriptionId);
-    expect(sent[0].notification.attributes?.attribution).toBe("external");
+    expect(sent[0].notification.attributes?.attribution).toBe("unattributed");
     expect(sent[0].options.threadId).toBe("thread-1");
     expect(sent[0].options.resourceId).toBe("resource-1");
     // Without this the record is written and the sleeping thread stays asleep.
@@ -197,7 +215,7 @@ describe("a change on the desk reaches the agent without the agent asking", () =
 
   it("is push, not poll: no timer, no endpoint, and no frame between subscribing and waking", async () => {
     const desk = await daemonWithAWatchableDesk();
-    const provider = desk.instance.getSignalProvider({ threadId: "t", resourceId: "r" });
+    const provider = desk.instance.getSignalProvider({ threadId: "t", resourceId: "r" }, { deliver: ["unattributed"] });
     const { agent, sent } = fakeAgent();
     provider.connect(agent as never);
     await provider.start();

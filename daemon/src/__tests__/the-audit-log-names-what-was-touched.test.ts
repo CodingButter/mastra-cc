@@ -291,6 +291,31 @@ describe("an effect writes exactly one receipt, and it names the element by iden
     expect(readFileSync(path, "utf8")).not.toContain("the bus went away");
   });
 
+  it("keeps distinct audit request identities across asynchronous success and refusal without leaking into observation", async () => {
+    const path = auditing();
+    const first = await stagedSubject(stage());
+    const second = await stagedSubject(stage({ performs: false }));
+    try {
+      const results = await Promise.all([
+        call("activateElement", { id: first.id, action: ACTION_NAME }, first.backend),
+        call("activateElement", { id: second.id, action: ACTION_NAME }, second.backend),
+      ]);
+      expect(results[1]!.result?.refusal).toContain("declined");
+      const effects = entries(path);
+      expect(effects).toHaveLength(2);
+      expect(effects.every(entry => entry.cause.attribution === "self")).toBe(true);
+      expect(effects.every(entry => /^cause-[0-9a-f]{12}$/.test(entry.cause.causeId ?? ""))).toBe(true);
+      expect(effects[0]!.cause.causeId).not.toBe(effects[1]!.cause.causeId);
+      await call("queryElements", {}, first.backend);
+      const observation = entries(path).slice(2);
+      expect(observation.length).toBeGreaterThan(0);
+      expect(observation.every(entry => entry.cause.attribution === "external" && entry.cause.causeId === undefined)).toBe(true);
+    } finally {
+      await first.backend.close();
+      await second.backend.close();
+    }
+  });
+
   it("2a: the entry carries exactly seven fields - the set is frozen, not merely free of a name key", async () => {
     const path = auditing();
     const { backend, id } = await stagedSubject(stage());

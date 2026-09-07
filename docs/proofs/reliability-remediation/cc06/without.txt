@@ -1,0 +1,5 @@
+{"attributions":[["external","self","external"],["external","self","external"],["external","self","external"]],"pointers":[3,3,3],"causeIds":3,"defaultWakeAttempts":3}
+PROOF: RED — The expression evaluated to a falsy value:
+
+  assert(events.flat().every(event => event.attribution === 'unattributed' && event.causeId === undefined))
+

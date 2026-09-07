@@ -1,5 +1,29 @@
 [
   {
+    "name": "events-inherit-operation-timing",
+    "file": "daemon/src/server.ts",
+    "find": "const stamp: AttributionStamp = { attribution: \"unattributed\" };",
+    "replace": "const stamp = attribute(entry.application);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/event-origin-is-not-timing.test.ts"
+  },
+  {
+    "name": "events-guess-external-without-a-witness",
+    "file": "daemon/src/server.ts",
+    "find": "const stamp: AttributionStamp = { attribution: \"unattributed\" };",
+    "replace": "const stamp: AttributionStamp = { attribution: \"external\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/event-origin-is-not-timing.test.ts"
+  },
+  {
+    "name": "events-leak-request-id-as-cause",
+    "file": "daemon/src/server.ts",
+    "find": "const stamp: AttributionStamp = { attribution: \"unattributed\" };",
+    "replace": "const stamp: AttributionStamp = { attribution: \"unattributed\", causeId: \"cause-invented\" };",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/event-origin-is-not-timing.test.ts"
+  },
+  {
     "name": "driver-forgets-connection-owner",
     "file": "daemon/src/driver.ts",
     "find": "    if (effect) this.#owner = connection;",

@@ -1,0 +1,2 @@
+{"attributions":[["unattributed","unattributed","unattributed"],["unattributed","unattributed","unattributed"],["unattributed","unattributed","unattributed"]],"pointers":[3,3,3],"causeIds":0,"defaultWakeAttempts":0}
+PROOF: GREEN — raw pointers survive without invented origin or default planning wakes; real sockets, scripted changes

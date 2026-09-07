@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 // Type-only here; the value is reached through a dynamic import inside
 // startWebSocketServer, so a daemon nobody asked for a port never pays to load
 // the library. Laziness is not what makes it resolvable, though: the installed
@@ -1256,11 +1257,8 @@ export const UNSUBSCRIBE_UNKNOWN_REFUSAL =
 // ---------------------------------------------------------------------------
 // The change stream's server half (ADR-0039).
 //
-// A backend reports SHAPES - which element, what role, what kind of change -
-// and states which application the watched root lives in. It cannot know what
-// verb the daemon has in flight, so it never states an attribution. The server
-// can know, because every backend call goes through the serialised chain
-// below: at most one verb is open at a time.
+// Backends report pointer shapes and application membership, not causal witnesses.
+// Request identity is retained for audit receipts only (ADR-0101).
 
 interface Cause {
   causeId: string;
@@ -1268,10 +1266,8 @@ interface Cause {
   application?: string;
 }
 
-// The verb currently open in the serialised chain, or undefined for a quiet
-// daemon. Observe-class methods never set it: reading causes nothing, so a
-// change that arrives during a read was not caused by the read.
-let inFlight: Cause | undefined;
+// Request-local identity for audit receipts, not evidence about event origin.
+const operation = new AsyncLocalStorage<Cause | undefined>();
 
 function mintCauseId(): string {
   return `cause-${randomBytes(6).toString("hex")}`;
@@ -1283,7 +1279,8 @@ function mintCauseId(): string {
 // Until a verb names one, every concurrent change is unattributed - the daemon
 // abstains rather than guessing.
 function causeNames(application: string): void {
-  if (inFlight !== undefined) inFlight = { causeId: inFlight.causeId, application };
+  const current = operation.getStore();
+  if (current !== undefined) current.application = application;
 }
 
 export interface AttributionStamp {
@@ -1291,22 +1288,17 @@ export interface AttributionStamp {
   causeId?: string;
 }
 
-// The whole attribution rule, in one place. Three answers, and the third one
-// is the point (ADR-0039, ADR-0032 clause 4).
-export function attribute(changeApplication: string, cause: Cause | undefined = inFlight): AttributionStamp {
+// Audit attribution of the commanded operation, never of a native change event.
+// The request context proves who issued the operation, not what caused a later pointer.
+export function attribute(changeApplication: string, cause: Cause | undefined = operation.getStore()): AttributionStamp {
   if (cause !== undefined) {
     if (cause.application !== undefined && applicationName(cause.application) === applicationName(changeApplication)) {
       return { attribution: "self", causeId: cause.causeId };
     }
-    // ADR-0039: a verb is open, but nothing binds THIS change to it - it
-    // happened somewhere the verb does not reach. The honest answer is that we
-    // do not know which it was, and the daemon says so instead of picking the
-    // likelier story. Never external (that claims we know it was not us),
-    // never self (that claims it was).
+    // The receipt has no matching authorized target in this request context.
     return { attribution: "unattributed" };
   }
-  // Nothing was in flight, so nothing of ours caused it. That is news, not an
-  // alarm: it is recorded and never flagged.
+  // This audit receipt is outside a commanded effect's request context.
   return { attribution: "external" };
 }
 
@@ -1361,7 +1353,8 @@ export class SubscriptionBook {
     // notice: nothing is emitted at all, which is byte-identical to the quiet
     // desktop an ungranted application is supposed to look like.
     if (!isVisible(this.visibility, entry.application)) return;
-    const stamp = attribute(entry.application);
+    // Native pointers carry no causal witness: overlap and silence prove neither origin.
+    const stamp: AttributionStamp = { attribution: "unattributed" };
     this.emit({
       subscriptionId,
       id: change.id,
@@ -1503,11 +1496,8 @@ async function performEffect(
   // receipt is written once, here, after it - never inside the branches, which
   // is how an effect ends up with a path that leaves no receipt.
   //
-  // The application is read from the same value the gates were handed, and the
-  // cause from the attribution machinery that already exists (attribute(), one
-  // implementation): a second one written for the record could disagree with
-  // the one the change stream states, and two attributions of one effect is
-  // worse than none.
+  // Audit receipts describe the operation this request commanded. Change events
+  // deliberately do not inherit that identity without independent causal evidence.
   let application: string | undefined;
   const decide = async (): Promise<Classified<{ element?: SemanticElement; refusal?: string }>> => {
     // Refused for want of authority, and the application is deliberately not
@@ -2606,14 +2596,11 @@ export async function handleRequest(
     const result = await serialised<unknown>(async () => {
       const retired = driver?.authority.enter(driver.connection, entry.effectClass !== "observe");
       if (retired !== undefined) return { refusal: retired };
-      // An effect-class verb is a cause: it gets an id, and it is open for
-      // exactly as long as it runs. Observe-class methods are not causes, so
-      // they leave the daemon quiet and changes during them read as external.
-      inFlight = entry.effectClass === "observe" ? undefined : { causeId: mintCauseId() };
+      // Audit identity belongs to this request. Event origin is a separate question.
       try {
-        return await entry.handler(request.params, backend, launch, book);
+        return await operation.run(entry.effectClass === "observe" ? undefined : { causeId: mintCauseId() },
+          () => entry.handler(request.params, backend, launch, book));
       } finally {
-        inFlight = undefined;
         driver?.authority.leave(driver.connection);
       }
     });

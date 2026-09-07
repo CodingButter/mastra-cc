@@ -19,6 +19,11 @@ export type DeliverAttribution = Attribution;
 /**
  * Deliver `external` only.
  *
+ * Current native streams have no causal witness and publish `unattributed`, so
+ * this default does not wake from native changes. Active task state must consume
+ * client.onChangeEvent directly. Opting into unknown-origin wakes is an explicit
+ * policy choice; bounded coalescing alone does not prevent action/wake loops.
+ *
  * A `self` event is the agent's own edit echoing back, so delivering it wakes
  * the agent to tell it what it just did - and since the wake can cause another
  * edit, the loop it opens looks like a hung agent rather than a bug.

@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.22.0
+// Mastra CC protocol v1.23.0
 
-export const PROTOCOL_VERSION = "1.22.0";
-export const SCHEMA_DIGEST = "958b9b87c75e4704828f4b110731d302d6ae261ffa786e4042c487cb726cbcf2";
+export const PROTOCOL_VERSION = "1.23.0";
+export const SCHEMA_DIGEST = "2a11409c09559e56c46455f58a88f2c3b55ff594e896dd7180c7fa0cf5145a49";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -245,7 +245,7 @@ export interface ChangeEvent {
   role: Role;
   /** What happened to it. */
   kind: ChangeKind;
-  /** Who caused it. Never guessed: when it cannot be decided the answer is the undecidable one, not the flattering one. */
+  /** Evidence-backed origin relative to the desktop execution session, not the subscribing connection. Without a causal witness the answer is unattributed: application identity, concurrent operations and a quiet request queue do not prove origin. Current change streams publish unattributed, independently of agent wake policy. */
   attribution: Attribution;
   /** Names the call this change was caused by. Present if and only if the attribution is self; its absence anywhere else is the contract, not an omission. */
   causeId?: string;
