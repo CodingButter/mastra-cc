@@ -499,8 +499,10 @@ changed before retrying; do not blindly duplicate a click, submission or typing.
 ### When the labels run out, look at it
 
 `captureElement` returns a PNG cropped from a root-screen screenshot to the
-intersection of the named element's bounds and the display. Partially offscreen
-rectangles are clipped, so the PNG may cover less than the full element. Bounds
+named element's bounds. Native partial captures are refused until crop provenance
+is available: bring the entire element onto the display, then reobserve and capture.
+Never infer crop offsets from PNG dimensions or map partial-image locations directly
+to element-relative clicks. Even a full image is not a freshness guarantee: bounds
 observation and capture are not atomic. These are VISIBLE pixels, not pixels
 owned by that application. Overlapping windows may appear, and transparent or
 input-only overlays may intercept input without being apparent in the image.

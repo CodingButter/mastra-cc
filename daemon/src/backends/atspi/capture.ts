@@ -242,6 +242,14 @@ export async function capture(
   if (rectangle !== undefined) validateRectangle(rectangle);
   const screen = decodeXwd(await grab(rectangle));
   const wanted = rectangle === undefined ? screen : cropScreen(screen, rectangle);
+  if (rectangle !== undefined && (wanted.originX !== rectangle.x || wanted.originY !== rectangle.y ||
+      wanted.width !== rectangle.width || wanted.height !== rectangle.height)) {
+    throw new CaptureFailedError(
+      "partial capture refused: the display does not cover the full element rectangle; " +
+      "crop provenance is unavailable, so image locations cannot safely map to element clicks. " +
+      "Reobserve after bringing the entire element onto the display",
+    );
+  }
   const png = encodePng(wanted);
   if (png.length > CAPTURE_MAX_BYTES) {
     throw new CaptureFailedError(

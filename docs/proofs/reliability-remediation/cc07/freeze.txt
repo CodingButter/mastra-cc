@@ -1,0 +1,1 @@
+freeze-gate: schema changed compliantly - version 1.24.0, ADR present, golden fixtures current

@@ -1,0 +1,6 @@
+fully covered element: real XWD/PNG image retained, 40 by 30
+{"rectangle":[-10,10,40,30],"image":false,"refusal":"partial capture refused: the display does not cover the full element rectangle; crop provenance is unavailable, so image locations cannot safely map to element clicks. Reobserve after bringing the entire element onto the display"}
+{"rectangle":[180,10,40,30],"image":false,"refusal":"partial capture refused: the display does not cover the full element rectangle; crop provenance is unavailable, so image locations cannot safely map to element clicks. Reobserve after bringing the entire element onto the display"}
+{"rectangle":[10,-10,40,30],"image":false,"refusal":"partial capture refused: the display does not cover the full element rectangle; crop provenance is unavailable, so image locations cannot safely map to element clicks. Reobserve after bringing the entire element onto the display"}
+{"rectangle":[10,130,40,30],"image":false,"refusal":"partial capture refused: the display does not cover the full element rectangle; crop provenance is unavailable, so image locations cannot safely map to element clicks. Reobserve after bringing the entire element onto the display"}
+PROOF: GREEN — real native capture retains complete images and refuses four partial images; scripted accessibility geometry

@@ -12,6 +12,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 
 | # | Decision | One-line reason |
 |---|---|---|
+| [0102](0102-refuse-native-partial-captures-without-provenance.md) | Refuse native partial captures without provenance | Partial image fractions do not locate the same point in the full element |
 | [0101](0101-operation-identity-is-not-event-causality.md) | Operation identity is not event causality | Timing and application membership cannot prove the origin of a change |
 | [0100](0100-one-connection-owns-desktop-effects.md) | One connection owns desktop effects | Serialization alone does not prevent competing clients from alternating effects |
 | [0099](0099-signal-throttling-retains-bounded-dirty-pointers.md) | Signal throttling retains bounded dirty pointers | Receipt-time gaps, a capped queue and trailing invalidation avoid permanent suppression |

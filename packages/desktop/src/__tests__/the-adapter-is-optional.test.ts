@@ -72,6 +72,8 @@ describe("the Mastra adapter", () => {
       expect(description).toContain("does not prove application ownership");
       expect(description).toContain("does not raise, focus, scroll or click");
       expect(description).not.toContain("own window's pixels");
+      expect(description).toContain("Native capture refuses partial display intersections");
+      expect(description).toContain("Never infer a crop offset from PNG dimensions");
       const schema = JSON.parse(readFileSync(new URL("../../../../protocol/schema.json", import.meta.url), "utf8"));
       for (const dimension of ["width", "height"]) {
         expect(schema.types.capturedImage.fields[dimension].description).toContain("clipped");

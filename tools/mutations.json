@@ -1,5 +1,13 @@
 [
   {
+    "name": "capture-returns-partial-images-without-provenance",
+    "file": "daemon/src/backends/atspi/capture.ts",
+    "find": "if (rectangle !== undefined && (wanted.originX !== rectangle.x || wanted.originY !== rectangle.y ||\n      wanted.width !== rectangle.width || wanted.height !== rectangle.height))",
+    "replace": "if (false)",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-picture-of-one-element-and-no-more.test.ts"
+  },
+  {
     "name": "events-inherit-operation-timing",
     "file": "daemon/src/server.ts",
     "find": "const stamp: AttributionStamp = { attribution: \"unattributed\" };",
