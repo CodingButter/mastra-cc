@@ -1,5 +1,7 @@
 # CC-09 — initial content-free native cost baseline
 
+The [native measurement boundary](native-measurement-boundary.md) records verified notification-storage and cancellation seams, the unavailable container runner, and the isolated-Xvfb alternative. It is a follow-up design, not measured native latency.
+
 ## Producer signal workload measurements — September 7, 2026
 
 ```sh
