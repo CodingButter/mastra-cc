@@ -1,5 +1,11 @@
 # Remaining acceptance work
 
+## September 7, 2026 — repaired-monitor retry remains rejected
+
+- Fresh fixed-settings batch `/tmp/mousepad-model.cksXvd` completed all three trials after repair commit `58ae793`. All three attempts persisted and reported verified owned-group cleanup. t1 and t3 matched exact saved bytes; t2 did not. The batch remains REJECTED; no visual acceptance is claimed and successes must not be pooled.
+- t2 public evidence exposes an application-discovery mismatch worth a separate regression: `listApplications` returned `org.xfce.mousepad` with observation disabled and running unknown, but querying that exact returned name was unmatched. Subsequent launch attempts were ambiguous or unpermitted. This is observed evidence, not yet a diagnosed backend defect; do not widen grants or insert private application identifiers into the model prompt to mask it.
+- All original recordings/checkpoints remain in the batch directory. Compressed public events, attempt records and the batch log are retained under `monitor-repair/rejected-retry/`. Forced workspace gates passed all 19 tasks before this retry; focused evidence tests passed 108 tests. No build or mutation run overlapped this batch.
+
 ## September 7, 2026 — monitor repair and roadmap audit
 
 - Monitor failure handling, log-open error recording, independent-trial continuation, interruption evidence, and bounded process-group teardown now have runnable regressions in `model-supervisor.test.mjs` and `model-lifecycle.test.mjs`; see [repair proof](monitor-repair/README.md). This repairs the harness, not the failed task. The old incomplete batch remains rejected.
