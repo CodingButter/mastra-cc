@@ -1,5 +1,19 @@
 # CC-09 — initial content-free native cost baseline
 
+## Producer signal workload measurements — September 7, 2026
+
+```sh
+node --experimental-transform-types docs/proofs/reliability-remediation/cc09/producer-measurements.mjs
+```
+
+`producer-measurements.jsonl` records four real-clock producer workloads: unthrottled burst, repeated hot key, 10,000-key overflow burst and a 1,750 ms hot-key gap. It imports the actual SignalThrottle source; the receipt records its SHA256 and Node version. This Node invocation uses experimental TypeScript transformation. Another isolated Mousepad proof was running on the same host, so these are observed workload samples, not controlled production benchmarks.
+
+The boundary is **producer ingress to synchronous delivery callback**, not native event emission to persisted Mastra notification. Retention is measured in pointers, not heap bytes or native queue size. Local `stop()` timing is not native cancellation responsiveness. The histogram covers the entire case, including waits and post-stop observation. Latencies describe delivered observations only; coalesced/evicted events and pending backlog have no invented delivery time. Quantiles select sorted zero-based index `floor(n*q)`, clamped to the last observation: for two deliveries, the reported p50 is the upper value, not an interpolated median. This small-sample convention is recorded rather than implying a production distribution.
+
+Observed peak retention was 0 / 1 / 257 / 1 pointers. The overflow burst delivered 64 observations (including one broad invalidation), still held 256 pointers at the deliberate stop, and observed a 128.7 ms maximum event-loop delay. Local stop calls took 0.007–0.117 ms; all retained pointers were cleared, a post-stop push was ignored, and no further delivery occurred during the following 1,100 ms. These numbers are measurements, not thresholds. The run asserts bounded retention, exact unthrottled delivery count, finite nonnegative delivered latency and stopped-producer behavior.
+
+End-to-end native notification latency, native cache/queue byte sizing and native operation cancellation remain explicit follow-ups. No RED speed comparison is appropriate because this script measures existing behavior rather than changing it.
+
 After building, from the repository root:
 
 ```sh
