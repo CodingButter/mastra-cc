@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.21.0
+// Mastra CC protocol v1.21.1
 
-export const PROTOCOL_VERSION = "1.21.0";
-export const SCHEMA_DIGEST = "e469040683c12c78a36be8670405fb1cef1092b0d5e86cc44ae36fd56cc312ea";
+export const PROTOCOL_VERSION = "1.21.1";
+export const SCHEMA_DIGEST = "e2ade3ca28803dd299441b88afece403939166d1c1e6c59f8e2c67d7af123acd";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -297,9 +297,9 @@ export interface DesktopPlaces {
 export interface CapturedImage {
   /** The encoding of the bytes. "png", always: one lossless format, so a caller never has to ask what it is looking at. */
   format: string;
-  /** The width of the picture in pixels, which is the width of the element's rectangle as the platform published it at the moment of the grab. */
+  /** The width of the returned picture in pixels. The picture may be clipped to the captured display and need not span the full element rectangle. */
   width: number;
-  /** The height of the picture in pixels, on the same terms. */
+  /** The height of the returned picture in pixels. The picture may be clipped to the captured display and need not span the full element rectangle. */
   height: number;
   /** The image bytes, base64. Bounded by this daemon: a picture larger than its ceiling is refused rather than quietly shrunk, because a caller told an image is 4096 wide when it was resized to 512 has been given a measurement that is not true. */
   data: string;
@@ -638,14 +638,14 @@ export interface DescribeDesktopResult {
   places: DesktopPlaces;
 }
 
-/** Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. Pixels are read from the window the element sits in, not from the root - a compositing window manager can refuse the root outright - so an element behind another window is answered with its own window's pixels rather than with whatever is covering it. */
+/** Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. The image contains currently visible pixels in the intersection of the element rectangle and the captured display, so it may be clipped. Overlapping windows may appear; capture does not prove application ownership of those pixels. Capture does not raise, focus, scroll or click. If foreground preparation is necessary, use an observed and permitted window-navigation action, then reobserve the target and its geometry before capturing again. Foreground preparation is best effort, not proof of non-occlusion or an atomic focus-and-capture operation. */
 export interface CaptureElementParams {
   /** The element to look at. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a picture of where something used to be. */
   id: string;
 }
 
 export interface CaptureElementResult {
-  /** Present when the picture was taken; the element's rectangle as pixels. */
+  /** Present when the picture was taken; currently visible pixels intersecting the element rectangle and captured display, possibly clipped or covered by other windows. */
   image?: CapturedImage;
   /** Present otherwise; names the check that ran and what would change the answer - an element the platform gives no bounds for, one that is off screen, a desk with no way to grab its own pixels, or a picture past this daemon's ceiling. */
   refusal?: string;
@@ -1169,7 +1169,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "captureElement": {
-    "description": "Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. Pixels are read from the window the element sits in, not from the root - a compositing window manager can refuse the root outright - so an element behind another window is answered with its own window's pixels rather than with whatever is covering it.",
+    "description": "Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. The image contains currently visible pixels in the intersection of the element rectangle and the captured display, so it may be clipped. Overlapping windows may appear; capture does not prove application ownership of those pixels. Capture does not raise, focus, scroll or click. If foreground preparation is necessary, use an observed and permitted window-navigation action, then reobserve the target and its geometry before capturing again. Foreground preparation is best effort, not proof of non-occlusion or an atomic focus-and-capture operation.",
     "params": {
       "type": "object",
       "properties": {

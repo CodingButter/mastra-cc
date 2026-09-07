@@ -184,6 +184,22 @@ describe("a picture crops the visible desktop at the named element's rectangle",
     expect(spawn).not.toHaveBeenCalled();
   });
 
+  it("preserves covering pixels and observes changed pixels without preparing the desktop", async () => {
+    let covered = false;
+    const grab = vi.fn(async () => dump({ width: 4, height: 3, originX: 0, originY: 0,
+      pixel: () => covered ? [255, 0, 0] : [0, 255, 0] }));
+    vi.mocked(spawn).mockClear();
+    const rectangle = { x: -1, y: 0, width: 3, height: 2 };
+    const before = await capture(rectangle, grab);
+    covered = true;
+    const after = await capture(rectangle, grab);
+    expect([after.width, after.height]).toEqual([2, 2]);
+    expect(readPng(Buffer.from(before.data, "base64")).at(0, 0)).toEqual([0, 255, 0]);
+    expect(readPng(Buffer.from(after.data, "base64")).at(0, 0)).toEqual([255, 0, 0]);
+    expect(grab).toHaveBeenCalledTimes(2);
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
   it("refuses a crop beyond the actual root bounds", async () => {
     const grabbed = dump({ width: 4, height: 3, originX: 0, originY: 0, pixel: () => [0, 0, 0] });
     await expect(capture({ x: 4, y: 0, width: 1, height: 1 }, async () => grabbed)).rejects.toThrow(/outside/);

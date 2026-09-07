@@ -496,7 +496,13 @@ observation and capture are not atomic. These are VISIBLE pixels, not pixels
 owned by that application. Overlapping windows may appear, and transparent or
 input-only overlays may intercept input without being apparent in the image.
 If a crop shows an overlay, reobserve, raise the target through an observed
-window-navigation control, then capture again before acting.
+window-navigation control that is permitted for this session. Reobserve the target
+and its current geometry, then capture again before acting. Capture itself does
+not raise, focus, scroll or click. Do not assume activating an arbitrary element
+raises its containing window. Foreground preparation is best effort: an overlay
+or layout change may intervene, and focus restoration may undo preparation.
+If no observed, permitted route establishes a usable view, report the uncertainty
+rather than inventing a hidden-window image or using an unauthorized input fallback.
 
 Use it the moment naming stops working. A logo on a marketing page, a chart, a
 map, a canvas, a rendered document, a grid of thumbnails — all of these are

@@ -63,6 +63,24 @@ describe("the Mastra adapter", () => {
     }
   });
 
+  it("describes visible clipped pixels without promising hidden-window isolation", async () => {
+    const client = await connect({ socketPath: await daemonOnATape() });
+    try {
+      const description = desktopTools(client).captureElement.description;
+      expect(description).toContain("currently visible pixels");
+      expect(description).toContain("Overlapping windows may appear");
+      expect(description).toContain("does not prove application ownership");
+      expect(description).toContain("does not raise, focus, scroll or click");
+      expect(description).not.toContain("own window's pixels");
+      const schema = JSON.parse(readFileSync(new URL("../../../../protocol/schema.json", import.meta.url), "utf8"));
+      for (const dimension of ["width", "height"]) {
+        expect(schema.types.capturedImage.fields[dimension].description).toContain("clipped");
+      }
+    } finally {
+      client.close();
+    }
+  });
+
   it("validates optional application and window query scope from the generated contract", async () => {
     const client = await connect({ socketPath: await daemonOnATape() });
     try {

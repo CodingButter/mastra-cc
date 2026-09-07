@@ -12,6 +12,8 @@ answered by argument.
 
 [Signal lifecycle remediation](reliability-remediation/cc03/README.md) records controlled RED/GREEN regressions, retained real-socket coverage, and signal mutation checks.
 
+[Visible-pixel capture contract](reliability-remediation/cc01/README.md) records generated-description RED/GREEN evidence and clipped, covering-pixel fixtures without claiming live desktop validation.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths
