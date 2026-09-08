@@ -46,7 +46,7 @@ answered by argument.
 
 [Pre-response fetch recovery](mousepad-verified-find-replace/fetch-retry/README.md) retains one complete machine/visual-reviewed 32-step batch, actual recovered provider failures, installed-SDK RED/GREEN proof and explicit remaining human/reopen boundaries.
 
-[Original 24-step retry](mousepad-verified-find-replace/original24/README.md) retains a rejected original-budget batch without combining successes across experiments.
+[Original 24-step retry](mousepad-verified-find-replace/original24/README.md) retains the rejected first original-budget batch, its step-exhaustion diagnosis, the instruction repair, and a fresh 24-step batch that is machine, oracle and frame-sampled-visual GREEN on all three trials (human approval pending).
 
 [Saved-document reopen diagnostic](mousepad-verified-find-replace/reopen/README.md) records a blocked public Open action in a fresh native process, without claiming successful reopening.
 

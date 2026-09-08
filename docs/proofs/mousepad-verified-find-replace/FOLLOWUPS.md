@@ -1,3 +1,5 @@
+**September 7, 2026, 21:40 EDT — original 24-step budget.** A fresh unpooled batch under the repaired instructions (`original24/README.md`) is GREEN on machine, saved-byte and frame-sampled visual review for t1–t3; the earlier trial 1/2 failures were step exhaustion on unrequested work, not checkbox toggling. Remaining: human approval; native-video (Gemini) inspection was unavailable for lack of a valid credential and is recorded as frame-sampled.
+
 # Remaining acceptance work
 
 ## September 7, 2026 — complete bounded batch passes machine and model-assisted visual review

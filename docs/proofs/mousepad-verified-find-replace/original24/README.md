@@ -1,4 +1,20 @@
-# Original 24-step acceptance retry — REJECTED
+# Original 24-step acceptance — repaired batch GREEN, human approval pending
+
+**Current status (September 7, 2026, 21:40 EDT).** After the first 24-step batch below was rejected, the journals showed the real cause: trials 1 and 2 spent their 24 interactions on redundant search-field readbacks and an unrequested menu and never reached Save; the scope and case checkboxes had started unchecked in every trial and were checked correctly. (An earlier hypothesis that already-checked boxes were being toggled off was wrong; the retained `filled.png` checkpoints show both boxes unchecked before activation.) The repair is an instruction change in `AGENT-INSTRUCTIONS.md`: activate a checkbox only when its observed state differs from what the task needs, and spend no interactions on menus or options the task did not ask for because the budget must still cover Save and post-save readback. `the-prose-keeps-what-a-desk-taught-it.test.ts` pins both sentences (RED when reverted, GREEN restored).
+
+A fresh predeclared batch `/tmp/mousepad-original24-fix.om1tV6` (`MOUSEPAD_MODEL=anthropic/claude-sonnet-4-5-20250929 MOUSEPAD_MAX_STEPS=24`, bounded provider recovery, no pooling) passed:
+
+| Trial | Machine | Saved bytes | Fresh readback | Public calls | Visual | Human |
+|---|---|---|---|---|---|---|
+| t1 | GREEN | exact | call 23 | 23 | COMPLETE | PENDING |
+| t2 | GREEN | exact | call 21 | 21 | COMPLETE | PENDING |
+| t3 | GREEN | exact | call 22 | 22 | COMPLETE | PENDING |
+
+`model-batch.mjs --review` reports `GREEN`. Visual inspection is frame-sampled, not native video: `visual-inspect.py` cuts the four checkpoints from the actual MKV at journal times and sends them with a 1 fps contact sheet of the whole recording to Claude Sonnet 4.5 (a valid Gemini credential was not available); `assemble-reviews.py` copies every inspector limitation verbatim into `resolvedObservations` with the oracle that owns it, and Wren viewed the full-resolution checkpoints directly (the inspector's "asterisk at verified stage" claim for t1 is contradicted by the retained image). `accepted-batch/inventory.json` indexes 104 independently hash-verified artifacts; credential-pattern scan clear. Human approval remains pending.
+
+---
+
+# First original 24-step attempt — REJECTED (retained for the diagnosis above)
 
 This is a separate predeclared Anthropic batch with the bounded provider-recovery implementation and the original 24-step budget. It does not replace or weaken the successful 32-step experiment. The 180-second model deadline and exact saved-file/fresh public readback oracles are unchanged.
 

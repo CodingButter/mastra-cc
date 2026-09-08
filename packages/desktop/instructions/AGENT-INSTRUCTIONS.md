@@ -130,9 +130,13 @@ Budget interactions for saving and post-save readback, not just the edit itself.
 Inspect a dialog's controls together before spending separate queries on guessed
 button names. A scope checkbox can change an action's name: in Mousepad, the
 observed "Replace all in:" checkbox changes "Replace" to "Replace All". Confirm
-that control and its state from current public evidence, then re-observe the
-action after toggling; do not repeatedly search for an absent "Replace All"
-button or assume a successful click verified the whole task.
+that control and its state from current public evidence. `activateElement` on a
+checkbox toggles it: a checkbox whose observed states already include "checked"
+is on, and activating it turns it off. Activate a checkbox only when its observed
+state differs from the state the task needs, then re-observe the action name; do
+not repeatedly search for an absent "Replace All" button or assume a successful
+click verified the whole task. Do not spend interactions on menus or options the
+task did not ask for; the budget must still cover saving and post-save readback.
 
 **An empty answer often means "not yet".** A window that was just launched, or a
 surface that a click was meant to open, arrives on its own schedule; a query

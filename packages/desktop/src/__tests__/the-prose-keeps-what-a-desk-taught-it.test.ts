@@ -35,7 +35,12 @@ describe("what a live desk taught these instructions", () => {
   });
 
   it("budgets completion and observes scope-dependent replacement actions", () => {
-    expect(teaches("Budget interactions for saving and post-save readback", "Inspect a dialog's controls together", '"Replace all in:" checkbox changes "Replace" to "Replace All"', "re-observe the action after toggling")).toBe(true);
+    expect(teaches("Budget interactions for saving and post-save readback", "Inspect a dialog's controls together", '"Replace all in:" checkbox changes "Replace" to "Replace All"', "then re-observe the action name")).toBe(true);
+    // Two original-budget trials exhausted 24 interactions before Save on redundant
+    // field readbacks and an unrequested menu (docs/proofs/mousepad-verified-find-replace/original24).
+    // The toggle rule is a correctness guard; the budget rule is what the repair batch needed.
+    expect(teaches("`activateElement` on a checkbox toggles it", 'already include "checked"', "activating it turns it off", "only when its observed state differs")).toBe(true);
+    expect(teaches("menus or options the task did not ask for", "still cover saving and post-save readback")).toBe(true);
   });
 
   it("verifies saved document text rather than a title or replacement input", () => {

@@ -1,6 +1,10 @@
 # Mousepad checkpoint handoff — September 7, 2026
 
-## Latest checkpoint: complete bounded batch passes machine and model-assisted visual review
+## Latest checkpoint: the original 24-step budget passes on all three trials
+
+The [original 24-step batch](proofs/mousepad-verified-find-replace/original24/README.md) is GREEN under `model-batch.mjs --review`: exact saved bytes, fresh post-save readback (calls 23/21/22) and frame-sampled visual review on t1–t3 in one fresh, unpooled Anthropic batch. The earlier trial 1/2 failures were step exhaustion on redundant field readbacks and an unrequested menu; the repair is an instruction change pinned by a RED/GREEN prose test. Visual inspection is frame-sampled (checkpoint stills plus a 1 fps contact sheet of the actual recording, Claude Sonnet 4.5, with Wren's direct view of the full-resolution checkpoints); native video inspection was unavailable without a valid Gemini credential. Human approval remains pending.
+
+## Previous checkpoint: complete bounded 32-step batch passes machine and model-assisted visual review
 
 The [fetch-retry experiment](proofs/mousepad-verified-find-replace/fetch-retry/README.md) recovered real pre-response connection failures in t1 and t2 without replaying desktop calls. All three trials in one unchanged-artifact 32-step batch passed exact saved bytes and fresh post-save readback; actual Gemini video/image inspection and explicit journal/oracle reconciliation then passed the unchanged visual validator. The final receipt is GREEN with human approval PENDING. 128 artifacts are hash-verified; 114 focused tests, 19/19 forced workspace tasks and 231 full-suite plus three targeted mutations pass.
 
