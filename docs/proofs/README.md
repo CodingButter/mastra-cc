@@ -28,7 +28,7 @@ answered by argument.
 
 [Fresh watch membership](reliability-remediation/cc08/README.md) records seam-level RED/GREEN verification of reparenting, recovered parent reads, bounded climbs and pending-close suppression; live native reparenting proof remains deferred.
 
-[Native cost baseline](reliability-remediation/cc09/README.md) records built-daemon queue and real Xvfb capture phase measurements with fixed content-free counters; no latency SLA or production-load claim. [Native notification and cancellation measurement boundaries](reliability-remediation/cc09/native-measurement-boundary.md) records source-verified follow-up design, not native timing results.
+[Native cost baseline](reliability-remediation/cc09/README.md) records built-daemon queue and real Xvfb capture phase measurements with fixed content-free counters; no latency SLA or production-load claim. [Native notification and cancellation measurement boundaries](reliability-remediation/cc09/native-measurement-boundary.md) records source-verified follow-up design, not native timing results. [Native event-to-storage latency](reliability-remediation/cc09/native-latency/README.md) measures ten real Mousepad mutations reaching SQLite with zero model calls (median 8.0 ms request-to-row, polling-inclusive upper bound); no wake or cancellation claim.
 
 ## The convention
 

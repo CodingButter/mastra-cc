@@ -1,0 +1,116 @@
+{
+  "scope": "native Mousepad mutation through daemon and DesktopSignals to SQLite; polling-inclusive upper bounds, not intrinsic native-event latency or cancellation acknowledgement",
+  "fetchCalls": 0,
+  "samples": [
+    {
+      "index": 0,
+      "subscriptionId": "sub-000001-853604",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "d05b06ef-5b57-488f-8efc-862496536338",
+      "injectionStartMs": 839.658703,
+      "eventReceivedMs": 851.027112,
+      "persistedObservedMs": 855.890514,
+      "injectionToStorageUpperBoundMs": 16.231811000000107,
+      "receiptToStorageUpperBoundMs": 4.863402000000065
+    },
+    {
+      "index": 1,
+      "subscriptionId": "sub-000002-fbecaf",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "db9c8309-7b65-4a50-98d1-a310f99aa1e1",
+      "injectionStartMs": 969.406705,
+      "eventReceivedMs": 971.225264,
+      "persistedObservedMs": 979.133289,
+      "injectionToStorageUpperBoundMs": 9.726584000000003,
+      "receiptToStorageUpperBoundMs": 7.908024999999952
+    },
+    {
+      "index": 2,
+      "subscriptionId": "sub-000003-50d9d1",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "d80d2864-ab14-42d5-9564-70c01f79f6ed",
+      "injectionStartMs": 1084.016624,
+      "eventReceivedMs": 1085.358958,
+      "persistedObservedMs": 1093.35234,
+      "injectionToStorageUpperBoundMs": 9.33571599999982,
+      "receiptToStorageUpperBoundMs": 7.993381999999883
+    },
+    {
+      "index": 3,
+      "subscriptionId": "sub-000004-e38441",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "3b58c7d4-184f-4296-bb3c-d0e776899950",
+      "injectionStartMs": 1197.765786,
+      "eventReceivedMs": 1199.080559,
+      "persistedObservedMs": 1205.620546,
+      "injectionToStorageUpperBoundMs": 7.854760000000169,
+      "receiptToStorageUpperBoundMs": 6.53998700000011
+    },
+    {
+      "index": 4,
+      "subscriptionId": "sub-000005-684f51",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "0b8fbdca-cf5c-4e06-9b5e-f1c3f4ca6fe2",
+      "injectionStartMs": 1309.673601,
+      "eventReceivedMs": 1311.143101,
+      "persistedObservedMs": 1317.274987,
+      "injectionToStorageUpperBoundMs": 7.601386000000048,
+      "receiptToStorageUpperBoundMs": 6.131886000000122
+    },
+    {
+      "index": 5,
+      "subscriptionId": "sub-000006-78deca",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "e2eb1479-be1b-42a7-bff2-d451dce74674",
+      "injectionStartMs": 1420.720212,
+      "eventReceivedMs": 1421.84099,
+      "persistedObservedMs": 1428.71336,
+      "injectionToStorageUpperBoundMs": 7.993148000000019,
+      "receiptToStorageUpperBoundMs": 6.872370000000046
+    },
+    {
+      "index": 6,
+      "subscriptionId": "sub-000007-717472",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "35504a89-6bd9-45bf-873b-0b3e02ca8124",
+      "injectionStartMs": 1532.991233,
+      "eventReceivedMs": 1534.494551,
+      "persistedObservedMs": 1540.198151,
+      "injectionToStorageUpperBoundMs": 7.206918000000087,
+      "receiptToStorageUpperBoundMs": 5.703600000000051
+    },
+    {
+      "index": 7,
+      "subscriptionId": "sub-000008-60ab60",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "a358e409-ed6f-4e3a-b20a-23384c75ce25",
+      "injectionStartMs": 1643.274406,
+      "eventReceivedMs": 1644.204161,
+      "persistedObservedMs": 1649.509708,
+      "injectionToStorageUpperBoundMs": 6.235302000000047,
+      "receiptToStorageUpperBoundMs": 5.305546999999933
+    },
+    {
+      "index": 8,
+      "subscriptionId": "sub-000009-2383b3",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "0d5a9984-688e-493f-8dc5-ee2ccb7c9c1b",
+      "injectionStartMs": 1752.994315,
+      "eventReceivedMs": 1754.123483,
+      "persistedObservedMs": 1760.801275,
+      "injectionToStorageUpperBoundMs": 7.806960000000117,
+      "receiptToStorageUpperBoundMs": 6.677791999999954
+    },
+    {
+      "index": 9,
+      "subscriptionId": "sub-00000a-5718e6",
+      "id": "el-7ae20f34f6ed",
+      "notificationId": "5cc18754-e5f5-4186-b81c-e9a9452a0643",
+      "injectionStartMs": 1867.631154,
+      "eventReceivedMs": 1869.192459,
+      "persistedObservedMs": 1879.579883,
+      "injectionToStorageUpperBoundMs": 11.948729000000185,
+      "receiptToStorageUpperBoundMs": 10.38742400000001
+    }
+  ]
+}

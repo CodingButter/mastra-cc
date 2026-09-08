@@ -1,0 +1,10 @@
+{
+  "session": "/tmp/mastra-cc-mousepad-verified-find-replace/docs/proofs/mousepad-verified-find-replace/model-session.sh",
+  "modules": "/tmp/mousepad-paced.5079nlae/installed/consumer/node_modules",
+  "mastraEntry": "/home/codingbutter/.nvm/versions/node/v25.2.1/lib/node_modules/mastracode/package.json",
+  "driverSha256": "4e8cd1b8e373ff6e2702ee33cf50044c2d5a1652c2f0675cd16da7d338aaf356",
+  "sessionSha256": "910a9580cb10eca59a553872d6878cec638ddaa606523927ac2559b500c9d55a",
+  "sampleCount": 10,
+  "pollIntervalMs": 5,
+  "claim": "native mutation request to SQLite visibility upper bound; no cancellation claim"
+}
