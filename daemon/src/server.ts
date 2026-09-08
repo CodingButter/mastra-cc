@@ -1317,6 +1317,7 @@ interface OpenSubscription {
 // the client that asked for it.
 export class SubscriptionBook {
   private readonly open = new Map<string, OpenSubscription>();
+  private closed = false;
   constructor(
     private readonly emit: (event: ChangeEvent) => void,
     // Visibility is re-checked where events are STAMPED, not only where
@@ -1327,15 +1328,26 @@ export class SubscriptionBook {
   ) {}
 
   async subscribe(backend: Backend, id: string, priority: Priority): Promise<string> {
-    // The sink is installed before the subscription id exists, so it captures
-    // the id by closure once it does. A change arriving in that window is
-    // delivered, not dropped: the client asked to watch, and the daemon does
-    // not decide the first change was less real than the rest.
+    if (this.closed) throw new Error("watch connection has closed");
+    // Bound initialization pointers; overflow refuses the watch rather than
+    // silently claiming coverage after dropping its first changes.
+    const pending: BackendChange[] = [];
+    let overflow = false;
     let subscriptionId = "";
     const backendSubscription = await backend.subscribeElement(id, (change: BackendChange) => {
-      if (subscriptionId === "") return;
+      if (this.closed || overflow) return;
+      if (subscriptionId === "") {
+        if (pending.length < 256) pending.push({ ...change });
+        else overflow = true;
+        return;
+      }
       this.deliver(subscriptionId, change);
     });
+    if (this.closed || overflow) {
+      pending.length = 0;
+      await backendSubscription.close();
+      throw new Error(this.closed ? "watch connection closed during initialization" : "watch initialization exceeded its bounded event buffer; observe again before subscribing");
+    }
     subscriptionId = backendSubscription.subscriptionId;
     this.open.set(subscriptionId, {
       id,
@@ -1344,6 +1356,8 @@ export class SubscriptionBook {
       backendSubscription,
       alive: true,
     });
+    for (const change of pending) this.deliver(subscriptionId, change);
+    pending.length = 0;
     return subscriptionId;
   }
 
@@ -1388,6 +1402,7 @@ export class SubscriptionBook {
   }
 
   async closeAll(): Promise<void> {
+    this.closed = true;
     for (const entry of this.open.values()) {
       if (entry.alive) await entry.backendSubscription.close();
     }

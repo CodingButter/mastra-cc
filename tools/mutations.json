@@ -1,5 +1,26 @@
 [
   {
+    "name": "subscription-initialization-ignores-connection-close",
+    "file": "daemon/src/server.ts",
+    "find": "    this.closed = true;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/subscription-initialization.test.ts"
+  },
+  {
+    "name": "subscription-initialization-drops-buffered-events",
+    "file": "daemon/src/server.ts",
+    "find": "    for (const change of pending) this.deliver(subscriptionId, change);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/subscription-initialization.test.ts"
+  },
+  {
+    "name": "subscription-initialization-accepts-overflow",
+    "file": "daemon/src/server.ts",
+    "find": "        else overflow = true;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/subscription-initialization.test.ts"
+  },
+  {
     "name": "capture-matrix-accepts-missing-cases",
     "file": "docs/proofs/reliability-remediation/cc09/verify-matrix.mjs",
     "find": "  assert.equal(rows.length, 24, 'matrix must contain all 24 cases');\n",

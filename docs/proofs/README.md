@@ -10,6 +10,8 @@ answered by argument.
 
 [Mousepad Find/Replace baseline](mousepad-verified-find-replace/README.md) records the verified delivery base and regression gates; native task completion remains unproved.
 
+[Remaining CC-01–CC-09 requirements](reliability-remediation/AUDIT.md) separates implemented slices from unproven system-level acceptance. [Bounded subscription initialization](reliability-remediation/cc08/initialization/README.md) retains the callback-loss regression, overflow refusal and connection-teardown proof.
+
 [Signal lifecycle remediation](reliability-remediation/cc03/README.md) records controlled RED/GREEN regressions, retained real-socket coverage, and signal mutation checks.
 
 [Visible-pixel capture contract](reliability-remediation/cc01/README.md) records generated-description RED/GREEN evidence and clipped, covering-pixel fixtures without claiming live desktop validation.

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "red.txt.gz",
+    "originalSha256": "37ebd44a3c069d841450a8ed140b1c9f051b93bc3008357c96c19d7b818d69ef",
+    "retainedSha256": "0fe735435999952d6773856d0cf0b279e500a96245e27d10568750179a6de896"
+  },
+  {
+    "file": "green.txt.gz",
+    "originalSha256": "f898b5ae01a55e4551281ca3e79bcfb943a1f85fd4208773d531361814771eec",
+    "retainedSha256": "ba03a5618b39753af16a537e33b2596883c1c5fc0f884eac908cbd331bb3a69a"
+  },
+  {
+    "file": "gates.txt.gz",
+    "originalSha256": "dadbbc5a11bd34eb89849975faefa045b7541b469fda06afa3d2bb796b9cc6c0",
+    "retainedSha256": "29b0dad93beb7ab37261bb25e9316d58deaca944f2e22d2ac96a56992ff70b46"
+  },
+  {
+    "file": "gates-first-failure.txt.gz",
+    "originalSha256": "91fe0cb0af42b5fdb87afd09947112bc8af220c0f444bdf702ed4aee0a693cfe",
+    "retainedSha256": "90dd0b9820e0c3e9f167e5de61babe1a94f83673761e4ba3044409338c11c4b9"
+  },
+  {
+    "file": "window-rerun.txt.gz",
+    "originalSha256": "0db57606f646235fe8b6a22ccc71601aebf7a0d51b4e3ddf094a0a628a45d7ba",
+    "retainedSha256": "c786dfddd97ebbc55f3d6f34f6ff0ce9f57db0cf0a50ffa92a401937618e64d4"
+  },
+  {
+    "file": "mutations.txt.gz",
+    "originalSha256": "407a4b7e390a2c107f383c8b47babc4c8a7c2188d6c7c553254c3343565b2b71",
+    "retainedSha256": "d466816e7816ef793581ead73ef1f5ccc2f10fdaf2801bdbe7af4d3f31db7fdc"
+  }
+]
