@@ -1,0 +1,478 @@
+{
+  "source": "/tmp/mousepad-reopen.4j26_kjr",
+  "exclusions": [
+    "dependency symlink",
+    "trial home/runtime directories"
+  ],
+  "artifacts": [
+    {
+      "source": "consumer/model-driver.mjs",
+      "retained": "consumer/model-driver.mjs.gz",
+      "sha256": "d8f7bcb2f157f1fab7afee00e7f588de1df3c8a747e9d68c33384ef50e4c8a55",
+      "retainedSha256": "4c930c7bbd91c3e36eb071352a37034496a7c09e9ef39b6ce4cf5154c7b0b668",
+      "bytes": 4146
+    },
+    {
+      "source": "t1/a11y.log",
+      "retained": "t1/a11y.log.gz",
+      "sha256": "8637b64809d8832619da2818e982edae737b0cd5318e7bfc006021ed2933bfaa",
+      "retainedSha256": "7133c31e5553816bdb676530cc8d8880cde48ba3ffe8eb9912c2301e41119e3f",
+      "bytes": 333
+    },
+    {
+      "source": "t1/app.log",
+      "retained": "t1/app.log.gz",
+      "sha256": "d9ebd0b8e592f80d848d2f0d3eef1aafbaac83d10cf4685ae63414c6c3e76676",
+      "retainedSha256": "c228a1d23b0ad397734519229ef70568eaff2b766c3627da210568c654d8acf0",
+      "bytes": 370
+    },
+    {
+      "source": "t1/before.txt",
+      "retained": "t1/before.txt.gz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retainedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0
+    },
+    {
+      "source": "t1/chooser-scoped.json",
+      "retained": "t1/chooser-scoped.json.gz",
+      "sha256": "0082a26b0014f0d1b16808dfa7a98631b287e481836ffeaca188b2c9c18e48a4",
+      "retainedSha256": "ecdf20bb67da4f8aca27492dad57f2cbd2e8cb3824d04b8ea507caa05deab1e4",
+      "bytes": 362639
+    },
+    {
+      "source": "t1/chooser.json",
+      "retained": "t1/chooser.json.gz",
+      "sha256": "a65341bc2982e3bf6fb1a7ab7c03a25858c4bfef3f31ac7bc701a8dc28a918ee",
+      "retainedSha256": "84122c26e8dabdce66dc08f99085b1795d90a5b2b831de5aee4b186958934c8f",
+      "bytes": 504639
+    },
+    {
+      "source": "t1/daemon-command.txt",
+      "retained": "t1/daemon-command.txt.gz",
+      "sha256": "947a9068bc0e404cb24e519dc50581fc03576da0ff353930d6d3841c2b25ffb8",
+      "retainedSha256": "580c55630538f91ecc99e0e6956dbf117ca5962be3b1665cc083a23ab6e9adca",
+      "bytes": 241
+    },
+    {
+      "source": "t1/daemon.log",
+      "retained": "t1/daemon.log.gz",
+      "sha256": "347680e66a04636260cb7e70609b850b32eca4fc901dfcef1f8f3a76fde7191d",
+      "retainedSha256": "bebe967e3d10d98c7e7b0cf292d9eeddfcde6ae48ffb32dee3c7acf189f3cbc5",
+      "bytes": 414
+    },
+    {
+      "source": "t1/display",
+      "retained": "t1/display.gz",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "retainedSha256": "6e08a71af69ad2fa0122936c77c0ba1d20f2b26808cfc5ea068985fb8264bf05",
+      "bytes": 2
+    },
+    {
+      "source": "t1/document.txt",
+      "retained": "t1/document.txt.gz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retainedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0
+    },
+    {
+      "source": "t1/driver.log",
+      "retained": "t1/driver.log.gz",
+      "sha256": "7c1a1521b28083fcba8dec4c0c4c914e5f32af6a8689f201014d422a66dfdf6f",
+      "retainedSha256": "9661051b3991e6f4f3412c1891bde8caff7b3033040b2d6b9d2270d2f8049cd7",
+      "bytes": 1504
+    },
+    {
+      "source": "t1/ffmpeg.log",
+      "retained": "t1/ffmpeg.log.gz",
+      "sha256": "f859242eea8fb3afa66cb104c5c7bbd6d47c07c3e3b67930173419d3ce8aa64f",
+      "retainedSha256": "121517dc0afac5146bf45247dd40b56b1ae4b39ce818cfd458ea8a101be91df2",
+      "bytes": 104
+    },
+    {
+      "source": "t1/grant.txt",
+      "retained": "t1/grant.txt.gz",
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d",
+      "retainedSha256": "aa9b4478046402eaf03c0508f4401fb2acf7384f6fbae74d041a911024de0801",
+      "bytes": 80
+    },
+    {
+      "source": "t1/location.json",
+      "retained": "t1/location.json.gz",
+      "sha256": "0472b745e27812134a706fb19235db1c406d4cde3357b5a7e3a3dc3b270f1768",
+      "retainedSha256": "df0a89347b5892890824c29b2bca221e99e2e990610a14fc85c284ae90055668",
+      "bytes": 368676
+    },
+    {
+      "source": "t1/openbox.log",
+      "retained": "t1/openbox.log.gz",
+      "sha256": "6cd9e939b9e6c0627ba3dd6c3373b9523590ac859a6db91e2563aeb0b31b410f",
+      "retainedSha256": "0bffc693b21a85e81416c293628870d7e00a91ebf4c7de60d4c48838d4b21c31",
+      "bytes": 129
+    },
+    {
+      "source": "t1/outcome.json",
+      "retained": "t1/outcome.json.gz",
+      "sha256": "b78c9f5b732a75f676a0e504134821516b14472c4ef07775b3404b5ef88d339e",
+      "retainedSha256": "2d2f4bb93e200bb5d516b437de42c78899332bc0b78e9bc3b0d2ec284d45c858",
+      "bytes": 42
+    },
+    {
+      "source": "t1/recording-start-ms.txt",
+      "retained": "t1/recording-start-ms.txt.gz",
+      "sha256": "a070ffa93d7a52e8447e57103bded0aafc76dd059a91436dd1a9774b0a2162c4",
+      "retainedSha256": "5aae80820e218b60fd9c5fbe3a6def97b401f970d4f0a6b2190c567b34a432c4",
+      "bytes": 14
+    },
+    {
+      "source": "t1/recording.json",
+      "retained": "t1/recording.json.gz",
+      "sha256": "0d00e8eab9fb1239f3393a68c1ce202920e6c552cd38849f9262572f30cf4d2a",
+      "retainedSha256": "8dd030b7ef5babda16bd5bc9e01aba775cdea4ef45602e82ebf3637ebbb0f845",
+      "bytes": 58
+    },
+    {
+      "source": "t1/reopen-declaration.json",
+      "retained": "t1/reopen-declaration.json.gz",
+      "sha256": "0c939f4f00ff06e5000cee42664f3c68bea8d8cd8ee364fc6505a18c772ae670",
+      "retainedSha256": "b24007ad1e48ef297553cd165153b6d6d24b7311fadc61e18a0df861a7ec02a7",
+      "bytes": 345
+    },
+    {
+      "source": "t1/reopen-events.jsonl",
+      "retained": "t1/reopen-events.jsonl.gz",
+      "sha256": "0c535f14a1c5479a560ab4b0973cf3357ae66fb9979c91b892d07bbb474da4e3",
+      "retainedSha256": "f48a9e30a3b827e29310215db0e836b8a215287fc6a4bbba888a70333a84fc11",
+      "bytes": 1437530
+    },
+    {
+      "source": "t1/screen.mkv",
+      "retained": "t1/screen.mkv.gz",
+      "sha256": "d3c2efca36fabf169cfaad351d1153eabdaaf34b0eaf471b0e57a4627166ccf7",
+      "retainedSha256": "d0d510101092a90b9c26393d2c12551fd34ef6f4318befb6ca89c3d694ad2943",
+      "bytes": 716190
+    },
+    {
+      "source": "t1/session.txt",
+      "retained": "t1/session.txt.gz",
+      "sha256": "1be95d12b75ea21220618210c0ffd7bc47911d2a9e328f2ec5a1e45dacbcaa68",
+      "retainedSha256": "be297817cc6e4a5fb5a1af19a0627c881575d99bd7de587cc0b5614d1ee07f9f",
+      "bytes": 6195
+    },
+    {
+      "source": "t1/xvfb.log",
+      "retained": "t1/xvfb.log.gz",
+      "sha256": "ba3a845f35cd8a9b096b8af143842ecf4f968baecce3bd737a37ab77eddaf73a",
+      "retainedSha256": "48ec8bddec82e47378fe3beb93c3e6fb241f10daf0d8f4e62336d411b1bab1ca",
+      "bytes": 2612
+    },
+    {
+      "source": "t2/a11y.log",
+      "retained": "t2/a11y.log.gz",
+      "sha256": "47b0249e94ce74a6cc76a3c9861c18a2c78be767fee31563db08682409a4fef9",
+      "retainedSha256": "e57f77f3a9714fe92e27d8a8b103d67d5d6088b6f6a3eaefff40b66bb0a228e8",
+      "bytes": 333
+    },
+    {
+      "source": "t2/app.log",
+      "retained": "t2/app.log.gz",
+      "sha256": "041ef4bbe2c54da37cbb664009e7db4c347b005dfa7129eec7baea6710ad67ac",
+      "retainedSha256": "ab4f9320b795f8889b46b651f37688e259a3371904056644472d0112fbf84b95",
+      "bytes": 370
+    },
+    {
+      "source": "t2/before.txt",
+      "retained": "t2/before.txt.gz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retainedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0
+    },
+    {
+      "source": "t2/chooser-scoped.json",
+      "retained": "t2/chooser-scoped.json.gz",
+      "sha256": "bedc76c36eda7a82888440cd49d5d6e70d9c49a1173729edd58204a4efa7de71",
+      "retainedSha256": "22369b85d23c35ee5b84f2cea8406a2b14be842507abc48462231fdd2392bde6",
+      "bytes": 362639
+    },
+    {
+      "source": "t2/chooser.json",
+      "retained": "t2/chooser.json.gz",
+      "sha256": "10f7b52c9a149412c65536a7af5d293ae46a6d93692b3753968a57a73e0ac11e",
+      "retainedSha256": "181b6fcebe259398dd9f01baa298264db77d9cdd1956f9b31577dd174c675e9d",
+      "bytes": 504639
+    },
+    {
+      "source": "t2/daemon-command.txt",
+      "retained": "t2/daemon-command.txt.gz",
+      "sha256": "4d09b4cac086facee8da186327f107b95c81817c4faa67642c4d3eda4e06462e",
+      "retainedSha256": "415b0d17468f297c51344e3917e9880f1a0eca1b2820e1e53cdd179e162f6a62",
+      "bytes": 241
+    },
+    {
+      "source": "t2/daemon.log",
+      "retained": "t2/daemon.log.gz",
+      "sha256": "c167f1975db247d18c1aad21ad83eaea2a79cdcd4964241547277ef992479570",
+      "retainedSha256": "8b95f6ae5f309b32f22a994dd263fdc504747c230d91e95ed981037f53e33b8c",
+      "bytes": 414
+    },
+    {
+      "source": "t2/display",
+      "retained": "t2/display.gz",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "retainedSha256": "6e08a71af69ad2fa0122936c77c0ba1d20f2b26808cfc5ea068985fb8264bf05",
+      "bytes": 2
+    },
+    {
+      "source": "t2/document.txt",
+      "retained": "t2/document.txt.gz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retainedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0
+    },
+    {
+      "source": "t2/driver.log",
+      "retained": "t2/driver.log.gz",
+      "sha256": "7c1a1521b28083fcba8dec4c0c4c914e5f32af6a8689f201014d422a66dfdf6f",
+      "retainedSha256": "9661051b3991e6f4f3412c1891bde8caff7b3033040b2d6b9d2270d2f8049cd7",
+      "bytes": 1504
+    },
+    {
+      "source": "t2/ffmpeg.log",
+      "retained": "t2/ffmpeg.log.gz",
+      "sha256": "bd5224dfb1f34fbff58656279590cca1611eaf5a78682d687ed9133d40fb58fe",
+      "retainedSha256": "83d9046a9c3f2464257eb3d53fe51173dd8d034ce3bc9fa80e3837de2c4a1926",
+      "bytes": 104
+    },
+    {
+      "source": "t2/grant.txt",
+      "retained": "t2/grant.txt.gz",
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d",
+      "retainedSha256": "aa9b4478046402eaf03c0508f4401fb2acf7384f6fbae74d041a911024de0801",
+      "bytes": 80
+    },
+    {
+      "source": "t2/location.json",
+      "retained": "t2/location.json.gz",
+      "sha256": "9f4c32fec1babe2fa4aec6cb1a76b0a88e1d7854380cb4e13f85ce46c7ea6e83",
+      "retainedSha256": "8a7a64ea84bc98193754714c36cf48d2494b0f0561ad7167c42c1bc0bd9cdcf9",
+      "bytes": 368676
+    },
+    {
+      "source": "t2/openbox.log",
+      "retained": "t2/openbox.log.gz",
+      "sha256": "6cd9e939b9e6c0627ba3dd6c3373b9523590ac859a6db91e2563aeb0b31b410f",
+      "retainedSha256": "0bffc693b21a85e81416c293628870d7e00a91ebf4c7de60d4c48838d4b21c31",
+      "bytes": 129
+    },
+    {
+      "source": "t2/outcome.json",
+      "retained": "t2/outcome.json.gz",
+      "sha256": "b78c9f5b732a75f676a0e504134821516b14472c4ef07775b3404b5ef88d339e",
+      "retainedSha256": "2d2f4bb93e200bb5d516b437de42c78899332bc0b78e9bc3b0d2ec284d45c858",
+      "bytes": 42
+    },
+    {
+      "source": "t2/recording-start-ms.txt",
+      "retained": "t2/recording-start-ms.txt.gz",
+      "sha256": "fd28c713007b0ea0e7a8bf6ca1ff705dae3701e7529fa5abf53ae8250d772432",
+      "retainedSha256": "9725bdf317023c881081c82130b2d0943497753bb79eb317d1deded44109571f",
+      "bytes": 14
+    },
+    {
+      "source": "t2/recording.json",
+      "retained": "t2/recording.json.gz",
+      "sha256": "89af729845559898af3bc4670fd5e6e81a6aa4864598785fd6685f41698c6e46",
+      "retainedSha256": "103bb8fdae9fb0df6dc2ae288c9ae88c24f48974a4bae6099f70e61e5e7250c4",
+      "bytes": 58
+    },
+    {
+      "source": "t2/reopen-declaration.json",
+      "retained": "t2/reopen-declaration.json.gz",
+      "sha256": "bd543381645fe885bc1c49a6088a7334fdcbc9aaccb923ae51754d2cf7b503cd",
+      "retainedSha256": "bc9e169eb2d4e360f05c5cf2478f933b71f70c2cad29cea10ffb2caab43e2be8",
+      "bytes": 345
+    },
+    {
+      "source": "t2/reopen-events.jsonl",
+      "retained": "t2/reopen-events.jsonl.gz",
+      "sha256": "0da40b736425f8e90fa6423523c2057089f2a51c943569073770f6ff8e2064e4",
+      "retainedSha256": "1e1ffab7820904674ac46e3a81861baefaced14433d1b5acc275efba184ace75",
+      "bytes": 1437530
+    },
+    {
+      "source": "t2/screen.mkv",
+      "retained": "t2/screen.mkv.gz",
+      "sha256": "2ebff106583b910722fb1b57ce8f43683c59ebc3552c7a8c6a5d4923630f9023",
+      "retainedSha256": "8cfd74b8c06d4a80297aca716f7aa8b55c76b10f02a8d24b30034a0012ced197",
+      "bytes": 716833
+    },
+    {
+      "source": "t2/session.txt",
+      "retained": "t2/session.txt.gz",
+      "sha256": "b31968ec5ca47c387cf81393a91833036907f098538f9854717da0fefc45fec1",
+      "retainedSha256": "ab45fb2e576771df53bae594a90d63600364b027b550ff6cd4e81b29c65cdabb",
+      "bytes": 6015
+    },
+    {
+      "source": "t2/xvfb.log",
+      "retained": "t2/xvfb.log.gz",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "retainedSha256": "2bbe801c93c4003d8fb1b5f31d95703fcf096e3745d2965f2cfadf6088274711",
+      "bytes": 1438
+    },
+    {
+      "source": "t3/a11y.log",
+      "retained": "t3/a11y.log.gz",
+      "sha256": "ebfc0f10b5961dc9419c3f8c032e3a1ecfbd63b1dfd5689cd6340867afd6de98",
+      "retainedSha256": "c3fc8a0d833d4b11475739ace9526d86512035d41240bc48c6a134ffaaf895bc",
+      "bytes": 333
+    },
+    {
+      "source": "t3/app.log",
+      "retained": "t3/app.log.gz",
+      "sha256": "145df1f45dcd7d33a2aed7e481ad20f61b66189e102a49f1d9d29e1afea9f4ab",
+      "retainedSha256": "157fd54797495f6f27c8072a739eb4a0b98a2e7935100c8704cf44877984ee3d",
+      "bytes": 370
+    },
+    {
+      "source": "t3/before.txt",
+      "retained": "t3/before.txt.gz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retainedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0
+    },
+    {
+      "source": "t3/chooser-scoped.json",
+      "retained": "t3/chooser-scoped.json.gz",
+      "sha256": "63bef8395ee04f1bdd5f5b21ef7dd8bfa5e9fe9c85c6815c7364b9a8f8926581",
+      "retainedSha256": "92eef7b9c9eab8826c06b40259c89895b410fa9677022258f479d85c746f0bad",
+      "bytes": 362639
+    },
+    {
+      "source": "t3/chooser.json",
+      "retained": "t3/chooser.json.gz",
+      "sha256": "151a49a357d3f6e05f1ba6558db1e25dea37b1ff7e10676ab327eec9fb6a6666",
+      "retainedSha256": "b1719fea2bea1c2c7019fb0b99c4c914ea29f17fba3078ac4c7f9c204cfc16c2",
+      "bytes": 504639
+    },
+    {
+      "source": "t3/daemon-command.txt",
+      "retained": "t3/daemon-command.txt.gz",
+      "sha256": "cbf986859c2be5ec1ce471ecdfaa1061f541fb9f859e2a90cfaa373e0079582b",
+      "retainedSha256": "54c8540585f1339ee3ae9039e4079ea364780b199efd4090a9895c74ce36365c",
+      "bytes": 241
+    },
+    {
+      "source": "t3/daemon.log",
+      "retained": "t3/daemon.log.gz",
+      "sha256": "b437571f9ef92521be79dd541074e3d3060d01fb9329534fb9c02e0e50f833bb",
+      "retainedSha256": "15c8ccaa7e315cb5d370d9ffd83918212da0950c3d0f7bd1ecee630f34414c87",
+      "bytes": 414
+    },
+    {
+      "source": "t3/display",
+      "retained": "t3/display.gz",
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "retainedSha256": "6e08a71af69ad2fa0122936c77c0ba1d20f2b26808cfc5ea068985fb8264bf05",
+      "bytes": 2
+    },
+    {
+      "source": "t3/document.txt",
+      "retained": "t3/document.txt.gz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retainedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0
+    },
+    {
+      "source": "t3/driver.log",
+      "retained": "t3/driver.log.gz",
+      "sha256": "7c1a1521b28083fcba8dec4c0c4c914e5f32af6a8689f201014d422a66dfdf6f",
+      "retainedSha256": "9661051b3991e6f4f3412c1891bde8caff7b3033040b2d6b9d2270d2f8049cd7",
+      "bytes": 1504
+    },
+    {
+      "source": "t3/ffmpeg.log",
+      "retained": "t3/ffmpeg.log.gz",
+      "sha256": "c2840ff40aabe20e0f55e9ed9e915403107bea3486f27dd8a4e675765a3532e1",
+      "retainedSha256": "ca5f85c94adffe486b8afe05dbf3c7992f44de252421585af2789c252f398743",
+      "bytes": 104
+    },
+    {
+      "source": "t3/grant.txt",
+      "retained": "t3/grant.txt.gz",
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d",
+      "retainedSha256": "aa9b4478046402eaf03c0508f4401fb2acf7384f6fbae74d041a911024de0801",
+      "bytes": 80
+    },
+    {
+      "source": "t3/location.json",
+      "retained": "t3/location.json.gz",
+      "sha256": "b2aa5cd3a757e1cf69735b27693d68c9c8f29a3aced7673eb4115aede4d2ffb5",
+      "retainedSha256": "6b8b3ad75a4d77fbf8d14dbbef2c02ae5f0d27b99bcecdbe7a2d30b26d840f7d",
+      "bytes": 368676
+    },
+    {
+      "source": "t3/openbox.log",
+      "retained": "t3/openbox.log.gz",
+      "sha256": "6cd9e939b9e6c0627ba3dd6c3373b9523590ac859a6db91e2563aeb0b31b410f",
+      "retainedSha256": "0bffc693b21a85e81416c293628870d7e00a91ebf4c7de60d4c48838d4b21c31",
+      "bytes": 129
+    },
+    {
+      "source": "t3/outcome.json",
+      "retained": "t3/outcome.json.gz",
+      "sha256": "b78c9f5b732a75f676a0e504134821516b14472c4ef07775b3404b5ef88d339e",
+      "retainedSha256": "2d2f4bb93e200bb5d516b437de42c78899332bc0b78e9bc3b0d2ec284d45c858",
+      "bytes": 42
+    },
+    {
+      "source": "t3/recording-start-ms.txt",
+      "retained": "t3/recording-start-ms.txt.gz",
+      "sha256": "767dda3bce1c09b877af7e9a59e023214a4d78f4285e01592fa4c0b1384a87a1",
+      "retainedSha256": "699cfe7a0f9c75f2148930f6b07c74020b42a486084f2e52d606cd96103ae4bd",
+      "bytes": 14
+    },
+    {
+      "source": "t3/recording.json",
+      "retained": "t3/recording.json.gz",
+      "sha256": "0b5d25319fdd68e445bcda2df2262eb41d9b4fefffd77ddc50242616d6b66f96",
+      "retainedSha256": "142d05ce62f74f3c3e0da2375e71aa46557cff9b2b0bd29856247ab5f1972309",
+      "bytes": 58
+    },
+    {
+      "source": "t3/reopen-declaration.json",
+      "retained": "t3/reopen-declaration.json.gz",
+      "sha256": "a8801c3662bc5da4a23a5c3bb2f1162938be3b377d1ea5fbf8fac99c6fbf71e5",
+      "retainedSha256": "58201e33470b49b4c724fb6d6c3c3b990a2014c402543302d8e8e97f7bdf4e62",
+      "bytes": 365
+    },
+    {
+      "source": "t3/reopen-events.jsonl",
+      "retained": "t3/reopen-events.jsonl.gz",
+      "sha256": "0de454ccfc28038fb91065469605463315ed88019c47af5c8ec70eb7216a4d2d",
+      "retainedSha256": "14e6b38268ea49bd4211208d3a05e5260a33b1d1e446ab98e487b8998c0deb16",
+      "bytes": 1437530
+    },
+    {
+      "source": "t3/screen.mkv",
+      "retained": "t3/screen.mkv.gz",
+      "sha256": "90767c155abcd39600e169c8750286fcb3b1285a20fef7282f3661ca3565b45d",
+      "retainedSha256": "af6b94e12485508c3fd9d58608a61509860108594a1dfe3775f3b70280cd70ad",
+      "bytes": 673287
+    },
+    {
+      "source": "t3/session.txt",
+      "retained": "t3/session.txt.gz",
+      "sha256": "09d53d7cfc051605663c2a7008105856eaac859c0cd7a3a6d4a463cb09721081",
+      "retainedSha256": "ac8113f5967bcc567ba14a776414a9bb16838b9783f2d465e21f2df86b5df0fc",
+      "bytes": 6607
+    },
+    {
+      "source": "t3/xvfb.log",
+      "retained": "t3/xvfb.log.gz",
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02",
+      "retainedSha256": "2bbe801c93c4003d8fb1b5f31d95703fcf096e3745d2965f2cfadf6088274711",
+      "bytes": 1438
+    }
+  ]
+}

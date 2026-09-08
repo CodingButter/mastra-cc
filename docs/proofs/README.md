@@ -50,6 +50,8 @@ answered by argument.
 
 [Saved-document reopen diagnostic](mousepad-verified-find-replace/reopen/README.md) records a blocked public Open action in a fresh native process, without claiming successful reopening.
 
+[Rejected semantic Open peer diagnostic](mousepad-verified-find-replace/semantic-open/README.md) retains three failed native trials and the reverted experimental patch without claiming a production fix.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths
