@@ -18,7 +18,8 @@ for trial in ['t1','t2','t3']:
    except ProcessLookupError:pass
    proc.wait()
  print(trial,'exit',code,flush=True)
- if code:failures.append(trial);print((run/'driver.log').read_text()[-1500:],flush=True)
- (run/'outcome.json').write_text(json.dumps({'exitCode':code,'sourceUnchanged':hashlib.sha256(source.read_bytes()).hexdigest()==hashlib.sha256(data).hexdigest()}))
+ unchanged=hashlib.sha256(source.read_bytes()).hexdigest()==hashlib.sha256(data).hexdigest()
+ if code or not unchanged:failures.append(trial);print((run/'driver.log').read_text()[-1500:],flush=True)
+ (run/'outcome.json').write_text(json.dumps({'exitCode':code,'sourceUnchanged':unchanged}))
 print('FAILED:',failures,flush=True)
 sys.exit(bool(failures))

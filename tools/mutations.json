@@ -1797,7 +1797,7 @@
   {
     "name": "a-bus-error-never-read-for-the-peer-it-names",
     "file": "daemon/src/backends/atspi/channel.ts",
-    "find": "  const wire = JSON.stringify(err ?? null);\n  return (\n    wire.includes(\"org.freedesktop.DBus.Error.ServiceUnknown\") ||\n    wire.includes(\"disconnected from message bus\") ||\n    wire.includes(\"org.freedesktop.DBus.Error.NoReply\")\n  );",
+    "find": "  const wire = JSON.stringify(err ?? null);\n  return (\n    wire.includes(\"org.freedesktop.DBus.Error.ServiceUnknown\") ||\n    wire.includes(\"disconnected from message bus\")\n  );",
     "replace": "  return false;",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
