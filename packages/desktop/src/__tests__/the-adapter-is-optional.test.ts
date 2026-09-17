@@ -72,12 +72,49 @@ describe("the Mastra adapter", () => {
       expect(description).toContain("does not prove application ownership");
       expect(description).toContain("does not raise, focus, scroll or click");
       expect(description).not.toContain("own window's pixels");
-      expect(description).toContain("Native capture refuses partial display intersections");
+      expect(description).toContain("A clipped picture is answered, not refused");
       expect(description).toContain("Never infer a crop offset from PNG dimensions");
+      expect(description).toContain("the fractions clickElement takes");
       const schema = JSON.parse(readFileSync(new URL("../../../../protocol/schema.json", import.meta.url), "utf8"));
       for (const dimension of ["width", "height"]) {
         expect(schema.types.capturedImage.fields[dimension].description).toContain("clipped");
       }
+      for (const field of ["source", "clipped", "crop", "capturedAt"]) {
+        expect(schema.types.capturedImage.fields[field].required).toBe(true);
+      }
+    } finally {
+      client.close();
+    }
+  });
+
+  // THE MODEL GETS THE PICTURE AND WHAT IT IS A PICTURE OF (ADR-0105). The crop
+  // crossed the wire so a clipped image can be aimed; the adapter must not
+  // drop it on the way to the model. The output here is shaped like the
+  // daemon's answer and pushed through the tool's own toModelOutput, so the
+  // assertion is about the adapter, not about a fake.
+  it("hands the model the image as media and its crop as text, together", async () => {
+    const client = await connect({ socketPath: await daemonOnATape() });
+    try {
+      const tool = desktopTools(client).captureElement as unknown as {
+        toModelOutput: (output: unknown) => { type: string; value: Array<{ type: string; data?: string; mediaType?: string; text?: string }> } | undefined;
+      };
+      const image = {
+        format: "png", width: 20, height: 30, data: "aGVsbG8=",
+        source: "visible-desktop", clipped: true, crop: { x: 0.5, y: 0, width: 0.5, height: 1 }, capturedAt: 1700000000000,
+      };
+      const out = tool.toModelOutput({ image });
+      expect(out?.type).toBe("content");
+      const media = out?.value.find((part) => part.type === "media");
+      expect(media).toEqual({ type: "media", data: "aGVsbG8=", mediaType: "image/png" });
+      const text = out?.value.find((part) => part.type === "text")?.text ?? "";
+      expect(text).toContain("20 by 30 pixel picture");
+      expect(text).toContain("CLIPPED");
+      expect(text).toContain("x 0.5 to 1");
+      expect(text).toContain("x = 0.5 + u * 0.5");
+      expect(text).toContain("visible desktop pixels");
+      expect(text).toContain("1700000000000");
+      // A refusal carries no picture and is left as the daemon wrote it.
+      expect(tool.toModelOutput({ refusal: "off the display" })).toBeUndefined();
     } finally {
       client.close();
     }

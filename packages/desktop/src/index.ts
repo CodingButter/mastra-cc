@@ -22,6 +22,10 @@ import { connect as dial, type TransportClient } from "@mastra-cc/transport";
 // so a caller reading the protocol reads this package.
 export * from "@mastra-cc/transport";
 
+// Where in the element a picture points (ADR-0105): the one written-down
+// arithmetic from a picture location to the fractions clickElement takes.
+export { locateInElement, validateCrop, describeCapture, CaptureGeometryError, type ElementLocation } from "./capture-geometry.js";
+
 /** The socket path to dial when no address is passed. */
 export const SOCKET_ENV = "MASTRA_CC_SOCKET";
 /** The websocket URL to dial when no address is passed. */

@@ -12,6 +12,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 
 | # | Decision | One-line reason |
 |---|---|---|
+| [0105](0105-a-picture-says-which-part-of-the-element-it-is.md) | A picture says which part of the element it is | Clipped captures carry a normalized crop instead of being refused |
 | [0104](0104-measure-serial-queue-and-native-capture-costs.md) | Measure serial queue and native capture costs | Establish content-free phase costs before selecting latency budgets |
 | [0103](0103-native-watch-membership-is-fresh-and-bounded.md) | Native watch membership is fresh and bounded | Reparenting and failed reads must not leave permanent ancestry verdicts |
 | [0102](0102-refuse-native-partial-captures-without-provenance.md) | Refuse native partial captures without provenance | Partial image fractions do not locate the same point in the full element |

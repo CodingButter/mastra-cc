@@ -522,11 +522,14 @@ changed before retrying; do not blindly duplicate a click, submission or typing.
 ### When the labels run out, look at it
 
 `captureElement` returns a PNG cropped from a root-screen screenshot to the
-named element's bounds. Native partial captures are refused until crop provenance
-is available: bring the entire element onto the display, then reobserve and capture.
-Never infer crop offsets from PNG dimensions or map partial-image locations directly
-to element-relative clicks. Even a full image is not a freshness guarantee: bounds
-observation and capture are not atomic. These are VISIBLE pixels, not pixels
+named element's bounds, with `clipped` and `crop` saying which part of the element
+it is. A clipped picture's centre is not the element's centre: a location (u, v) in
+the picture is at element fraction `crop.x + u * crop.width, crop.y + v * crop.height`,
+and those are the `x` and `y` that `clickElement` takes (the adapter states this
+next to every picture, and the desktop package exports a helper that does the
+arithmetic and refuses out-of-range inputs). Never infer crop
+offsets from PNG dimensions. Even a full image is not a freshness guarantee: bounds
+observation and capture are not atomic, so reobserve the element before pressing. These are VISIBLE pixels, not pixels
 owned by that application. Overlapping windows may appear, and transparent or
 input-only overlays may intercept input without being apparent in the image.
 If a crop shows an overlay, reobserve, raise the target through an observed

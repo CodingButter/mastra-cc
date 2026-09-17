@@ -1,0 +1,7 @@
+whole element: 40 by 30, clipped=false, crop 0,0,1,1, capturedAt=1789685749555
+{"edge":"left","rect":[-10,10,40,30],"image":[30,30],"crop":{"x":0.25,"y":0,"width":0.75,"height":1},"pictureCentreInElement":{"x":0.625,"y":0.5}}
+{"edge":"right","rect":[170,10,40,30],"image":[30,30],"crop":{"x":0,"y":0,"width":0.75,"height":1},"pictureCentreInElement":{"x":0.375,"y":0.5}}
+{"edge":"top","rect":[10,-10,40,30],"image":[40,20],"crop":{"x":0,"y":0.3333333333333333,"width":1,"height":0.6666666666666666},"pictureCentreInElement":{"x":0.5,"y":0.6666666666666666}}
+{"edge":"bottom","rect":[10,130,40,30],"image":[40,20],"crop":{"x":0,"y":0,"width":1,"height":0.6666666666666666},"pictureCentreInElement":{"x":0.5,"y":0.3333333333333333}}
+{"edge":"off-display","rect":[200,10,40,30],"refusal":"that rectangle (200, 10 40 by 30) lies outside the 200 by 150 of pixels that were grabbed - there is nothing there to look at"}
+PROOF: GREEN — real native capture answers four edge-clipped pictures with exact crops, maps their centres, and still refuses an empty intersection; scripted accessibility geometry
