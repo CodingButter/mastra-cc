@@ -257,16 +257,25 @@ describe("who may close a window", () => {
     const obliging = await child(false);
     const table = new OwnershipTable();
     table.record(obliging.pid, "test-app");
-    let showing: SemanticElement[] = [];
-    const backend = desk(() => showing);
-    showing = [element(backend, "application", "test-app"), element(backend, "dialog", "Find and Replace", "test-app")];
+    // The dialog is up at the instant of the signal and gone by the time the
+    // daemon next polls. That ordering is the rule under test, so it is tied
+    // to the daemon's own first poll (its ownership check) rather than to a
+    // wall-clock timer racing the child's exit - on a slow runner the timer
+    // loses that race and the test would call a pre-existing dialog a refusal
+    // for reasons that have nothing to do with the daemon.
+    let polls = 0;
+    const owns = table.owns.bind(table);
+    table.owns = (pid: number) => {
+      polls += 1;
+      return owns(pid);
+    };
+    const backend = desk(() =>
+      polls <= 1
+        ? [element(backend, "application", "test-app"), element(backend, "dialog", "Find and Replace", "test-app")]
+        : [element(backend, "application", "test-app")],
+    );
     try {
-      const pending = restart("test-app", backend, { table, capabilities: configured("graceful") });
-      const appear = setTimeout(() => {
-        showing = [element(backend, "application", "test-app")];
-      }, 120);
-      const answer = resultOf(await pending);
-      clearTimeout(appear);
+      const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
 
       expect(answer.blockedBy).toBeUndefined();
       expect(answer.application?.name).toBe("test-app");
