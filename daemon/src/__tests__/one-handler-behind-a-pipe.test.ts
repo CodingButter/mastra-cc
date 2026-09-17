@@ -28,6 +28,8 @@ function fakePipe(): Pipe & { written: string[]; ended: boolean; feed(chunk: str
     write(line) {
       written.push(line);
     },
+    pending: () => 0,
+    onDrain: () => undefined,
     end() {
       this.ended = true;
       closed = true;

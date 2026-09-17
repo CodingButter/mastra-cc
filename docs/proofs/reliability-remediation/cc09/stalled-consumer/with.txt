@@ -1,0 +1,52 @@
+{
+  "decision": "ADR-0106",
+  "bound": {
+    "pendingBytes": 262144,
+    "pointersPerWatch": 64
+  },
+  "events": 8000,
+  "bytesIfNothingDecided": "~969 KB (RED measurement, ../daemon-queue/, ~124 B/event unbounded)",
+  "retainedAtEnd": 262174,
+  "samples": [
+    {
+      "i": 0,
+      "writableLength": 0
+    },
+    {
+      "i": 1000,
+      "writableLength": 60401
+    },
+    {
+      "i": 2000,
+      "writableLength": 247401
+    },
+    {
+      "i": 3000,
+      "writableLength": 262174
+    },
+    {
+      "i": 4000,
+      "writableLength": 262174
+    },
+    {
+      "i": 5000,
+      "writableLength": 262174
+    },
+    {
+      "i": 6000,
+      "writableLength": 262174
+    },
+    {
+      "i": 7000,
+      "writableLength": 262174
+    }
+  ],
+  "seenWhilePaused": 0,
+  "eventsAfterResume": 2082,
+  "heldDelivered": [
+    "el-0123456789ab",
+    "el-fedcba987654"
+  ],
+  "freshWrittenAtOnce": true
+}
+PROOF: GREEN

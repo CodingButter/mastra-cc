@@ -1326,7 +1326,42 @@ interface OpenSubscription {
   readonly backendSubscription: BackendSubscription;
   /** false once the root vanished and the watch ended itself */
   alive: boolean;
+  /** Pointers held back while the consumer is not reading (ADR-0106): the
+   *  newest change per element, at most STALLED_CONSUMER_POINTERS of them.
+   *  undefined while the consumer keeps up. */
+  held?: Map<string, Pick<BackendChange, "role" | "kind">>;
 }
+
+/**
+ * How the book sees the pipe it writes into (ADR-0106). `pending` is how many
+ * bytes the pipe has accepted and not yet handed to the peer; `onDrain` fires
+ * when that returns to zero. A consumer that reads keeps pending near zero. A
+ * consumer that has STOPPED reading makes it grow without bound - and the
+ * daemon retains every byte of it, which the CC-09 measurement put at ~124 B
+ * an event, linear, with nothing deciding.
+ */
+export interface PipePressure {
+  pending(): number;
+  onDrain(handler: () => void): void;
+}
+
+/**
+ * Past this many unsent bytes toward one connection the consumer is not slow,
+ * it is stopped: at the measured ~124 B per event that is ~2100 events, which
+ * at the recorded native cadence of ~10 changes a second is over three
+ * minutes of not reading. A kernel socket buffer alone absorbs ~500 events
+ * before Node holds any, so a reader that is merely busy never reaches this.
+ */
+export const STALLED_CONSUMER_PENDING_BYTES = 256 * 1024;
+
+/**
+ * Per stalled watch, how many distinct elements' newest changes are kept for
+ * delivery once the consumer reads again. Beyond this the oldest is forgotten.
+ * An event is a pointer with no content (ADR-0039), so what a consumer loses
+ * when pointers are collapsed is only WHICH intermediate things changed, and
+ * it must reobserve on any pointer anyway.
+ */
+export const STALLED_CONSUMER_POINTERS = 64;
 
 // One connection's watches. The book belongs to the socket: it is created when
 // the connection is accepted and emptied when it closes, and no watch outlives
@@ -1341,7 +1376,12 @@ export class SubscriptionBook {
     // application that has left the visible set must stop being narrated
     // mid-watch (ADR-0036).
     private readonly visibility: Visibility = "all",
-  ) {}
+    // How full the pipe is. Absent for a book whose emit is not a pipe (tests,
+    // in-process consumers): nothing is ever held back.
+    private readonly pressure?: PipePressure,
+  ) {
+    pressure?.onDrain(() => this.release());
+  }
 
   async subscribe(backend: Backend, id: string, priority: Priority): Promise<string> {
     if (this.closed) throw new Error("watch connection has closed");
@@ -1384,6 +1424,40 @@ export class SubscriptionBook {
     // notice: nothing is emitted at all, which is byte-identical to the quiet
     // desktop an ungranted application is supposed to look like.
     if (!isVisible(this.visibility, entry.application)) return;
+    // A consumer that has stopped reading is not written to (ADR-0106). The
+    // change is HELD - newest per element, bounded - and delivered when the
+    // pipe drains. The one exception is the watch's own end, which is one
+    // line and the last one: holding it would leave a dead watch looking
+    // alive to a consumer that eventually reads.
+    if (change.kind !== "watchEnded" && this.stalled(entry)) {
+      const held = (entry.held ??= new Map());
+      held.delete(change.id);
+      held.set(change.id, { role: change.role, kind: change.kind });
+      if (held.size > STALLED_CONSUMER_POINTERS) held.delete(held.keys().next().value as string);
+      return;
+    }
+    this.write(subscriptionId, entry, change);
+  }
+
+  private stalled(entry: OpenSubscription): boolean {
+    if (entry.held !== undefined) return true;
+    return this.pressure !== undefined && this.pressure.pending() > STALLED_CONSUMER_PENDING_BYTES;
+  }
+
+  /** The pipe drained: hand every stalled watch its held pointers, in the
+   *  order they were last touched. */
+  private release(): void {
+    if (this.closed) return;
+    for (const [subscriptionId, entry] of this.open) {
+      const held = entry.held;
+      if (held === undefined) continue;
+      entry.held = undefined;
+      if (!entry.alive) continue;
+      for (const [id, change] of held) this.write(subscriptionId, entry, { id, ...change });
+    }
+  }
+
+  private write(subscriptionId: string, entry: OpenSubscription, change: Pick<BackendChange, "id" | "role" | "kind">): void {
     // Native pointers carry no causal witness: overlap and silence prove neither origin.
     const stamp: AttributionStamp = { attribution: "unattributed" };
     this.emit({
@@ -2703,7 +2777,7 @@ export async function handleRequest(
  * part of the payload the protocol has always sent, not a socket-framing
  * detail, so it stays part of it on every pipe.
  */
-export interface Pipe {
+export interface Pipe extends PipePressure {
   write(line: string): void;
   /** graceful: the peer is told we are done */
   end(): void;
@@ -2717,6 +2791,10 @@ function socketPipe(socket: Socket): Pipe {
   return {
     write: (line) => {
       socket.write(line);
+    },
+    pending: () => socket.writableLength,
+    onDrain: (handler) => {
+      socket.on("drain", handler);
     },
     end: () => {
       socket.end();
@@ -2756,7 +2834,7 @@ export function serveConnection(
   // client that is gets it without having asked twice.
   const book = new SubscriptionBook((event) => {
     if (!pipe.closed) pipe.write(`${JSON.stringify({ type: "event", event })}\n`);
-  }, visibility);
+  }, visibility, pipe);
   // A watch belongs to the connection that asked for it. When the connection
   // goes, the watches go with it - closed at the BACKEND, not merely
   // forgotten here: a forgotten watch is still being fed.
@@ -2862,9 +2940,25 @@ export function startServer(options: {
 }
 
 function webSocketPipe(socket: WebSocket): Pipe {
+  // ws has no drain event; a send's callback fires once its frame has been
+  // handed to the underlying socket. When that leaves nothing buffered and
+  // something was held while it was, that is the drain.
+  const drains: Array<() => void> = [];
+  let pressed = false;
   return {
     write: (line) => {
-      socket.send(line);
+      socket.send(line, () => {
+        if (!pressed || socket.bufferedAmount > 0) return;
+        pressed = false;
+        for (const handler of drains) handler();
+      });
+    },
+    pending: () => {
+      if (socket.bufferedAmount > STALLED_CONSUMER_PENDING_BYTES) pressed = true;
+      return socket.bufferedAmount;
+    },
+    onDrain: (handler) => {
+      drains.push(handler);
     },
     end: () => {
       socket.close();
