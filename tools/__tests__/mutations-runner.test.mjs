@@ -196,17 +196,58 @@ describe("the mutation runner reports its own failures as its own", () => {
     expect(readFileSync(sourcePath, "utf8")).toBe(source);
   });
 
-  it("exits non-zero when vitest runs but writes no report", () => {
+  it("exits non-zero when vitest runs but writes no report twice, and shows what it said", () => {
     const { root } = scratchTree({
-      vitest: "#!/bin/sh\nexit 1\n",
+      vitest: "#!/bin/sh\necho 'Error: write EPIPE' >&2\nexit 1\n",
       source: "keep this line\nGUARDED_LINE\nand this one\n",
     });
 
     const r = runRunner(root);
 
     expect(r.status).not.toBe(0);
+    expect(r.stderr).toContain("retrying once");
     expect(r.stderr).toContain("THE RUNNER FAILED");
+    // The child's last words are the only diagnostic a silent run leaves.
+    expect(r.stderr).toContain("vitest stderr: Error: write EPIPE");
     expect(r.stderr).not.toContain("mutation(s) survived");
+  });
+
+  it("retries a single silent run once, says so, and scores the retry", () => {
+    // The first invocation writes nothing; the second behaves. A pool worker
+    // dying under load looks exactly like this from the runner's side.
+    const { root, sourcePath, source } = scratchTree({
+      vitest: `#!/bin/sh
+marker="$(dirname "$0")/ran-once"
+if [ ! -e "$marker" ]; then touch "$marker"; exit 1; fi
+${fakeVitest({ numTotalTests: 2, numFailedTests: 1 }).replace("#!/bin/sh\n", "")}`,
+      source: "keep this line\nGUARDED_LINE\nand this one\n",
+    });
+
+    const r = runRunner(root);
+
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain("no report on attempt 1, retrying once");
+    expect(r.stdout).toContain("1 test(s) went red");
+    expect(r.stdout).toContain("none survived");
+    expect(readFileSync(sourcePath, "utf8")).toBe(source);
+  });
+
+  it("runs only the entries --only names, and refuses a name the table lacks", () => {
+    const { root } = scratchTree({
+      vitest: fakeVitest({ numTotalTests: 1, numFailedTests: 1 }),
+      source: "keep this line\nGUARDED_LINE\nand this one\n",
+      entries: 3,
+    });
+
+    const chosen = spawnSync(process.execPath, [runner, "--root", root, "--only", "the-scratch-mutation-1"], { encoding: "utf8" });
+    expect(chosen.status).toBe(0);
+    expect(chosen.stdout).toContain("mutation the-scratch-mutation-1: 1 test(s) went red");
+    expect(chosen.stdout).not.toContain("the-scratch-mutation-0");
+    expect(chosen.stdout).toContain("ok - 1 mutation(s)");
+
+    const typo = spawnSync(process.execPath, [runner, "--root", root, "--only", "the-scratch-mutation-9"], { encoding: "utf8" });
+    expect(typo.status).not.toBe(0);
+    expect(typo.stderr).toContain("the table does not hold: the-scratch-mutation-9");
   });
 
   it("exits non-zero when vitest reports having run no tests at all", () => {
