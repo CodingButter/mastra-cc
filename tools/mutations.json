@@ -940,7 +940,7 @@
   {
     "name": "instance-dials-more-than-once",
     "file": "packages/desktop/src/mastra.ts",
-    "find": "    this.#dial ??= connect(this.#options);",
+    "find": "this.#dial ??= ",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
   },
@@ -1887,5 +1887,19 @@
     "replace": "      return false;",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "an-echo-of-our-own-effect-wakes-the-agent",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "        if (this.#ledger?.inQuietWindow(event)) return;\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/an-unknown-change-is-kept-and-not-looped-on.test.ts"
+  },
+  {
+    "name": "an-unattributed-change-is-not-kept-for-the-task",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "      client.onChangeEvent((event) => this.#ledger.record(event));\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/an-unknown-change-is-kept-and-not-looped-on.test.ts"
   }
 ]

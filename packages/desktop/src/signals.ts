@@ -2,6 +2,7 @@ import { SignalProvider, type SignalProviderTarget } from "@mastra/core/signals"
 import type { Attribution, ChangeEvent } from "@mastra-cc/protocol-types";
 import type { TransportClient } from "@mastra-cc/transport";
 import { SignalThrottle } from "./signal-throttle.js";
+import type { ObservationLedger } from "./observations.js";
 
 // THE DESK SPEAKING FIRST. Everything else in this package is a question the
 // agent thought to ask. This is the one path where the desk starts the
@@ -20,9 +21,12 @@ export type DeliverAttribution = Attribution;
  * Deliver `external` only.
  *
  * Current native streams have no causal witness and publish `unattributed`, so
- * this default does not wake from native changes. Active task state must consume
- * client.onChangeEvent directly. Opting into unknown-origin wakes is an explicit
- * policy choice; bounded coalescing alone does not prevent action/wake loops.
+ * this default does not wake from native changes. Active task state reads them
+ * from the desk's ObservationLedger (`MastraCC.observations`), which records
+ * every pointer whether or not it woke anyone. Opting into unknown-origin wakes
+ * is an explicit policy choice; what makes it survivable is the quiet window
+ * after this session's own effects (ObservationLedger.inQuietWindow), not
+ * coalescing - coalescing slows a loop, the window breaks it.
  *
  * A `self` event is the agent's own edit echoing back, so delivering it wakes
  * the agent to tell it what it just did - and since the wake can cause another
@@ -63,6 +67,13 @@ export interface DesktopSignalsDeps {
   client: () => Promise<TransportClient>;
   target: SignalProviderTarget;
   options?: DesktopSignalsOptions;
+  /**
+   * The desk's observation ledger. When present and `unattributed` is in
+   * `deliver`, an unattributed pointer inside the quiet window after this
+   * session's own effect is recorded there and NOT woken on - the
+   * loop-breaker that makes opting into unknown-origin wakes survivable.
+   */
+  ledger?: ObservationLedger;
 }
 
 /**
@@ -99,6 +110,7 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
   readonly #target: SignalProviderTarget;
   readonly #deliver: ReadonlySet<DeliverAttribution>;
   readonly #dedupeWindowMs: number;
+  readonly #ledger: ObservationLedger | undefined;
   #throttle: SignalThrottle | undefined;
   #detach: (() => void) | undefined;
   #starting: Promise<void> | undefined;
@@ -116,6 +128,7 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
     };
     this.#deliver = new Set(deps.options?.deliver ?? DEFAULT_DELIVERED_ATTRIBUTIONS);
     this.#dedupeWindowMs = deps.options?.dedupeWindowMs ?? DEFAULT_DEDUPE_WINDOW_MS;
+    this.#ledger = deps.ledger;
   }
 
   /**
@@ -141,6 +154,10 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
       this.#throttle = throttle;
       const detach = client.onChangeEvent((event) => {
         if (generation !== this.#generation || !this.#deliver.has(event.attribution)) return;
+        // Quiet after own effect: an unknown-origin pointer this soon after
+        // one of our own effects may be its echo. The ledger already holds it
+        // for the active task; waking on it is what would loop.
+        if (this.#ledger?.inQuietWindow(event)) return;
         throttle.push(event);
       });
       if (generation !== this.#generation) { throttle.stop(); detach(); }

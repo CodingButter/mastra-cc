@@ -4,8 +4,11 @@ import type { TransportClient } from "@mastra-cc/transport";
 import type { SignalProviderTarget } from "@mastra/core/signals";
 import { connect, type ConnectOptions } from "./index.js";
 import { DesktopSignals, type DesktopSignalsOptions } from "./signals.js";
+import { ObservationLedger } from "./observations.js";
 
 export { isTransportConnectionError } from "@mastra-cc/transport";
+
+export { ObservationLedger, EFFECT_METHODS, DEFAULT_QUIET_AFTER_EFFECT_MS, type ObservationEntry } from "./observations.js";
 
 export {
   DesktopSignals,
@@ -97,6 +100,10 @@ export class MastraCC {
   // first-callers share one connection instead of racing into two.
   #dial: Promise<TransportClient> | undefined;
   #closed = false;
+  // One ledger per desk: what the active task knows about the elements it
+  // cares about, fed by every pointer this connection receives regardless of
+  // attribution, and stamped by every effect these tools dispatch.
+  readonly #ledger = new ObservationLedger();
 
   constructor(options: ConnectOptions = {}) {
     this.#options = options;
@@ -120,8 +127,21 @@ export class MastraCC {
     if (this.#closed) {
       return Promise.reject(new Error("this MastraCC was closed; construct another to dial again"));
     }
-    this.#dial ??= connect(this.#options);
+    this.#dial ??= connect(this.#options).then((client) => {
+      client.onChangeEvent((event) => this.#ledger.record(event));
+      return client;
+    });
     return this.#dial;
+  }
+
+  /**
+   * The active task's view of what changed since it last looked - every
+   * attribution, no content, no wake. `unattributed` pointers are not
+   * delivered as wakes by default (see DesktopSignals); this is where they
+   * land so that a task awaiting one can still see it (CC-06).
+   */
+  get observations(): ObservationLedger {
+    return this.#ledger;
   }
 
   /**
@@ -146,6 +166,9 @@ export class MastraCC {
         const call = client[method] as (p: unknown) => Promise<unknown>;
         // Synchronous and local to these tools: a caller may veto after the dial.
         options.beforeDispatch?.();
+        // Stamped BEFORE the call, so an echo that lands while the call is
+        // still in flight is already inside the quiet window.
+        this.#ledger.noteEffect(method);
         return await call.call(client, params);
       };
     }
@@ -167,7 +190,7 @@ export class MastraCC {
     target: SignalProviderTarget,
     options?: DesktopSignalsOptions,
   ): DesktopSignals {
-    return new DesktopSignals({ client: () => this.client(), target, options });
+    return new DesktopSignals({ client: () => this.client(), target, options, ledger: this.#ledger });
   }
 
   /**
