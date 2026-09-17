@@ -555,7 +555,7 @@
   {
     "name": "a-deaf-subscription-is-returned-anyway",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
-    "find": "  if (unheard.size > 0) {\n    open = false;\n    detach();\n    pending = null;\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(\", \")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
+    "find": "  if (unheard.size > 0) {\n    open = false;\n    detach();\n    pending = null;\n    dropTrailing();\n    throw new DeafWatchError(\n      `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(\", \")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element \"${subscribedTo}\")`,\n    );\n  }\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
@@ -940,7 +940,7 @@
   {
     "name": "instance-dials-more-than-once",
     "file": "packages/desktop/src/mastra.ts",
-    "find": "    this.#dial ??= connect(this.#options);",
+    "find": "this.#dial ??= ",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-instance-is-the-connection.test.ts"
   },
@@ -1872,5 +1872,34 @@
     "replace": "        return await run();",
     "cwd": "daemon",
     "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "the-backstop-forgets-the-change-it-held",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "        emit(latest.change);\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "a-root-that-left-the-tree-is-still-called-watched",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "      return (await anchor.attachmentOf(anchor.busName, anchor.rootPath)) === \"detached\";",
+    "replace": "      return false;",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "an-echo-of-our-own-effect-wakes-the-agent",
+    "file": "packages/desktop/src/signals.ts",
+    "find": "        if (this.#ledger?.inQuietWindow(event)) return;\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/an-unknown-change-is-kept-and-not-looped-on.test.ts"
+  },
+  {
+    "name": "an-unattributed-change-is-not-kept-for-the-task",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "      client.onChangeEvent((event) => this.#ledger.record(event));\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/an-unknown-change-is-kept-and-not-looped-on.test.ts"
   }
 ]

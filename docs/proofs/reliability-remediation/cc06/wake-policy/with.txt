@@ -1,0 +1,3 @@
+{"name":"with-quiet-window","withLedger":true,"wakes":1,"edits":1,"echoKeptForTask":true}
+{"name":"without-quiet-window","withLedger":false,"wakes":13,"edits":12,"echoKeptForTask":true}
+PROOF: GREEN - the quiet window after own effect turns a self-triggering wake loop into one wake per outside change, and the echo is kept for the task

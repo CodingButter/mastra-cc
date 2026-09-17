@@ -21,3 +21,8 @@ Only proven membership emits. Unknown membership remains silent but is no longer
 ## Remaining work
 
 A real native reparenting fixture and public-transport capture are still needed for user-surface proof. Versioned degraded-coverage signals, deep-descendant recovery, root-removal lifecycle evidence, queue/retention budgets and atomic tree snapshots are not implemented by this bounded correction. Never infer unchanged state from silence.
+
+
+## Live reparenting and root removal
+
+[`reparent/README.md`](reparent/README.md) is the native half: a GTK3 fixture moves a text view between frames and windows under a real daemon watch (emits inside, silent outside, resumes when moved back) and destroys the window around it. That run found the daemon calling a watch alive on an element GTK had silently unparented; the stream now asks the bus whether the root still hangs anywhere and ends the watch with `watchEnded` when it does not.

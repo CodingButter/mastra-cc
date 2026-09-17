@@ -104,6 +104,12 @@ export interface AtspiWatchAnchor {
   // One step up the tree. Undefined at the top, or on an element that will
   // not answer; either way the climb ends and the signal is not delivered.
   parentOf(busName: string, objectPath: string): Promise<{ busName: string; objectPath: string } | undefined>;
+  // Whether the object still hangs in the tree, asked of the bus directly:
+  // "attached" when it reports a parent, "detached" when it answers and
+  // reports none. Rejects when it does not answer - which is unknown, not
+  // detached. Optional so scripted anchors that never remove a root need not
+  // model it; without it a root's removal is only known by its own defunct.
+  attachmentOf?(busName: string, objectPath: string): Promise<"attached" | "detached">;
 }
 
 const REGISTRY_DEST = "org.a11y.atspi.Registry";
@@ -156,6 +162,11 @@ export async function openSignalStream(
   // arrival order; if it refuses, no watch ever existed to deliver them to.
   let pending: BackendChange[] | null = [];
   const lastEmitted = new Map<string, number>();
+  const trailing = new Map<string, { change: BackendChange; timer: ReturnType<typeof setTimeout> }>();
+  const dropTrailing = () => {
+    for (const held of trailing.values()) clearTimeout(held.timer);
+    trailing.clear();
+  };
 
   // SUBTREE SCOPE (Jamie, 2026-08-28): "you subscribe to state changes on an
   // element that means you get a signal when ever its content or properties or
@@ -192,23 +203,66 @@ export async function openSignalStream(
     return "unknown";
   };
 
+  // Has the root left the tree? Measured live (cc08/reparent): when GTK
+  // destroys a window, the children are unparented BEFORE the window's own
+  // defunct is announced, and the child itself never says defunct. So when a
+  // defunct arrives from this application, the question is "does my root
+  // still hang anywhere" - asked of the bus now, not of any cache. A root
+  // that answers with no parent has left the tree; every live object has
+  // one, up to the registry's desktop. A root that does not answer at all is
+  // unknown, and unknown ends nothing.
+  const rootLeftTheTree = async (): Promise<boolean> => {
+    if (anchor.attachmentOf === undefined) return false;
+    try {
+      return (await anchor.attachmentOf(anchor.busName, anchor.rootPath)) === "detached";
+    } catch {
+      return false;
+    }
+  };
+
   let queue: Promise<void> = Promise.resolve();
 
-  const deliver = (change: BackendChange) => {
-    // The backstop: one change per element per window. Scope is the design;
-    // this only catches what scope let through.
-    const now = Date.now();
-    const last = lastEmitted.get(change.id);
-    lastEmitted.set(change.id, now);
-    if (last !== undefined && now - last < BACKSTOP_WINDOW_MS) {
-      console.error(`atspi-stream: backstop collapsed a repeat change for ${change.id} - scope let ambient noise through`);
-      return;
-    }
+  const emit = (change: BackendChange) => {
+    lastEmitted.set(change.id, Date.now());
     if (pending !== null) {
       pending.push(change);
       return;
     }
     sink(change);
+  };
+
+  const deliver = (change: BackendChange) => {
+    // The backstop: one change per element per window. Scope is the design;
+    // this only catches what scope let through.
+    //
+    // The window is measured from the last EMISSION, not the last arrival, and
+    // the newest collapsed change is held for a trailing emission when the
+    // window ends. A traced typing session (cc09/load) showed why: a person
+    // typing keeps every gap under the window, and measuring from arrival
+    // kept the window open for the whole paragraph - 417 changes collapsed,
+    // one delivered, and the final state of the element never announced. A
+    // watch that goes silent under sustained change is the deaf watch this
+    // route refuses to hand back; the backstop must not create one.
+    const now = Date.now();
+    const last = lastEmitted.get(change.id);
+    if (last !== undefined && now - last < BACKSTOP_WINDOW_MS) {
+      const held = trailing.get(change.id);
+      if (held !== undefined) {
+        held.change = change;
+        return;
+      }
+      console.error(`atspi-stream: backstop collapsed a repeat change for ${change.id} - trailing emission scheduled`);
+      const timer = setTimeout(() => {
+        const latest = trailing.get(change.id);
+        trailing.delete(change.id);
+        if (!open || latest === undefined) return;
+        emit(latest.change);
+      }, last + BACKSTOP_WINDOW_MS - now);
+      timer.unref();
+      trailing.set(change.id, { change, timer });
+      return;
+    }
+    emit(change);
   };
 
   const detach = ops.onSignal((signal) => {
@@ -230,11 +284,32 @@ export async function openSignalStream(
     // never answered, so no watch can anchor inside it - and the server
     // re-checks visibility at emission besides.
     if (signal.sender !== anchor.busName) return;
-    // Subtree scope. Deciding it means climbing the bus, which is async, so
+    // The root's death. AT-SPI announces a destroyed accessible with
+    // StateChanged("defunct", 1) - on the root itself, or (GTK, measured
+    // live in cc08/reparent) only on the window around it while the root is
+    // silently unparented. Either way the watch ends, says which element it
+    // watched, and is never re-anchored onto whatever takes the place
+    // (ADR-0039). Nothing here ends a watch on a guess: an unreadable parent
+    // is unknown, and unknown is not gone.
+    const isDefunct = signal.member === STATE_CHANGED && signal.body[0] === "defunct" && Number(signal.body[1]) === 1;
+    // Subtree scope.    // Subtree scope. Deciding it means climbing the bus, which is async, so
     // the decisions are chained: signals are scoped and delivered in the order
     // they arrived rather than in whichever order the bus answers.
     queue = queue.then(async () => {
       if (!open) return;
+      if (isDefunct && (signal.path === anchor.rootPath || (await rootLeftTheTree()))) {
+        if (!open) return;
+        open = false;
+        detach();
+        dropTrailing();
+        const known = anchor.known(anchor.busName, anchor.rootPath);
+        const change: BackendChange = { id: known?.id ?? deriveId("generic", anchor.busName, anchor.rootPath), role: known?.role ?? "generic", kind: "watchEnded" };
+        if (pending !== null) pending.push(change);
+        else sink(change);
+        return;
+      }
+      // A defunct descendant is an ordinary change inside the subtree and
+      // falls through to the membership climb like any other.
       if ((await withinSubtree(signal.path)) !== "inside" || !open) return;
       const known = anchor.known(signal.sender, signal.path);
       // An element the walk never answered still changed; it is reported under
@@ -263,6 +338,7 @@ export async function openSignalStream(
     open = false;
     detach();
     pending = null;
+    dropTrailing();
     throw new DeafWatchError(
       `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(", ")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element "${subscribedTo}")`,
     );
@@ -277,6 +353,7 @@ export async function openSignalStream(
     async close() {
       open = false;
       detach();
+      dropTrailing();
     },
   };
 }

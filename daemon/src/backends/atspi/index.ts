@@ -272,6 +272,25 @@ export class AtspiBackend implements Backend {
     return false;
   }
 
+  // Unlike parentOf, a failed call is a rejection here, not "no parent": the
+  // caller is deciding whether to END a watch, and a peer that did not answer
+  // has not said it left the tree.
+  private async attachmentOf(ref: NativeRef): Promise<"attached" | "detached"> {
+    const [raw] = await this.channel.call({
+      destination: ref.busName,
+      path: ref.objectPath,
+      iface: "org.freedesktop.DBus.Properties",
+      member: "Get",
+      signature: "ss",
+      body: [ACCESSIBLE, "Parent"],
+    });
+    const unwrapped = Array.isArray(raw) && typeof raw[0] === "string" && Array.isArray(raw[1]) ? raw[1][0] : raw;
+    if (!Array.isArray(unwrapped)) return "detached";
+    const busName = String(unwrapped[0] ?? "");
+    const objectPath = String(unwrapped[1] ?? "");
+    return busName === "" || objectPath === "" || objectPath === NULL_PATH ? "detached" : "attached";
+  }
+
   private async parentOf(ref: NativeRef): Promise<NativeRef | undefined> {
     let raw: unknown;
     try {
@@ -658,6 +677,7 @@ export class AtspiBackend implements Backend {
       rootPath: ref.objectPath,
       known: (busName, objectPath) => this.byNative.get(`${busName}\0${objectPath}`),
       parentOf: (busName, objectPath) => this.parentOf({ busName, objectPath }),
+      attachmentOf: (busName, objectPath) => this.attachmentOf({ busName, objectPath }),
     };
     const watch = await this.channel.watch(id, sink, anchor);
     const subscriptionId = mintSubscriptionId();

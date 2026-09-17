@@ -42,9 +42,13 @@ const PARENTS: Record<string, string> = {
 
 let parentCalls = 0;
 
+// Objects the test has removed from the tree; attachmentOf answers for them
+// the way a live GTK view answers after its window is destroyed.
+const detached = new Set<string>();
 const anchor: AtspiWatchAnchor = {
   busName: APP_SENDER,
   rootPath: ROOT_PATH,
+  attachmentOf: async (_busName, objectPath) => (detached.has(objectPath) ? "detached" : "attached"),
   known: (busName, objectPath) => (busName === APP_SENDER && objectPath === KNOWN_PATH ? KNOWN : undefined),
   parentOf: async (busName, objectPath) => {
     parentCalls += 1;
@@ -244,6 +248,105 @@ describe("the accessibility stream", () => {
     // Two fresh edges per signal, including signals collapsed by the backstop.
     expect(parentCalls).toBe(8);
     await watch.close();
+  });
+
+  it("does not go silent under sustained change: the backstop emits once per window and once more when it ends", async () => {
+    // Typing keeps every gap under the window. Measured from arrival, the
+    // window never closed and 417 real keystrokes produced one change and no
+    // final state (cc09/load trace). Measured from emission, a sustained
+    // stream yields one change per window plus the last one after it stops.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    for (let key = 0; key < 12; key += 1) {
+      bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+      await settle();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    // 12 keys over ~240ms: the first emits at once, then roughly one per
+    // 100ms window - never only one, never all twelve.
+    expect(changes.length).toBeGreaterThanOrEqual(2);
+    expect(changes.length).toBeLessThan(12);
+    const during = changes.length;
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    // The newest collapsed change arrives after the window: the final state
+    // is announced even though nothing else happened.
+    expect(changes.length).toBe(during + 1);
+    await watch.close();
+  });
+
+  it("ends the watch when the root itself goes defunct, and says nothing afterwards", async () => {
+    // Live GTK (cc08/reparent): a window destroyed with the watched element
+    // inside announced itself as StateChanged("defunct", 1) on that object.
+    // Before this, the daemon forwarded that as two generic "changed" pointers
+    // and still called the watch alive. The root's death is the watch's end.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    bus.inject({ sender: APP_SENDER, path: ROOT_PATH, iface: EVENT_OBJECT, member: "StateChanged", body: ["defunct", 1, 0] });
+    await settle();
+    expect(changes).toEqual([{ id: expect.any(String), role: "generic", kind: "watchEnded" }]);
+    bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+    bus.inject({ sender: APP_SENDER, path: ROOT_PATH, iface: EVENT_OBJECT, member: "StateChanged", body: ["defunct", 1, 0] });
+    await settle();
+    expect(changes).toHaveLength(1);
+    await watch.close();
+  });
+
+  it("ends the watch when the window around the root goes defunct and the root now hangs nowhere - GTK unparents the view and never says defunct for it", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    detached.add(ROOT_PATH);
+    try {
+      bus.inject({ sender: APP_SENDER, path: APP_ROOT_PATH, iface: EVENT_OBJECT, member: "StateChanged", body: ["defunct", 1, 0] });
+      await settle();
+      expect(changes.map((c) => c.kind)).toEqual(["watchEnded"]);
+    } finally {
+      detached.delete(ROOT_PATH);
+    }
+    await watch.close();
+  });
+
+  it("does not end the watch on another object's defunct while the root still hangs in the tree", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    bus.inject({ sender: APP_SENDER, path: APP_ROOT_PATH, iface: EVENT_OBJECT, member: "StateChanged", body: ["defunct", 1, 0] });
+    await settle();
+    expect(changes).toEqual([]);
+    await watch.close();
+  });
+
+  it("does not end the watch when an unrelated element or a descendant goes defunct, or when the root's defunct state clears", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    bus.inject({ sender: APP_SENDER, path: OUTSIDE_PATH, iface: EVENT_OBJECT, member: "StateChanged", body: ["defunct", 1, 0] });
+    await settle();
+    bus.inject({ sender: APP_SENDER, path: KNOWN_PATH, iface: EVENT_OBJECT, member: "StateChanged", body: ["defunct", 1, 0] });
+    await settle();
+    // Past the backstop window, so the second ordinary change is not collapsed
+    // into the first - this test is about what is NOT a watch ending.
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    bus.inject({ sender: APP_SENDER, path: ROOT_PATH, iface: EVENT_OBJECT, member: "StateChanged", body: ["defunct", 0, 0] });
+    await settle();
+    expect(changes).toEqual([{ id: KNOWN.id, role: "checkbox", kind: "changed" }, { id: expect.any(String), role: "generic", kind: "changed" }]);
+    await watch.close();
+  });
+
+  it("drops a held trailing change when the watch closes first", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(changes).toHaveLength(1);
+    await watch.close();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    expect(changes).toHaveLength(1);
   });
 
   it.each([true, false])("rechecks membership after reparenting (initially inside: %s)", async (inside) => {

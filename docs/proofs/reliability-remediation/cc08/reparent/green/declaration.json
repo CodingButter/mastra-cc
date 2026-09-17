@@ -1,0 +1,8 @@
+{
+  "session": "/tmp/mastra-cc-mousepad-verified-find-replace/docs/proofs/reliability-remediation/cc08/reparent/session.sh",
+  "modules": "/tmp/cc09-consumer.1789678462/consumer/node_modules",
+  "mastraEntry": "/home/codingbutter/.nvm/versions/node/v25.2.1/lib/node_modules/mastracode/package.json",
+  "driverSha256": "a6015f4efea66e24cb4138e553c900b6d530409a47ae7c81d94c1d195435e649",
+  "sessionSha256": "108cfab410c0f0babaabf9e74d3ef212a08d66f3272a9b3e035de2562dd7e39a",
+  "claim": "live GTK reparenting and root removal under a container watch; one fixture, one desk"
+}

@@ -18,3 +18,8 @@ The optional argument selects another built checkout. The retained baseline is 0
 `with.txt` and `without.txt` retain built-demo transcripts. Compressed test, mutation and workspace transcripts record separate verification gates; tests are not the demonstration. Existing visibility checks remain required. Audit request identity is not event provenance.
 
 The conservative external-only default is unchanged, but native streams are now unknown-origin and therefore do not wake planners automatically. Raw client listeners still receive them for active-task use. Explicit unknown-origin notification opt-in is tested separately, not advertised as loop-free. Whole-task state accounting and safe idle-wake integration remain follow-ups; so do human takeover, native cancellation and Mousepad visual acceptance.
+
+
+## Task-state accounting and the wake-loop breaker
+
+[`wake-policy/README.md`](wake-policy/README.md) adds the ObservationLedger (every pointer kept for the active task, no wake) and the quiet window after this session's own effects, and shows against built artifacts that a reactive agent with unknown-origin wakes opted in converges to one wake per outside change instead of looping.

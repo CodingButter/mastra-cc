@@ -1,0 +1,33 @@
+{"event":"tool","monotonicMs":171.819477,"name":"listApplications","args":{}}
+{"event":"tool","monotonicMs":201.914333,"name":"queryElements","args":{"application":"reparent-fixture","limit":500}}
+{"event":"tool","monotonicMs":212.998078,"name":"subscribeElement","args":{"id":"el-23e13b4d9c0f","priority":"medium"}}
+{"event":"receipt","monotonicMs":223.607011,"subscriptionId":"sub-000001-b89a71","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":232.028998,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"in-left 1789679701786"}}
+{"event":"receipt","monotonicMs":323.60906,"subscriptionId":"sub-000001-b89a71","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"phase","monotonicMs":932.906721,"phase":"in-left","expected":"inside: emits","changedOnLeftWatch":2,"ok":true}
+{"event":"command","monotonicMs":933.58073,"line":"right"}
+{"event":"tool","monotonicMs":1344.978288,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"moved-right 1789679702908"}}
+{"event":"phase","monotonicMs":2046.177237,"phase":"moved-right","expected":"outside: silent","changedOnLeftWatch":0,"ok":true}
+{"event":"command","monotonicMs":2046.288174,"line":"left"}
+{"event":"receipt","monotonicMs":2047.51936,"subscriptionId":"sub-000001-b89a71","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":2148.033181,"subscriptionId":"sub-000001-b89a71","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":2450.487508,"subscriptionId":"sub-000001-b89a71","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":2455.478842,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"back-in-left 1789679704021"}}
+{"event":"receipt","monotonicMs":2550.928806,"subscriptionId":"sub-000001-b89a71","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"phase","monotonicMs":3156.169623,"phase":"back-in-left","expected":"inside: emits","changedOnLeftWatch":2,"ok":true}
+{"event":"tool","monotonicMs":3158.920098,"name":"subscribeElement","args":{"id":"el-307ff2f21c61","priority":"medium"}}
+{"event":"command","monotonicMs":3158.984519,"line":"annex"}
+{"event":"receipt","monotonicMs":3159.617795,"subscriptionId":"sub-000002-0b262c","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":3260.269561,"subscriptionId":"sub-000002-0b262c","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":3562.89773,"subscriptionId":"sub-000002-0b262c","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":3568.539988,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"moved-to-annex 1789679705134"}}
+{"event":"receipt","monotonicMs":3664.010488,"subscriptionId":"sub-000002-0b262c","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"phase","monotonicMs":4268.930121,"phase":"moved-to-annex","expected":"outside: silent","changedOnLeftWatch":0,"ok":true}
+{"event":"command","monotonicMs":4269.021524,"line":"destroy-annex"}
+{"event":"receipt","monotonicMs":4269.917602,"subscriptionId":"sub-000002-0b262c","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":4370.49223,"subscriptionId":"sub-000002-0b262c","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":5881.921067,"name":"queryElements","args":{"application":"reparent-fixture","role":"text","limit":50}}
+{"event":"tool","monotonicMs":5887.998672,"name":"unsubscribeElement","args":{"subscriptionId":"sub-000002-0b262c"}}
+{"event":"phase","monotonicMs":5888.058822,"phase":"destroy-annex","docWatchKindsAfterDestroy":["changed","changed"],"docStillQueryable":false,"unsubscribeEnded":true,"unsubscribeRefusal":null}
+{"event":"tool","monotonicMs":5888.430844,"name":"unsubscribeElement","args":{"subscriptionId":"sub-000001-b89a71"}}
+{"event":"command","monotonicMs":5888.559175,"line":"quit"}

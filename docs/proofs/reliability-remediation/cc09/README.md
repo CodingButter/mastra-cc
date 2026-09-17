@@ -51,3 +51,8 @@ The measured sample set contains 288 timed captures, plus 72 first/warmup captur
 The runner owns a fresh process group per display and terminates the whole group on timeout or interruption, not only the shell wrapper. `python3 docs/proofs/reliability-remediation/cc09/check-cleanup.py` forces a helper timeout with a child and grandchild; `matrix-cleanup.txt` records that neither remains active. This is a process-lifecycle regression, not a desktop cancellation guarantee.
 
 In this run, 4K table-like full captures at concurrency four reached 616 ms capture p95 and 617 ms queued-query p95. Full noisy 4K refusals reached 2,685 ms capture/query p95 with a 632 ms observed event-loop maximum delay. Even refused captures therefore incur acquisition, decoding and encoding costs. These values motivate further investigation; they are not safety limits or an SLA. Actual application distributions, separate-process client overhead, event-to-notification latency, queue retention and cancellation responsiveness still need separate measurement. Deployment must still authenticate/protect remote access and isolate desktop driver authority; element grants are not pixel or physical-input isolation.
+
+
+## Recorded rhythm and retention in bytes
+
+[`load/README.md`](load/README.md) records a native typing and replacement-burst trace from one Mousepad desk, replays it through the consumer throttle, and sizes retention at the 256-pointer limit in GC-differenced heap bytes (about 117 KB). The first trace exposed a daemon backstop that silenced sustained change; it is repaired and pinned there.
