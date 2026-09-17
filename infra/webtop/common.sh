@@ -48,9 +48,23 @@ copy_node_if_needed() {
 }
 
 copy_built_artifacts() {
+  # The built transport keeps a bare runtime import of @mastra-cc/protocol-types
+  # (packages/transport/dist/index.mjs) - tsdown does not inline workspace deps.
+  # Deploy the built package under node_modules so Node's ordinary resolution
+  # from /opt/mastra-cc/transport/index.mjs finds it; without this the scenario
+  # client throws "Cannot find package '@mastra-cc/protocol-types'" before any
+  # proof runs. Read the BUILT artefact, not the sources.
+  if ! test -f "$ROOT/packages/protocol-types/dist/index.js"; then
+    printf 'HARNESS: RED - protocol-types is not built - run pnpm turbo run build first\n' >&2
+    return 1
+  fi
+  local protocol_types="$DEPLOY/node_modules/@mastra-cc/protocol-types"
   container_exec rm -rf "$DEPLOY"
-  container_exec mkdir -p "$DEPLOY/daemon" "$DEPLOY/transport"
+  container_exec mkdir -p "$DEPLOY/daemon" "$DEPLOY/transport" "$protocol_types/dist"
   docker cp "$ROOT/daemon/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/daemon/"
   docker cp "$ROOT/packages/transport/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/transport/"
+  docker cp "$ROOT/packages/protocol-types/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$protocol_types/dist/"
+  docker cp "$ROOT/packages/protocol-types/package.json" "$MASTRA_CC_WEBTOP_CONTAINER:$protocol_types/package.json"
   docker cp "$WEBTOP_DIR/scenario-client.mjs" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/scenario-client.mjs"
+  docker cp "$WEBTOP_DIR/witness.mjs" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/witness.mjs"
 }
