@@ -24,9 +24,11 @@ import { fileURLToPath } from "node:url";
 //      untested (issue #25). A survived mutation and a broken runner are
 //      different findings and are reported as different things.
 //
-// Usage: node tools/mutations.mjs [--root <dir>] [--table <file>]
+// Usage: node tools/mutations.mjs [--root <dir>] [--table <file>] [--only <name,...>]
 // --root exists for the runner's own tests, which must be able to mutate a
 // scratch tree rather than this one (the same shape tools/freeze-gate.mjs uses).
+// --only runs the named entries alone. It refuses a name the table does not
+// hold, because a typo that silently ran nothing would look like a pass.
 // --table exists so the ambiguity guard below can be proven to fail on purpose
 // against a scratch table; CI passes nothing and reads the committed one (PR #13).
 
@@ -36,7 +38,17 @@ function arg(name) {
 }
 
 const root = arg("--root") ?? fileURLToPath(new URL("..", import.meta.url));
-const table = JSON.parse(readFileSync(arg("--table") ?? join(root, "tools", "mutations.json"), "utf8"));
+const wholeTable = JSON.parse(readFileSync(arg("--table") ?? join(root, "tools", "mutations.json"), "utf8"));
+const only = arg("--only")?.split(",").map((s) => s.trim()).filter(Boolean) ?? null;
+const table = only === null ? wholeTable : wholeTable.filter((m) => only.includes(m.name));
+if (only !== null) {
+  const known = new Set(wholeTable.map((m) => m.name));
+  const unknown = only.filter((name) => !known.has(name));
+  if (unknown.length > 0) {
+    console.error(`mutations: --only names ${unknown.length} entr(ies) the table does not hold: ${unknown.join(", ")}`);
+    process.exit(1);
+  }
+}
 
 if (table.length === 0) {
   console.error("mutations: the table is empty - the step would pass vacuously");
@@ -141,44 +153,67 @@ for (const mutation of table) {
     continue;
   }
 
-  const report = join(mkdtempSync(join(tmpdir(), "mutations-")), "report.json");
   inFlight = { file, original };
   writeFileSync(file, original.replace(mutation.find, ""));
   let red = 0;
   let failure = null;
   try {
-    const run = spawnSync(
-      join(root, "tools", "node_modules", ".bin", "vitest"),
-      ["run", mutation.testFile, "--reporter=json", "--outputFile", report],
-      { cwd: join(root, mutation.cwd), stdio: "ignore" },
-    );
-    // A non-zero exit is the EXPECTED outcome here - it is what a mutation going
-    // red looks like - so the exit code is not the evidence. What the runner
-    // checks is whether vitest ran at all: a spawn that never started, a process
-    // killed by a signal, a report that was never written or cannot be parsed,
-    // and a report that accounts for zero tests. Each of those is a statement
-    // about this runner or this table, never about the guarantee under test.
-    if (run.error) {
-      failure = `vitest could not be started (${run.error.message})`;
-    } else if (run.signal === "SIGINT" || run.signal === "SIGTERM") {
-      // A terminal Ctrl-C reaches the whole process group, so the child dies of
-      // the same signal the operator sent. Restore and stop here: the alternative
-      // is carrying on to mutate the next file while the operator believes the
-      // run is over.
-      restoreInFlight();
-      interrupted(run.signal);
-    } else if (run.status === null) {
-      failure = `vitest was killed by ${run.signal} before it could report`;
-    } else {
-      const parsed = JSON.parse(readFileSync(report, "utf8"));
+    // A run that produced no report is retried once, and the retry is printed:
+    // vitest's worker pool has been seen to die of EPIPE under load before
+    // writing the JSON, which says nothing about the guarantee under test. A
+    // second silence in a row is reported as the runner failure it is. The
+    // child's stderr is kept for that report, because without it the failure
+    // cannot be told apart from anything else that writes no file.
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const scratch = mkdtempSync(join(tmpdir(), "mutations-"));
+      const report = join(scratch, "report.json");
+      const run = spawnSync(
+        join(root, "tools", "node_modules", ".bin", "vitest"),
+        ["run", mutation.testFile, "--reporter=json", "--outputFile", report],
+        { cwd: join(root, mutation.cwd), stdio: ["ignore", "ignore", "pipe"], encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+      );
+      // A non-zero exit is the EXPECTED outcome here - it is what a mutation going
+      // red looks like - so the exit code is not the evidence. What the runner
+      // checks is whether vitest ran at all: a spawn that never started, a process
+      // killed by a signal, a report that was never written or cannot be parsed,
+      // and a report that accounts for zero tests. Each of those is a statement
+      // about this runner or this table, never about the guarantee under test.
+      if (run.error) {
+        failure = `vitest could not be started (${run.error.message})`;
+        break;
+      }
+      if (run.signal === "SIGINT" || run.signal === "SIGTERM") {
+        // A terminal Ctrl-C reaches the whole process group, so the child dies of
+        // the same signal the operator sent. Restore and stop here: the alternative
+        // is carrying on to mutate the next file while the operator believes the
+        // run is over.
+        restoreInFlight();
+        interrupted(run.signal);
+      }
+      if (run.status === null) {
+        failure = `vitest was killed by ${run.signal} before it could report`;
+        break;
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(readFileSync(report, "utf8"));
+      } catch (err) {
+        const tail = (run.stderr ?? "").trim().split("\n").slice(-6).join("\n  ");
+        failure = `the test run produced no readable report (${err.message})${tail ? `\n  vitest stderr: ${tail}` : ""}`;
+        if (attempt === 1) {
+          console.error(`mutation ${mutation.name}: no report on attempt 1, retrying once - ${err.message}`);
+          continue;
+        }
+        break;
+      }
       if (parsed.numTotalTests === 0) {
         failure = `vitest ran but executed no tests from ${mutation.testFile} - nothing could have gone red`;
       } else {
+        failure = null;
         red = parsed.numFailedTests;
       }
+      break;
     }
-  } catch (err) {
-    failure = `the test run produced no readable report (${err.message})`;
   } finally {
     restoreInFlight();
   }
