@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { type BackendChange, DeafWatchError, UnknownSubscriptionError } from "../../../backend.js";
 import { AtspiBackend } from "../index.js";
 import { replayChannel } from "../../replay/index.js";
+import { deriveId } from "../identity.js";
 import {
   type AtspiWatchAnchor,
   type IncomingSignal,
@@ -39,6 +40,11 @@ const PARENTS: Record<string, string> = {
   [ROOT_PATH]: APP_ROOT_PATH,
   [OUTSIDE_PATH]: APP_ROOT_PATH,
 };
+// On the wire an application root's parent is the registry's desktop, on the
+// registry's OWN bus name - which is how a climb learns it has left the
+// application without ever reading "no parent". "No parent" is what a detached
+// or unreadable object answers, and that is unknown, not outside.
+const REGISTRY = { busName: "org.a11y.atspi.Registry", objectPath: "/org/a11y/atspi/accessible/root" };
 
 let parentCalls = 0;
 
@@ -52,6 +58,7 @@ const anchor: AtspiWatchAnchor = {
   known: (busName, objectPath) => (busName === APP_SENDER && objectPath === KNOWN_PATH ? KNOWN : undefined),
   parentOf: async (busName, objectPath) => {
     parentCalls += 1;
+    if (objectPath === APP_ROOT_PATH) return REGISTRY;
     const parent = PARENTS[objectPath];
     return parent === undefined ? undefined : { busName, objectPath: parent };
   },
@@ -355,7 +362,7 @@ describe("the accessibility stream", () => {
     let parent = inside ? ROOT_PATH : APP_ROOT_PATH;
     const watch = await openSignalStream(bus.ops, KNOWN.id, {
       ...anchor,
-      parentOf: async (busName, path) => path === KNOWN_PATH ? { busName, objectPath: parent } : undefined,
+      parentOf: async (busName, path) => path === KNOWN_PATH ? { busName, objectPath: parent } : path === APP_ROOT_PATH ? REGISTRY : undefined,
     }, (change) => changes.push(change), 50);
     bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
     await settle();
@@ -369,21 +376,44 @@ describe("the accessibility stream", () => {
     await watch.close();
   });
 
-  it("retries unreadable ancestry on the next signal", async () => {
+  it("says so at the root when ancestry is unreadable, then names the element once it can be placed", async () => {
+    // Degraded coverage is reported, not swallowed (CC-08, plan §11): the one
+    // element this watch is authorized to speak for is its root, so an
+    // unplaceable change becomes a content-free "changed" THERE. The
+    // descendant's identity is not forwarded - the walk never proved it is in
+    // scope. Once the parent reads again the element is named as usual.
     const bus = fakeBus();
     const changes: BackendChange[] = [];
     let readable = false;
     const watch = await openSignalStream(bus.ops, KNOWN.id, {
       ...anchor,
+      known: (busName, objectPath) => busName === APP_SENDER && objectPath === ROOT_PATH ? { id: "el-rrrrrrrrrrrr", role: "window" } : anchor.known(busName, objectPath),
       parentOf: async (busName) => readable ? { busName, objectPath: ROOT_PATH } : undefined,
     }, (change) => changes.push(change), 50);
     bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
     await settle();
-    expect(changes).toHaveLength(0);
+    expect(changes).toEqual([{ id: "el-rrrrrrrrrrrr", role: "window", kind: "changed" }]);
     readable = true;
+    await new Promise((resolve) => setTimeout(resolve, 110));
     bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
     await settle();
+    expect(changes.slice(1)).toEqual([{ id: KNOWN.id, role: KNOWN.role, kind: "changed" }]);
+    await watch.close();
+  });
+
+  it("collapses a flood of unplaceable changes into one root nudge per backstop window", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, {
+      ...anchor, parentOf: async () => undefined,
+    }, (change) => changes.push(change), 50);
+    for (let i = 0; i < 20; i += 1) bus.inject(stateChanged(APP_SENDER, `${KNOWN_PATH}${i}`));
+    await settle();
     expect(changes).toHaveLength(1);
+    expect(changes[0]!.kind).toBe("changed");
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    // The trailing emission at the window's end, and nothing more.
+    expect(changes).toHaveLength(2);
     await watch.close();
   });
 
@@ -417,11 +447,14 @@ describe("the accessibility stream", () => {
     }, (change) => changes.push(change), 50);
     bus.inject(stateChanged(APP_SENDER, KNOWN_PATH));
     for (let turn = 0; turn < 64; turn += 1) await Promise.resolve();
-    expect(changes).toHaveLength(0);
+    // Bounded work, and a root-level nudge for the change it could not place;
+    // the descendant is not named.
+    expect(changes.map((c) => c.id)).toEqual([deriveId("generic", APP_SENDER, ROOT_PATH)]);
     expect(reads).toBe(mode === "depth" ? 24 : 1);
+    await new Promise((resolve) => setTimeout(resolve, 110));
     bus.inject(stateChanged(APP_SENDER, ROOT_PATH));
     await settle();
-    expect(changes).toHaveLength(1);
+    expect(changes).toHaveLength(2);
     await watch.close();
   });
 

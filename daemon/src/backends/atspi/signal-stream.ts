@@ -310,7 +310,22 @@ export async function openSignalStream(
       }
       // A defunct descendant is an ordinary change inside the subtree and
       // falls through to the membership climb like any other.
-      if ((await withinSubtree(signal.path)) !== "inside" || !open) return;
+      const membership = await withinSubtree(signal.path);
+      if (!open || membership === "outside") return;
+      if (membership === "unknown") {
+        // Coverage is degraded: something in this application changed and the
+        // bus would not say whether it hangs under the watched root (parent
+        // unreadable, climb exhausted, cycle). Silence here would let the
+        // caller believe the stream is complete; forwarding the descendant
+        // would name an element the walk never proved is in scope. The
+        // root is the one element this watch is authorized to speak for, so
+        // the change is reported THERE: content-free, "look again", under the
+        // same backstop as any other change so a flood of unknowns is one
+        // nudge per window (CC-08, plan §11).
+        const root = anchor.known(anchor.busName, anchor.rootPath);
+        deliver({ id: root?.id ?? deriveId("generic", anchor.busName, anchor.rootPath), role: root?.role ?? "generic", kind: "changed" });
+        return;
+      }
       const known = anchor.known(signal.sender, signal.path);
       // An element the walk never answered still changed; it is reported under
       // a derived id with the generic role - the same answer the walk gives a

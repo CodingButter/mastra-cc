@@ -562,7 +562,7 @@
   {
     "name": "a-watch-that-speaks-for-the-whole-application",
     "file": "daemon/src/backends/atspi/signal-stream.ts",
-    "find": "      if ((await withinSubtree(signal.path)) !== \"inside\" || !open) return;\n",
+    "find": "      if (!open || membership === \"outside\") return;\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
@@ -1901,5 +1901,12 @@
     "find": "      client.onChangeEvent((event) => this.#ledger.record(event));\n",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/an-unknown-change-is-kept-and-not-looped-on.test.ts"
+  },
+  {
+    "name": "degraded-coverage-goes-quiet-instead-of-saying-so",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "        deliver({ id: root?.id ?? deriveId(\"generic\", anchor.busName, anchor.rootPath), role: root?.role ?? \"generic\", kind: \"changed\" });\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   }
 ]

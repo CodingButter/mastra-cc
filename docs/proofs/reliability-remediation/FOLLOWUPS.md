@@ -18,7 +18,7 @@ in this file is claimed as implemented.
 | CC-05 | Complete-task serialization on a shared connection | autonomous | Design open: one connection, many tasks. |
 | CC-06 | Transfer/takeover integration and visibility revocation across one task's lifetime | autonomous | Ledger and quiet-window wake policy are done (`cc06/wake-policy/`); the lifecycle integration test spanning a driver transfer is not. |
 | CC-07 | Normalized crop provenance, finite/bounds validation, capture freshness | autonomous | Plan permits the current conservative refusal as interim. |
-| CC-08 | Root-level degraded-watch health (a versioned "coverage degraded" signal) | autonomous | Live reparenting and root removal are proven on GTK (`cc08/reparent/`); a watch whose ancestry becomes unreadable still goes quiet rather than saying so. |
+| CC-08 | Live-induced degraded ancestry (a hung or unreadable ancestor on a real bus) | autonomous | The root-level health signal is done and proven on the scripted bus (`cc08/health/`); the live GTK fixture shows no spurious nudges but does not induce the degraded edge. |
 | CC-09 | Daemon-side retained-queue byte sizing (subscription book buffer, watch state) | autonomous | Consumer-throttle bytes and a recorded native rhythm are done (`cc09/load/`); the daemon's own retained structures are not yet sized. |
 | CC-09 | Cancellation boundaries inside single-call effects (`emitString`, chords, pointer) and the capture subprocess | autonomous | Those are single registry/subprocess calls; a boundary would need chunking or an AbortSignal plumbed into capture. |
 | CC-09 | Wire-level cancel verb for an open connection | autonomous (protocol scope) | Close-is-the-request is the measured contract; a verb is an additive protocol change. |

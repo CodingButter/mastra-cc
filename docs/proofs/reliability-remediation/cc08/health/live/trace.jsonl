@@ -1,0 +1,35 @@
+{"event":"tool","monotonicMs":237.131553,"name":"listApplications","args":{}}
+{"event":"tool","monotonicMs":270.030942,"name":"queryElements","args":{"application":"reparent-fixture","limit":500}}
+{"event":"tool","monotonicMs":281.695088,"name":"subscribeElement","args":{"id":"el-23e13b4d9c0f","priority":"medium"}}
+{"event":"receipt","monotonicMs":292.016618,"subscriptionId":"sub-000001-02d148","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":300.603645,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"in-left 1789683853787"}}
+{"event":"receipt","monotonicMs":391.959431,"subscriptionId":"sub-000001-02d148","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"phase","monotonicMs":1002.529491,"phase":"in-left","expected":"inside: emits","changedOnLeftWatch":2,"ok":true}
+{"event":"command","monotonicMs":1002.71674,"line":"right"}
+{"event":"tool","monotonicMs":1410.492223,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"moved-right 1789683854909"}}
+{"event":"phase","monotonicMs":2111.603232,"phase":"moved-right","expected":"outside: silent","changedOnLeftWatch":0,"ok":true}
+{"event":"command","monotonicMs":2111.708152,"line":"left"}
+{"event":"receipt","monotonicMs":2113.422097,"subscriptionId":"sub-000001-02d148","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":2214.334019,"subscriptionId":"sub-000001-02d148","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":2515.011946,"subscriptionId":"sub-000001-02d148","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":2522.281419,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"back-in-left 1789683856017"}}
+{"event":"receipt","monotonicMs":2615.722815,"subscriptionId":"sub-000001-02d148","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"phase","monotonicMs":3223.751974,"phase":"back-in-left","expected":"inside: emits","changedOnLeftWatch":2,"ok":true}
+{"event":"tool","monotonicMs":3226.792145,"name":"subscribeElement","args":{"id":"el-307ff2f21c61","priority":"medium"}}
+{"event":"command","monotonicMs":3226.886612,"line":"annex"}
+{"event":"receipt","monotonicMs":3227.535429,"subscriptionId":"sub-000002-830162","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":3327.786982,"subscriptionId":"sub-000002-830162","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":3630.687549,"subscriptionId":"sub-000002-830162","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":3637.12715,"name":"setElementText","args":{"id":"el-307ff2f21c61","text":"moved-to-annex 1789683857133"}}
+{"event":"receipt","monotonicMs":3731.793984,"subscriptionId":"sub-000002-830162","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"phase","monotonicMs":4338.898879,"phase":"moved-to-annex","expected":"outside: silent","changedOnLeftWatch":0,"ok":true}
+{"event":"command","monotonicMs":4339.010746,"line":"destroy-annex"}
+{"event":"receipt","monotonicMs":4340.143819,"subscriptionId":"sub-000002-830162","id":"el-307ff2f21c61","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":4341.11935,"subscriptionId":"sub-000001-02d148","id":"el-23e13b4d9c0f","kind":"changed","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":4342.954863,"subscriptionId":"sub-000002-830162","id":"el-307ff2f21c61","kind":"watchEnded","attribution":"unattributed"}
+{"event":"receipt","monotonicMs":4441.515374,"subscriptionId":"sub-000001-02d148","id":"el-23e13b4d9c0f","kind":"changed","attribution":"unattributed"}
+{"event":"tool","monotonicMs":5952.200174,"name":"queryElements","args":{"application":"reparent-fixture","role":"text","limit":50}}
+{"event":"tool","monotonicMs":5961.863411,"name":"unsubscribeElement","args":{"subscriptionId":"sub-000002-830162"}}
+{"event":"phase","monotonicMs":5961.97309,"phase":"destroy-annex","expected":"watchEnded once; element gone; unsubscribe reports it had already ended","docWatchKindsAfterDestroy":["changed","watchEnded"],"docStillQueryable":false,"unsubscribeEnded":false,"unsubscribeRefusal":null,"ok":true}
+{"event":"tool","monotonicMs":5962.408285,"name":"unsubscribeElement","args":{"subscriptionId":"sub-000001-02d148"}}
+{"event":"command","monotonicMs":5962.534958,"line":"quit"}
