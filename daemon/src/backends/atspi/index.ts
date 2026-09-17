@@ -72,6 +72,7 @@ import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { capture } from "./capture.js";
 import { emitChord, emitString } from "./rawinput/keys.js";
+import { boundary } from "../../cancellation.js";
 import { emitClick, isPointerButton, POINTER_BUTTONS, screenRectangle } from "./rawinput/pointer.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { applicationName, nameMatches, normalise } from "./names.js";
@@ -998,7 +999,13 @@ export class AtspiBackend implements Backend {
         // why the comparison below exists.
         await emitChord(this.channel, forwards ? "Home" : "End");
         const key = forwards ? "Delete" : "Backspace";
-        for (let pressed = 0; pressed < toDelete; pressed += 1) await emitChord(this.channel, key);
+        // One key per iteration and nothing in flight between two of them:
+        // this is the daemon's supported boundary, the only place a driver's
+        // cancellation can stop an effect without leaving a half-sent key.
+        for (let pressed = 0; pressed < toDelete; pressed += 1) {
+          boundary(pressed, toDelete);
+          await emitChord(this.channel, key);
+        }
       });
       const after = clearableLength(attempt.element.content);
       if (after === 0) return attempt;

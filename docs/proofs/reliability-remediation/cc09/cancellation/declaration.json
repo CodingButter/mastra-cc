@@ -1,0 +1,11 @@
+{
+  "session": "/tmp/mastra-cc-mousepad-verified-find-replace/docs/proofs/mousepad-verified-find-replace/model-session.sh",
+  "modules": "/tmp/cc09-cancel-modules",
+  "daemon": "/tmp/mastra-cc-reliability-remediation/daemon/dist/main.mjs",
+  "daemonSha256": "2af29af1c1c63c28b9ecae450b6563de2187fb73059612ea30331586fc647a52",
+  "driverSha256": "7c730e7f7a4ce5b6b81e43298ef8eb56934741f33f7e0325057af7d28666b447",
+  "sessionSha256": "910a9580cb10eca59a553872d6878cec638ddaa606523927ac2559b500c9d55a",
+  "sampleCount": 5,
+  "closeAfterMs": 120,
+  "claim": "driver close is the cancellation request; acknowledgement = successor admission and daemon settle line; emitted keys are not retracted"
+}

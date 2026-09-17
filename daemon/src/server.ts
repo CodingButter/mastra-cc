@@ -96,6 +96,7 @@ import { CATALOG, contendsForBrowserEndpoint, type LaunchCatalog } from "./launc
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
 import { driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
+import { CancelledAtBoundaryError, underCancellation } from "./cancellation.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
 // then requests dispatched through the effect-class gate. Accessibility access
@@ -2619,8 +2620,11 @@ export async function handleRequest(
       if (retired !== undefined) return { refusal: retired };
       // Audit identity belongs to this request. Event origin is a separate question.
       try {
-        return await operation.run(entry.effectClass === "observe" ? undefined : { causeId: mintCauseId() },
+        const run = () => operation.run(entry.effectClass === "observe" ? undefined : { causeId: mintCauseId() },
           () => entry.handler(request.params, backend, launch, book));
+        // The driver's disconnect is its cancellation request; the signal
+        // reaches the backend's emission boundaries through this store.
+        return await (driver === undefined ? run() : underCancellation(driver.connection.signal, run));
       } finally {
         driver?.authority.leave(driver.connection);
       }
@@ -2654,7 +2658,13 @@ export async function handleRequest(
     // "Error" through it), so the class name is what gets written.
     const name = error instanceof Error ? error.constructor.name || error.name : "Error";
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
+    if (error instanceof CancelledAtBoundaryError) {
+      // Not a failure: the driver asked, and the effect stopped where stopping
+      // was honest. The count is the uncertain-outcome marker the plan asks for.
+      console.error(`daemon: ${request.method} ${message}`);
+    } else {
+      console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
+    }
     if (entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
     }
@@ -2736,6 +2746,16 @@ export function serveConnection(
   // goes, the watches go with it - closed at the BACKEND, not merely
   // forgotten here: a forgotten watch is still being fed.
   const teardown = () => {
+    // The close is the cancellation request. The acknowledgement is ownership
+    // retiring, which happens now if nothing is running and at the running
+    // effect's next boundary otherwise; the gap between them is the one
+    // number CC-09 asks for, so it is written where the operator can read it.
+    const requested = performance.now();
+    if (authority.running(driver.connection)) {
+      void authority.settled(driver.connection).then((at) => {
+        console.error(`daemon: driver ${driver.connection.generation} settled ${(at - requested).toFixed(1)} ms after its connection closed mid-effect`);
+      });
+    }
     authority.disconnect(driver.connection);
     void book.closeAll();
   };

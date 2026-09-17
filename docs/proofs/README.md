@@ -10,7 +10,7 @@ answered by argument.
 
 [Mousepad Find/Replace baseline](mousepad-verified-find-replace/README.md) records the verified delivery base and regression gates; native task completion remains unproved.
 
-[Remaining CC-01–CC-09 requirements](reliability-remediation/AUDIT.md) separates implemented slices from unproven system-level acceptance. [Bounded subscription initialization](reliability-remediation/cc08/initialization/README.md) retains the callback-loss regression, overflow refusal and connection-teardown proof.
+[Remaining CC-01–CC-09 requirements](reliability-remediation/AUDIT.md) separates implemented slices from unproven system-level acceptance; [FOLLOWUPS.md](reliability-remediation/FOLLOWUPS.md) lists every open sub-requirement as human-only or autonomous. [Bounded subscription initialization](reliability-remediation/cc08/initialization/README.md) retains the callback-loss regression, overflow refusal and connection-teardown proof.
 
 [Signal lifecycle remediation](reliability-remediation/cc03/README.md) records controlled RED/GREEN regressions, retained real-socket coverage, and signal mutation checks.
 
@@ -28,7 +28,7 @@ answered by argument.
 
 [Fresh watch membership](reliability-remediation/cc08/README.md) records seam-level RED/GREEN verification of reparenting, recovered parent reads, bounded climbs and pending-close suppression; live native reparenting proof remains deferred.
 
-[Native cost baseline](reliability-remediation/cc09/README.md) records built-daemon queue and real Xvfb capture phase measurements with fixed content-free counters; no latency SLA or production-load claim. [Native notification and cancellation measurement boundaries](reliability-remediation/cc09/native-measurement-boundary.md) records source-verified follow-up design, not native timing results. [Native event-to-storage latency](reliability-remediation/cc09/native-latency/README.md) measures ten real Mousepad mutations reaching SQLite with zero model calls (median 8.0 ms request-to-row, polling-inclusive upper bound); no wake or cancellation claim.
+[Native cost baseline](reliability-remediation/cc09/README.md) records built-daemon queue and real Xvfb capture phase measurements with fixed content-free counters; no latency SLA or production-load claim. [Native notification and cancellation measurement boundaries](reliability-remediation/cc09/native-measurement-boundary.md) records source-verified follow-up design, not native timing results. [Native event-to-storage latency](reliability-remediation/cc09/native-latency/README.md) measures ten real Mousepad mutations reaching SQLite with zero model calls (median 8.0 ms request-to-row, polling-inclusive upper bound); no wake claim. [Cancellation ownership and acknowledgement](reliability-remediation/cc09/cancellation/README.md) measures five real Mousepad clears cancelled by driver close: stopped at the next emitted-key boundary, ownership retired in under a millisecond, successor admitted at 24.9/28.2/34.4 ms, emitted count equal to settled loss; keys already accepted by the registry are not retracted.
 
 ## The convention
 

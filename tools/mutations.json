@@ -111,9 +111,10 @@
   {
     "name": "driver-releases-before-quiescence",
     "file": "daemon/src/driver.ts",
-    "find": " && this.#running !== connection",
+    "find": "    if (this.#running === connection) return;\n    if (this.#owner === connection) this.#owner = undefined;",
     "cwd": "daemon",
-    "testFile": "src/__tests__/one-desktop-driver.test.ts"
+    "testFile": "src/__tests__/one-desktop-driver.test.ts",
+    "replace": "    if (this.#owner === connection) this.#owner = undefined;"
   },
   {
     "name": "driver-accepts-disconnected-queued-work",
@@ -1831,5 +1832,45 @@
     "replace": "    await this.aimedRawInput(params.id, \"text\", () => emitString(this.channel, params.text));\n    const typed = await this.aimedRawInput(params.id, \"text\", () => emitString(this.channel, params.text));",
     "cwd": "daemon",
     "testFile": "src/__tests__/keys-that-went-to-the-other-window-of-the-same-name.test.ts"
+  },
+  {
+    "name": "the-clear-loop-ignores-its-driver-asking-to-stop",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "          boundary(pressed, toDelete);\n          await emitChord(this.channel, key);",
+    "replace": "          await emitChord(this.channel, key);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "a-boundary-that-never-throws",
+    "file": "daemon/src/cancellation.ts",
+    "find": "  if (current.getStore()?.aborted) throw new CancelledAtBoundaryError(emitted, of);",
+    "replace": "  void emitted; void of;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "disconnect-forgets-to-abort-the-signal",
+    "file": "daemon/src/driver.ts",
+    "find": "    this.#controllers.get(connection)?.abort();\n",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "ownership-settles-while-the-effect-still-runs",
+    "file": "daemon/src/driver.ts",
+    "find": "    if (this.#running === connection) return;\n    if (this.#owner === connection) this.#owner = undefined;\n    this.#settled.get(connection)?.resolve(performance.now());",
+    "replace": "    if (this.#owner === connection && this.#running !== connection) this.#owner = undefined;\n    this.#settled.get(connection)?.resolve(performance.now());",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "the-request-runs-outside-its-driver-signal",
+    "file": "daemon/src/server.ts",
+    "find": "        return await (driver === undefined ? run() : underCancellation(driver.connection.signal, run));",
+    "replace": "        return await run();",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
   }
 ]

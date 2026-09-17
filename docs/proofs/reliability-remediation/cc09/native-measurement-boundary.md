@@ -29,3 +29,18 @@ Source checked in this worktree:
 - `daemon/src/backends/atspi/capture.ts:191-225`: the native capture subprocess helper has its own timeout/output limits and SIGKILL path. It has no caller AbortSignal parameter and rejects before independently observing child exit on the failure path.
 
 Consequently the existing producer stop measurements cannot legitimately be renamed native cancellation responsiveness. A useful bounded experiment should separately timestamp client rejection, daemon watch teardown, and native child exit. Full operation cancellation requires an explicit cancellation ownership/acknowledgement contract before an SLA can be measured. Do not add a guessed deadline or treat wire closure as that contract.
+
+### Resolved after this note: the contract now exists and was measured
+
+The paragraph above was true when written. The contract has since been made
+explicit and measured natively — see [`cancellation/README.md`](cancellation/README.md).
+Close of the driver connection remains the request (there is still no wire
+verb), but it is no longer *only* wire closure: `DriverAuthority.disconnect`
+aborts the connection's signal, the ATSPI clear loop stops at its next
+emitted-key boundary (`daemon/src/cancellation.ts`), ownership retires at
+that boundary and `DriverAuthority.settled` resolves, and the daemon logs the
+acknowledgement with the count it could not retract. Five native Mousepad
+samples: ownership retired 0.2–0.8 ms after the close; successor admitted
+24.9–34.4 ms after (polling-inclusive); emitted count equals settled loss in
+every sample. The capture-subprocess point above (no caller AbortSignal) is
+unchanged and remains outside the measured contract.
