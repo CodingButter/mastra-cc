@@ -1,0 +1,14 @@
+## Must fix
+
+No must-fix defects found in the reviewed scope.
+
+## Risks & questions
+
+- **`daemon/src/server.ts:1198-1206` — runtime `launchable` still consults the recipe catalog.** This does not grant launch authority, and `openApplication` remains permit-gated, but it exposes whether a directly visible runtime name has a matching recipe. Confirm that this is intended: the stated goal forbids catalog-alias guessing and launch granting, while the row can still advertise `launchable: true` for a runtime-only name if a recipe happens to match it.
+- **`daemon/src/__tests__/runtime-discovery-scopes.test.ts:19-21` — replay coverage proves query routing, not query authorization independently.** The test uses `visibility = new Set(["yad"])`, so it verifies the positive path and the empty launch permit set. It does not prove that a visible runtime name is refused when observe visibility is absent, or that a similarly named but ungranted runtime identity cannot be queried. Existing tests in `what-is-running.test.ts:116-119` cover listing privacy, but not the replay query boundary.
+
+## Suggested improvements
+
+- Add a negative native/replay assertion that querying an ungranted runtime-only name is refused and never reaches the backend.
+- Add a regression where a visible runtime name also matches a catalog recipe but has no launch permit; assert the listing may report recipe availability while launch remains refused. This would pin the intentional distinction between capability exposure and launch authority.
+- The duplicate check at `daemon/src/server.ts:1200` uses normalized `applicationName(...)` comparison rather than literal installed IDs. That is probably correct for the project’s canonical identity model, but the test suite should explicitly cover a case- or Unicode-normalized collision so the “no duplicate installed identity” policy is unambiguous.

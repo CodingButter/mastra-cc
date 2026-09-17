@@ -1,0 +1,14 @@
+Voice synthesis is unavailable in this session. I’ll keep the review read-only; the live proof outcome remains pending.
+## Must fix
+None identified in the inspected provider-selection and review code. This is not acceptance of the live proof.
+
+## Risks & questions
+- **Exact diff remains unverified.** This session exposes file-reading tools, not Git execution; I could not independently compare against `f3a7f80f8912754c13a41ddc5760c4840ca77799` or exclude unrelated changes. The post-batch review gate remains open under `.mastracode/plans/anthropic-mousepad-series.md:8`.
+- **Secret handling is not an end-to-end guarantee.** `model-driver.mjs:14–25` redacts environment credential values from its structured journal, but `model-session.sh:45` captures driver/SDK stdout and stderr directly into `driver.log`, outside that redactor. I found no embedded credential in the inspected source; I did not inspect secret stores or verify the injection mechanism. The post-batch artifact secret scan remains necessary, per plan line 8.
+- **Live outcome remains pending.** The saved RED/GREEN receipts show the Anthropic fixture transitioning from failure to success (`anthropic-series/provider-red.txt:19`, `provider-green.txt:19–20`), not successful desktop completion. Actual trials still require matching saved bytes and fresh UI evidence (`model-evidence.mjs:7–8,45–56`), plus independent visual review (`model-review.mjs:80–89`). I ran no commands, tests, builds, or mutations.
+
+## Suggested improvements
+- **Test driver selection independently after the batch.** `evidence.test.mjs:33–44` exercises reviewer acceptance/rejection using synthetic metadata; it does not exercise declaration consumption, credential-variable selection, or the model passed to `Agent` (`model-driver.mjs:30–32,57`). Add focused coverage for both providers, missing selected-provider credentials, and rejection before generation. Also cover the reverse mismatch: Google declaration with Anthropic trial metadata.
+- **Make negative assertions specific.** `evidence.test.mjs:39,44` accepts any exception. Assert model-mismatch details and `/unapproved model/` respectively so unrelated fixture failures cannot satisfy these tests.
+
+Paths above are relative to `docs/proofs/mousepad-verified-find-replace/`, except the governing plan.

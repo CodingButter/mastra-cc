@@ -1,0 +1,73 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/tmp/mastra-cc-mousepad-verified-find-replace/daemon[39m
+
+ [31m❯[39m src/__tests__/what-is-running.test.ts [2m([22m[2m28 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 27[2mms[22m[39m
+[31m     [31m×[31m publishes an explicitly granted runtime name even without an installed identity[39m[32m 11[2mms[22m[39m
+     [32m✓[39m does not disclose ungranted runtime-only identities[32m 1[2mms[22m[39m
+     [32m✓[39m does not duplicate installed identities when the census uses the same name[32m 1[2mms[22m[39m
+     [32m✓[39m a granted application that is on the bus reports observable[32m 1[2mms[22m[39m
+     [32m✓[39m a granted application absent from a fully enumerated desk reports not-answering[32m 1[2mms[22m[39m
+     [32m✓[39m an application this session may not observe reports cannot-tell and NAMES the grants file[32m 0[2mms[22m[39m
+     [32m✓[39m and never reports it as not running, however the census answers[32m 1[2mms[22m[39m
+     [32m✓[39m a session with no grants composed at all is denied by default, not told everything[32m 1[2mms[22m[39m
+     [32m✓[39m a granted name the answering route has no view of reports a bare cannot-tell[32m 1[2mms[22m[39m
+     [32m✓[39m asks the census under the name the desk actually uses, not the desktop-entry id[32m 1[2mms[22m[39m
+     [32m✓[39m answers under the runtime name an entry id implies, not only under ids the catalog has a recipe for[32m 0[2mms[22m[39m
+     [32m✓[39m refuses to pick when two entries could both be the name that is answering[32m 0[2mms[22m[39m
+     [32m✓[39m still lists what is installed when the census instrument fails outright[32m 1[2mms[22m[39m
+     [32m✓[39m every entry carries the field, and the listing is not vacuous[32m 1[2mms[22m[39m
+     [32m✓[39m looks the name up normalised, the way every other layer matches them[32m 0[2mms[22m[39m
+     [32m✓[39m names the acquire flag when the machine's accessibility layer is switched off[32m 0[2mms[22m[39m
+     [32m✓[39m names NOTHING when it could not find out whether the layer is on[32m 1[2mms[22m[39m
+     [32m✓[39m still reports a genuine absence when the desk demonstrably can be heard[32m 0[2mms[22m[39m
+     [32m✓[39m never degrades an application that actually answered[32m 0[2mms[22m[39m
+     [32m✓[39m asks this session's own authority first, and names the grants file[32m 0[2mms[22m[39m
+     [32m✓[39m a daemon with no adapter at all says so, and blames no setting[32m 0[2mms[22m[39m
+     [32m✓[39m reads the layer once for the whole listing, not once per application[32m 0[2mms[22m[39m
+     [32m✓[39m reports cannot-tell, and names no setting, for an application it launched and can still see alive[32m 1[2mms[22m[39m
+     [32m✓[39m THE BOUNDARY: an application this daemon did not launch stays reported exactly as before[32m 0[2mms[22m[39m
+     [32m✓[39m a stale record whose process was replaced is not a live process[32m 1[2mms[22m[39m
+     [32m✓[39m still reports answering when the census heard it, owned or not[32m 0[2mms[22m[39m
+     [32m✓[39m asks under the names the entry could have been launched as, not the id alone[32m 0[2mms[22m[39m
+     [32m✓[39m asks the ownership table once for the whole listing, not once per application[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/__tests__/what-is-running.test.ts[2m > [22mthe listing says what is answering, not just what is installed[2m > [22mpublishes an explicitly granted runtime name even without an installed identity
+[31m[1mAssertionError[22m: expected undefined to match object { name: 'runtime-editor', …(3) }[39m
+
+[32m- Expected:[39m
+{
+  "capabilities": ArrayContaining [
+    {
+      "availability": "available",
+      "capability": "observe",
+    },
+  ],
+  "launchable": false,
+  "name": "runtime-editor",
+  "running": "answering",
+}
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m src/__tests__/what-is-running.test.ts:[2m109:51[22m[39m
+    [90m107|[39m   it("publishes an explicitly granted runtime name even without an ins…
+    [90m108|[39m     const applications = await listing({ visibility: new Set(["runtime…
+    [90m109|[39m     [34mexpect[39m([34mentry[39m(applications[33m,[39m [32m"runtime-editor"[39m))[33m.[39m[34mtoMatchObject[39m({
+    [90m   |[39m                                                   [31m^[39m
+    [90m110|[39m       name[33m:[39m [32m"runtime-editor"[39m[33m,[39m running[33m:[39m [32m"answering"[39m[33m,[39m launchable[33m:[39m [35mfalse[39m[33m,[39m
+    [90m111|[39m       capabilities: expect.arrayContaining([{ capability: "observe", a…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m27 passed[39m[22m[90m (28)[39m
+[2m   Start at [22m 07:41:07
+[2m   Duration [22m 393ms[2m (transform 233ms, setup 0ms, import 286ms, tests 27ms, environment 0ms)[22m
+
+[90mundefined[39m
+/tmp/mastra-cc-mousepad-verified-find-replace/daemon:
+[41m[30m ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL [39m[49m [31mCommand failed with exit code 1: vitest run src/__tests__/what-is-running.test.ts[39m

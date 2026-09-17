@@ -1,0 +1,15 @@
+## Must fix
+
+None identified in the revised safety path. Earlier copy-integrity and queued-abort findings are resolved in `model-review.mjs:78` and `model-rate.mjs:37–43`; the dispatch abort guards remain intact.
+
+## Risks & questions
+
+- **Timing evidence has a small boundary mismatch:** `model-rate.mjs:23–24` samples the clock separately for the next eligible start and the logged start. `model-review.mjs:85` strictly requires 3,000 ms between logged samples. Near the boundary, scheduling against the earlier sample could produce a false rejection. Use one timestamp for both. This is an evidence reliability concern, not demonstrated unsafe desktop behavior.
+- Full gates and native acceptance remain outstanding (`paced-series/README.md:27`). I read the offline SDK probe and its GREEN receipt; I did not execute them. They establish fixture interception, not cache savings or desktop completion.
+
+## Suggested improvements
+
+- Add an **installed-SDK persistent-429 or 500 fixture** to verify the SDK contributes no extra retries. The existing 429→200 probe establishes wrapper retry behavior but would also pass with SDK retries enabled (`paced-series/sdk-probe.mjs:12–15`).
+- Correct “stream intercepted” in the probe’s success message and receipt; this fixture verifies nonstream JSON decoding (`paced-series/sdk-probe.mjs:15`, `paced-series/sdk-probe.txt:1`).
+
+Paths above are relative to `docs/proofs/mousepad-verified-find-replace/`.

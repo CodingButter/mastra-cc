@@ -1,0 +1,2 @@
+daemon: websocket listening on 127.0.0.1:45255
+daemon: listening on /tmp/mousepad-handoff.5Wd48F/t2/runtime/d.sock (backend atspi, schema e469040683c1...)

@@ -115,6 +115,29 @@ refused as `ApplicationScopeUnmatched` - call `listApplications` and use the nam
 it prints. A just-launched application may simply not have arrived yet, so query
 again before concluding it is absent.
 
+Use the inventory's observed `name`, not its catalog `id`, as the first application
+scope. A catalog's launch availability does not establish whether an already-open
+window can be observed. If running status is unknown, ask `queryElements` before
+concluding that the task requires launching anything. Respect actual authority
+refusals; never substitute another route to bypass one.
+
+After saving a text document, query its text content or use `readElementContent`
+on a freshly observed document element. A clean window title or a successful save
+call does not verify the resulting text. Read the document, not the search field
+or replacement field, before claiming the edit is verified.
+
+Budget interactions for saving and post-save readback, not just the edit itself.
+Inspect a dialog's controls together before spending separate queries on guessed
+button names. A scope checkbox can change an action's name: in Mousepad, the
+observed "Replace all in:" checkbox changes "Replace" to "Replace All". Confirm
+that control and its state from current public evidence. `activateElement` on a
+checkbox toggles it: a checkbox whose observed states already include "checked"
+is on, and activating it turns it off. Activate a checkbox only when its observed
+state differs from the state the task needs, then re-observe the action name; do
+not repeatedly search for an absent "Replace All" button or assume a successful
+click verified the whole task. Do not spend interactions on menus or options the
+task did not ask for; the budget must still cover saving and post-save readback.
+
 **An empty answer often means "not yet".** A window that was just launched, or a
 surface that a click was meant to open, arrives on its own schedule; a query
 fired immediately gets an honest empty answer that is indistinguishable from

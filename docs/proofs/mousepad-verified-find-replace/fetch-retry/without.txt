@@ -1,0 +1,19 @@
+Error in agent stream {
+  error: TypeError: other side closed
+      at globalThis.fetch.pacedFetch.now (file:///tmp/fetch-retry-proof.pBj8QB/base/sdk-probe.mjs:9:107)
+      at async run (file:///tmp/fetch-retry-proof.pBj8QB/base/model-rate.mjs:25:24),
+  runId: [32m'a887e3a6-5cd6-4bad-aff8-64a81a6689a2'[39m,
+  provider: [32m'anthropic'[39m,
+  modelId: [32m'claude-sonnet-4-5-20250929'[39m
+}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+TypeError: other side closed
+    at globalThis.fetch.pacedFetch.now (file:///tmp/fetch-retry-proof.pBj8QB/base/sdk-probe.mjs:9:107)
+    at async run (file:///tmp/fetch-retry-proof.pBj8QB/base/model-rate.mjs:25:24)
+
+Node.js v25.2.1
+
+PROOF: RED — identical installed SDK probe fails before the transport fix

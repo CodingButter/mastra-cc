@@ -1,0 +1,3 @@
+North harbour: VALUE_1af6b98269
+East orchard: VALUE_1af6b98269
+South ridge: VALUE_1af6b98269.

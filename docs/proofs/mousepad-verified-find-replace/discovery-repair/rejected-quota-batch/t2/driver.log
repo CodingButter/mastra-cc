@@ -1,0 +1,82 @@
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+  * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_2_input_token_count, limit: 3000000, model: gemini-2.5-flash
+  Please retry in 4.486847656s.
+      at file:///tmp/mousepad-handoff.5Wd48F/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:2348:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi (file:///tmp/mousepad-handoff.5Wd48F/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:2233:24)
+      at async GoogleGenerativeAILanguageModel.doGenerate (file:///tmp/mousepad-handoff.5Wd48F/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:16119:71)
+      at async AISDKV6LanguageModel.doGenerate (file:///tmp/mousepad-handoff.5Wd48F/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/llm-CZxUqViJ.js:107:18) {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m429[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Mon, 07 Sep 2026 20:48:55 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=239'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-gemini-service-tier'[39m: [32m'standard'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 429,\n'[39m +
+      [32m'    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_2_input_token_count, limit: 3000000, model: gemini-2.5-flash\\nPlease retry in 4.486847656s.",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED",\n'[39m +
+      [32m'    "details": [\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.Help",\n'[39m +
+      [32m'        "links": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "description": "Learn more about Gemini API quotas",\n'[39m +
+      [32m'            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n'[39m +
+      [32m'        "violations": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "quotaMetric": "generativelanguage.googleapis.com/generate_content_paid_tier_2_input_token_count",\n'[39m +
+      [32m'            "quotaId": "GenerateContentPaidTierInputTokensPerModelPerMinute-PaidTier2",\n'[39m +
+      [32m'            "quotaDimensions": {\n'[39m +
+      [32m'              "model": "gemini-2.5-flash",\n'[39m +
+      [32m'              "location": "global"\n'[39m +
+      [32m'            },\n'[39m +
+      [32m'            "quotaValue": "3000000"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n'[39m +
+      [32m'        "retryDelay": "4s"\n'[39m +
+      [32m'      }\n'[39m +
+      [32m'    ]\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'2b867530-37ef-4a14-bbcb-1b849a54260b'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-2.5-flash'[39m
+}

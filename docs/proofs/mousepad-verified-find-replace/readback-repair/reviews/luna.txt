@@ -1,0 +1,19 @@
+## Must fix
+
+None identified.
+
+The readback repair is sound: `model-evidence.mjs:23-25` requires IDs from prior public results, while `:45-49` accepts content-only `readElementContent` results without inventing an ID/role wrapper. It still enforces exact expected bytes, permitted roles, post-save ordering, and a completed fresh read before `model-finished` (`:51-53`). The t1 rejection is therefore correct, not an acceptance weakening.
+
+## Risks & questions
+
+- `model-evidence.mjs:46-47` treats a content-only read as having the role of the previously selected element. This is appropriate for the documented protocol contract, but the protocol itself should guarantee that `readElementContent(id)` returns content for that same ID; otherwise the oracle relies on the tool implementation rather than the returned evidence to bind identity.
+
+- The saved-byte assertion remains intentionally stronger than the readback assertion (`:7-8`), which is correct. The new batch’s t2/t3 machine passes do not constitute visual acceptance, and t1 correctly remains rejected for bounded completion. The documentation states this accurately in `FOLLOWUPS.md:3-5` and `README.md:46-50`.
+
+- The CC09 material is appropriately non-acceptance evidence. `cc09/README.md:9-15` explicitly limits the producer measurements and disclaims native end-to-end latency, queue sizing, and cancellation proof. No production defect is apparent from the supplied documentation-only change.
+
+## Suggested improvements
+
+- Add an explicit regression fixture where `readElementContent` returns valid expected text but the implementation associates it with a different ID, if the protocol can represent that failure. Otherwise document that identity is guaranteed by the daemon contract rather than observable in the content-only response.
+
+- Keep the final acceptance status prominently tied to the t1 bounded-completion failure; do not summarize the batch as “all trials passed” merely because all saved files matched.

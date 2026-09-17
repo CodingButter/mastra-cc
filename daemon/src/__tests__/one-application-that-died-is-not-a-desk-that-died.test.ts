@@ -70,10 +70,15 @@ describe("a call that fails because one application is gone", () => {
 });
 
 describe("the bus errors that mean a peer is gone", () => {
-  it("reads the three shapes the bus uses to say the process is not there", () => {
+  it("recognizes explicit service loss or recipient disconnection", () => {
     expect(namesADeadPeer({ name: "DBusError", body: ["x"], errorName: "org.freedesktop.DBus.Error.ServiceUnknown" })).toBe(true);
     expect(namesADeadPeer({ body: ["Message recipient disconnected from message bus without replying"] })).toBe(true);
-    expect(namesADeadPeer({ errorName: "org.freedesktop.DBus.Error.NoReply" })).toBe(true);
+    expect(namesADeadPeer({ errorName: "org.freedesktop.DBus.Error.NoReply", body: ["Message recipient disconnected from message bus without replying"] })).toBe(true);
+  });
+
+  it("does not infer process death from an unanswered or timed-out call", () => {
+    expect(namesADeadPeer({ errorName: "org.freedesktop.DBus.Error.NoReply" })).toBe(false);
+    expect(namesADeadPeer({ name: "TimeoutError", dbusName: "org.freedesktop.DBus.Error.NoReply", code: "ETIMEDOUT", timeout: 25000 })).toBe(false);
   });
 
   it("reads everything else as a failure that says nothing about which peer died", () => {

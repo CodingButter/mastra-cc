@@ -1,0 +1,20 @@
+Voice synthesis is unavailable. The retained rate-limit errors and gate totals match the new report, but the handoff still contains stale checkpoint/resume instructions, and the README points to a review directory that does not exist.
+## Must fix
+
+- **Current handoff mixes historical and current checkpoint instructions.** `docs/MOUSEPAD-HANDOFF.md:17–22` describes this as a documentation-only commit after `ebce7e7`, although this checkpoint includes provider-selection changes. Line 41 still requires Google quota restoration and says the final mutation sweep is outstanding, contradicting the new result at line 7. Explicitly label those sections historical or update them to the current checkpoint and bounded pacing investigation.
+
+- **The README claims retained reviews that are absent.** `docs/proofs/mousepad-verified-find-replace/anthropic-series/README.md:21` lists `reviews/` as containing independent reports; that directory does not exist. Retain the reports before committing or mark them pending. The documentation-link receipt does not validate this backtick-only reference.
+
+## Risks & questions
+
+- **Secret clearance remains limited.** No credential was visible in the inspected driver logs and journal excerpts. The driver logs do expose organization/workspace identifiers—not authentication secrets (`anthropic-series/rejected-rate-limit-batch/t1/driver.log:25–40`). My search tool skipped the ignored evidence files, so its zero-match output cannot independently confirm the reported all-artifact scan. I did not open secret stores or inspect recordings.
+
+- **Diff and inventory integrity are not independently certified.** Git execution and hashing tools remain unavailable here. I inspected the inventory and receipts, but could not recompute hashes, compare against HEAD, or independently establish mutation timing. This limits verification of `anthropic-series/README.md:13,17`; it is not evidence those claims are false.
+
+## Suggested improvements
+
+- **Keep “public calls” precise:** use “model-issued public desktop calls.” Both t2 and t3 performed a public setup-readiness query before generation, despite having zero model-issued calls (`anthropic-series/rejected-rate-limit-batch/t2/events.jsonl:1–5`, corresponding t3 lines). This avoids implying no desktop interaction occurred.
+
+- **Preserve the narrow conclusions already supported by receipts.** The three driver logs confirm HTTP 429, input-token limit 500,000, remaining zero, and retry-after 10/7/5 seconds (`t1–t3/driver.log:23–41`). The retained totals are **231 mutations**, **19 successful tasks / zero cached**, **93 passing focused tests**, and **302 documentation files** (`mutations.txt:232`, `workspace-final.txt:609–610`, `evidence-final.txt:96–99`, `docs-final.txt:5`). None establishes visual acceptance or proves increased quota is required.
+
+Evidence paths abbreviated above are relative to `docs/proofs/mousepad-verified-find-replace/`.

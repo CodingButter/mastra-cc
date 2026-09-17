@@ -1,0 +1,101 @@
+[32m✔ requires saved bytes and independent preceding public trace [90m(6.044059ms)[39m[39m
+[32m✔ rejects unknown actionable ID [90m(0.779309ms)[39m[39m
+[32m✔ rejects wrong field selection [90m(0.922746ms)[39m[39m
+[32m✔ rejects private native evidence only [90m(0.230644ms)[39m[39m
+[32m✔ rejects no save [90m(0.246769ms)[39m[39m
+[32m✔ rejects title instead of fresh content [90m(0.268049ms)[39m[39m
+[32m✔ rejects misleading banner [90m(0.253995ms)[39m[39m
+[32m✔ rejects verification after final claim [90m(0.269487ms)[39m[39m
+[32m✔ rejects incomplete journal [90m(0.318518ms)[39m[39m
+[32m✔ rejects unfinished tool [90m(0.31681ms)[39m[39m
+[32m✔ rejects failed model [90m(0.234146ms)[39m[39m
+[32m✔ rejects model never finished [90m(0.203206ms)[39m[39m
+[32m✔ rejects background tool continuation [90m(0.240571ms)[39m[39m
+[32m✔ rejects explicit refusal [90m(0.218053ms)[39m[39m
+[32m✔ rejects duplicate call [90m(0.15392ms)[39m[39m
+[32m✔ rejects incorrect saved bytes despite perfect model trace [90m(0.828491ms)[39m[39m
+[32m✔ rejects wrong task declaration [90m(0.305225ms)[39m[39m
+[32m✔ three synthetic machine passes remain REVIEW_PENDING without reviews [90m(7.788476ms)[39m[39m
+[32m✔ batch rejects stale runtime [90m(3.808226ms)[39m[39m
+[32m✔ batch rejects stale instructions [90m(2.816992ms)[39m[39m
+[32m✔ batch rejects stale harness [90m(2.990593ms)[39m[39m
+[32m✔ batch rejects missing artifact hash [90m(4.661097ms)[39m[39m
+[32m✔ batch rejects wrong actual kind [90m(4.260531ms)[39m[39m
+[32m✔ batch rejects wrong count [90m(4.386839ms)[39m[39m
+[32m✔ batch rejects mutated saved bytes [90m(3.738352ms)[39m[39m
+[32m✔ batch rejects UI-only unsaved success [90m(3.881879ms)[39m[39m
+[32m✔ batch rejects failed attempt [90m(4.727469ms)[39m[39m
+[32m✔ batch rejects workspace import [90m(3.666187ms)[39m[39m
+[32m✔ visual record validates independently hashed synthetic fixture, never writes review.json [90m(1.914016ms)[39m[39m
+[32m✔ visual validator rejects missing recording [90m(1.086793ms)[39m[39m
+[32m✔ visual validator rejects missing checkpoints [90m(1.079187ms)[39m[39m
+[32m✔ visual validator rejects missing hash [90m(0.901393ms)[39m[39m
+[32m✔ visual validator rejects mismatched hash [90m(1.092913ms)[39m[39m
+[32m✔ visual validator rejects review before capture [90m(0.797226ms)[39m[39m
+[32m✔ visual validator rejects wrong trial [90m(0.758971ms)[39m[39m
+[32m✔ visual validator rejects wrong journal hash [90m(1.067868ms)[39m[39m
+[32m✔ visual validator rejects wrong saved hash [90m(1.218939ms)[39m[39m
+[32m✔ visual validator rejects wrong verification call [90m(0.870932ms)[39m[39m
+[32m✔ visual validator rejects missing comparison [90m(0.94443ms)[39m[39m
+[32m✔ visual validator rejects wrong field value [90m(0.918938ms)[39m[39m
+[32m✔ visual validator rejects unresolved limitation [90m(0.917744ms)[39m[39m
+[32m✔ visual validator rejects aliased checkpoint [90m(1.054671ms)[39m[39m
+[32m✔ recording bytes are rehashed rather than trusting supplied hash [90m(1.570706ms)[39m[39m
+[32m✔ batch rejects duplicate IDs [90m(2.000109ms)[39m[39m
+[32m✔ batch rejects wrong trial count [90m(0.999934ms)[39m[39m
+[32m✔ batch rejects aliased directories [90m(1.192617ms)[39m[39m
+[32m✔ independently authored saved bytes and occurrence count agree [90m(0.212109ms)[39m[39m
+[32m✔ saved-byte oracle rejects unchanged document [90m(0.163847ms)[39m[39m
+[32m✔ saved-byte oracle rejects partial replacement [90m(0.098366ms)[39m[39m
+[32m✔ saved-byte oracle rejects extra bytes [90m(0.090541ms)[39m[39m
+[32m✔ saved-byte oracle rejects altered surrounding text [90m(0.095482ms)[39m[39m
+[32m✔ oracle rejects a wrong declared count [90m(0.186728ms)[39m[39m
+[32m✔ correct in-memory text does not rescue unsaved disk bytes [90m(0.18252ms)[39m[39m
+[32m✔ a strict synthetic reciprocal witness is containment, not inherited identity [90m(0.34615ms)[39m[39m
+[32m✔ synthetic witness rejects missing parent [90m(0.16928ms)[39m[39m
+[32m✔ synthetic witness rejects contradictory backlink [90m(0.150156ms)[39m[39m
+[32m✔ synthetic witness rejects multiple children [90m(0.154827ms)[39m[39m
+[32m✔ synthetic witness rejects nested target [90m(0.141482ms)[39m[39m
+[32m✔ synthetic witness rejects ownership mismatch [90m(0.124934ms)[39m[39m
+[32m✔ synthetic witness rejects protected target [90m(0.13818ms)[39m[39m
+[32m✔ synthetic witness rejects missing target [90m(0.125563ms)[39m[39m
+[32m✔ synthetic witness rejects missing label [90m(0.13791ms)[39m[39m
+[32m✔ synthetic witness rejects defunct child [90m(0.153566ms)[39m[39m
+[32m✔ synthetic witness rejects stale parent [90m(0.141543ms)[39m[39m
+[32m✔ synthetic witness rejects defunct label [90m(0.118933ms)[39m[39m
+[32m✔ synthetic witness rejects missing state [90m(0.106704ms)[39m[39m
+[32m✔ measured menu and editable child establish only reciprocal containment [90m(0.563901ms)[39m[39m
+[32m✔ measured containment rejects second editable child [90m(0.179893ms)[39m[39m
+[32m✔ measured containment rejects nested target [90m(0.137148ms)[39m[39m
+[32m✔ measured containment rejects absent parent [90m(0.114428ms)[39m[39m
+[32m✔ measured containment rejects foreign sibling [90m(0.117113ms)[39m[39m
+[32m✔ measured containment rejects foreign label [90m(0.134187ms)[39m[39m
+[32m✔ measured containment rejects wrong sibling backlink [90m(0.130267ms)[39m[39m
+[32m✔ measured containment rejects stale sibling [90m(0.113297ms)[39m[39m
+[32m✔ measured containment rejects duplicate child [90m(0.110838ms)[39m[39m
+[32m✔ measured containment rejects third child [90m(0.114443ms)[39m[39m
+[32m✔ measured containment rejects protected target [90m(0.126919ms)[39m[39m
+[32m✔ measured containment rejects unknown sibling role [90m(0.13188ms)[39m[39m
+[32m✔ changing relationships invalidate an earlier witness [90m(0.315683ms)[39m[39m
+[32m✔ public setup checks require handshake, every import, and realpath containment [90m(1.334793ms)[39m[39m
+[32m✔ monitor failure and log-open failure persist independently; next trial runs [90m(43.818795ms)[39m[39m
+[32m✔ malformed events are retained as invalid and do not prevent later trials [90m(81.029116ms)[39m[39m
+{"directory":"/tmp/trial-proof-OqkUlN/t1","attempt":{"code":0,"signal":null,"reason":"evidence-write-error","detail":"EISDIR","cleanupVerified":true,"category":"harness/resource-invalid","exactSavedBytes":true,"ended":1788814054410,"priorReason":null,"persistenceFailed":true}}
+{"directory":"/tmp/trial-proof-OqkUlN/t2","attempt":{"code":null,"reason":"evidence-write-error","category":"harness/resource-invalid","exactSavedBytes":false,"cleanupVerified":true,"notStarted":true,"ended":1788814054410,"priorReason":"batch-aborted","detail":"EISDIR","persistenceFailed":true}}
+[32m✔ unwritable attempt paths return infrastructure evidence and skip all remaining trials [90m(18.96112ms)[39m[39m
+[32m✔ external interruption during cleanup persists current and aborted trial evidence [90m(71.464914ms)[39m[39m
+[32m✔ a failed session is recorded and the next session can run [90m(56.889367ms)[39m[39m
+[32m✔ spawn failure resolves with explicit evidence [90m(2.115569ms)[39m[39m
+[32m✔ monitor ECONNABORTED terminates a stubborn owned child and grandchild [90m(106.713767ms)[39m[39m
+[32m✔ timeout is bounded and produces teardown evidence [90m(107.179233ms)[39m[39m
+[32m✔ resource limit becomes an explicit refusal [90m(17.357318ms)[39m[39m
+[32m✔ artifact scanning counts regular files but not symlinks [90m(1.035338ms)[39m[39m
+[32m✔ portal mount is not traversed; unreadable same-device directory fails closed [90m(0.662628ms)[39m[39m
+[34mℹ tests 91[39m
+[34mℹ suites 0[39m
+[34mℹ pass 91[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 344.11134[39m

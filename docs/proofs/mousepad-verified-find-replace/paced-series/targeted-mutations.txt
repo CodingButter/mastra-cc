@@ -1,0 +1,8 @@
+no pacing: RED
+no bound: RED
+ignore server delay: RED
+replay non-rate failures: RED
+discard cache: RED
+ignore deadline: RED
+retry too early: RED
+GREEN: 7 mutations caught; source restored; tests pass

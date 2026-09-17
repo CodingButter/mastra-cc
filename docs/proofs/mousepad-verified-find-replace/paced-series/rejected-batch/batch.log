@@ -1,0 +1,6 @@
+INSTALLED_IMPORTS_GREEN: 151 locked runtime packages; /tmp/mousepad-paced.5079nlae/installed/consumer
+PREDECLARED: /tmp/mousepad-paced.5079nlae t1 t2 t3
+t1: verification-pending; saved bytes match; cleanup verified
+t2: functional-failure; saved bytes do not match; cleanup verified
+t3: verification-pending; saved bytes match; cleanup verified
+REJECTED: failed or invalid trial; retain all attempts

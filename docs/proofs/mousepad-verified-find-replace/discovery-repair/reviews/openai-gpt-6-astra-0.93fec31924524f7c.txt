@@ -1,0 +1,12 @@
+Voice synthesis is unavailable in this session; this review will be text-only.
+## Must fix
+None identified in the inspected runtime-listing correction.
+
+## Risks & questions
+- **Final verification remains open.** `.mastracode/plans/runtime-discovery.md:7` requires final forced gates and a fixed-settings three-trial live batch on unchanged artifacts. The reported 29 focused tests and earlier 19 gates do not complete that requirement. This was source inspection only; I could not independently run tests or obtain the diff against HEAD.
+- **“Answering” is not a guarantee of an unambiguous query scope.** `daemon/src/server.ts:1198–1207` publishes census names from a set; native enumeration collapses identical normalized names at `daemon/src/backends/atspi/index.ts:706–726`. Multiple native applications can therefore yield one answering row while a scoped query encounters ambiguity. Preserve refusal rather than guessing; treat this correction as name discovery, not unique-instance discovery.
+
+## Suggested improvements
+- **Test the authority boundary with a nonempty catalog and conflicting aliases.** `daemon/src/__tests__/runtime-discovery-scopes.test.ts:11–24` uses an empty catalog and empty permits, so launch refusal cannot detect accidental permission-index contamination. Add a directly granted runtime name claimed by multiple installed/recipe aliases; verify its runtime observe capability remains available, installed rows remain unchanged, and launch still follows the existing resolver. This specifically exercises the split at `daemon/src/server.ts:1203–1205`.
+- **Strengthen privacy assertions to compare entire replies.** `daemon/src/__tests__/what-is-running.test.ts:107–118` checks only that the private name has no row. Compare listings with and without an unrelated ungranted runtime name, and test that granting an installed ID alone does not publish its ungranted runtime alias.
+- **Make the replay prove scope ownership and the expected refusal.** `daemon/src/__tests__/runtime-discovery-scopes.test.ts:19–25` checks nonempty elements and any refusal. Assert returned elements belong to the listed native application, assert the specific launch refusal class, and verify permits and ownership remain unchanged.

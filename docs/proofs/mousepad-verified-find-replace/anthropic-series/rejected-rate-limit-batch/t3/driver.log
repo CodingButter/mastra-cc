@@ -1,0 +1,59 @@
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: This request would exceed your rate limit of 500,000 input tokens per minute (org: b42059c3-f6e0-4a20-a326-7a58ea31c8c2, model: claude-sonnet-4-5-20250929). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Reduce the prompt length or the maximum tokens requested, or try again later. View your current limits at https://console.anthropic.com/settings/limits. You may also contact sales at https://claude.com/contact-sales to discuss your options for a rate limit increase.
+      at file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:2348:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:2233:24)
+      at async AnthropicMessagesLanguageModel.doGenerate (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/dist-D4qFvPct.js:13116:71)
+      at async AISDKV6LanguageModel.doGenerate (file:///tmp/mousepad-anthropic.h7_lzg5v/installed/consumer/.locked/c54211c8c511f2ed1d2c/node_modules/[4m@mastra/core[24m/dist/llm-CZxUqViJ.js:107:18) {
+    cause: [90mundefined[39m,
+    url: [32m'https://api.anthropic.com/v1/messages'[39m,
+    requestBodyValues: {
+      model: [32m'claude-sonnet-4-5-20250929'[39m,
+      max_tokens: [33m64000[39m,
+      temperature: [33m0[39m,
+      top_k: [90mundefined[39m,
+      top_p: [90mundefined[39m,
+      stop_sequences: [90mundefined[39m,
+      system: [36m[Array][39m,
+      messages: [36m[Array][39m,
+      tools: [36m[Array][39m,
+      tool_choice: [36m[Object][39m,
+      stream: [90mundefined[39m
+    },
+    statusCode: [33m429[39m,
+    responseHeaders: {
+      [32m'anthropic-organization-id'[39m: [32m'b42059c3-f6e0-4a20-a326-7a58ea31c8c2'[39m,
+      [32m'anthropic-ratelimit-input-tokens-limit'[39m: [32m'500000'[39m,
+      [32m'anthropic-ratelimit-input-tokens-remaining'[39m: [32m'0'[39m,
+      [32m'anthropic-ratelimit-input-tokens-reset'[39m: [32m'2026-09-07T21:21:36Z'[39m,
+      [32m'anthropic-ratelimit-requests-limit'[39m: [32m'1000'[39m,
+      [32m'anthropic-ratelimit-requests-remaining'[39m: [32m'999'[39m,
+      [32m'anthropic-ratelimit-requests-reset'[39m: [32m'2026-09-07T21:20:33Z'[39m,
+      [32m'anthropic-workspace-id'[39m: [32m'wrkspc_018FvqpdqVT71hrEvF34kWqU'[39m,
+      [32m'cf-cache-status'[39m: [32m'DYNAMIC'[39m,
+      [32m'cf-ray'[39m: [32m'a378c210c9d798b8-ORD'[39m,
+      connection: [32m'keep-alive'[39m,
+      [32m'content-encoding'[39m: [32m'br'[39m,
+      [32m'content-security-policy'[39m: [32m"default-src 'none'; frame-ancestors 'none'"[39m,
+      [32m'content-type'[39m: [32m'application/json'[39m,
+      date: [32m'Mon, 07 Sep 2026 21:20:33 GMT'[39m,
+      [32m'request-id'[39m: [32m'req_011Cepn7sanGiAx6MSy6NeMZ'[39m,
+      [32m'retry-after'[39m: [32m'5'[39m,
+      server: [32m'cloudflare'[39m,
+      [32m'strict-transport-security'[39m: [32m'max-age=31536000; includeSubDomains; preload'[39m,
+      traceresponse: [32m'00-0b763d6d9d3b3aa3b71ad87d4ac4f5bc-edd72f5cbd39c3af-01'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Accept-Encoding'[39m,
+      [32m'x-robots-tag'[39m: [32m'none'[39m,
+      [32m'x-should-retry'[39m: [32m'true'[39m
+    },
+    responseBody: [32m'{"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your rate limit of 500,000 input tokens per minute (org: b42059c3-f6e0-4a20-a326-7a58ea31c8c2, model: claude-sonnet-4-5-20250929). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Reduce the prompt length or the maximum tokens requested, or try again later. View your current limits at https://console.anthropic.com/settings/limits. You may also contact sales at https://claude.com/contact-sales to discuss your options for a rate limit increase."},"request_id":"req_011Cepn7sanGiAx6MSy6NeMZ"}'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { type: [32m'error'[39m, error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'33fbb8b7-5af7-4fcc-80a3-28fe962814ef'[39m,
+  provider: [32m'anthropic'[39m,
+  modelId: [32m'claude-sonnet-4-5-20250929'[39m
+}

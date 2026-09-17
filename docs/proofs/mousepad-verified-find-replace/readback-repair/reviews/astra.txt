@@ -1,0 +1,12 @@
+## Must fix
+
+None identified in the inspected changes. The content-only readback matches `protocol/schema.json:756–765`; known-ID provenance, text-role checking, post-save ordering, exact content and independent saved bytes remain enforced in `docs/proofs/mousepad-verified-find-replace/model-evidence.mjs:7,21–25,44–53`.
+
+## Risks & questions
+
+- **Completion remains rejected**, not partially accepted: t1 lacks post-save readback; visual/reopen requirements remain outstanding. The documentation preserves that distinction (`docs/proofs/mousepad-verified-find-replace/readback-repair/README.md:29–33`).
+- Review was source inspection only: I did not independently establish the diff against `36506b4`, rerun gates, or recompute the 73 archived hashes. The six readback regression cases are present at `model-evidence.test.mjs:17–28` in the same proof directory.
+
+## Suggested improvements
+
+- **CC09:** record the quantile convention or use nearest-rank consistently. `docs/proofs/reliability-remediation/cc09/producer-measurements.mjs:10` uses `floor(n*q)`, making p50 the maximum for the two-observation hot-key samples (`producer-measurements.jsonl:3,5`). This affects interpretation, not safety. The README correctly limits these measurements to synthetic producer behavior and local stop—not native end-to-end latency or cancellation.

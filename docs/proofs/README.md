@@ -30,6 +30,28 @@ answered by argument.
 
 [Native cost baseline](reliability-remediation/cc09/README.md) records built-daemon queue and real Xvfb capture phase measurements with fixed content-free counters; no latency SLA or production-load claim. [Native notification and cancellation measurement boundaries](reliability-remediation/cc09/native-measurement-boundary.md) records source-verified follow-up design, not native timing results. [Native event-to-storage latency](reliability-remediation/cc09/native-latency/README.md) measures ten real Mousepad mutations reaching SQLite with zero model calls (median 8.0 ms request-to-row, polling-inclusive upper bound); no wake claim. [Cancellation ownership and acknowledgement](reliability-remediation/cc09/cancellation/README.md) measures five real Mousepad clears cancelled by driver close: stopped at the next emitted-key boundary, ownership retired in under a millisecond, successor admitted at 24.9/28.2/34.4 ms, emitted count equal to settled loss; keys already accepted by the registry are not retracted.
 
+[Mousepad monitor repair](mousepad-verified-find-replace/monitor-repair/README.md) records failure persistence and owned-process teardown proof, not task acceptance.
+
+[Mousepad and remediation follow-ups](mousepad-verified-find-replace/FOLLOWUPS.md) records remaining acceptance and roadmap gaps.
+
+[Mousepad runtime discovery repair](mousepad-verified-find-replace/discovery-repair/README.md) records the regression repair, fresh forced gates and quota-blocked live batch.
+
+[Separate Anthropic Mousepad series](mousepad-verified-find-replace/anthropic-series/README.md) records provider-bound validator proof, final mutation gates and the rejected rate-limited batch; not live acceptance.
+
+[Paced Anthropic Mousepad experiment](mousepad-verified-find-replace/paced-series/README.md) records bounded transport retries, cancellation and installed-SDK interception checks; not desktop acceptance.
+
+[Protocol-shaped Mousepad readback](mousepad-verified-find-replace/readback-repair/README.md) distinguishes genuinely missing post-save evidence from a content-only response discarded by the validator.
+
+[Bounded 32-step experiment](mousepad-verified-find-replace/budget32/README.md) tests additional completion steps with unchanged deadlines and acceptance oracles; all live attempts are retained separately.
+
+[Pre-response fetch recovery](mousepad-verified-find-replace/fetch-retry/README.md) retains one complete machine/visual-reviewed 32-step batch, actual recovered provider failures, installed-SDK RED/GREEN proof and explicit remaining human/reopen boundaries.
+
+[Original 24-step retry](mousepad-verified-find-replace/original24/README.md) retains the rejected first original-budget batch, its step-exhaustion diagnosis, the instruction repair, and a fresh 24-step batch that is machine, oracle and frame-sampled-visual GREEN on all three trials (human approval pending).
+
+[Saved-document reopen diagnostic](mousepad-verified-find-replace/reopen/README.md) records a blocked public Open action in a fresh native process, without claiming successful reopening.
+
+[Rejected semantic Open peer diagnostic](mousepad-verified-find-replace/semantic-open/README.md) retains three failed native trials and the reverted experimental patch without claiming a production fix.
+
 ## The convention
 
 Every artifact names **the command that produced it**. Those commands reference paths

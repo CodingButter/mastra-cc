@@ -1,0 +1,444 @@
+{
+  "sourceBatch": "/tmp/mousepad-readback.8bxz7huw",
+  "files": [
+    {
+      "source": "declaration.json",
+      "archive": "declaration.json.gz",
+      "bytes": 5544,
+      "sha256": "2538a90a892730481fe6d676f0b85db0d2f37d752d61a9b670e32c440a418c26"
+    },
+    {
+      "source": "attempts.json",
+      "archive": "attempts.json.gz",
+      "bytes": 630,
+      "sha256": "4f996dea798ed094f7538a507615522058c652067ecfcb5401a27947ffeb5b78"
+    },
+    {
+      "source": "readback-summary.json",
+      "archive": "readback-summary.json.gz",
+      "bytes": 3989,
+      "sha256": "8605e1130dc74bc4bc3f1a4cbc7e474bad863520ddd754e8d477a4d52cb0d0c8"
+    },
+    {
+      "source": "installed/consumer-lock.json",
+      "archive": "installed/consumer-lock.json.gz",
+      "bytes": 1687657,
+      "sha256": "6f0c49dba5fff73e77f1958d421f2a7ab6d8f632af85b1125903c51c45684d82"
+    },
+    {
+      "source": "t1/document.txt",
+      "archive": "t1/document.txt.gz",
+      "bytes": 94,
+      "sha256": "c1b8a3fc86e3de672e23193655f6734c9137ae59301c91647101edda00f9e385"
+    },
+    {
+      "source": "t1/recording-start-ms.txt",
+      "archive": "t1/recording-start-ms.txt.gz",
+      "bytes": 14,
+      "sha256": "7300d6341bb911a83d40365fa0040749d587701bfd2cac03efedcad8194c5703"
+    },
+    {
+      "source": "t1/events.jsonl",
+      "archive": "t1/events.jsonl.gz",
+      "bytes": 304487,
+      "sha256": "d95d67689fd9b14469b88907826d2ecdffe93e1117818461ce0bf147afdfba45"
+    },
+    {
+      "source": "t1/screen.mkv",
+      "archive": "t1/screen.mkv.gz",
+      "bytes": 432389,
+      "sha256": "bc7f7b172f100360213b09c8670becbe6724fa0987fe023ae6a9b6d0686d376a"
+    },
+    {
+      "source": "t1/trial.json",
+      "archive": "t1/trial.json.gz",
+      "bytes": 417,
+      "sha256": "0f583363fc112f94f91ea425036a73bdc6c685f045051d96ad2df7a5d996d914"
+    },
+    {
+      "source": "t1/metadata.json",
+      "archive": "t1/metadata.json.gz",
+      "bytes": 1419,
+      "sha256": "f052c4766ee648a891ae89dffe7181a01b17fbcc46602d59add6b2123ed44141"
+    },
+    {
+      "source": "t1/attempt.json",
+      "archive": "t1/attempt.json.gz",
+      "bytes": 188,
+      "sha256": "a7945e6b5443db0336a2dc7520abb28fee3b10c401cb2a6fa91f7ea2deb7c700"
+    },
+    {
+      "source": "t1/a11y.log",
+      "archive": "t1/a11y.log.gz",
+      "bytes": 333,
+      "sha256": "6239f15ecd6b74891d219c586794be1e3d908b980ba95ff78a2df70344aa1bc0"
+    },
+    {
+      "source": "t1/recording.json",
+      "archive": "t1/recording.json.gz",
+      "bytes": 58,
+      "sha256": "4876e55bce25ad47c86414cefe1dce59149b643da20fc69c74bb8d087a857076"
+    },
+    {
+      "source": "t1/daemon.log",
+      "archive": "t1/daemon.log.gz",
+      "bytes": 158,
+      "sha256": "f9ed4907e3a5adcfcb460b4556dbddfc6f44fde4abcec27bf471e4c155ae371c"
+    },
+    {
+      "source": "t1/display",
+      "archive": "t1/display.gz",
+      "bytes": 2,
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+    },
+    {
+      "source": "t1/task.txt",
+      "archive": "t1/task.txt.gz",
+      "bytes": 388,
+      "sha256": "f943cf0ea3e9a5c5f6a00efc301337b6b081a51a7bcdc82e8ebe5b83b00d75b5"
+    },
+    {
+      "source": "t1/before.txt",
+      "archive": "t1/before.txt.gz",
+      "bytes": 94,
+      "sha256": "3f3880e963c97aed67bffa06e78bac2e099eb03b6afb6e03a770edd0ebeef028"
+    },
+    {
+      "source": "t1/xvfb.log",
+      "archive": "t1/xvfb.log.gz",
+      "bytes": 2612,
+      "sha256": "ba3a845f35cd8a9b096b8af143842ecf4f968baecce3bd737a37ab77eddaf73a"
+    },
+    {
+      "source": "t1/session.log",
+      "archive": "t1/session.log.gz",
+      "bytes": 3138,
+      "sha256": "ca9a08ae6bf670503a6bc5bc156cbbe56a7a9235e31f07b016fdf5f97b21aef1"
+    },
+    {
+      "source": "t1/driver.log",
+      "archive": "t1/driver.log.gz",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t1/session-ended-ms.txt",
+      "archive": "t1/session-ended-ms.txt.gz",
+      "bytes": 14,
+      "sha256": "3ca121e9735b68c4db0af7985b1bdb07cbb379a77392314b61e89e07fc9a4d83"
+    },
+    {
+      "source": "t1/expected.txt",
+      "archive": "t1/expected.txt.gz",
+      "bytes": 94,
+      "sha256": "c1b8a3fc86e3de672e23193655f6734c9137ae59301c91647101edda00f9e385"
+    },
+    {
+      "source": "t1/app.log",
+      "archive": "t1/app.log.gz",
+      "bytes": 1439,
+      "sha256": "8a59f8fddfdc098c5b4c4a3b0cac4c31fdf78291e9bd9a18f54e0097f0bcae20"
+    },
+    {
+      "source": "t1/ffmpeg.log",
+      "archive": "t1/ffmpeg.log.gz",
+      "bytes": 104,
+      "sha256": "c22d41ee77d9df38b1f39d667b4659830c7b27948ed40a3e78318616134df121"
+    },
+    {
+      "source": "t1/grant.txt",
+      "archive": "t1/grant.txt.gz",
+      "bytes": 80,
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d"
+    },
+    {
+      "source": "t1/daemon-command.txt",
+      "archive": "t1/daemon-command.txt.gz",
+      "bytes": 243,
+      "sha256": "da0dc1890614b61b847ab420b73de4c5bc68fbb0734a8109caaf5cb61bb4cde1"
+    },
+    {
+      "source": "t1/openbox.log",
+      "archive": "t1/openbox.log.gz",
+      "bytes": 85,
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c"
+    },
+    {
+      "source": "t2/document.txt",
+      "archive": "t2/document.txt.gz",
+      "bytes": 94,
+      "sha256": "c9ca4767871407875ea1e03bcd359576f9b3b63dc8736d4d31550d9aa58752e6"
+    },
+    {
+      "source": "t2/recording-start-ms.txt",
+      "archive": "t2/recording-start-ms.txt.gz",
+      "bytes": 14,
+      "sha256": "bd86dd191232edc8ab9ed8313f84db57c98a083030156fb32046ebb2a3ea00ba"
+    },
+    {
+      "source": "t2/events.jsonl",
+      "archive": "t2/events.jsonl.gz",
+      "bytes": 304840,
+      "sha256": "fb2242044947d1d0a88dd2e304319deeb1bb22931bf380c2af0861c6d65586ef"
+    },
+    {
+      "source": "t2/screen.mkv",
+      "archive": "t2/screen.mkv.gz",
+      "bytes": 444550,
+      "sha256": "e6f85fa270e21e73faecd8a848ae5bd9a172aca81599391ea6c2a01e077b2460"
+    },
+    {
+      "source": "t2/trial.json",
+      "archive": "t2/trial.json.gz",
+      "bytes": 417,
+      "sha256": "2af1281495132db295e7863998b6b530437eaf5f0517a35cb129f56b48eee26e"
+    },
+    {
+      "source": "t2/metadata.json",
+      "archive": "t2/metadata.json.gz",
+      "bytes": 1419,
+      "sha256": "f052c4766ee648a891ae89dffe7181a01b17fbcc46602d59add6b2123ed44141"
+    },
+    {
+      "source": "t2/attempt.json",
+      "archive": "t2/attempt.json.gz",
+      "bytes": 188,
+      "sha256": "5018ac7b4c9d57396c7e51cdb4f423200e5745d21322c421867a4076777f99b7"
+    },
+    {
+      "source": "t2/a11y.log",
+      "archive": "t2/a11y.log.gz",
+      "bytes": 396,
+      "sha256": "d0fee9c697301e5c5252b9a5f36aff40db5ef1c669bd3c21abdaf140bc0e0ae7"
+    },
+    {
+      "source": "t2/recording.json",
+      "archive": "t2/recording.json.gz",
+      "bytes": 58,
+      "sha256": "e532aff8f72efa602dc3d6b302c31d5a909788eba8248da8265f26a68c796b6d"
+    },
+    {
+      "source": "t2/daemon.log",
+      "archive": "t2/daemon.log.gz",
+      "bytes": 158,
+      "sha256": "69752d29ee733f75c34d53cad17f890bd3aca3c04fcd93eba9e395426e26982c"
+    },
+    {
+      "source": "t2/display",
+      "archive": "t2/display.gz",
+      "bytes": 2,
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+    },
+    {
+      "source": "t2/task.txt",
+      "archive": "t2/task.txt.gz",
+      "bytes": 388,
+      "sha256": "50bb699876a494314fd731625a10c0436b2ad1301327beea870fc6e587f6979e"
+    },
+    {
+      "source": "t2/before.txt",
+      "archive": "t2/before.txt.gz",
+      "bytes": 94,
+      "sha256": "570a8b6f14f53a62174dce9f0b5d79be4365e05c9b7acb0d6d64c4b4a2ab0cd4"
+    },
+    {
+      "source": "t2/xvfb.log",
+      "archive": "t2/xvfb.log.gz",
+      "bytes": 1438,
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02"
+    },
+    {
+      "source": "t2/session.log",
+      "archive": "t2/session.log.gz",
+      "bytes": 3138,
+      "sha256": "ac9ceaf82ff78620f8d8e9bcb5857fcd7393a6e6a6d9c7ed325911b4602fc535"
+    },
+    {
+      "source": "t2/driver.log",
+      "archive": "t2/driver.log.gz",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "t2/session-ended-ms.txt",
+      "archive": "t2/session-ended-ms.txt.gz",
+      "bytes": 14,
+      "sha256": "3a5dfab8ed22793e20aee0a257dead671a1f90dda87e9277ebf1f9154167838c"
+    },
+    {
+      "source": "t2/expected.txt",
+      "archive": "t2/expected.txt.gz",
+      "bytes": 94,
+      "sha256": "c9ca4767871407875ea1e03bcd359576f9b3b63dc8736d4d31550d9aa58752e6"
+    },
+    {
+      "source": "t2/app.log",
+      "archive": "t2/app.log.gz",
+      "bytes": 1521,
+      "sha256": "94211efdfeb605400eca31c795bd6a146071bd45e6383c12269cc0b290cb5c94"
+    },
+    {
+      "source": "t2/ffmpeg.log",
+      "archive": "t2/ffmpeg.log.gz",
+      "bytes": 104,
+      "sha256": "b7fe5f62881e59a81e7797452778b82077fb76ea572cbb0b268f0ab4bc82dbe5"
+    },
+    {
+      "source": "t2/grant.txt",
+      "archive": "t2/grant.txt.gz",
+      "bytes": 80,
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d"
+    },
+    {
+      "source": "t2/daemon-command.txt",
+      "archive": "t2/daemon-command.txt.gz",
+      "bytes": 243,
+      "sha256": "b1288c24f2949896215d25abb54dac2840be9bd26d8857ef604c85276b9fd57d"
+    },
+    {
+      "source": "t2/openbox.log",
+      "archive": "t2/openbox.log.gz",
+      "bytes": 85,
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c"
+    },
+    {
+      "source": "t3/document.txt",
+      "archive": "t3/document.txt.gz",
+      "bytes": 105,
+      "sha256": "abc8fe98503694acc7ec5143041c85cd4455a105028b4e6a1a80c0311cdf9b00"
+    },
+    {
+      "source": "t3/recording-start-ms.txt",
+      "archive": "t3/recording-start-ms.txt.gz",
+      "bytes": 14,
+      "sha256": "e27eb27bebfe3f4685620042a8d4cd7be1ffd1bc4dded36f4818fc91f7b2ca4d"
+    },
+    {
+      "source": "t3/events.jsonl",
+      "archive": "t3/events.jsonl.gz",
+      "bytes": 167626,
+      "sha256": "2de7d59d71aa37beb3cad8d0e1fe5e9e618e110db3b07dac563284516e1b3c49"
+    },
+    {
+      "source": "t3/screen.mkv",
+      "archive": "t3/screen.mkv.gz",
+      "bytes": 424374,
+      "sha256": "1b455a554e0ee712a7f65075ab7fca45e26a8684518843bf530fc62d54d0ac71"
+    },
+    {
+      "source": "t3/trial.json",
+      "archive": "t3/trial.json.gz",
+      "bytes": 428,
+      "sha256": "9f3239804650d3e677fa0f9c563dc7bfbcf7f7eb752598b3b306b6baf4f8551d"
+    },
+    {
+      "source": "t3/metadata.json",
+      "archive": "t3/metadata.json.gz",
+      "bytes": 1419,
+      "sha256": "f052c4766ee648a891ae89dffe7181a01b17fbcc46602d59add6b2123ed44141"
+    },
+    {
+      "source": "t3/attempt.json",
+      "archive": "t3/attempt.json.gz",
+      "bytes": 188,
+      "sha256": "4616179fe09af2985b8014682667cdbf4d3d616afde3185047c507cf64bbb46a"
+    },
+    {
+      "source": "t3/a11y.log",
+      "archive": "t3/a11y.log.gz",
+      "bytes": 396,
+      "sha256": "7b48487197e1362a3ec5b1ce9efe3f6822923e29466aa8cce55df571b4d1a01a"
+    },
+    {
+      "source": "t3/recording.json",
+      "archive": "t3/recording.json.gz",
+      "bytes": 58,
+      "sha256": "e532aff8f72efa602dc3d6b302c31d5a909788eba8248da8265f26a68c796b6d"
+    },
+    {
+      "source": "t3/daemon.log",
+      "archive": "t3/daemon.log.gz",
+      "bytes": 158,
+      "sha256": "bd372d6a820a89e40e4f32792c70ec3c9b5a47e2482607d2f0e812e396625a93"
+    },
+    {
+      "source": "t3/display",
+      "archive": "t3/display.gz",
+      "bytes": 2,
+      "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+    },
+    {
+      "source": "t3/task.txt",
+      "archive": "t3/task.txt.gz",
+      "bytes": 388,
+      "sha256": "7ff9f1e2a69666493b8e11697d48bbd4e5ae8bbbd8ae549c420aee74109c94dc"
+    },
+    {
+      "source": "t3/before.txt",
+      "archive": "t3/before.txt.gz",
+      "bytes": 105,
+      "sha256": "0899f185a69fa597753c44c69249dff449ea93b334a8ef8e17af107322d03ac6"
+    },
+    {
+      "source": "t3/xvfb.log",
+      "archive": "t3/xvfb.log.gz",
+      "bytes": 1438,
+      "sha256": "5869be18c41cd09de42b23423d47db3f3062946a6a3ad2770e911082c884da02"
+    },
+    {
+      "source": "t3/session.log",
+      "archive": "t3/session.log.gz",
+      "bytes": 3138,
+      "sha256": "fcc53c6d35429f6b038ed6cefe2fb8abf532f2c62f90d1d57473ac095bb7c144"
+    },
+    {
+      "source": "t3/driver.log",
+      "archive": "t3/driver.log.gz",
+      "bytes": 187,
+      "sha256": "56c1102535a480d06c790e39af12c44bd0707f2cf0db7541a29f1b87b55784bf"
+    },
+    {
+      "source": "t3/session-ended-ms.txt",
+      "archive": "t3/session-ended-ms.txt.gz",
+      "bytes": 14,
+      "sha256": "fef124d0b0bd4228a466016b803910af2ddcf7a3d0866225f20bc2fd9e0cc7ad"
+    },
+    {
+      "source": "t3/expected.txt",
+      "archive": "t3/expected.txt.gz",
+      "bytes": 105,
+      "sha256": "abc8fe98503694acc7ec5143041c85cd4455a105028b4e6a1a80c0311cdf9b00"
+    },
+    {
+      "source": "t3/app.log",
+      "archive": "t3/app.log.gz",
+      "bytes": 1521,
+      "sha256": "fdabf67276c8869bfafc4b62b9f9af6f8a64a9a3433457a8b4373e4337aaaad0"
+    },
+    {
+      "source": "t3/ffmpeg.log",
+      "archive": "t3/ffmpeg.log.gz",
+      "bytes": 104,
+      "sha256": "90eab52696f224f3cf51867efad71dd7523bd3958f5a230b2d71a3ecc7ca51ae"
+    },
+    {
+      "source": "t3/grant.txt",
+      "archive": "t3/grant.txt.gz",
+      "bytes": 80,
+      "sha256": "d194c82b22f417d58be3b9fb0b4f12093d457197ff45c8bc3074aca9a110eb8d"
+    },
+    {
+      "source": "t3/daemon-command.txt",
+      "archive": "t3/daemon-command.txt.gz",
+      "bytes": 243,
+      "sha256": "0f6f2dedfce33cdfc8a919d45318b0d22886fdbf4a01ad0c08d9273f90be27a1"
+    },
+    {
+      "source": "t3/openbox.log",
+      "archive": "t3/openbox.log.gz",
+      "bytes": 85,
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c"
+    }
+  ],
+  "excluded": "installed dependency tree and session home/runtime directories; original invalid batch retained locally"
+}

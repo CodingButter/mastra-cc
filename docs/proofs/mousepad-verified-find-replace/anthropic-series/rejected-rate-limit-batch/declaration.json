@@ -1,0 +1,81 @@
+{
+  "created": 1788815983291,
+  "hypothesis": "Separate Anthropic series: same 24-step/180-second limits and unchanged exact saved-file, fresh UI and visual acceptance oracles; no pooling with Google",
+  "artifacts": {
+    "daemon/dist/main.mjs": "5fef8b39952ab4fef9dcdc1ca997aec19ab5e193d752591653a9fa86964326ac",
+    "protocol/schema.json": "e469040683c12c78a36be8670405fb1cef1092b0d5e86cc44ae36fd56cc312ea",
+    "pnpm-lock.yaml": "712e24ee1d58b8c3ffeb24acc9c936410f6e9a1e4abfa07b76ee2e7790adfd67",
+    "packages/desktop/instructions/AGENT-INSTRUCTIONS.md": "85b02f10d8ac64898ffd82d39a104553bece18a8c9ece4dcd1427e516355e1c5",
+    "docs/proofs/mousepad-verified-find-replace/calibrate.mjs": "59837a3e3daf6772aac80a67e380b8569f25121dfdf4562577203a483139c9e6",
+    "docs/proofs/mousepad-verified-find-replace/demo.sh": "15e9041dff686c7958b1642d8deb62dd8bca26c1f05e1d63cc912af141d78ea3",
+    "docs/proofs/mousepad-verified-find-replace/deterministic.mjs": "7475fa948a5e7e03476e80a555b60f8ad5fa66013023e5077ffa257eb19e2789",
+    "docs/proofs/mousepad-verified-find-replace/evidence.mjs": "ebb2fbecaea743ac519ca1c3e80d04a0fffb9e36b816b603f37c3a59babbdd5d",
+    "docs/proofs/mousepad-verified-find-replace/evidence.test.mjs": "fb96cc01270a32db4079a90f3d6a724a6c0edc5d484c633d19e099315985e6dc",
+    "docs/proofs/mousepad-verified-find-replace/inspect-evidence.mjs": "6b99edee540b7d53f96adcf51e7a5da0ab521b8aa86f85a2654fe5449f9f8469",
+    "docs/proofs/mousepad-verified-find-replace/inspect-session.sh": "61e1215b59765fdeb37ba679355e598ee01b517b7ff2f6619a6e3489dd1f9e08",
+    "docs/proofs/mousepad-verified-find-replace/install-consumer.mjs": "473bb54b3a2653a3e6464726b47430f0701ce8a0e1e31221a46458e0241585ad",
+    "docs/proofs/mousepad-verified-find-replace/model-batch.mjs": "286f405f4d7ea6eb9b2b232c051c50e877758357f17ad6d40aa8c39bee7d4176",
+    "docs/proofs/mousepad-verified-find-replace/model-driver.mjs": "2ae9d26e61d044fc1dc2477738c1f3020dc97ccbd0fe0e221731e3eb1bd6bd68",
+    "docs/proofs/mousepad-verified-find-replace/model-evidence.mjs": "0d7c531ac7613d40619f10368d4a8f9c037d2d3a7c68d3ab9fa7a7f4b7a27370",
+    "docs/proofs/mousepad-verified-find-replace/model-evidence.test.mjs": "d7ebcde5d4079449ff68f32ba108d8e3752375c00f5c4c5e66981885fb5a83be",
+    "docs/proofs/mousepad-verified-find-replace/model-lifecycle.test.mjs": "7f735169054ac04a3e6b53d8cbe4ae02a49f860cefabf36af9a4658f96f88543",
+    "docs/proofs/mousepad-verified-find-replace/model-review.mjs": "71018206bee18ae4398bbfca6af3cb9896dee17e1d1ff50c4754e5152edcdf0d",
+    "docs/proofs/mousepad-verified-find-replace/model-session.sh": "910a9580cb10eca59a553872d6878cec638ddaa606523927ac2559b500c9d55a",
+    "docs/proofs/mousepad-verified-find-replace/model-supervisor.mjs": "d927cbe57907107de5449be46dd26f2b80fcd43e3077081a3da56952a5406b46",
+    "docs/proofs/mousepad-verified-find-replace/model-supervisor.test.mjs": "051026dc67ddc2462b0735be3518afb5131d56c40a22b2fcbdb3cbd45fed95cc",
+    "docs/proofs/mousepad-verified-find-replace/probe.mjs": "d31a83966479e9dc22e6519da54ea41a0c8853e6361fed232bf638101febd054",
+    "docs/proofs/mousepad-verified-find-replace/public-inspect.mjs": "8d8bb5595427038a14d95574fff8fa52f6f939add4ae52ffcb130a834c4c8de6"
+  },
+  "trials": [
+    {
+      "id": "t1",
+      "kind": "mousepad-literal-replacement",
+      "source": "TOKEN_0c5ee179ad",
+      "replacement": "VALUE_384c65c847",
+      "count": 3,
+      "segments": [
+        "North harbour: ",
+        "\nEast orchard: ",
+        "\nSouth ridge: ",
+        ".\n"
+      ],
+      "beforeSha256": "d9790cdec57e7f14155efcf8fb76b39c4cd74938efab65c0e81b279d1a3472fc",
+      "expectedSha256": "e8bb154dc635bd76aca46dfad9f71bd5f00ca573294c7e6faa27e7c41e8f8435"
+    },
+    {
+      "id": "t2",
+      "kind": "mousepad-literal-replacement",
+      "source": "TOKEN_98f433a435",
+      "replacement": "VALUE_43a52459a8",
+      "count": 3,
+      "segments": [
+        "Birch ledger [",
+        "]\nCedar ledger [",
+        "]\nElm ledger [",
+        "]\n"
+      ],
+      "beforeSha256": "ba553e07be9160d44768da9eecdaeda3724fc8ab5d919c86284b9bb6a8a4463d",
+      "expectedSha256": "412458795adc21fd1baca2cf225a720bee4d808bdee134871368ed9266382540"
+    },
+    {
+      "id": "t3",
+      "kind": "mousepad-literal-replacement",
+      "source": "TOKEN_5c8d9f7028",
+      "replacement": "VALUE_6fa469e982",
+      "count": 3,
+      "segments": [
+        "Morning record — ",
+        "\nNoon record — ",
+        "\nEvening record — ",
+        "\n"
+      ],
+      "beforeSha256": "2077474774fb217f0f1d0c8b58c4bd18aefa67939c8cd198fa80780e74c81632",
+      "expectedSha256": "22f48d0406530e66610c6f367335a08933727b1df063c590a5c7032094810868"
+    }
+  ],
+  "consumerLockSha256": "1d9939cb5bfc8e6fae49dcad6f075c82221d8f160accc125f3a000ecf9ee4338",
+  "model": "anthropic/claude-sonnet-4-5-20250929",
+  "temperature": 0,
+  "maxSteps": 24,
+  "modelDeadlineMs": 180000
+}

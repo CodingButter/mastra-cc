@@ -1,0 +1,11 @@
+[32m✔ driver forwards declared 24 budget and unchanged deadline [90m(1.877531ms)[39m[39m
+[32m✔ driver forwards declared 32 budget and unchanged deadline [90m(0.356853ms)[39m[39m
+[32m✔ driver refuses undeclared budget before generation [90m(0.520622ms)[39m[39m
+[34mℹ tests 3[39m
+[34mℹ suites 0[39m
+[34mℹ pass 3[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 48.108142[39m

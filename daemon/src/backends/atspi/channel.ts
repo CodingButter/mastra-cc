@@ -46,10 +46,8 @@ export function exchangeKey(x: Exchange): string {
 export class UnrecordedExchangeError extends Error {}
 
 
-// The three shapes the bus uses to say "the process you addressed is not
-// there". ServiceUnknown is the tidy one; NoReply with that body is a peer
-// that died mid-call; a disconnected recipient is the same death, seen from
-// the other side of the reply.
+// Service loss and explicit recipient disconnection establish peer death.
+// NoReply alone also describes a live peer that timed out; it is not death evidence.
 export function namesADeadNode(err: unknown): boolean {
   return JSON.stringify(err ?? null).includes("org.freedesktop.DBus.Error.UnknownObject");
 }
@@ -58,8 +56,7 @@ export function namesADeadPeer(err: unknown): boolean {
   const wire = JSON.stringify(err ?? null);
   return (
     wire.includes("org.freedesktop.DBus.Error.ServiceUnknown") ||
-    wire.includes("disconnected from message bus") ||
-    wire.includes("org.freedesktop.DBus.Error.NoReply")
+    wire.includes("disconnected from message bus")
   );
 }
 
