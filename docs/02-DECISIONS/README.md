@@ -12,6 +12,14 @@ Two kinds of record live here, and the difference matters when you are deciding 
 
 | # | Decision | One-line reason |
 |---|---|---|
+| [0104](0104-measure-serial-queue-and-native-capture-costs.md) | Measure serial queue and native capture costs | Establish content-free phase costs before selecting latency budgets |
+| [0103](0103-native-watch-membership-is-fresh-and-bounded.md) | Native watch membership is fresh and bounded | Reparenting and failed reads must not leave permanent ancestry verdicts |
+| [0102](0102-refuse-native-partial-captures-without-provenance.md) | Refuse native partial captures without provenance | Partial image fractions do not locate the same point in the full element |
+| [0101](0101-operation-identity-is-not-event-causality.md) | Operation identity is not event causality | Timing and application membership cannot prove the origin of a change |
+| [0100](0100-one-connection-owns-desktop-effects.md) | One connection owns desktop effects | Serialization alone does not prevent competing clients from alternating effects |
+| [0099](0099-signal-throttling-retains-bounded-dirty-pointers.md) | Signal throttling retains bounded dirty pointers | Receipt-time gaps, a capped queue and trailing invalidation avoid permanent suppression |
+| [0098](0098-typing-attempts-are-not-insertion-proofs.md) | Typing attempts are not insertion proofs | Selection and publication timing make length-based delivery verdicts unsafe |
+| [0097](0097-capture-describes-visible-clipped-pixels.md) | Capture describes visible, possibly clipped pixels | Generated tool descriptions must not promise hidden-window isolation or full-element dimensions |
 | [0001](0001-machine-config-lives-in-the-repo.md) | Machine configuration lives in the repository | Three outages came from config no test could see |
 | [0002](0002-schema-freeze-is-a-ci-job.md) | The protocol freeze is a CI job, not a comment | The prototype's freeze was prose; the file changed 23 times |
 | [0003](0003-one-shared-transport-package.md) | One shared transport package, from commit one | A second, drifted daemon client had skipped the digest check |
@@ -109,6 +117,10 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | [0094](0094-a-connection-must-finish-introducing-itself.md) | A connection must finish introducing itself | One ten-second transport startup budget covers opening and schema hello; failure closes the attempt without replay, while established requests keep their existing lifetime |
 
 | [0095](0095-explicit-labels-are-evidence-not-names.md) | Explicit labels are evidence, not names | Bounded optional native label observations preserve names and authority; measured receipt calibration and ordinary launcher-editor feasibility justify the design, not model success |
+
+## Proposed decisions awaiting acceptance
+
+- [0096 — Composite containment is not a direct label](0096-composite-containment-is-not-a-direct-label.md): measured Mousepad text/menu containment and independent saved-byte calibration; separate optional evidence proposal, **not approved or implemented**. Visual review remains unavailable.
 
 ## Writing a new one
 

@@ -305,7 +305,16 @@ The order is fixed, and you do not skip steps:
 A newline is not text; it is the chord `Enter`, sent separately with
 `sendKeyChord` after the read-back. The same goes for `Tab` and `Escape`. A
 string carrying one is refused by name before anything is typed. A text is at
-most 1024 characters: a field entry, not a document.
+most 1024 UTF-16 code units: a field entry, not a document. A supplementary
+Unicode character uses two units; a combining sequence can contain multiple
+scalars and is not one counted unit. Unpaired surrogates are refused without
+emission; valid text is not normalized.
+
+Typing reports attempted delivery, not verified insertion. Without trustworthy
+caret and selection evidence, length growth cannot establish the intended value.
+Readback may be delayed or transformed. Observe before deciding whether to retry:
+do not automatically resend, clear, or replace text after an uncertain attempt.
+Use a bounded observation-only recheck; if uncertainty remains, report it.
 
 **Locate the form before its fields.** A native form can have role `dialog`, not
 `window`. If a window query is empty, query `dialog` or omit the role filter
@@ -490,13 +499,21 @@ changed before retrying; do not blindly duplicate a click, submission or typing.
 ### When the labels run out, look at it
 
 `captureElement` returns a PNG cropped from a root-screen screenshot to the
-intersection of the named element's bounds and the display. Partially offscreen
-rectangles are clipped, so the PNG may cover less than the full element. Bounds
+named element's bounds. Native partial captures are refused until crop provenance
+is available: bring the entire element onto the display, then reobserve and capture.
+Never infer crop offsets from PNG dimensions or map partial-image locations directly
+to element-relative clicks. Even a full image is not a freshness guarantee: bounds
 observation and capture are not atomic. These are VISIBLE pixels, not pixels
 owned by that application. Overlapping windows may appear, and transparent or
 input-only overlays may intercept input without being apparent in the image.
 If a crop shows an overlay, reobserve, raise the target through an observed
-window-navigation control, then capture again before acting.
+window-navigation control that is permitted for this session. Reobserve the target
+and its current geometry, then capture again before acting. Capture itself does
+not raise, focus, scroll or click. Do not assume activating an arbitrary element
+raises its containing window. Foreground preparation is best effort: an overlay
+or layout change may intervene, and focus restoration may undo preparation.
+If no observed, permitted route establishes a usable view, report the uncertainty
+rather than inventing a hidden-window image or using an unauthorized input fallback.
 
 Use it the moment naming stops working. A logo on a marketing page, a chart, a
 map, a canvas, a rendered document, a grid of thumbnails — all of these are
@@ -558,6 +575,25 @@ and compare the requested outcome. If you cannot find any witness at all, say
 that — an unverified result reported as a success is worse than an honest
 "I could not confirm it".
 
+
+## Change origin and wake policy
+
+A live subscription does not prove complete subtree coverage. Native membership
+is checked afresh with at most 24 parent reads per signal. Unreadable, cyclic or
+deeper ancestry is unknown and emits no pointer; reobserve rather than treating
+silence as evidence that nothing changed.
+
+A change pointer is evidence to reobserve, not proof of who caused it. Native
+changes are `unattributed` even during your own operation or after it returns.
+Application identity and timing are not causal witnesses; separate client
+connections do not make a change `self`. Never discard unknown-origin pointers
+from an active task's state accounting just because they should not wake a planner.
+
+Raw transport event consumers receive authorized pointers independently
+of signal-provider filtering. The provider still defaults to `external` only,
+so native unknown-origin changes do not automatically wake the agent. Widening
+`deliver` is an explicit policy choice: a bounded rate does not prevent a repeated
+action/wake loop. Whole-task state integration remains the caller's responsibility.
 
 ## Refusals
 

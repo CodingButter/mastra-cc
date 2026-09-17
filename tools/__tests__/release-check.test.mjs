@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,6 +9,11 @@ import { fileURLToPath } from "node:url";
 // broken package on a registry, so it needs its own red. These cases run it
 // against a FIXTURE tree: real packages, really packed, but not this
 // repository's - so a plant here cannot be confused for a plant there.
+//
+// Each case really runs `pnpm pack` up to three times. On a cold CI runner
+// that is 5 s or more, right on vitest's default limit; the limit here is a
+// budget for real packing, not a hope.
+vi.setConfig({ testTimeout: 30_000 });
 
 const toolsDir = dirname(dirname(fileURLToPath(import.meta.url)));
 

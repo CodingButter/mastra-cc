@@ -1,0 +1,1 @@
+PROOF: GREEN — forced timeout stopped both child and grandchild; no active benchmark descendants

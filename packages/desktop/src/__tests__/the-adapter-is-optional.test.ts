@@ -63,6 +63,26 @@ describe("the Mastra adapter", () => {
     }
   });
 
+  it("describes visible clipped pixels without promising hidden-window isolation", async () => {
+    const client = await connect({ socketPath: await daemonOnATape() });
+    try {
+      const description = desktopTools(client).captureElement.description;
+      expect(description).toContain("currently visible pixels");
+      expect(description).toContain("Overlapping windows may appear");
+      expect(description).toContain("does not prove application ownership");
+      expect(description).toContain("does not raise, focus, scroll or click");
+      expect(description).not.toContain("own window's pixels");
+      expect(description).toContain("Native capture refuses partial display intersections");
+      expect(description).toContain("Never infer a crop offset from PNG dimensions");
+      const schema = JSON.parse(readFileSync(new URL("../../../../protocol/schema.json", import.meta.url), "utf8"));
+      for (const dimension of ["width", "height"]) {
+        expect(schema.types.capturedImage.fields[dimension].description).toContain("clipped");
+      }
+    } finally {
+      client.close();
+    }
+  });
+
   it("validates optional application and window query scope from the generated contract", async () => {
     const client = await connect({ socketPath: await daemonOnATape() });
     try {
@@ -104,6 +124,8 @@ describe("the Mastra adapter", () => {
       { ...source, labelObservation: { kind: "available" as const, labels: [" First ", "Second", "Second"] } },
       { ...source, labelObservation: { kind: "available" as const, labels: [] } },
       { ...source, labelObservation: { kind: "unavailable" as const, reason: "out-of-scope" as const } },
+      { ...source, labelObservation: { kind: "available" as const, labels: [] }, compositeObservation: { kind: "available" as const, provenance: "immediate-combo-parent" as const, parentRole: "combo box" as const, relation: "labelled-by" as const, label: " Search for: ", immediateChildCount: 2 as const, editableChildCount: 1 as const, siblingRole: "menu" as const } },
+      ...(["not-exposed", "ambiguous", "out-of-scope", "unreadable", "limit-exceeded"] as const).map(reason => ({ ...source, compositeObservation: { kind: "unavailable" as const, reason } })),
     ];
     backend.queryElements = async () => ({ elements: expected });
     const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-labels-")), "daemon.sock");

@@ -1,0 +1,38 @@
+{
+  "fixture": "eight concurrent 40x30 captures on 200x150 Xvfb",
+  "wallMs": 189.08812600000002,
+  "eventLoopMaxMs": 10.870783,
+  "metrics": {
+    "queueWait": {
+      "count": 8,
+      "total": 642.841495,
+      "max": 169.247903
+    },
+    "requestWork": {
+      "count": 8,
+      "total": 188.562244,
+      "max": 28.621842999999984
+    },
+    "captureAcquire": {
+      "count": 8,
+      "total": 178.72987700000002,
+      "max": 26.230217999999994
+    },
+    "captureDecodeCrop": {
+      "count": 8,
+      "total": 3.0978649999999988,
+      "max": 1.5118810000000025
+    },
+    "captureEncode": {
+      "count": 8,
+      "total": 6.02971699999997,
+      "max": 3.6281139999999823
+    },
+    "captureBytes": {
+      "count": 8,
+      "total": 664,
+      "max": 83
+    }
+  }
+}
+PROOF: GREEN — native capture stages and serial queue costs recorded without content; no latency target claimed

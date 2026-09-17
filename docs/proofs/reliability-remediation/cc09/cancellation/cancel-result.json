@@ -1,0 +1,103 @@
+{
+  "scope": "native Mousepad clear cancelled by closing the driver connection; acknowledgement observed as successor admission (polling-inclusive upper bound) and as the daemon settle line; no model calls",
+  "samples": [
+    {
+      "index": 0,
+      "fillLength": 1024,
+      "remainingAtAdmission": 837,
+      "remainingSettled": 770,
+      "deletedSettled": 254,
+      "keysStillLandingAtAdmission": 67,
+      "issuedMs": 833.635318,
+      "closeRequestedMs": 961.866465,
+      "admittedMs": 996.248573,
+      "closeToAdmittedUpperBoundMs": 34.38210800000002,
+      "refusalsBeforeAdmission": 0,
+      "driverCallOutcome": "connection closed",
+      "daemonEmittedAtStop": 254,
+      "daemonPlannedEmissions": 1024,
+      "daemonSettleMs": 0.3
+    },
+    {
+      "index": 1,
+      "fillLength": 1024,
+      "remainingAtAdmission": 680,
+      "remainingSettled": 680,
+      "deletedSettled": 344,
+      "keysStillLandingAtAdmission": 0,
+      "issuedMs": 1882.644137,
+      "closeRequestedMs": 2008.61676,
+      "admittedMs": 2036.787503,
+      "closeToAdmittedUpperBoundMs": 28.170742999999902,
+      "refusalsBeforeAdmission": 0,
+      "driverCallOutcome": "connection closed",
+      "daemonEmittedAtStop": 344,
+      "daemonPlannedEmissions": 1024,
+      "daemonSettleMs": 0.4
+    },
+    {
+      "index": 2,
+      "fillLength": 1024,
+      "remainingAtAdmission": 672,
+      "remainingSettled": 642,
+      "deletedSettled": 382,
+      "keysStillLandingAtAdmission": 30,
+      "issuedMs": 2919.580428,
+      "closeRequestedMs": 3043.942186,
+      "admittedMs": 3070.884992,
+      "closeToAdmittedUpperBoundMs": 26.942805999999564,
+      "refusalsBeforeAdmission": 0,
+      "driverCallOutcome": "connection closed",
+      "daemonEmittedAtStop": 382,
+      "daemonPlannedEmissions": 1024,
+      "daemonSettleMs": 0.8
+    },
+    {
+      "index": 3,
+      "fillLength": 1024,
+      "remainingAtAdmission": 735,
+      "remainingSettled": 602,
+      "deletedSettled": 422,
+      "keysStillLandingAtAdmission": 133,
+      "issuedMs": 3948.405097,
+      "closeRequestedMs": 4075.176821,
+      "admittedMs": 4103.874357,
+      "closeToAdmittedUpperBoundMs": 28.697535999999673,
+      "refusalsBeforeAdmission": 0,
+      "driverCallOutcome": "connection closed",
+      "daemonEmittedAtStop": 422,
+      "daemonPlannedEmissions": 1024,
+      "daemonSettleMs": 0.2
+    },
+    {
+      "index": 4,
+      "fillLength": 1024,
+      "remainingAtAdmission": 707,
+      "remainingSettled": 649,
+      "deletedSettled": 375,
+      "keysStillLandingAtAdmission": 58,
+      "issuedMs": 4980.137712,
+      "closeRequestedMs": 5103.983966,
+      "admittedMs": 5128.910091,
+      "closeToAdmittedUpperBoundMs": 24.926124999999956,
+      "refusalsBeforeAdmission": 0,
+      "driverCallOutcome": "connection closed",
+      "daemonEmittedAtStop": 375,
+      "daemonPlannedEmissions": 1024,
+      "daemonSettleMs": 0.2
+    }
+  ],
+  "closeToAdmittedMs": {
+    "min": 24.926124999999956,
+    "median": 28.170742999999902,
+    "max": 34.38210800000002
+  },
+  "keysStillLandingAtAdmission": {
+    "min": 0,
+    "max": 133
+  },
+  "daemonSettleMs": {
+    "min": 0.2,
+    "max": 0.8
+  }
+}

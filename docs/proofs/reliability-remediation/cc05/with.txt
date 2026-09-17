@@ -1,0 +1,2 @@
+{"attempts":12,"failures":0,"unauthorizedEffects":0,"surface":"built daemon and transport; real Unix/WebSocket peers; scripted effect sink"}
+PROOF: GREEN — one connection owns effects across both listeners

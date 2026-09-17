@@ -80,6 +80,36 @@ function refusalIn(answer: { refusal?: string; result?: unknown }): string {
 const ARMED = { allows: new Set(["rawInput"]) };
 
 describe("text, typed blind at one element", () => {
+  it("preserves unverified evidence through server wrapping without a retry", async () => {
+    const typed: Typed[] = [];
+    const backend = backendThat({ typed });
+    const emit = backend.typeText.bind(backend);
+    backend.typeText = async (params) => {
+      const result = await emit(params);
+      const diagnostic = { ...result.element?.diagnostic, "mastra-cc/typing-unverified": "Observe before deciding whether to retry" };
+      return result.element === undefined ? result : { element: { ...result.element, diagnostic } };
+    };
+    const answer = await type("🙂", ARMED, backend);
+    expect(JSON.stringify(answer)).toContain("mastra-cc/typing-unverified");
+    expect(typed).toHaveLength(1);
+  });
+
+  it.each(["\ud800", "\udc00", "a\ud800b"])("refuses malformed surrogate input before emission: %j", async (text) => {
+    const typed: Typed[] = [];
+    expect(refusalIn(await type(text, ARMED, backendThat({ typed })))).toContain("unpaired surrogate");
+    expect(typed).toEqual([]);
+  });
+
+  it("retains the UTF-16 input resource bound without normalizing scalar text", async () => {
+    const typed: Typed[] = [];
+    const backend = backendThat({ typed });
+    const text = "🙂".repeat(TYPE_TEXT_MAX_LENGTH / 2);
+    expect(refusalIn(await type(text, ARMED, backend))).toBe("");
+    expect(typed[0]?.text).toBe(text);
+    expect(refusalIn(await type(text + "x", ARMED, backend))).toContain("UTF-16 code units");
+    expect(typed).toHaveLength(1);
+  });
+
   it("refuses a session that was never given the class, without touching the desk", async () => {
     const typed: Typed[] = [];
     const answer = await type("example.com", { allows: new Set() }, backendThat({ typed }));
@@ -136,7 +166,7 @@ describe("text, typed blind at one element", () => {
   it("refuses a text longer than the bound, naming the length and the limit, and takes one exactly at it", async () => {
     const typed: Typed[] = [];
     const over = await type("x".repeat(TYPE_TEXT_MAX_LENGTH + 1), ARMED, backendThat({ typed }));
-    expect(refusalIn(over)).toContain(`${TYPE_TEXT_MAX_LENGTH + 1} characters`);
+    expect(refusalIn(over)).toContain(`${TYPE_TEXT_MAX_LENGTH + 1} UTF-16 code units`);
     expect(refusalIn(over)).toContain(`at most ${TYPE_TEXT_MAX_LENGTH}`);
     expect(typed).toEqual([]);
     const at = await type("x".repeat(TYPE_TEXT_MAX_LENGTH), ARMED, backendThat({ typed }));

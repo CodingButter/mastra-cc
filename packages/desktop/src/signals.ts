@@ -1,6 +1,7 @@
 import { SignalProvider, type SignalProviderTarget } from "@mastra/core/signals";
 import type { Attribution, ChangeEvent } from "@mastra-cc/protocol-types";
 import type { TransportClient } from "@mastra-cc/transport";
+import { SignalThrottle } from "./signal-throttle.js";
 
 // THE DESK SPEAKING FIRST. Everything else in this package is a question the
 // agent thought to ask. This is the one path where the desk starts the
@@ -17,6 +18,11 @@ export type DeliverAttribution = Attribution;
 
 /**
  * Deliver `external` only.
+ *
+ * Current native streams have no causal witness and publish `unattributed`, so
+ * this default does not wake from native changes. Active task state must consume
+ * client.onChangeEvent directly. Opting into unknown-origin wakes is an explicit
+ * policy choice; bounded coalescing alone does not prevent action/wake loops.
  *
  * A `self` event is the agent's own edit echoing back, so delivering it wakes
  * the agent to tell it what it just did - and since the wake can cause another
@@ -41,8 +47,13 @@ export interface DesktopSignalsOptions {
    */
   deliver?: readonly DeliverAttribution[];
   /**
-   * Minimum gap between two wakes for the same subscription, element and kind.
-   * Defaults to {@link DEFAULT_DEDUPE_WINDOW_MS}. Set to 0 to deliver everything.
+   * Local monotonic minimum gap per subscription, element and kind. The latest
+   * suppressed pointer gets a trailing notification attempt. State is capped at
+   * 256 keys plus one overflow pointer; delivery is capped at 32 attempts per
+   * local one-second budget window. Eviction triggers a content-free broad
+   * invalidation rather than silently losing the need to reobserve.
+   * Defaults to {@link DEFAULT_DEDUPE_WINDOW_MS}. Set to 0 to disable both limits
+   * and deliver everything without retained entries or timers.
    */
   dedupeWindowMs?: number;
 }
@@ -72,8 +83,8 @@ export function changeSummary(event: ChangeEvent): string {
  *
  * PUSH, NOT POLL. `pollInterval` stays undefined and neither `poll` nor
  * `handleWebhook` is implemented: the socket is already open and the events
- * already arrive on it, so a timer would only add latency and frames to a
- * stream that has neither.
+ * already arrive on it. A bounded local timer expires retained pointers and
+ * releases trailing notifications; it never polls the desktop or sends requests.
  *
  * ONE THREAD. The target is fixed for the provider's life, because a
  * notification needs a threadId and a resourceId and nothing on the daemon's
@@ -88,9 +99,10 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
   readonly #target: SignalProviderTarget;
   readonly #deliver: ReadonlySet<DeliverAttribution>;
   readonly #dedupeWindowMs: number;
-  /** Last wake per (subscription, element, kind), in epoch ms. */
-  readonly #lastWake = new Map<string, number>();
+  #throttle: SignalThrottle | undefined;
   #detach: (() => void) | undefined;
+  #starting: Promise<void> | undefined;
+  #generation = 0;
 
   constructor(deps: DesktopSignalsDeps) {
     super();
@@ -112,10 +124,34 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
    */
   async start(): Promise<void> {
     if (this.#detach !== undefined) return;
-    const client = await this.#client();
-    this.#detach = client.onChangeEvent((event) => {
-      void this.#onChange(event);
-    });
+    if (this.#starting !== undefined) return this.#starting;
+    const generation = this.#generation;
+    const starting = (async () => {
+      const client = await this.#client();
+      if (generation !== this.#generation) return;
+      let reportedFailure = false;
+      const throttle = new SignalThrottle(this.#dedupeWindowMs, (event, overflow) => {
+        if (generation !== this.#generation) return;
+        void this.#onChange(event, overflow).catch(() => {
+          if (reportedFailure) return;
+          reportedFailure = true;
+          console.warn("[mastra-cc-desktop] Notification delivery failed; further failures for this listener are suppressed. No retry was attempted.");
+        });
+      });
+      this.#throttle = throttle;
+      const detach = client.onChangeEvent((event) => {
+        if (generation !== this.#generation || !this.#deliver.has(event.attribution)) return;
+        throttle.push(event);
+      });
+      if (generation !== this.#generation) { throttle.stop(); detach(); }
+      else this.#detach = detach;
+    })();
+    this.#starting = starting;
+    try {
+      await starting;
+    } finally {
+      if (this.#starting === starting) this.#starting = undefined;
+    }
   }
 
   /**
@@ -123,40 +159,33 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
    * instance, which may still be serving tools long after signals are done.
    */
   override stop(): void {
+    this.#generation++;
+    this.#starting = undefined;
     this.#detach?.();
     this.#detach = undefined;
-    this.#lastWake.clear();
+    this.#throttle?.stop();
+    this.#throttle = undefined;
     super.stop();
   }
 
-  async #onChange(event: ChangeEvent): Promise<void> {
-    if (!this.#deliver.has(event.attribution)) return;
-
+  async #onChange(event: ChangeEvent, overflow: boolean): Promise<void> {
     const key = `${event.subscriptionId}\u0000${event.id}\u0000${event.kind}`;
-    if (this.#dedupeWindowMs > 0) {
-      const last = this.#lastWake.get(key);
-      // An honest throttle, not a judgement: this drops changes that are
-      // genuinely distinct, because nothing here can tell a repeat from a
-      // sequel. The agent is told the element moved, not how many times.
-      if (last !== undefined && event.at - last < this.#dedupeWindowMs) return;
-      this.#lastWake.set(key, event.at);
-    }
 
     await this.notify(
       {
         source: this.id,
-        kind: `desktop.${event.kind}`,
-        summary: changeSummary(event),
+        kind: overflow ? "desktop.coalesced" : `desktop.${event.kind}`,
+        summary: overflow ? "desktop changes coalesced: reobserve watched state; individual pointers exceeded the retention bound" : changeSummary(event),
         // Carried back unread, exactly as the daemon carried it. The daemon's
         // three priorities are a literal subset of Mastra's four, so there is
         // nothing to translate and no `urgent` to invent.
         priority: event.priority,
-        sourceId: event.id,
+        ...(overflow ? {} : { sourceId: event.id }),
         // Attribution belongs here and NOT in `source`: `source` is provider
         // identity and is the key delivery-policy overrides are written
         // against, so splitting it by attribution would make one integration
         // look like three.
-        attributes: {
+        attributes: overflow ? { coalesced: true } : {
           attribution: event.attribution,
           subscriptionId: event.subscriptionId,
           role: event.role,
@@ -165,8 +194,8 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
         },
         // These notifications persist - `transient` does not exist on this
         // path - so a chatty element would otherwise accumulate records.
-        dedupeKey: key,
-        coalesceKey: event.subscriptionId,
+        dedupeKey: overflow ? "desktop-overflow" : key,
+        coalesceKey: overflow ? "desktop-overflow" : event.subscriptionId,
       },
       this.#target,
     );

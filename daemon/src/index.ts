@@ -1,4 +1,5 @@
 export { leakedTerms } from "./audit.js";
+export { readCostMetrics } from "./costs.js";
 export { BACKEND_METHODS, type Backend } from "./backend.js";
 // The reader itself, not only the flavours the registry composes. A caller
 // that already holds a Channel - a recording with its write half scripted, in

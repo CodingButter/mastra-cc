@@ -31,7 +31,7 @@ function stamp(changeApplication: string, cause?: { causeId: string; application
   return attribute(changeApplication, cause).attribution;
 }
 
-describe("the server stamps what caused a change, and abstains when it cannot tell", () => {
+describe("audit operation attribution remains separate from native event origin", () => {
   it("labels a change external when no verb of ours was in flight", () => {
     // The operator typed, a notification arrived, a colleague's message
     // landed. Nothing of ours caused it, and the daemon says exactly that.
@@ -93,7 +93,7 @@ describe("a change inside the application our launch is opening is attributed to
   };
   const WATCHED = "el-0123456789ab";
 
-  it("stamps self with the launch's cause id, and abstains once the launch is over", async () => {
+  it("does not infer event origin during or after a launch", async () => {
     let sink: ((change: BackendChange) => void) | undefined;
     let polls = 0;
     const backend: Backend = {
@@ -145,14 +145,13 @@ describe("a change inside the application our launch is opening is attributed to
     try {
       expect((opened.result as { application?: SemanticElement }).application?.name).toBe("test-app");
       expect(events).toHaveLength(1);
-      expect(events[0].attribution).toBe("self");
-      expect(events[0].causeId).toMatch(/^cause-[0-9a-f]{12}$/);
+      expect(events[0].attribution).toBe("unattributed");
+      expect(events[0].causeId).toBeUndefined();
 
-      // ...and the moment the launch is over, the same change is news again:
-      // the daemon is quiet, so nothing of ours caused it.
+      // Delayed application responses are still possible after completion.
       sink?.({ id: WATCHED, role: "textbox", kind: "changed" });
       expect(events).toHaveLength(2);
-      expect(events[1].attribution).toBe("external");
+      expect(events[1].attribution).toBe("unattributed");
       expect(events[1].causeId).toBeUndefined();
     } finally {
       await book.closeAll();
@@ -227,12 +226,11 @@ describe("a change caused by an element verb is attributed to that verb", () => 
     return events;
   }
 
-  it("stamps self with the verb's cause id when the backend names the application", async () => {
+  it("does not infer event origin from the operation's application", async () => {
     const events = await editUnder(editing("test-app"));
     expect(events).toHaveLength(1);
-    expect(events[0].attribution).toBe("self");
-    // Minted per call, never derived from the request id (ADR-0039).
-    expect(events[0].causeId).toMatch(/^cause-[0-9a-f]{12}$/);
+    expect(events[0].attribution).toBe("unattributed");
+    expect(events[0].causeId).toBeUndefined();
   });
 
   it("abstains rather than guessing when the backend cannot name the application", async () => {

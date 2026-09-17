@@ -1,0 +1,22 @@
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+const r=createRequire(path.resolve(process.argv[2]));
+const {Agent}=r('@mastra/core/agent'),{Mastra}=r('@mastra/core'),{SignalProvider}=r('@mastra/core/signals'),{LibSQLStore}=r('@mastra/libsql'),{Memory}=r('@mastra/memory');
+let fetchCalls=0;globalThis.fetch=async()=>{fetchCalls++;throw Error('network forbidden in storage smoke');};
+class Probe extends SignalProvider {id='cc09-storage-probe';name='storage probe';async start(){}}
+const directory=fs.mkdtempSync(path.join(os.tmpdir(),'cc09-storage-'));
+const store=new LibSQLStore({id:'cc09',url:`file:${directory}/probe.db`});
+const provider=new Probe();
+const agent=new Agent({id:'cc09',name:'cc09',instructions:'No generation permitted.',model:'google/gemini-2.5-flash',memory:new Memory({storage:store}),signals:[provider],notifications:{deliveryPolicy:{decide:()=> 'persist'}}});
+const mastra=new Mastra({agents:{agent},storage:store});
+const memory=await agent.getMemory();await memory.createThread({threadId:'cc09-thread',resourceId:'cc09-resource'});
+const start=performance.now();
+await provider.notify({source:provider.id,kind:'probe',summary:'storage setup probe',priority:'low'},{threadId:'cc09-thread',resourceId:'cc09-resource',ifIdle:{behavior:'wake'}});
+const domain=await mastra.getStorage().getStore('notifications');
+const rows=await domain.listNotifications({threadId:'cc09-thread'});
+assert.equal(fetchCalls,0);assert.equal(rows.length,1);assert.equal(rows[0].status,'pending');assert.equal(rows[0].deliveryAttempts,0);assert.equal(rows[0].source,provider.id);
+console.log(JSON.stringify({scope:'synthetic provider to real SQLite; not native desktop latency',directory,elapsedMs:performance.now()-start,fetchCalls,resolved:Object.fromEntries(['@mastra/core/agent','@mastra/libsql','@mastra/memory'].map(name=>[name,r.resolve(name)])),rows}));
+provider.stop();process.exit(0);

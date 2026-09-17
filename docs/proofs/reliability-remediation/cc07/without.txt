@@ -1,0 +1,9 @@
+fully covered element: real XWD/PNG image retained, 40 by 30
+{"rectangle":[-10,10,40,30],"image":true,"refusal":null}
+{"rectangle":[180,10,40,30],"image":true,"refusal":null}
+{"rectangle":[10,-10,40,30],"image":true,"refusal":null}
+{"rectangle":[10,130,40,30],"image":true,"refusal":null}
+PROOF: RED — partial images without crop provenance must not be returned
+
+4 !== 0
+

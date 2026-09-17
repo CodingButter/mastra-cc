@@ -1,0 +1,6 @@
+{"scenario":"marked-observation-boundary-before-last-change","attemptsAtBoundary":1,"notificationAttempts":1,"finalWake":false,"desktopReads":0}
+{"scenario":"1000-unique-watch-burst","leadingAttempts":1000,"overflowInvalidation":false,"desktopReads":0}
+PROOF: RED — suppressed final change needs a follow-up notification attempt
+
+false !== true
+

@@ -205,7 +205,7 @@ parts.push(`const VOCABULARY_VALUES: Record<string, readonly string[]> = ${JSON.
 parts.push(`
 type FieldSpec = {
   type: string | null;
-  literal: string | null;
+  literal: string | number | null;
   literals: readonly string[] | null;
   required: boolean;
   pattern: string | null;

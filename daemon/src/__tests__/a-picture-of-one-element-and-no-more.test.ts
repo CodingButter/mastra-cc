@@ -120,6 +120,21 @@ describe("a picture crops the visible desktop at the named element's rectangle",
     expect([shot.width, shot.height, shot.format]).toEqual([3, 2, "png"]);
   });
 
+  it("retains a complete edge-aligned capture at a nonzero display origin", async () => {
+    const grabbed = dump({ width: 4, height: 3, originX: 100, originY: 50, pixel: () => [12, 34, 56] });
+    const image = await capture({ x: 100, y: 50, width: 4, height: 3 }, async () => grabbed);
+    expect([image.width, image.height]).toEqual([4, 3]);
+    expect(readPng(Buffer.from(image.data, "base64")).at(3, 2)).toEqual([12, 34, 56]);
+  });
+
+  it.each([
+    [99, 52, 3, 2], [103, 52, 2, 2], [101, 49, 2, 3], [101, 53, 2, 2],
+    [99, 49, 6, 6],
+  ])("refuses partial captures at %s,%s with extent %s,%s instead of losing crop provenance", async (x, y, width, height) => {
+    const grabbed = dump({ width: 4, height: 4, originX: 100, originY: 50, pixel: () => [1, 2, 3] });
+    await expect(capture({ x, y, width, height }, async () => grabbed)).rejects.toThrow("partial capture");
+  });
+
   it("refuses a rectangle the grabbed pixels do not cover, rather than answering with somewhere else", () => {
     const screen = decodeXwd(dump({ width: 4, height: 4, originX: 0, originY: 0, pixel: () => [0, 0, 0] }));
     expect(() => cropScreen(screen, { x: 900, y: 900, width: 10, height: 10 })).toThrow(CaptureFailedError);
@@ -181,6 +196,22 @@ describe("a picture crops the visible desktop at the named element's rectangle",
     vi.mocked(spawn).mockClear();
     await expect(grabPixels(rectangle)).rejects.toThrow(CaptureFailedError);
     await expect(capture(rectangle)).rejects.toThrow(/invalid crop rectangle/);
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it("preserves covering pixels and observes changed pixels without preparing the desktop", async () => {
+    let covered = false;
+    const grab = vi.fn(async () => dump({ width: 4, height: 3, originX: 0, originY: 0,
+      pixel: () => covered ? [255, 0, 0] : [0, 255, 0] }));
+    vi.mocked(spawn).mockClear();
+    const rectangle = { x: 0, y: 0, width: 2, height: 2 };
+    const before = await capture(rectangle, grab);
+    covered = true;
+    const after = await capture(rectangle, grab);
+    expect([after.width, after.height]).toEqual([2, 2]);
+    expect(readPng(Buffer.from(before.data, "base64")).at(0, 0)).toEqual([0, 255, 0]);
+    expect(readPng(Buffer.from(after.data, "base64")).at(0, 0)).toEqual([255, 0, 0]);
+    expect(grab).toHaveBeenCalledTimes(2);
     expect(spawn).not.toHaveBeenCalled();
   });
 

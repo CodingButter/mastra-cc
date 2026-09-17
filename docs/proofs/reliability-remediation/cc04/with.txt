@@ -1,0 +1,3 @@
+{"scenario":"marked-observation-boundary-before-last-change","attemptsAtBoundary":1,"notificationAttempts":2,"finalWake":true,"desktopReads":0}
+{"scenario":"1000-unique-watch-burst","leadingAttempts":32,"overflowInvalidation":true,"desktopReads":0}
+PROOF: GREEN — built public library bounds attempts and sends a trailing invalidation; synthetic source and sink

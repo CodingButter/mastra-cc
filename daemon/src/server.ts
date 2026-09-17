@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { measureAsyncCost, recordCost } from "./costs.js";
 // Type-only here; the value is reached through a dynamic import inside
 // startWebSocketServer, so a daemon nobody asked for a port never pays to load
 // the library. Laziness is not what makes it resolvable, though: the installed
@@ -93,6 +95,8 @@ import { isVisible, type Visibility } from "./grants.js";
 import { CATALOG, contendsForBrowserEndpoint, type LaunchCatalog } from "./launch/recipes.js";
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
+import { driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
+import { CancelledAtBoundaryError, underCancellation } from "./cancellation.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
 // then requests dispatched through the effect-class gate. Accessibility access
@@ -530,10 +534,16 @@ export const TYPE_TEXT_MAX_LENGTH = 1024;
 export function typeTextRefusal(text: string): string | undefined {
   if (text.length === 0) return 'refused before the call: "typeText" was given no text - an empty string types nothing, and a call that does nothing is refused rather than performed';
   if (text.length > TYPE_TEXT_MAX_LENGTH) {
-    return `refused before the call: "typeText" was given ${text.length} characters and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;
+    return `refused before the call: "typeText" was given ${text.length} UTF-16 code units and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;
   }
   for (let index = 0; index < text.length; index += 1) {
     const code = text.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = text.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) { index += 1; continue; }
+      return 'refused before the call: "typeText" contains an unpaired surrogate';
+    }
+    if (code >= 0xdc00 && code <= 0xdfff) return 'refused before the call: "typeText" contains an unpaired surrogate';
     // C0, DEL and C1: every code point a keyboard has no printable glyph for.
     if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) {
       const which =
@@ -1249,11 +1259,8 @@ export const UNSUBSCRIBE_UNKNOWN_REFUSAL =
 // ---------------------------------------------------------------------------
 // The change stream's server half (ADR-0039).
 //
-// A backend reports SHAPES - which element, what role, what kind of change -
-// and states which application the watched root lives in. It cannot know what
-// verb the daemon has in flight, so it never states an attribution. The server
-// can know, because every backend call goes through the serialised chain
-// below: at most one verb is open at a time.
+// Backends report pointer shapes and application membership, not causal witnesses.
+// Request identity is retained for audit receipts only (ADR-0101).
 
 interface Cause {
   causeId: string;
@@ -1261,10 +1268,8 @@ interface Cause {
   application?: string;
 }
 
-// The verb currently open in the serialised chain, or undefined for a quiet
-// daemon. Observe-class methods never set it: reading causes nothing, so a
-// change that arrives during a read was not caused by the read.
-let inFlight: Cause | undefined;
+// Request-local identity for audit receipts, not evidence about event origin.
+const operation = new AsyncLocalStorage<Cause | undefined>();
 
 function mintCauseId(): string {
   return `cause-${randomBytes(6).toString("hex")}`;
@@ -1276,7 +1281,8 @@ function mintCauseId(): string {
 // Until a verb names one, every concurrent change is unattributed - the daemon
 // abstains rather than guessing.
 function causeNames(application: string): void {
-  if (inFlight !== undefined) inFlight = { causeId: inFlight.causeId, application };
+  const current = operation.getStore();
+  if (current !== undefined) current.application = application;
 }
 
 export interface AttributionStamp {
@@ -1284,22 +1290,17 @@ export interface AttributionStamp {
   causeId?: string;
 }
 
-// The whole attribution rule, in one place. Three answers, and the third one
-// is the point (ADR-0039, ADR-0032 clause 4).
-export function attribute(changeApplication: string, cause: Cause | undefined = inFlight): AttributionStamp {
+// Audit attribution of the commanded operation, never of a native change event.
+// The request context proves who issued the operation, not what caused a later pointer.
+export function attribute(changeApplication: string, cause: Cause | undefined = operation.getStore()): AttributionStamp {
   if (cause !== undefined) {
     if (cause.application !== undefined && applicationName(cause.application) === applicationName(changeApplication)) {
       return { attribution: "self", causeId: cause.causeId };
     }
-    // ADR-0039: a verb is open, but nothing binds THIS change to it - it
-    // happened somewhere the verb does not reach. The honest answer is that we
-    // do not know which it was, and the daemon says so instead of picking the
-    // likelier story. Never external (that claims we know it was not us),
-    // never self (that claims it was).
+    // The receipt has no matching authorized target in this request context.
     return { attribution: "unattributed" };
   }
-  // Nothing was in flight, so nothing of ours caused it. That is news, not an
-  // alarm: it is recorded and never flagged.
+  // This audit receipt is outside a commanded effect's request context.
   return { attribution: "external" };
 }
 
@@ -1317,6 +1318,7 @@ interface OpenSubscription {
 // the client that asked for it.
 export class SubscriptionBook {
   private readonly open = new Map<string, OpenSubscription>();
+  private closed = false;
   constructor(
     private readonly emit: (event: ChangeEvent) => void,
     // Visibility is re-checked where events are STAMPED, not only where
@@ -1327,15 +1329,26 @@ export class SubscriptionBook {
   ) {}
 
   async subscribe(backend: Backend, id: string, priority: Priority): Promise<string> {
-    // The sink is installed before the subscription id exists, so it captures
-    // the id by closure once it does. A change arriving in that window is
-    // delivered, not dropped: the client asked to watch, and the daemon does
-    // not decide the first change was less real than the rest.
+    if (this.closed) throw new Error("watch connection has closed");
+    // Bound initialization pointers; overflow refuses the watch rather than
+    // silently claiming coverage after dropping its first changes.
+    const pending: BackendChange[] = [];
+    let overflow = false;
     let subscriptionId = "";
     const backendSubscription = await backend.subscribeElement(id, (change: BackendChange) => {
-      if (subscriptionId === "") return;
+      if (this.closed || overflow) return;
+      if (subscriptionId === "") {
+        if (pending.length < 256) pending.push({ ...change });
+        else overflow = true;
+        return;
+      }
       this.deliver(subscriptionId, change);
     });
+    if (this.closed || overflow) {
+      pending.length = 0;
+      await backendSubscription.close();
+      throw new Error(this.closed ? "watch connection closed during initialization" : "watch initialization exceeded its bounded event buffer; observe again before subscribing");
+    }
     subscriptionId = backendSubscription.subscriptionId;
     this.open.set(subscriptionId, {
       id,
@@ -1344,6 +1357,8 @@ export class SubscriptionBook {
       backendSubscription,
       alive: true,
     });
+    for (const change of pending) this.deliver(subscriptionId, change);
+    pending.length = 0;
     return subscriptionId;
   }
 
@@ -1354,7 +1369,8 @@ export class SubscriptionBook {
     // notice: nothing is emitted at all, which is byte-identical to the quiet
     // desktop an ungranted application is supposed to look like.
     if (!isVisible(this.visibility, entry.application)) return;
-    const stamp = attribute(entry.application);
+    // Native pointers carry no causal witness: overlap and silence prove neither origin.
+    const stamp: AttributionStamp = { attribution: "unattributed" };
     this.emit({
       subscriptionId,
       id: change.id,
@@ -1387,6 +1403,7 @@ export class SubscriptionBook {
   }
 
   async closeAll(): Promise<void> {
+    this.closed = true;
     for (const entry of this.open.values()) {
       if (entry.alive) await entry.backendSubscription.close();
     }
@@ -1496,11 +1513,8 @@ async function performEffect(
   // receipt is written once, here, after it - never inside the branches, which
   // is how an effect ends up with a path that leaves no receipt.
   //
-  // The application is read from the same value the gates were handed, and the
-  // cause from the attribution machinery that already exists (attribute(), one
-  // implementation): a second one written for the record could disagree with
-  // the one the change stream states, and two attributions of one effect is
-  // worse than none.
+  // Audit receipts describe the operation this request commanded. Change events
+  // deliberately do not inherit that identity without independent causal evidence.
   let application: string | undefined;
   const decide = async (): Promise<Classified<{ element?: SemanticElement; refusal?: string }>> => {
     // Refused for want of authority, and the application is deliberately not
@@ -2523,7 +2537,12 @@ export interface HandledResponse {
 // Serialise every backend call: one at a time, in arrival order.
 let chain: Promise<unknown> = Promise.resolve();
 function serialised<T>(work: () => Promise<T>): Promise<T> {
-  const next = chain.then(work, work);
+  const queued = performance.now();
+  const measured = () => {
+    recordCost("queueWait", performance.now() - queued);
+    return measureAsyncCost("requestWork", work);
+  };
+  const next = chain.then(measured, measured);
   chain = next.catch(() => undefined);
   return next;
 }
@@ -2565,6 +2584,7 @@ export async function handleRequest(
   backend: Backend,
   launch: LaunchContext = NO_PERMITS,
   book?: SubscriptionBook,
+  driver?: { authority: DriverAuthority; connection: DriverConnection },
 ): Promise<HandledResponse> {
   const entry = DISPATCH[request.method];
   if (!entry) {
@@ -2592,16 +2612,21 @@ export async function handleRequest(
     // No receipt, same reason: the backstop fires before the handler runs
     // (class EnforcementUnrepresentable).
   }
+  const ownershipRefusal = driver?.authority.refusal(driver.connection, entry.effectClass !== "observe");
+  if (ownershipRefusal !== undefined) return { type: "response", id: request.id, refusal: ownershipRefusal };
   try {
     const result = await serialised<unknown>(async () => {
-      // An effect-class verb is a cause: it gets an id, and it is open for
-      // exactly as long as it runs. Observe-class methods are not causes, so
-      // they leave the daemon quiet and changes during them read as external.
-      inFlight = entry.effectClass === "observe" ? undefined : { causeId: mintCauseId() };
+      const retired = driver?.authority.enter(driver.connection, entry.effectClass !== "observe");
+      if (retired !== undefined) return { refusal: retired };
+      // Audit identity belongs to this request. Event origin is a separate question.
       try {
-        return await entry.handler(request.params, backend, launch, book);
+        const run = () => operation.run(entry.effectClass === "observe" ? undefined : { causeId: mintCauseId() },
+          () => entry.handler(request.params, backend, launch, book));
+        // The driver's disconnect is its cancellation request; the signal
+        // reaches the backend's emission boundaries through this store.
+        return await (driver === undefined ? run() : underCancellation(driver.connection.signal, run));
       } finally {
-        inFlight = undefined;
+        driver?.authority.leave(driver.connection);
       }
     });
     // THE THIRD AUDIT CALL SITE, and the one the artifact turns on. ADR-0026's
@@ -2633,7 +2658,13 @@ export async function handleRequest(
     // "Error" through it), so the class name is what gets written.
     const name = error instanceof Error ? error.constructor.name || error.name : "Error";
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
+    if (error instanceof CancelledAtBoundaryError) {
+      // Not a failure: the driver asked, and the effect stopped where stopping
+      // was honest. The count is the uncertain-outcome marker the plan asks for.
+      console.error(`daemon: ${request.method} ${message}`);
+    } else {
+      console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
+    }
     if (entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
     }
@@ -2701,6 +2732,8 @@ export function serveConnection(
   options: { backend: Backend; launch?: LaunchContext; visibility: Visibility },
 ): void {
   const { backend, launch, visibility } = options;
+  const authority = driverAuthority(backend);
+  const driver = { authority, connection: authority.connect() };
   let buffer = "";
   let helloDone = false;
   // The server-initiated direction (ADR-0039). An event answers nothing, so
@@ -2713,6 +2746,17 @@ export function serveConnection(
   // goes, the watches go with it - closed at the BACKEND, not merely
   // forgotten here: a forgotten watch is still being fed.
   const teardown = () => {
+    // The close is the cancellation request. The acknowledgement is ownership
+    // retiring, which happens now if nothing is running and at the running
+    // effect's next boundary otherwise; the gap between them is the one
+    // number CC-09 asks for, so it is written where the operator can read it.
+    const requested = performance.now();
+    if (authority.running(driver.connection)) {
+      void authority.settled(driver.connection).then((at) => {
+        console.error(`daemon: driver ${driver.connection.generation} settled ${(at - requested).toFixed(1)} ms after its connection closed mid-effect`);
+      });
+    }
+    authority.disconnect(driver.connection);
     void book.closeAll();
   };
   pipe.onClose(teardown);
@@ -2754,7 +2798,7 @@ export function serveConnection(
         continue;
       }
       if (message.type === "request" && typeof message.id === "number" && typeof message.method === "string") {
-        void handleRequest(message as Request, backend, launch, book).then((response) => {
+        void handleRequest(message as Request, backend, launch, book, driver).then((response) => {
           if (!pipe.closed) pipe.write(`${JSON.stringify(response)}\n`);
         });
       } else {

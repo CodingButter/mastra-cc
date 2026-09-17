@@ -169,39 +169,27 @@ export async function openSignalStream(
   // and the only way to place it is to climb from it and see whether the
   // watched root is on the way up.
   //
-  // A climb that ends anywhere else - the application root, an element that
-  // will not answer, the depth ceiling - is not proof of being outside so much
-  // as an absence of proof of being inside, and this route does not deliver on
-  // an absence of proof. Silence is the honest answer.
-  const ancestry = new Map<string, boolean>();
-  const withinSubtree = async (path: string): Promise<boolean> => {
-    const memo = ancestry.get(path);
-    if (memo !== undefined) return memo;
-    const climbed: string[] = [];
+  // Membership is fresh per signal. Unreadable parents, cycles and exhausted
+  // climbs are unknown, not durable negative evidence. Only inside may emit.
+  const withinSubtree = async (path: string): Promise<"inside" | "outside" | "unknown"> => {
+    const visited = new Set<string>();
     let here = path;
-    let verdict = false;
-    // The same ceiling the walk uses. A tree deeper than this is not a tree
-    // this daemon claims to have understood.
     for (let step = 0; step <= MAX_CLIMB; step += 1) {
-      const seen = ancestry.get(here);
-      if (seen !== undefined) {
-        verdict = seen;
-        break;
+      if (!open) return "unknown";
+      if (here === anchor.rootPath) return "inside";
+      if (step === MAX_CLIMB || visited.has(here)) return "unknown";
+      visited.add(here);
+      let parent;
+      try {
+        parent = await anchor.parentOf(anchor.busName, here);
+      } catch {
+        return "unknown";
       }
-      if (here === anchor.rootPath) {
-        verdict = true;
-        break;
-      }
-      climbed.push(here);
-      const parent = await anchor.parentOf(anchor.busName, here);
-      if (parent === undefined || parent.busName !== anchor.busName) break;
+      if (parent === undefined) return "unknown";
+      if (parent.busName !== anchor.busName) return "outside";
       here = parent.objectPath;
     }
-    // Every node on the path just climbed shares the verdict: they are all
-    // inside the subtree, or none of them is.
-    for (const step of climbed) ancestry.set(step, verdict);
-    ancestry.set(path, verdict);
-    return verdict;
+    return "unknown";
   };
 
   let queue: Promise<void> = Promise.resolve();
@@ -247,7 +235,7 @@ export async function openSignalStream(
     // they arrived rather than in whichever order the bus answers.
     queue = queue.then(async () => {
       if (!open) return;
-      if (!(await withinSubtree(signal.path))) return;
+      if ((await withinSubtree(signal.path)) !== "inside" || !open) return;
       const known = anchor.known(signal.sender, signal.path);
       // An element the walk never answered still changed; it is reported under
       // a derived id with the generic role - the same answer the walk gives a
@@ -272,6 +260,7 @@ export async function openSignalStream(
   clearTimeout(timer);
 
   if (unheard.size > 0) {
+    open = false;
     detach();
     pending = null;
     throw new DeafWatchError(
