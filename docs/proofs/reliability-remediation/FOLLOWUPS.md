@@ -16,7 +16,7 @@ in this file is claimed as implemented.
 | CC-04 | Immediate unsubscribe cleanup and no post-removal wake under the real framework | autonomous | Provider-local tests exist; framework-integrated run not done. |
 | CC-05 | Explicit human revoke / resume and takeover checkpoints | human-only | The revoke is a human act; needs a person to exercise. |
 | CC-05 | Complete-task serialization on a shared connection | autonomous | Design open: one connection, many tasks. |
-| CC-06 | Transfer/takeover integration and visibility revocation across one task's lifetime | autonomous | Ledger and quiet-window wake policy are done (`cc06/wake-policy/`); the lifecycle integration test spanning a driver transfer is not. |
+| CC-06 | Transfer/takeover across one task's lifetime | closed Sep 17 | Daemon-level test: A's watch closes on disconnect, B's watch answered after A's effect settles, B's own effect narrated unattributed. Revocation is a restart by construction (`cc06/README.md`). |
 | CC-07 | Normalized crop provenance, finite/bounds validation, capture freshness | autonomous | Plan permits the current conservative refusal as interim. |
 | CC-08 | Live-induced degraded ancestry (a hung or unreadable ancestor on a real bus) | autonomous | The root-level health signal is done and proven on the scripted bus (`cc08/health/`); the live GTK fixture shows no spurious nudges but does not induce the degraded edge. |
 | CC-09 | Daemon-side retained-queue byte sizing (subscription book buffer, watch state) | autonomous | Consumer-throttle bytes and a recorded native rhythm are done (`cc09/load/`); the daemon's own retained structures are not yet sized. |
