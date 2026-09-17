@@ -1,0 +1,111 @@
+{
+  "read": {
+    "reading": true,
+    "events": 2000,
+    "gapMs": 0,
+    "elapsedMs": 227,
+    "eventsSeenByClient": 2000,
+    "serverWritableLengthAtEnd": 0,
+    "bytesPerEventLine": 187,
+    "heapDeltaBytes": 187808,
+    "samples": [
+      {
+        "i": 0,
+        "writableLength": 0
+      },
+      {
+        "i": 200,
+        "writableLength": 0
+      },
+      {
+        "i": 400,
+        "writableLength": 0
+      },
+      {
+        "i": 600,
+        "writableLength": 0
+      },
+      {
+        "i": 800,
+        "writableLength": 0
+      },
+      {
+        "i": 1000,
+        "writableLength": 0
+      },
+      {
+        "i": 1200,
+        "writableLength": 0
+      },
+      {
+        "i": 1400,
+        "writableLength": 0
+      },
+      {
+        "i": 1600,
+        "writableLength": 0
+      },
+      {
+        "i": 1800,
+        "writableLength": 0
+      }
+    ],
+    "eventsSeenAfterResume": 2000
+  },
+  "stalled": {
+    "reading": false,
+    "events": 2000,
+    "gapMs": 0,
+    "elapsedMs": 228,
+    "eventsSeenByClient": 0,
+    "serverWritableLengthAtEnd": 247214,
+    "bytesPerEventLine": 187,
+    "heapDeltaBytes": 1590320,
+    "samples": [
+      {
+        "i": 0,
+        "writableLength": 0
+      },
+      {
+        "i": 200,
+        "writableLength": 0
+      },
+      {
+        "i": 400,
+        "writableLength": 0
+      },
+      {
+        "i": 600,
+        "writableLength": 0
+      },
+      {
+        "i": 800,
+        "writableLength": 23001
+      },
+      {
+        "i": 1000,
+        "writableLength": 60401
+      },
+      {
+        "i": 1200,
+        "writableLength": 97801
+      },
+      {
+        "i": 1400,
+        "writableLength": 135201
+      },
+      {
+        "i": 1600,
+        "writableLength": 172601
+      },
+      {
+        "i": 1800,
+        "writableLength": 210001
+      }
+    ],
+    "eventsSeenAfterResume": 2000
+  }
+}
+
+retained per undelivered event: 123.6 B (wire line 187 B); no bound in the daemon - growth is linear in undelivered events
+PROOF: GREEN - measured; the daemon's retained queue toward a consumer is the socket's writable buffer, unbounded and linear
