@@ -88,6 +88,12 @@ describe("explicit native labels", () => {
     expect(await reader.read(field, root, { waited: 0 })).toEqual({ kind: "available", labels: ["Receipt number", "Receipt number"] });
     expect(calls.filter(x => x.body?.[1] === "Name")).toHaveLength(2);
   });
+  it("keeps labels in the order the platform related them, not sorted", async () => {
+    const { reader } = synthetic(x => x.member === "GetRelationSet"
+      ? [[[2, [pair("/zulu"), pair("/alpha")]]]]
+      : x.body?.[1] === "Name" ? [x.path === "/zulu" ? "Zulu total" : "Alpha amount"] : undefined);
+    expect(await reader.read(field, root, { waited: 0 })).toEqual({ kind: "available", labels: ["Zulu total", "Alpha amount"] });
+  });
   it.each([null, {}, [2], [[2, null]], [[2, [[1, "/bad"]]]]])("refuses malformed synthetic relations %j", async relations => {
     const { reader } = synthetic(x => x.member === "GetRelationSet" ? [relations] : undefined);
     expect(await reader.read(field, root, { waited: 0 })).toEqual(unavailable("unreadable"));

@@ -33,7 +33,7 @@ afterEach(() => {
 
 // Builds a scratch tree. `vitest` is the shell script body standing in for the
 // real binary; `source` is the file the table mutates.
-function scratchTree({ vitest, source, find = "GUARDED_LINE\n", entries = 1 }) {
+function scratchTree({ vitest, source, find = "GUARDED_LINE\n", replace, entries = 1 }) {
   const root = mkdtempSync(join(tmpdir(), "mutations-runner-"));
   scratches.push(root);
   mkdirSync(join(root, "tools", "node_modules", ".bin"), { recursive: true });
@@ -50,6 +50,7 @@ function scratchTree({ vitest, source, find = "GUARDED_LINE\n", entries = 1 }) {
     name: entries === 1 ? "the-scratch-mutation" : `the-scratch-mutation-${i}`,
     file: "subject/source.txt",
     find,
+    ...(replace === undefined ? {} : { replace }),
     cwd: "subject",
     testFile: "any.test.ts",
   }));
@@ -277,8 +278,30 @@ ${fakeVitest({ numTotalTests: 2, numFailedTests: 1 }).replace("#!/bin/sh\n", "")
     const r = runRunner(root);
 
     expect(r.status).not.toBe(0);
+    expect(r.stderr).toContain("the-scratch-mutation: SURVIVED");
     expect(r.stderr).toContain("1 mutation(s) survived");
     expect(r.stderr).not.toContain("THE RUNNER FAILED");
+  });
+
+  it("applies an entry's replace text instead of deleting, when the table gives one", () => {
+    // Twenty-eight entries in the real table carry a `replace` that the runner
+    // used to ignore: the file was mutated by deletion, which for most of them
+    // was a syntax error - red for the wrong reason, proving nothing about the
+    // guarantee the entry names. The fake vitest here records what it saw on
+    // disk so the case can assert the substitution, not the deletion.
+    const { root, sourcePath, source } = scratchTree({
+      vitest: `#!/bin/sh
+cp source.txt seen.txt
+${fakeVitest({ numTotalTests: 1, numFailedTests: 1 }).split("\n").slice(1).join("\n")}`,
+      source: "keep this line\nGUARDED_LINE\nand this one\n",
+      replace: "SUBSTITUTED_LINE\n",
+    });
+
+    const r = runRunner(root);
+
+    expect(r.status).toBe(0);
+    expect(readFileSync(join(root, "subject", "seen.txt"), "utf8")).toBe("keep this line\nSUBSTITUTED_LINE\nand this one\n");
+    expect(readFileSync(sourcePath, "utf8")).toBe(source);
   });
 });
 

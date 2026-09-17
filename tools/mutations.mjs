@@ -154,7 +154,7 @@ for (const mutation of table) {
   }
 
   inFlight = { file, original };
-  writeFileSync(file, original.replace(mutation.find, ""));
+  writeFileSync(file, original.replace(mutation.find, mutation.replace ?? ""));
   let red = 0;
   let failure = null;
   try {
@@ -224,8 +224,12 @@ for (const mutation of table) {
     continue;
   }
 
-  console.log(`mutation ${mutation.name}: ${red} test(s) went red`);
-  if (red === 0) survived += 1;
+  if (red === 0) {
+    console.error(`mutation ${mutation.name}: SURVIVED - no test in ${mutation.testFile} went red`);
+    survived += 1;
+  } else {
+    console.log(`mutation ${mutation.name}: ${red} test(s) went red`);
+  }
 }
 
 // The broken-runner count is reported first and on its own line, because it
