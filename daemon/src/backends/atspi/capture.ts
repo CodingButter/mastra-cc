@@ -20,11 +20,35 @@ export interface CaptureRectangle {
   height: number;
 }
 
+export interface CaptureCrop {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface CapturedImage {
   format: "png";
   width: number;
   height: number;
   data: string;
+  source: "visible-desktop";
+  clipped: boolean;
+  crop: CaptureCrop;
+  capturedAt: number;
+}
+
+/** Where a cut-out lies inside the rectangle that was asked for, as fractions
+ *  of that rectangle (ADR-0105). Both inputs are integer pixel rectangles and
+ *  the cut-out is inside the request by construction, so every fraction is
+ *  finite, within 0..1, and x+width and y+height cannot exceed 1. */
+export function cropWithin(requested: CaptureRectangle, got: RawScreen): CaptureCrop {
+  return {
+    x: (got.originX - requested.x) / requested.width,
+    y: (got.originY - requested.y) / requested.height,
+    width: got.width / requested.width,
+    height: got.height / requested.height,
+  };
 }
 
 export class CaptureFailedError extends Error {}
@@ -239,21 +263,20 @@ export async function grabPixels(rectangle: CaptureRectangle | undefined): Promi
 export async function capture(
   rectangle: CaptureRectangle | undefined,
   grab: (rectangle: CaptureRectangle | undefined) => Promise<Buffer> = grabPixels,
+  now: () => number = Date.now,
 ): Promise<CapturedImage> {
   if (rectangle !== undefined) validateRectangle(rectangle);
   const pixels = await measureAsyncCost("captureAcquire", () => grab(rectangle));
+  const capturedAt = now();
   const wanted = measureCost("captureDecodeCrop", () => {
     const screen = decodeXwd(pixels);
     return rectangle === undefined ? screen : cropScreen(screen, rectangle);
   });
-  if (rectangle !== undefined && (wanted.originX !== rectangle.x || wanted.originY !== rectangle.y ||
-      wanted.width !== rectangle.width || wanted.height !== rectangle.height)) {
-    throw new CaptureFailedError(
-      "partial capture refused: the display does not cover the full element rectangle; " +
-      "crop provenance is unavailable, so image locations cannot safely map to element clicks. " +
-      "Reobserve after bringing the entire element onto the display",
-    );
-  }
+  // A clipped picture is answered, not refused, because the answer now says
+  // which part of the rectangle it is (ADR-0105). An EMPTY intersection is
+  // still refused inside cropScreen: a picture of nothing is not a picture.
+  const crop = rectangle === undefined ? { x: 0, y: 0, width: 1, height: 1 } : cropWithin(rectangle, wanted);
+  const clipped = crop.x !== 0 || crop.y !== 0 || crop.width !== 1 || crop.height !== 1;
   const png = measureCost("captureEncode", () => encodePng(wanted));
   recordCost("captureBytes", png.length);
   if (png.length > CAPTURE_MAX_BYTES) {
@@ -262,5 +285,14 @@ export async function capture(
         `name a smaller part of the desk rather than the whole of it`,
     );
   }
-  return { format: "png", width: wanted.width, height: wanted.height, data: png.toString("base64") };
+  return {
+    format: "png",
+    width: wanted.width,
+    height: wanted.height,
+    data: png.toString("base64"),
+    source: "visible-desktop",
+    clipped,
+    crop,
+    capturedAt,
+  };
 }

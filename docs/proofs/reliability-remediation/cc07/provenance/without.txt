@@ -1,0 +1,12 @@
+PROOF: RED — Expected values to be strictly deep-equal:
+[32m+ actual[39m [31m- expected[39m
+
+[39m  [
+[39m    40,
+[39m    30,
+[32m+[39m   undefined,
+[32m+[39m   undefined
+[31m-[39m   false,
+[31m-[39m   'visible-desktop'
+[39m  ]
+

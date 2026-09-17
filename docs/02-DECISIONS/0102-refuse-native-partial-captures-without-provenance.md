@@ -1,7 +1,7 @@
 # ADR-0102: Refuse native partial captures without crop provenance
 
 Date: 2026-09-07
-Status: Accepted — CC-07 conservative interim policy; schema version 1.24.0
+Status: Superseded by [ADR-0105](0105-a-picture-says-which-part-of-the-element-it-is.md) — was the CC-07 conservative interim policy; schema version 1.24.0
 
 ## Evidence
 

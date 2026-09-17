@@ -70,10 +70,34 @@
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   },
   {
-    "name": "capture-returns-partial-images-without-provenance",
+    "name": "the-adapter-drops-the-crop-on-the-way-to-the-model",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "                  { type: \"text\", text: describeCapture(image) },\n",
+    "replace": "",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/the-adapter-is-optional.test.ts"
+  },
+  {
+    "name": "a-place-in-the-picture-is-clamped-not-refused",
+    "file": "packages/desktop/src/capture-geometry.ts",
+    "find": "  if (typeof value !== \"number\" || !Number.isFinite(value) || value < 0 || value > 1) {\n    throw new CaptureGeometryError(`${what} must be a finite number from 0 through 1, not ${String(value)}`);\n  }\n  return value;",
+    "replace": "  return Math.min(1, Math.max(0, Number(value) || 0));",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/a-place-in-the-picture-is-a-place-in-the-element.test.ts"
+  },
+  {
+    "name": "capture-crop-forgets-the-display-origin",
     "file": "daemon/src/backends/atspi/capture.ts",
-    "find": "if (rectangle !== undefined && (wanted.originX !== rectangle.x || wanted.originY !== rectangle.y ||\n      wanted.width !== rectangle.width || wanted.height !== rectangle.height))",
-    "replace": "if (false)",
+    "find": "    x: (got.originX - requested.x) / requested.width,",
+    "replace": "    x: 0,",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-picture-of-one-element-and-no-more.test.ts"
+  },
+  {
+    "name": "capture-calls-every-picture-whole",
+    "file": "daemon/src/backends/atspi/capture.ts",
+    "find": "const crop = rectangle === undefined ? { x: 0, y: 0, width: 1, height: 1 } : cropWithin(rectangle, wanted);",
+    "replace": "const crop = { x: 0, y: 0, width: 1, height: 1 };",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-picture-of-one-element-and-no-more.test.ts"
   },

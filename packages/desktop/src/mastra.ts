@@ -1,5 +1,6 @@
 import { createTool } from "@mastra/core/tools";
-import { METHOD_DESCRIPTORS, METHOD_NAMES, type MethodName } from "@mastra-cc/protocol-types";
+import { METHOD_DESCRIPTORS, METHOD_NAMES, type CapturedImage, type MethodName } from "@mastra-cc/protocol-types";
+import { describeCapture } from "./capture-geometry.js";
 import type { TransportClient } from "@mastra-cc/transport";
 import type { SignalProviderTarget } from "@mastra/core/signals";
 import { connect, type ConnectOptions } from "./index.js";
@@ -70,9 +71,19 @@ export function desktopTools(client: TransportClient): DesktopTools {
       ...(method === "captureElement"
         ? {
             toModelOutput: (output: unknown) => {
-              const image = (output as { image?: { format?: string; data?: string } } | undefined)?.image;
+              const image = (output as { image?: CapturedImage } | undefined)?.image;
               if (image?.data === undefined) return undefined;
-              return { type: "content", value: [{ type: "media", data: image.data, mediaType: `image/${image.format ?? "png"}` }] };
+              // The picture AND what it is a picture of (ADR-0105). The crop
+              // came over the wire so a clipped picture can be mapped to a
+              // click; dropping it here would hand the model half a button
+              // and let it aim at the middle.
+              return {
+                type: "content",
+                value: [
+                  { type: "media", data: image.data, mediaType: `image/${image.format ?? "png"}` },
+                  { type: "text", text: describeCapture(image) },
+                ],
+              };
             },
           }
         : {}),

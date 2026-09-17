@@ -17,7 +17,10 @@ import { handleRequest } from "../server.js";
 import { UnperformableElementError, type Backend } from "../backend.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
 
-const PICTURE = { format: "png" as const, width: 4, height: 2, data: "aGVsbG8=" };
+const PICTURE = {
+  format: "png" as const, width: 4, height: 2, data: "aGVsbG8=",
+  source: "visible-desktop" as const, clipped: false, crop: { x: 0, y: 0, width: 1, height: 1 }, capturedAt: 0,
+};
 
 function backendThatCanSee(record: string[]): Backend {
   return {

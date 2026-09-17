@@ -120,19 +120,48 @@ describe("a picture crops the visible desktop at the named element's rectangle",
     expect([shot.width, shot.height, shot.format]).toEqual([3, 2, "png"]);
   });
 
-  it("retains a complete edge-aligned capture at a nonzero display origin", async () => {
+  it("retains a complete edge-aligned capture at a nonzero display origin, and says it is whole", async () => {
     const grabbed = dump({ width: 4, height: 3, originX: 100, originY: 50, pixel: () => [12, 34, 56] });
-    const image = await capture({ x: 100, y: 50, width: 4, height: 3 }, async () => grabbed);
+    const image = await capture({ x: 100, y: 50, width: 4, height: 3 }, async () => grabbed, () => 1234);
     expect([image.width, image.height]).toEqual([4, 3]);
     expect(readPng(Buffer.from(image.data, "base64")).at(3, 2)).toEqual([12, 34, 56]);
+    expect(image.source).toBe("visible-desktop");
+    expect(image.clipped).toBe(false);
+    expect(image.crop).toEqual({ x: 0, y: 0, width: 1, height: 1 });
+    expect(image.capturedAt).toBe(1234);
   });
 
+  // A 4x4 display at (100, 50), each pixel coloured by its DESK coordinate.
+  // Rectangles that hang off one edge come back clipped, and the crop says
+  // which part of the rectangle the picture is (ADR-0105). The colours check
+  // the pixels are the ones the crop claims.
   it.each([
-    [99, 52, 3, 2], [103, 52, 2, 2], [101, 49, 2, 3], [101, 53, 2, 2],
-    [99, 49, 6, 6],
-  ])("refuses partial captures at %s,%s with extent %s,%s instead of losing crop provenance", async (x, y, width, height) => {
+    // name,     x,   y,  w, h,  crop                                       first pixel on the desk
+    ["left",    98,  52, 4, 2, { x: 0.5, y: 0, width: 0.5, height: 1 },     [100, 52]],
+    ["right",   102, 52, 4, 2, { x: 0, y: 0, width: 0.5, height: 1 },       [102, 52]],
+    ["top",     101, 48, 2, 4, { x: 0, y: 0.5, width: 1, height: 0.5 },     [101, 50]],
+    ["bottom",  101, 52, 2, 4, { x: 0, y: 0, width: 1, height: 0.5 },       [101, 52]],
+    ["around",  98,  48, 8, 8, { x: 0.25, y: 0.25, width: 0.5, height: 0.5 }, [100, 50]],
+  ] as const)("answers a rectangle clipped at the %s with the crop that says so", async (_name, x, y, width, height, crop, first) => {
+    const grabbed = dump({ width: 4, height: 4, originX: 100, originY: 50, pixel: (px, py) => [100 + px, 50 + py, 0] });
+    const image = await capture({ x, y, width, height }, async () => grabbed);
+    expect(image.clipped).toBe(true);
+    expect(image.crop).toEqual(crop);
+    expect([image.width, image.height]).toEqual([Math.round(width * crop.width), Math.round(height * crop.height)]);
+    expect(readPng(Buffer.from(image.data, "base64")).at(0, 0)).toEqual([first[0], first[1], 0]);
+    // The mapping the schema promises: the picture's centre, carried through
+    // the crop, lands at the desk pixel in the middle of the visible part.
+    const centreX = x + (crop.x + 0.5 * crop.width) * width;
+    const centreY = y + (crop.y + 0.5 * crop.height) * height;
+    expect(centreX).toBeGreaterThanOrEqual(100);
+    expect(centreX).toBeLessThanOrEqual(104);
+    expect(centreY).toBeGreaterThanOrEqual(50);
+    expect(centreY).toBeLessThanOrEqual(54);
+  });
+
+  it("still refuses an empty intersection rather than answering with a picture of nothing", async () => {
     const grabbed = dump({ width: 4, height: 4, originX: 100, originY: 50, pixel: () => [1, 2, 3] });
-    await expect(capture({ x, y, width, height }, async () => grabbed)).rejects.toThrow("partial capture");
+    await expect(capture({ x: 104, y: 50, width: 2, height: 2 }, async () => grabbed)).rejects.toThrow(CaptureFailedError);
   });
 
   it("refuses a rectangle the grabbed pixels do not cover, rather than answering with somewhere else", () => {
