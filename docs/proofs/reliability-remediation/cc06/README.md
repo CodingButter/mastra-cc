@@ -23,3 +23,24 @@ The conservative external-only default is unchanged, but native streams are now 
 ## Task-state accounting and the wake-loop breaker
 
 [`wake-policy/README.md`](wake-policy/README.md) adds the ObservationLedger (every pointer kept for the active task, no wake) and the quiet window after this session's own effects, and shows against built artifacts that a reactive agent with unknown-origin wakes opted in converges to one wake per outside change instead of looping.
+
+
+## Across a driver transfer, and what "revocation" is
+
+`daemon/src/__tests__/a-watch-dies-with-its-driver-and-the-next-driver-looks-fresh.test.ts`
+runs a real daemon with two connections: A watches an element and starts an
+effect; A disconnects mid-effect. A's watch is closed at the backend at once.
+B's effect is refused at the ownership gate while A's effect still runs; B's
+watch request is queued behind that effect (every backend call is serialised)
+and answered only after the tail has landed - so B hears nothing of A's tail
+and must look. B then drives, and its own effect is narrated to its own watch
+as `unattributed`: the daemon has no causal witness on the native bus and does
+not guess, even for the driver.
+
+Visibility revocation mid-task does not exist as a runtime path: `Visibility`
+is a `ReadonlySet` composed at boot (`daemon/src/grants.ts`). Revoking a grant
+is a daemon restart, which ends every connection and therefore every watch;
+the consumer's ledger keeps what it recorded and receives nothing further.
+That is the whole lifecycle, and it is recorded here rather than tested
+because there is nothing to test that the connection-close tests do not
+already cover.
