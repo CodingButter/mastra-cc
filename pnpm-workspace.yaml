@@ -13,6 +13,6 @@ packages:
 
 catalog:
   typescript: ^7.0.2
-  vitest: 4.1.10
-  zod: ^4.4.3
+  vitest: 4.1.11
+  zod: ^4.6.4
   oxfmt: 0.59.0
