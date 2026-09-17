@@ -246,6 +246,45 @@ describe("the accessibility stream", () => {
     await watch.close();
   });
 
+  it("does not go silent under sustained change: the backstop emits once per window and once more when it ends", async () => {
+    // Typing keeps every gap under the window. Measured from arrival, the
+    // window never closed and 417 real keystrokes produced one change and no
+    // final state (cc09/load trace). Measured from emission, a sustained
+    // stream yields one change per window plus the last one after it stops.
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    for (let key = 0; key < 12; key += 1) {
+      bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+      await settle();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    // 12 keys over ~240ms: the first emits at once, then roughly one per
+    // 100ms window - never only one, never all twelve.
+    expect(changes.length).toBeGreaterThanOrEqual(2);
+    expect(changes.length).toBeLessThan(12);
+    const during = changes.length;
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    // The newest collapsed change arrives after the window: the final state
+    // is announced even though nothing else happened.
+    expect(changes.length).toBe(during + 1);
+    await watch.close();
+  });
+
+  it("drops a held trailing change when the watch closes first", async () => {
+    const bus = fakeBus();
+    const changes: BackendChange[] = [];
+    const watch = await openSignalStream(bus.ops, KNOWN.id, anchor, (c) => changes.push(c), 5);
+    bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    bus.inject(textChanged(APP_SENDER, KNOWN_PATH));
+    await settle();
+    expect(changes).toHaveLength(1);
+    await watch.close();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    expect(changes).toHaveLength(1);
+  });
+
   it.each([true, false])("rechecks membership after reparenting (initially inside: %s)", async (inside) => {
     const bus = fakeBus();
     const changes: BackendChange[] = [];

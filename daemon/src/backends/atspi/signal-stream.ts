@@ -156,6 +156,11 @@ export async function openSignalStream(
   // arrival order; if it refuses, no watch ever existed to deliver them to.
   let pending: BackendChange[] | null = [];
   const lastEmitted = new Map<string, number>();
+  const trailing = new Map<string, { change: BackendChange; timer: ReturnType<typeof setTimeout> }>();
+  const dropTrailing = () => {
+    for (const held of trailing.values()) clearTimeout(held.timer);
+    trailing.clear();
+  };
 
   // SUBTREE SCOPE (Jamie, 2026-08-28): "you subscribe to state changes on an
   // element that means you get a signal when ever its content or properties or
@@ -194,21 +199,47 @@ export async function openSignalStream(
 
   let queue: Promise<void> = Promise.resolve();
 
-  const deliver = (change: BackendChange) => {
-    // The backstop: one change per element per window. Scope is the design;
-    // this only catches what scope let through.
-    const now = Date.now();
-    const last = lastEmitted.get(change.id);
-    lastEmitted.set(change.id, now);
-    if (last !== undefined && now - last < BACKSTOP_WINDOW_MS) {
-      console.error(`atspi-stream: backstop collapsed a repeat change for ${change.id} - scope let ambient noise through`);
-      return;
-    }
+  const emit = (change: BackendChange) => {
+    lastEmitted.set(change.id, Date.now());
     if (pending !== null) {
       pending.push(change);
       return;
     }
     sink(change);
+  };
+
+  const deliver = (change: BackendChange) => {
+    // The backstop: one change per element per window. Scope is the design;
+    // this only catches what scope let through.
+    //
+    // The window is measured from the last EMISSION, not the last arrival, and
+    // the newest collapsed change is held for a trailing emission when the
+    // window ends. A traced typing session (cc09/load) showed why: a person
+    // typing keeps every gap under the window, and measuring from arrival
+    // kept the window open for the whole paragraph - 417 changes collapsed,
+    // one delivered, and the final state of the element never announced. A
+    // watch that goes silent under sustained change is the deaf watch this
+    // route refuses to hand back; the backstop must not create one.
+    const now = Date.now();
+    const last = lastEmitted.get(change.id);
+    if (last !== undefined && now - last < BACKSTOP_WINDOW_MS) {
+      const held = trailing.get(change.id);
+      if (held !== undefined) {
+        held.change = change;
+        return;
+      }
+      console.error(`atspi-stream: backstop collapsed a repeat change for ${change.id} - trailing emission scheduled`);
+      const timer = setTimeout(() => {
+        const latest = trailing.get(change.id);
+        trailing.delete(change.id);
+        if (!open || latest === undefined) return;
+        emit(latest.change);
+      }, last + BACKSTOP_WINDOW_MS - now);
+      timer.unref();
+      trailing.set(change.id, { change, timer });
+      return;
+    }
+    emit(change);
   };
 
   const detach = ops.onSignal((signal) => {
@@ -263,6 +294,7 @@ export async function openSignalStream(
     open = false;
     detach();
     pending = null;
+    dropTrailing();
     throw new DeafWatchError(
       `the accessibility route registered for its signals, caused one of its own, and never heard ${[...unheard].join(", ")} within ${probeBudgetMs}ms - refusing to hand back a watch that may never speak (element "${subscribedTo}")`,
     );
@@ -277,6 +309,7 @@ export async function openSignalStream(
     async close() {
       open = false;
       detach();
+      dropTrailing();
     },
   };
 }
