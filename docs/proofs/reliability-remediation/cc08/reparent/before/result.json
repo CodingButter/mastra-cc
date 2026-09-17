@@ -1,0 +1,40 @@
+{
+  "scope": "one GTK3 fixture on a private bus; membership re-read per signal; not a claim about every toolkit",
+  "phases": [
+    {
+      "phase": "in-left",
+      "expected": "inside: emits",
+      "changedOnLeftWatch": 2,
+      "ok": true
+    },
+    {
+      "phase": "moved-right",
+      "expected": "outside: silent",
+      "changedOnLeftWatch": 0,
+      "ok": true
+    },
+    {
+      "phase": "back-in-left",
+      "expected": "inside: emits",
+      "changedOnLeftWatch": 2,
+      "ok": true
+    },
+    {
+      "phase": "moved-to-annex",
+      "expected": "outside: silent",
+      "changedOnLeftWatch": 0,
+      "ok": true
+    },
+    {
+      "phase": "destroy-annex",
+      "docWatchKindsAfterDestroy": [
+        "changed",
+        "changed"
+      ],
+      "docStillQueryable": false,
+      "unsubscribeEnded": true,
+      "unsubscribeRefusal": null
+    }
+  ],
+  "receipts": 12
+}

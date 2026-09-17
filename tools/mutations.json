@@ -1879,5 +1879,13 @@
     "find": "        emit(latest.change);\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "a-root-that-left-the-tree-is-still-called-watched",
+    "file": "daemon/src/backends/atspi/signal-stream.ts",
+    "find": "      return (await anchor.attachmentOf(anchor.busName, anchor.rootPath)) === \"detached\";",
+    "replace": "      return false;",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
   }
 ]

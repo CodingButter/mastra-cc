@@ -104,6 +104,12 @@ export interface AtspiWatchAnchor {
   // One step up the tree. Undefined at the top, or on an element that will
   // not answer; either way the climb ends and the signal is not delivered.
   parentOf(busName: string, objectPath: string): Promise<{ busName: string; objectPath: string } | undefined>;
+  // Whether the object still hangs in the tree, asked of the bus directly:
+  // "attached" when it reports a parent, "detached" when it answers and
+  // reports none. Rejects when it does not answer - which is unknown, not
+  // detached. Optional so scripted anchors that never remove a root need not
+  // model it; without it a root's removal is only known by its own defunct.
+  attachmentOf?(busName: string, objectPath: string): Promise<"attached" | "detached">;
 }
 
 const REGISTRY_DEST = "org.a11y.atspi.Registry";
@@ -197,6 +203,23 @@ export async function openSignalStream(
     return "unknown";
   };
 
+  // Has the root left the tree? Measured live (cc08/reparent): when GTK
+  // destroys a window, the children are unparented BEFORE the window's own
+  // defunct is announced, and the child itself never says defunct. So when a
+  // defunct arrives from this application, the question is "does my root
+  // still hang anywhere" - asked of the bus now, not of any cache. A root
+  // that answers with no parent has left the tree; every live object has
+  // one, up to the registry's desktop. A root that does not answer at all is
+  // unknown, and unknown ends nothing.
+  const rootLeftTheTree = async (): Promise<boolean> => {
+    if (anchor.attachmentOf === undefined) return false;
+    try {
+      return (await anchor.attachmentOf(anchor.busName, anchor.rootPath)) === "detached";
+    } catch {
+      return false;
+    }
+  };
+
   let queue: Promise<void> = Promise.resolve();
 
   const emit = (change: BackendChange) => {
@@ -261,11 +284,32 @@ export async function openSignalStream(
     // never answered, so no watch can anchor inside it - and the server
     // re-checks visibility at emission besides.
     if (signal.sender !== anchor.busName) return;
-    // Subtree scope. Deciding it means climbing the bus, which is async, so
+    // The root's death. AT-SPI announces a destroyed accessible with
+    // StateChanged("defunct", 1) - on the root itself, or (GTK, measured
+    // live in cc08/reparent) only on the window around it while the root is
+    // silently unparented. Either way the watch ends, says which element it
+    // watched, and is never re-anchored onto whatever takes the place
+    // (ADR-0039). Nothing here ends a watch on a guess: an unreadable parent
+    // is unknown, and unknown is not gone.
+    const isDefunct = signal.member === STATE_CHANGED && signal.body[0] === "defunct" && Number(signal.body[1]) === 1;
+    // Subtree scope.    // Subtree scope. Deciding it means climbing the bus, which is async, so
     // the decisions are chained: signals are scoped and delivered in the order
     // they arrived rather than in whichever order the bus answers.
     queue = queue.then(async () => {
       if (!open) return;
+      if (isDefunct && (signal.path === anchor.rootPath || (await rootLeftTheTree()))) {
+        if (!open) return;
+        open = false;
+        detach();
+        dropTrailing();
+        const known = anchor.known(anchor.busName, anchor.rootPath);
+        const change: BackendChange = { id: known?.id ?? deriveId("generic", anchor.busName, anchor.rootPath), role: known?.role ?? "generic", kind: "watchEnded" };
+        if (pending !== null) pending.push(change);
+        else sink(change);
+        return;
+      }
+      // A defunct descendant is an ordinary change inside the subtree and
+      // falls through to the membership climb like any other.
       if ((await withinSubtree(signal.path)) !== "inside" || !open) return;
       const known = anchor.known(signal.sender, signal.path);
       // An element the walk never answered still changed; it is reported under
