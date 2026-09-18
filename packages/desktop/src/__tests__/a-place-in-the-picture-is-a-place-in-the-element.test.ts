@@ -65,6 +65,6 @@ describe("describeCapture", () => {
     expect(clippedText).toContain("x 0.5 to 1");
     expect(clippedText).toContain("y = 0 + v * 1");
     expect(clippedText).toContain("occlusion is not established");
-    expect(clippedText).toContain("resolve the element again");
+    expect(clippedText).toContain("capturedAt: 5 to clickElement");
   });
 });

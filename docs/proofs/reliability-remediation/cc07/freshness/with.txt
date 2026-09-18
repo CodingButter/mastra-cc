@@ -1,0 +1,7 @@
+picture 1 of el-f45fbc97b907: 40x30 capturedAt=1789691643242
+{"case":"latest picture, element unmoved","sent":1,"refused":null}
+{"case":"element moved since picture","sent":1,"refused":"PointerBlockedError: the picture taken at 1789691643242 was cropped from 40x30 at (10,10) but the element now sits at 40x30 at (60,10) - the desk has moved under the picture; look again and aim again. Nothing was sent"}
+{"case":"older picture after a newer one","sent":1,"refused":"PointerBlockedError: the picture taken at 1789691643242 is not the latest picture of this element (taken at 1789691643289) - it has been re-photographed since; look at the newer picture and aim from that. Nothing was sent"}
+{"case":"newest picture at the moved rectangle","sent":2,"refused":null}
+{"case":"no picture named","sent":3,"refused":null}
+PROOF: GREEN — a press naming a stale picture (moved element, or superseded picture) is refused before anything is sent; the latest picture and an unclaimed press still aim; real native capture, scripted geometry

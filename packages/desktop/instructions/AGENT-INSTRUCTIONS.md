@@ -529,7 +529,12 @@ and those are the `x` and `y` that `clickElement` takes (the adapter states this
 next to every picture, and the desktop package exports a helper that does the
 arithmetic and refuses out-of-range inputs). Never infer crop
 offsets from PNG dimensions. Even a full image is not a freshness guarantee: bounds
-observation and capture are not atomic, so reobserve the element before pressing. These are VISIBLE pixels, not pixels
+observation and capture are not atomic. When a press is aimed from a picture, pass
+that picture's `capturedAt` to `clickElement`: the daemon then refuses the press,
+sending nothing, if the element has moved since the picture was taken or has been
+photographed again since, and says which. A refusal of either kind means look
+again, then aim again from the new picture. A press without `capturedAt` claims
+no picture and is aimed at the freshly read rectangle. These are VISIBLE pixels, not pixels
 owned by that application. Overlapping windows may appear, and transparent or
 input-only overlays may intercept input without being apparent in the image.
 If a crop shows an overlay, reobserve, raise the target through an observed

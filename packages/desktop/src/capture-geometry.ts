@@ -71,6 +71,7 @@ export function describeCapture(image: Omit<CapturedImage, "data">): string {
     `Source: visible desktop pixels; other windows may be drawn over the element and occlusion is not established. ` +
     `A location (u, v) in this picture, each 0 through 1, is at element fraction ` +
     `x = ${crop.x} + u * ${crop.width}, y = ${crop.y} + v * ${crop.height} - the x and y clickElement takes. ` +
-    `Captured at ${image.capturedAt} ms; resolve the element again before acting on it.`
+    `Captured at ${image.capturedAt} ms. Pass capturedAt: ${image.capturedAt} to clickElement when aiming from this picture: ` +
+    `the press is then refused, and nothing sent, if the element has moved or been re-photographed since.`
   );
 }
