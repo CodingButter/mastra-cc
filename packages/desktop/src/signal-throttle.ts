@@ -44,6 +44,22 @@ export class SignalThrottle {
     this.#flush(now);
   }
 
+  /**
+   * The watch is over: drop every pointer held for it, delivered or pending,
+   * and the overflow if it was one of them - all but its own `watchEnded`.
+   * Nothing else for that subscription is delivered after this call. Only the schedule is touched, never the wake
+   * budget - forgetting is not a wake.
+   */
+  forget(subscriptionId: string): void {
+    if (this.#stopped) return;
+    const prefix = `${subscriptionId}\u0000`;
+    // The watch's own end is the one pointer kept: it is the last word for
+    // that subscription and the agent is owed it.
+    for (const key of [...this.#entries.keys()]) if (key.startsWith(prefix) && !key.endsWith("\u0000watchEnded")) this.#entries.delete(key);
+    if (this.#overflow?.subscriptionId === subscriptionId && this.#overflow.kind !== "watchEnded") this.#overflow = undefined;
+    this.#schedule(performance.now());
+  }
+
   stop(): void {
     this.#stopped = true;
     if (this.#timer !== undefined) clearTimeout(this.#timer);

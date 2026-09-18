@@ -2,7 +2,7 @@
 
 Date: 2026-09-07
 
-Status: core correction implemented; immediate watch-end cleanup remains follow-up.
+Status: core correction implemented; immediate watch-end cleanup landed September 17, 2026 (see the addendum below).
 
 ## Evidence
 
@@ -53,6 +53,23 @@ Immediate removal on explicit unsubscribe, grant revocation, and connection/watc
 termination needs a shared transport lifecycle observation rather than guessing
 from an element's `disappeared` kind or intercepting only adapter tools. That part
 of CC-04 is not claimed complete here. No protocol change is made in this slice.
+
+### Addendum (September 17, 2026): the watch-end cleanup
+
+The shared lifecycle observation turned out to already exist: the instance's
+`ObservationLedger`, which both the tool layer and the signal provider hold.
+The ledger now records ended watches - `unsubscribeElement` answering without
+refusal marks the watch ended from the tool layer, and a `watchEnded` pointer
+marks it from the daemon - and the provider's throttle hears each end and
+forgets every pointer pending for that subscription. The one pointer it keeps
+is the watch's own `watchEnded`, which the agent is still owed. No guard
+against "late" pointers was needed: the wire is ordered, so a pointer written
+before the unsubscribe answer arrives before it and is forgotten with the
+rest, and the daemon's book writes nothing for a watch it has ended - a
+guard written for that case survived its own mutation and was removed.
+Proven under the real framework in
+[`cc04/framework`](../proofs/reliability-remediation/cc04/framework/README.md).
+Grant revocation mid-watch remains the design gap recorded for CC-06.
 
 ## Verification
 

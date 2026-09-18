@@ -64,6 +64,11 @@ export interface ObservationEntry {
 export class ObservationLedger {
   readonly #entries = new Map<string, ObservationEntry>();
   readonly #waiters = new Map<string, Set<(event: ChangeEvent) => void>>();
+  // Watches this session has ended, by subscription id, newest last and
+  // bounded like the entries: a pointer for one of these that was already on
+  // the wire when the watch ended is late, not news.
+  readonly #endedWatches = new Set<string>();
+  readonly #watchEndedListeners = new Set<(subscriptionId: string) => void>();
   readonly #limit: number;
   #lastEffectAt = -Infinity;
   #effects = 0;
@@ -98,8 +103,35 @@ export class ObservationLedger {
     return this.#now() - this.#lastEffectAt < this.#quietMs;
   }
 
+  /**
+   * The watch is over - the tool layer ended it, or the daemon said
+   * `watchEnded`. Anyone holding pointers for it (the signal provider's
+   * throttle) is told at once, and later pointers for it are late.
+   */
+  endWatch(subscriptionId: string): void {
+    this.#endedWatches.delete(subscriptionId);
+    this.#endedWatches.add(subscriptionId);
+    if (this.#endedWatches.size > this.#limit) {
+      const oldest = this.#endedWatches.values().next().value;
+      if (oldest !== undefined) this.#endedWatches.delete(oldest);
+    }
+    for (const listener of this.#watchEndedListeners) listener(subscriptionId);
+  }
+
+  /** Whether this session has ended that watch. */
+  watchEnded(subscriptionId: string): boolean {
+    return this.#endedWatches.has(subscriptionId);
+  }
+
+  /** Hear every `endWatch`; returns the detach. */
+  onWatchEnded(listener: (subscriptionId: string) => void): () => void {
+    this.#watchEndedListeners.add(listener);
+    return () => { this.#watchEndedListeners.delete(listener); };
+  }
+
   /** Record a pointer. Every attribution, every kind; bounded by eviction of the oldest entry. */
   record(event: ChangeEvent): void {
+    if (event.kind === "watchEnded") this.endWatch(event.subscriptionId);
     const at = this.#now();
     const previous = this.#entries.get(event.id);
     this.#entries.delete(event.id);

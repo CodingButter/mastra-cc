@@ -1,0 +1,29 @@
+{
+  "fetchCalls": 0,
+  "toolEnded": {
+    "ended": true,
+    "beforeHold": [
+      "desktop.changed x1"
+    ],
+    "atEnd": [
+      "desktop.changed x1"
+    ],
+    "afterEnd": [
+      "desktop.changed x1"
+    ],
+    "afterLateBytes": [
+      "desktop.changed x1"
+    ]
+  },
+  "daemonEnded": {
+    "afterEnd": [
+      "desktop.changed x1",
+      "desktop.watchEnded x1"
+    ],
+    "afterLateBytes": [
+      "desktop.changed x1",
+      "desktop.watchEnded x1"
+    ]
+  }
+}
+PROOF: GREEN

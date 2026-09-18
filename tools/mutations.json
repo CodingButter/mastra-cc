@@ -1962,5 +1962,27 @@
     "find": "      if (held.size > STALLED_CONSUMER_POINTERS) held.delete(held.keys().next().value as string);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts"
+  },
+  {
+    "name": "an-ended-watch-keeps-its-pending-pointers",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": "    for (const key of [...this.#entries.keys()]) if (key.startsWith(prefix) && !key.endsWith(\"\\u0000watchEnded\")) this.#entries.delete(key);\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/a-watch-that-ended-says-nothing-more.test.ts"
+  },
+  {
+    "name": "forgetting-a-watch-drops-its-end-too",
+    "file": "packages/desktop/src/signal-throttle.ts",
+    "find": "if (key.startsWith(prefix) && !key.endsWith(\"\\u0000watchEnded\"))",
+    "replace": "if (key.startsWith(prefix))",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/a-watch-that-ended-says-nothing-more.test.ts"
+  },
+  {
+    "name": "the-tool-layer-ends-a-watch-and-tells-no-one",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "          this.#ledger.endWatch(String((params as { subscriptionId?: unknown })?.subscriptionId ?? \"\"));\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/a-watch-that-ended-says-nothing-more.test.ts"
   }
 ]
