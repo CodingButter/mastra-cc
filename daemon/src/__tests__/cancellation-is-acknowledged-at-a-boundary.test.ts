@@ -170,3 +170,73 @@ it("stops a running effect at its next boundary when the driver closes, and admi
     expect(lines.some((line) => line.includes("failed in the backend"))).toBe(false);
   } finally { stderr.mockRestore(); }
 });
+
+// The boundaries INSIDE single-call effects and the capture subprocess. A
+// chord, a string, a press are one registry call each: nothing can stop them
+// mid-call, but each has a boundary BEFORE it - a driver that asked while the
+// request waited its turn is answered with nothing sent. A screen grab is a
+// look, not an emission, so it can be stopped at any point: the child is
+// killed and the look refused as cancelled, not as a desk failure.
+
+function aTypedDesk(controller: AbortController, abortOn: string | undefined) {
+  const tape = replayChannel("gtk-dialog");
+  const sent: string[] = [];
+  const channel: Channel = {
+    async call(exchange) {
+      if (exchange.member === abortOn) controller.abort();
+      if (exchange.member === "GenerateKeyboardEvent" || exchange.member === "GenerateMouseEvent") { sent.push(exchange.member); return []; }
+      if (exchange.member === "GrabFocus") return [true];
+      if (exchange.member === "GetExtents") return [[10, 10, 40, 30]];
+      if (exchange.member === "ScrollTo") return [];
+      return tape.call(exchange);
+    },
+    watch: (a, b, c) => tape.watch(a, b, c),
+    close: () => tape.close(),
+  };
+  return { backend: new AtspiBackend(channel, "all"), sent };
+}
+
+it("a single-call effect whose driver asked to stop before it began sends nothing", async () => {
+  for (const verb of ["typeText", "sendKeyChord", "clickElement"] as const) {
+    const controller = new AbortController();
+    // The signal aborts during the focus grab - after the request was admitted,
+    // before its one emission.
+    const { backend, sent } = aTypedDesk(controller, "GrabFocus");
+    const { elements } = await backend.queryElements({ role: "label" });
+    const id = elements[0]!.id;
+    const call = verb === "typeText" ? () => backend.typeText({ id, text: "abc" })
+      : verb === "sendKeyChord" ? () => backend.sendKeyChord({ id, chord: "Escape" })
+      : () => backend.clickElement({ id });
+    await expect(underCancellation(controller.signal, call)).rejects.toSatisfy(
+      (error: unknown) => error instanceof CancelledAtBoundaryError && (error as CancelledAtBoundaryError).emitted === 0
+        && /nothing was sent/.test((error as Error).message),
+    );
+    expect(sent, verb).toEqual([]);
+    await backend.close();
+  }
+});
+
+it("a single-call effect whose driver asks after it was sent is not retracted and is answered", async () => {
+  const controller = new AbortController();
+  const { backend, sent } = aTypedDesk(controller, "GenerateKeyboardEvent");
+  const { elements } = await backend.queryElements({ role: "label" });
+  const result = await underCancellation(controller.signal, () => backend.sendKeyChord({ id: elements[0]!.id, chord: "Escape" }));
+  expect(sent).toEqual(["GenerateKeyboardEvent"]);
+  expect(result.element?.id).toBe(elements[0]!.id);
+  await backend.close();
+});
+
+it("a screen grab is killed when its driver asks, and refused as cancelled rather than as a desk failure", async () => {
+  const { run } = await import("../backends/atspi/capture.js");
+  const controller = new AbortController();
+  const started = Date.now();
+  // A grab that would take 30 s; the driver asks after 50 ms.
+  setTimeout(() => controller.abort(), 50);
+  await expect(run(process.execPath, ["-e", "setTimeout(() => {}, 30000)"], 60000, 1 << 20, controller.signal))
+    .rejects.toBeInstanceOf(CancelledAtBoundaryError);
+  expect(Date.now() - started).toBeLessThan(5000);
+  // Already asked: no child is started at all.
+  await expect(run(process.execPath, ["-e", "0"], 1000, 1 << 20, controller.signal)).rejects.toBeInstanceOf(CancelledAtBoundaryError);
+  // No driver: the grab is what it was.
+  await expect(run(process.execPath, ["-e", "process.stdout.write('ok')"], 5000, 1 << 20, undefined)).resolves.toEqual(Buffer.from("ok"));
+});
