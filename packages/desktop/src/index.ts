@@ -95,6 +95,14 @@ export interface ConnectOptions {
   socketPath?: string;
   /** A websocket URL, when the daemon is not on this machine. Mutually exclusive with `socketPath`. */
   url?: string;
+  /**
+   * How long to wait for a reply before giving up on ONE request, in ms.
+   *
+   * Omitted, a request waits as long as the daemon takes, which is the
+   * contract this transport has always had. Set, a request that outlives the
+   * budget rejects with an unknown - not failed - outcome (ADR-0109).
+   */
+  replyBudgetMs?: number;
 }
 
 /**
@@ -118,5 +126,6 @@ export async function connect(options: ConnectOptions = {}): Promise<TransportCl
   return dial({
     ...(socketPath !== undefined ? { socketPath } : {}),
     ...(url !== undefined ? { url } : {}),
+    ...(options.replyBudgetMs !== undefined ? { replyBudgetMs: options.replyBudgetMs } : {}),
   });
 }

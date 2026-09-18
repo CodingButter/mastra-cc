@@ -2072,5 +2072,21 @@
     "replace": "    if (holder === undefined) return;",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/one-desk-takes-one-task-at-a-time.test.ts"
+  },
+  {
+    "name": "the-budget-becomes-everyones-default",
+    "file": "packages/transport/src/index.ts",
+    "find": "      const budget = options.replyBudgetMs;",
+    "replace": "      const budget = options.replyBudgetMs ?? 25;",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/a-reply-that-never-comes.test.ts"
+  },
+  {
+    "name": "an-unanswered-request-is-called-a-failure",
+    "file": "packages/transport/src/index.ts",
+    "find": "        \"not refused, so whether it was performed is UNKNOWN. Look at the desk before acting again, and do not resend: \" +",
+    "replace": "        \"not refused, so the request failed. Look at the desk before acting again: \" +",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/a-reply-that-never-comes.test.ts"
   }
 ]

@@ -88,6 +88,38 @@ export class TransportConnectionError extends Error {
   }
 }
 
+/**
+ * A request that was sent and never answered inside the caller's budget.
+ *
+ * This is NOT a failure report. The line is open, the daemon never said no,
+ * and an effect request that reached it may well have been performed - so the
+ * only honest thing this can say is that the outcome is unknown. `performed`
+ * is undefined for exactly that reason: it is the question, not the answer.
+ *
+ * A caller that receives this must observe the desk before acting again, and
+ * must not resend: a resend is the duplicate keystroke CC-02 exists to prevent.
+ */
+export class UnansweredRequestError extends Error {
+  readonly code = "MASTRA_CC_UNANSWERED";
+  readonly method: string;
+  readonly waitedMs: number;
+
+  constructor(method: string, waitedMs: number) {
+    super(
+      `transport: ${method} was sent and not answered within ${waitedMs}ms - the connection is still open and the daemon has ` +
+        "not refused, so whether it was performed is UNKNOWN. Look at the desk before acting again, and do not resend: " +
+        "a resend of an effect that did land is a second effect",
+    );
+    this.name = "UnansweredRequestError";
+    this.method = method;
+    this.waitedMs = waitedMs;
+  }
+}
+
+export function isUnansweredRequestError(value: unknown): value is UnansweredRequestError {
+  return value instanceof UnansweredRequestError;
+}
+
 export function isTransportConnectionError(value: unknown): value is TransportConnectionError {
   return value instanceof TransportConnectionError;
 }
@@ -209,7 +241,9 @@ function websocketWire(url: string): Wire {
   };
 }
 
-export async function connect(options: { socketPath?: string; url?: string } = {}): Promise<TransportClient> {
+export async function connect(
+  options: { socketPath?: string; url?: string; replyBudgetMs?: number } = {},
+): Promise<TransportClient> {
   const deadline = performance.now() + 10_000;
   if (options.socketPath !== undefined && options.url !== undefined) {
     throw new Error(
@@ -341,7 +375,36 @@ export async function connect(options: { socketPath?: string; url?: string } = {
     const id = nextId;
     nextId += 1;
     return new Promise((resolve, reject) => {
-      pending.set(id, { resolve, reject });
+      // The budget is the CALLER's, and there is no default: a desk operation
+      // has no length this transport knows. Launching an application, typing a
+      // paragraph and waiting on a modal dialog are all legitimately slow, and
+      // a default budget would turn "slow" into "unknown" on a desk that was
+      // working perfectly. Unbounded waiting stays the contract for a caller
+      // who does not choose otherwise; a caller who cannot afford to wait
+      // forever says how long, and is told the outcome is unknown rather than
+      // that the request failed (ADR-0109).
+      const budget = options.replyBudgetMs;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const settle = (finish: () => void) => {
+        clearTimeout(timer);
+        finish();
+      };
+      const entry = {
+        resolve: (value: unknown) => settle(() => resolve(value)),
+        reject: (error: Error) => settle(() => reject(error)),
+      };
+      if (budget !== undefined) {
+        timer = setTimeout(() => {
+          // The connection is NOT terminated: the line is fine, and the other
+          // requests on it have their own budgets. Only this one stops waiting.
+          // Its id is dropped, so a late answer is discarded rather than
+          // resolving a promise the caller already gave up on.
+          if (pending.delete(id)) reject(new UnansweredRequestError(method, budget));
+        }, budget);
+        // A budget must not hold a process open on its own account.
+        timer.unref?.();
+      }
+      pending.set(id, entry);
       try {
         wire.write(`${JSON.stringify({ type: "request", id, method, params })}\n`);
       } catch (error) {
