@@ -16,6 +16,8 @@ answered by argument.
 
 [Visible-pixel capture contract](reliability-remediation/cc01/README.md) records generated-description RED/GREEN evidence and clipped, covering-pixel fixtures without claiming live desktop validation.
 
+[Live foreground and occlusion](reliability-remediation/cc01/live/README.md) records what preparation buys on three real GTK3 windows: a covered key that still lands, a raise through the desk's own route, a press from a stale picture refused before emission, and a later cover that only a fresh look reveals.
+
 [Typing uncertainty remediation](reliability-remediation/cc02/README.md) records Unicode and insertion-counterexample regressions, one-emission checks and retained resource bounds.
 
 [Bounded signal retention](reliability-remediation/cc04/README.md) records built-library RED/GREEN delivery counters, hard retention bounds and trailing invalidation; immediate watch-end cleanup remains follow-up.

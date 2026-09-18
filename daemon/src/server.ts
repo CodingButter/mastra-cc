@@ -518,6 +518,13 @@ export function outsideElementRefusal(axis: "x" | "y", value: unknown): string {
   );
 }
 
+export function unknownCapturedAtRefusal(value: unknown): string {
+  return (
+    `refused before the call: "clickElement" was given capturedAt of ${JSON.stringify(value)}, and a picture is named by the ` +
+    "finite millisecond time this daemon answered for it - a time that is not a number names no picture this daemon could check"
+  );
+}
+
 export const NO_TYPE_ROUTE_REFUSAL =
   'refused before the call: "typeText" cannot be performed by this build on this platform - there is no way to deliver a key here, and no setting on this daemon would change that';
 
@@ -1886,7 +1893,7 @@ function clearElementText(params: { id?: unknown }, backend: Backend, launch: La
 // a daemon that decided that on its own would be the fallback ADR-0046 clause 3
 // forbids.
 function clickElement(
-  params: { id?: unknown; button?: unknown; count?: unknown; x?: unknown; y?: unknown },
+  params: { id?: unknown; button?: unknown; count?: unknown; x?: unknown; y?: unknown; capturedAt?: unknown },
   backend: Backend,
   launch: LaunchContext,
 ) {
@@ -1916,7 +1923,16 @@ function clickElement(
         }
       }
       const [[, x], [, y]] = fractions as [["x", number], ["y", number]];
-      return backend.clickElement({ id, button, count, x, y });
+      // A press may name the picture it was aimed from. Carry that claim to the
+      // backend, which is the only place that knows what was photographed and
+      // where the element sits now (ADR-0107). A claim that is not a finite
+      // number is refused here rather than silently dropped: a dropped claim
+      // would press from an unchecked picture.
+      const { capturedAt } = params;
+      if (capturedAt !== undefined && (typeof capturedAt !== "number" || !Number.isFinite(capturedAt))) {
+        return { refusal: unknownCapturedAtRefusal(capturedAt), refusalClass: "MalformedParameter" as const };
+      }
+      return backend.clickElement({ id, button, count, x, y, capturedAt });
     },
   );
 }
