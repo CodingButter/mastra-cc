@@ -2088,5 +2088,13 @@
     "replace": "        \"not refused, so the request failed. Look at the desk before acting again: \" +",
     "cwd": "packages/transport",
     "testFile": "src/__tests__/a-reply-that-never-comes.test.ts"
+  },
+  {
+    "name": "a-second-request-jumps-the-serialisation-gate",
+    "file": "daemon/src/server.ts",
+    "find": "    const result = await serialised<unknown>(async () => {",
+    "replace": "    const result = await (async () => {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
   }
 ]
