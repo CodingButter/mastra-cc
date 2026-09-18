@@ -28,6 +28,8 @@ answered by argument.
 
 [A reply that never comes](reliability-remediation/cc02/unanswered/README.md) shows a request on a healthy socket waiting forever, and the same request under an opt-in budget reporting its outcome as unknown rather than failed so the caller does not resend an effect that may have landed.
 
+[Degraded ancestry, induced live](reliability-remediation/cc08/degraded-live/README.md) detaches a widget from its parent while keeping it alive, so a real change arrives from an element whose ancestry cannot be read, and records that the watch answers with a nudge at its root rather than silence or a false claim about where the change happened.
+
 [Unknown event origin](reliability-remediation/cc06/README.md) records built-server RED/GREEN attribution and default-wake counters across three peers and two independent backends; raw pointers remain available to active consumers.
 
 [Partial capture safety](reliability-remediation/cc07/README.md) records real native pixel acquisition with scripted accessibility geometry: complete images remain available, four edge-clipped images are refused until crop provenance exists.

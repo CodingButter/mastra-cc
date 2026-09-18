@@ -1,0 +1,57 @@
+[
+  {
+    "id": "app-e349585a0186",
+    "role": "application",
+    "name": "reparent-fixture"
+  },
+  {
+    "id": "win-de81771b4f8b",
+    "role": "window",
+    "name": "Reparent Home"
+  },
+  {
+    "id": "el-56ced85291f0",
+    "role": "generic",
+    "name": ""
+  },
+  {
+    "id": "el-23e13b4d9c0f",
+    "role": "generic",
+    "name": "Left"
+  },
+  {
+    "id": "el-307ff2f21c61",
+    "role": "text",
+    "name": "doc"
+  },
+  {
+    "id": "el-9bdab20e7beb",
+    "role": "label",
+    "name": "Left"
+  },
+  {
+    "id": "el-fbbcc69b161d",
+    "role": "generic",
+    "name": "Right"
+  },
+  {
+    "id": "el-2ec47140faca",
+    "role": "label",
+    "name": "Right"
+  },
+  {
+    "id": "win-eaacc520dba6",
+    "role": "window",
+    "name": "Reparent Annex"
+  },
+  {
+    "id": "el-848aebc3543a",
+    "role": "generic",
+    "name": "Annex"
+  },
+  {
+    "id": "el-f45fbc97b907",
+    "role": "label",
+    "name": "Annex"
+  }
+]
