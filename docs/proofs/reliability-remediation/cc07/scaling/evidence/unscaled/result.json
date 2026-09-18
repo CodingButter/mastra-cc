@@ -1,0 +1,79 @@
+{
+  "scope": "one GTK3 fixture under one scale setting on Xvfb; X11 only",
+  "scale": {
+    "gdkScale": "1",
+    "dpiScale": "1",
+    "xftDpi": "96",
+    "toolkitScale": 1
+  },
+  "findings": [
+    {
+      "phase": "as-laid-out",
+      "scale": {
+        "gdkScale": "1",
+        "dpiScale": "1",
+        "xftDpi": "96",
+        "toolkitScale": 1
+      },
+      "reportedImage": {
+        "width": 580,
+        "height": 120
+      },
+      "decodedImage": {
+        "width": 580,
+        "height": 120
+      },
+      "clipped": false,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "dominantColour": "0,89,217",
+      "dominantShare": 1,
+      "distinctColours": 1,
+      "dominantIsThePanelBlue": true,
+      "wholePictureIsThePanel": true,
+      "imageMatchesItsOwnReport": true,
+      "ok": true
+    },
+    {
+      "phase": "after-layout-change",
+      "scale": {
+        "gdkScale": "1",
+        "dpiScale": "1",
+        "xftDpi": "96",
+        "toolkitScale": 1
+      },
+      "reportedImage": {
+        "width": 580,
+        "height": 210
+      },
+      "decodedImage": {
+        "width": 580,
+        "height": 210
+      },
+      "clipped": false,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "dominantColour": "0,89,217",
+      "dominantShare": 1,
+      "distinctColours": 1,
+      "dominantIsThePanelBlue": true,
+      "wholePictureIsThePanel": true,
+      "imageMatchesItsOwnReport": true,
+      "ok": true
+    },
+    {
+      "phase": "layout-change",
+      "expected": "the second picture is taller, and still all panel",
+      "grew": true,
+      "ok": true
+    }
+  ]
+}

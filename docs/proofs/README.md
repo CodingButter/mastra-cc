@@ -1,5 +1,23 @@
 # Proofs
 
+## Running a native proof
+
+Every proof that loads `@mastra-cc/desktop` runs against an INSTALL of this
+workspace's packages, not against its source, because the thing under test
+should be the thing a consumer would get. Build that install with:
+
+```sh
+node tools/proof-consumer.mjs /tmp/proof-consumer \
+  --mastra <an existing node_modules to borrow @mastra/* from>
+```
+
+It prints the `node_modules` path the runners take as their second argument.
+`pnpm pack` is used rather than `npm pack` because only the former resolves
+`workspace:*`; the leftover protocol specifier is pinned back to the tarball
+beside it with an override, so nothing is looked up in a registry it was never
+published to. Framework dependencies are borrowed from an existing install
+rather than fetched, so a run that claims to make no network calls makes none.
+
 Measurements taken from M0.5 onward, and the record of how each milestone
 checked itself. No count is stated here: a count that isn't checked is a claim
 without a receipt, and the coverage now has a real check instead —
@@ -29,6 +47,7 @@ answered by argument.
 [A reply that never comes](reliability-remediation/cc02/unanswered/README.md) shows a request on a healthy socket waiting forever, and the same request under an opt-in budget reporting its outcome as unknown rather than failed so the caller does not resend an effect that may have landed.
 
 [Degraded ancestry, induced live](reliability-remediation/cc08/degraded-live/README.md) detaches a widget from its parent while keeping it alive, so a real change arrives from an element whose ancestry cannot be read, and records that the watch answers with a nudge at its root rather than silence or a false claim about where the change happened.
+[Capture under display scaling](reliability-remediation/cc07/scaling/README.md) compares two native runs of one fixture: unscaled, every pixel returned is the element; at double scale, half the picture is window background, because the accessibility rectangle is in logical units while the grab is in device pixels.
 
 [Unknown event origin](reliability-remediation/cc06/README.md) records built-server RED/GREEN attribution and default-wake counters across three peers and two independent backends; raw pointers remain available to active consumers.
 

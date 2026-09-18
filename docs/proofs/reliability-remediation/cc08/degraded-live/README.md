@@ -64,6 +64,7 @@ ordinary use. Membership re-reading is pinned in unit tests, and the mutation
 python3 run.py session.sh <consumer node_modules with @mastra-cc/desktop> <any mastra entry path>
 ```
 
-The consumer must carry protocol artifacts built from the same tree; a stale
-consumer is refused at the digest handshake before any of this runs. Evidence
+Build the consumer with `node tools/proof-consumer.mjs` (see the [proofs
+index](../../../README.md)); a consumer built from a different tree is refused at
+the digest handshake before any of this runs. Evidence
 in `evidence/`, hashes in `SHA256SUMS`.

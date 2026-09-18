@@ -1,0 +1,80 @@
+{
+  "scope": "one GTK3 fixture under one scale setting on Xvfb; X11 only",
+  "verdict": "scaled: the accessibility rectangle is in LOGICAL units while the grab is in DEVICE pixels, so the crop lands partly off the element - recorded, not fixed",
+  "scale": {
+    "gdkScale": "2",
+    "dpiScale": "1.5",
+    "xftDpi": "144",
+    "toolkitScale": 2
+  },
+  "findings": [
+    {
+      "phase": "as-laid-out",
+      "scale": {
+        "gdkScale": "2",
+        "dpiScale": "1.5",
+        "xftDpi": "144",
+        "toolkitScale": 2
+      },
+      "reportedImage": {
+        "width": 391,
+        "height": 120
+      },
+      "decodedImage": {
+        "width": 391,
+        "height": 120
+      },
+      "clipped": false,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "dominantColour": "250,250,250",
+      "dominantShare": 0.5147,
+      "distinctColours": 2,
+      "dominantIsThePanelBlue": false,
+      "wholePictureIsThePanel": false,
+      "imageMatchesItsOwnReport": true,
+      "ok": false
+    },
+    {
+      "phase": "after-layout-change",
+      "scale": {
+        "gdkScale": "2",
+        "dpiScale": "1.5",
+        "xftDpi": "144",
+        "toolkitScale": 2
+      },
+      "reportedImage": {
+        "width": 391,
+        "height": 210
+      },
+      "decodedImage": {
+        "width": 391,
+        "height": 210
+      },
+      "clipped": false,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "dominantColour": "0,89,217",
+      "dominantShare": 0.639,
+      "distinctColours": 2,
+      "dominantIsThePanelBlue": true,
+      "wholePictureIsThePanel": false,
+      "imageMatchesItsOwnReport": true,
+      "ok": false
+    },
+    {
+      "phase": "layout-change",
+      "expected": "the second picture is taller, and still all panel",
+      "grew": true,
+      "ok": true
+    }
+  ]
+}
