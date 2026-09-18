@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -55,6 +55,52 @@ if (table.length === 0) {
   process.exit(1);
 }
 
+// ONE RUNNER PER CHECKOUT. This runner mutates files in place; a second runner
+// (or a test suite, or a build) in the same tree while it runs reads mutated
+// bytes and reports nonsense - a "survivor" that was another runner's restore,
+// a "stale table" that was another runner's mutation. Measured 2026-09-17,
+// three times in one day, each time as a flake that was not one. So the tree
+// is claimed with a lock directory - mkdir is atomic on every filesystem this
+// runs on - naming the pid that holds it. A lock whose pid is no longer alive
+// was left by a runner that died without its exit handler (SIGKILL, a lost
+// machine) and is taken over; a live pid is refused, by number, so the caller
+// can wait for it or kill it rather than race it.
+const lock = join(root, ".mutations.lock");
+function claimTree() {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      mkdirSync(lock);
+      writeFileSync(join(lock, "pid"), String(process.pid));
+      return;
+    } catch (err) {
+      if (err.code !== "EEXIST") throw err;
+      let holder = NaN;
+      try { holder = Number(readFileSync(join(lock, "pid"), "utf8")); } catch { /* unreadable: treat as stale below */ }
+      if (Number.isInteger(holder) && holder !== process.pid && alive(holder)) {
+        console.error(`mutations: another runner (pid ${holder}) holds ${lock} - two runners in one tree read each other's mutations; wait for it or kill it`);
+        process.exit(1);
+      }
+      rmSync(lock, { recursive: true, force: true });
+    }
+  }
+  console.error(`mutations: could not claim ${lock}`);
+  process.exit(1);
+}
+function alive(pid) {
+  try { process.kill(pid, 0); return true; } catch (err) { return err.code === "EPERM"; }
+}
+let holding = false;
+claimTree();
+holding = true;
+// `exit` fires on every path out - process.exit, a re-raised signal's default
+// disposition does NOT run it, which is why the signal handlers release first.
+process.on("exit", releaseTree);
+function releaseTree() {
+  if (!holding) return;
+  holding = false;
+  rmSync(lock, { recursive: true, force: true });
+}
+
 // The one mutation currently on disk. The loop is sequential, so there is never
 // more than one. `null` means every file in the tree holds its committed bytes.
 let inFlight = null;
@@ -106,7 +152,11 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
     console.error(`mutations: interrupted by ${signal} - the mutated file was put back`);
     // Re-raise rather than exit(1): an interruption is not a mutation result, and
     // a caller that signalled this process is owed the death it asked for. The
-    // listener is removed first so the default disposition applies.
+    // listener is removed first so the default disposition applies - and that
+    // disposition skips the exit handler, so the tree is let go of here. Only
+    // reachable when the signal lands between spawns; not deterministically
+    // testable, kept because the alternative is a lock left behind.
+    releaseTree();
     process.removeAllListeners(signal);
     process.kill(process.pid, signal);
   });
