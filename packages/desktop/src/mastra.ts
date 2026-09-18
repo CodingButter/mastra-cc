@@ -180,7 +180,13 @@ export class MastraCC {
         // Stamped BEFORE the call, so an echo that lands while the call is
         // still in flight is already inside the quiet window.
         this.#ledger.noteEffect(method);
-        return await call.call(client, params);
+        const result = await call.call(client, params);
+        // The watch is over the moment the daemon says so. A pointer for it
+        // that was already on the wire is late, and must not wake anyone.
+        if (method === "unsubscribeElement" && !(result as { refusal?: unknown }).refusal) {
+          this.#ledger.endWatch(String((params as { subscriptionId?: unknown })?.subscriptionId ?? ""));
+        }
+        return result;
       };
     }
     return desktopTools(deferred as unknown as TransportClient);

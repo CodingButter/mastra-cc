@@ -152,14 +152,27 @@ export class DesktopSignals extends SignalProvider<"mastra-cc-desktop"> {
         });
       });
       this.#throttle = throttle;
-      const detach = client.onChangeEvent((event) => {
+      // A watch this session ended (unsubscribeElement, or the daemon's own
+      // watchEnded) has nothing more to say: pending pointers for it are
+      // dropped now. Nothing arrives for it afterwards - the wire is ordered,
+      // so a pointer the daemon wrote before answering the unsubscribe lands
+      // before the answer, and the daemon's book writes nothing for a watch
+      // it has ended.
+      const forget = this.#ledger?.onWatchEnded((subscriptionId) => {
+        if (generation === this.#generation) throttle.forget(subscriptionId);
+      });
+      const listening = client.onChangeEvent((event) => {
         if (generation !== this.#generation || !this.#deliver.has(event.attribution)) return;
         // Quiet after own effect: an unknown-origin pointer this soon after
         // one of our own effects may be its echo. The ledger already holds it
         // for the active task; waking on it is what would loop.
         if (this.#ledger?.inQuietWindow(event)) return;
+        // Ended before pushed: everything pending for the watch goes, and
+        // its end is the one pointer that then gets through.
+        if (event.kind === "watchEnded") this.#ledger?.endWatch(event.subscriptionId);
         throttle.push(event);
       });
+      const detach = () => { listening(); forget?.(); };
       if (generation !== this.#generation) { throttle.stop(); detach(); }
       else this.#detach = detach;
     })();

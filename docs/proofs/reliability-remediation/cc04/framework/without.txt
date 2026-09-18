@@ -1,0 +1,51 @@
+{
+  "fetchCalls": 0,
+  "toolEnded": {
+    "ended": true,
+    "beforeHold": [
+      "desktop.changed x1"
+    ],
+    "atEnd": [
+      "desktop.changed x1"
+    ],
+    "afterEnd": [
+      "desktop.changed x2"
+    ],
+    "afterLateBytes": [
+      "desktop.changed x2"
+    ]
+  },
+  "daemonEnded": {
+    "afterEnd": [
+      "desktop.changed x2",
+      "desktop.watchEnded x1"
+    ],
+    "afterLateBytes": [
+      "desktop.changed x2",
+      "desktop.watchEnded x1"
+    ]
+  }
+}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: nothing was delivered after the tool ended the watch
+[32m+ actual[39m [31m- expected[39m
+
+[39m  [
+[32m+[39m   'desktop.changed x2'
+[31m-[39m   'desktop.changed x1'
+[39m  ]
+
+    at [90mfile:///tmp/mastra-cc-reliability-remediation/docs/proofs/reliability-remediation/cc04/framework/[39mdemo.mjs:120:8
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m {
+  generatedMessage: [33mfalse[39m,
+  code: [32m'ERR_ASSERTION'[39m,
+  actual: [ [32m'desktop.changed x2'[39m ],
+  expected: [ [32m'desktop.changed x1'[39m ],
+  operator: [32m'deepStrictEqual'[39m,
+  diff: [32m'simple'[39m
+}
+
+Node.js v25.2.1

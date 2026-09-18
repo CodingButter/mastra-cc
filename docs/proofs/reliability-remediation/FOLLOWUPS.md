@@ -13,7 +13,7 @@ in this file is claimed as implemented.
 | CC-01 | Live foreground preparation, occlusion and changed-layout characterization | autonomous | Needs a scripted multi-window Xvfb scenario; not built. |
 | CC-02 | IME / autocomplete / selection on a real user desk; human-takeover-safe focus restoration | human-only | Requires a person's live desktop and input method. |
 | CC-02 | Adapter-level uncertain-attempt / no-duplicate retry proof | autonomous | Scripted-channel test not written. |
-| CC-04 | Immediate unsubscribe cleanup and no post-removal wake under the real framework | autonomous | Provider-local tests exist; framework-integrated run not done. |
+| CC-04 | Immediate unsubscribe cleanup and no post-removal wake under the real framework | closed Sep 17 | The shared ledger records ended watches; the throttle forgets pending pointers for them (keeping only `watchEnded`). Real `Agent` + `LibSQLStore` proof in `cc04/framework/`: master build woke the thread once more after `ended: true` (`x2`), this branch does not. Grant revocation mid-watch stays the CC-06 design gap. |
 | CC-05 | Explicit human revoke / resume and takeover checkpoints | human-only | The revoke is a human act; needs a person to exercise. |
 | CC-05 | Complete-task serialization on a shared connection | autonomous | Design open: one connection, many tasks. |
 | CC-06 | Transfer/takeover across one task's lifetime | closed Sep 17 | Daemon-level test: A's watch closes on disconnect, B's watch answered after A's effect settles, B's own effect narrated unattributed. Revocation is a restart by construction (`cc06/README.md`). |

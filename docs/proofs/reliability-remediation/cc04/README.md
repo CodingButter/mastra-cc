@@ -46,7 +46,7 @@ no entries or timers. Retained pending values contain only copied protocol point
 
 ## Limit
 
-This slice does not claim immediate watch-end cleanup. The provider has no shared
+This slice did not claim immediate watch-end cleanup; that landed later under the real framework in [`framework/README.md`](framework/README.md). The provider has no shared
 watch-lifecycle callback; expiry bounds stale state, but unsubscribe may be followed
 by an extra queued notification. The remaining lifecycle integration and real
 framework final-observation semantics are explicit follow-ups in

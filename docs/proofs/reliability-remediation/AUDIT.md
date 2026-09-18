@@ -28,7 +28,7 @@ Baseline for this sweep: `fix/reliability-remediation` with the CC-09 cancellati
 - Gemini video inspection credential: `GOOGLE_API_KEY` is absent on this host; the original-24 visual review used frame-sampled Anthropic inspection instead, which is disclosed in that proof.
 - Live human-takeover / revoke-resume (CC-05) and IME/autocomplete on a real user desk (CC-02) require a person at a physical desktop.
 
-**Autonomous follow-ups, not yet done** (no human needed, but outside the bounded slices above): a live-induced degraded-ancestry case (CC-08; root-level health signal done in `cc08/health/`, reparenting in `cc08/reparent/`); normalized crop provenance and freshness (CC-07); immediate unsubscribe cleanup semantics under the real framework (CC-04); live foreground/occlusion characterization (CC-01). These are recorded, not claimed. The stalled-consumer policy (CC-09) is decided and proven: ADR-0106, `cc09/stalled-consumer/`.
+**Autonomous follow-ups, not yet done** (no human needed, but outside the bounded slices above): a live-induced degraded-ancestry case (CC-08; root-level health signal done in `cc08/health/`, reparenting in `cc08/reparent/`); normalized crop provenance and freshness (CC-07); live foreground/occlusion characterization (CC-01). These are recorded, not claimed. The stalled-consumer policy (CC-09) is decided and proven: ADR-0106, `cc09/stalled-consumer/`. Immediate unsubscribe cleanup under the real framework (CC-04) is done: `cc04/framework/`, ADR-0099 addendum.
 
 ## Separate Mousepad acceptance and blockers
 
