@@ -116,7 +116,10 @@ describe("through a real daemon and the real tool layer", () => {
     const desk = scriptedBackend();
     const instance = await daemonWith(desk);
     const tools = instance.getTools();
-    const provider = instance.getSignalProvider({ threadId: "t", resourceId: "r" }, { deliver: ["external", "unattributed"], dedupeWindowMs: 200 });
+    // The window is wide so a slow runner's unsubscribe round-trip cannot
+    // outlast it: a trailing timer that fires before the answer arrives is
+    // a legitimate delivery, not the race this test is about.
+    const provider = instance.getSignalProvider({ threadId: "t", resourceId: "r" }, { deliver: ["external", "unattributed"], dedupeWindowMs: 1000 });
     const { agent, wakes } = listeningAgent();
     provider.connect(agent as never);
     await provider.start();
@@ -141,7 +144,8 @@ describe("through a real daemon and the real tool layer", () => {
     // And bytes pushed at the backend after the end: the daemon's book has
     // no entry for the watch and writes nothing.
     desk.push({ id: WATCHED, role: "textbox", kind: "changed" }, sink);
-    await wait(400);
+    // Past the whole window: a held pointer that survived the end would be here.
+    await wait(1300);
     expect(wakes).toHaveLength(1);
     provider.stop();
   });
