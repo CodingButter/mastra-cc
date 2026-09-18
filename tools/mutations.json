@@ -2095,6 +2095,20 @@
     "find": "    const result = await serialised<unknown>(async () => {",
     "replace": "    const result = await (async () => {",
     "cwd": "daemon",
-    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts",
+    "name": "the-runner-races-a-live-runner",
+    "file": "tools/mutations.mjs",
+    "find": "      if (Number.isInteger(holder) && holder !== process.pid && alive(holder)) {",
+    "replace": "      if (false) {",
+    "cwd": "tools",
+    "testFile": "__tests__/mutations-runner.test.mjs"
+  },
+  {
+    "name": "the-finished-runner-keeps-the-tree",
+    "file": "tools/mutations.mjs",
+    "find": "process.on(\"exit\", releaseTree);\n",
+    "replace": "",
+    "cwd": "tools",
+    "testFile": "__tests__/mutations-runner.test.mjs"
   }
 ]
