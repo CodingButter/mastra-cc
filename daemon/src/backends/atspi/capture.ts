@@ -2,6 +2,7 @@
 // Overlapping windows can appear: these pixels are not an application-ownership witness.
 
 import { spawn } from "node:child_process";
+import { CancelledAtBoundaryError, cancellationSignal } from "../../cancellation.js";
 import { deflateSync } from "node:zlib";
 import { measureAsyncCost, measureCost, recordCost } from "../../costs.js";
 
@@ -212,9 +213,30 @@ export function encodePng(screen: RawScreen): Buffer {
   ]);
 }
 
-export function run(command: string, args: string[], timeoutMs = 5000, maxBytes = DUMP_MAX_BYTES): Promise<Buffer> {
+export function run(
+  command: string,
+  args: string[],
+  timeoutMs = 5000,
+  maxBytes = DUMP_MAX_BYTES,
+  signal: AbortSignal | undefined = cancellationSignal(),
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
+    // A driver that has already asked to stop is not owed a screen grab; one
+    // that asks while the grab runs gets the child killed. A grab is a look,
+    // not an emission - stopping it loses nothing that cannot be looked at
+    // again - so this is a supported boundary at any point in the call.
+    if (signal?.aborted) return reject(new CancelledAtBoundaryError(0, 1));
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.kill("SIGKILL");
+      child.stdout.destroy();
+      child.stderr.destroy();
+      reject(new CancelledAtBoundaryError(0, 1));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
     const out: Buffer[] = [];
     let size = 0;
     let error = "";
@@ -242,6 +264,7 @@ export function run(command: string, args: string[], timeoutMs = 5000, maxBytes 
     });
     child.on("error", () => fail(`screen grab could not start ${command}`));
     child.on("close", (code) => {
+      signal?.removeEventListener("abort", onAbort);
       if (settled) return;
       if (code !== 0) return fail(`screen grab failed: ${error.trim().split("\n")[0] || code}`);
       settled = true;

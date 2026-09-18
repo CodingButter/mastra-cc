@@ -1,0 +1,4 @@
+{"case":"chord: driver closed during the aim","sent":0,"daemon":"sendKeyChord stopped before its first emission because the driver had already asked; nothing was sent, and the element requires fresh observation before anyone resumes"}
+{"case":"capture: driver closed mid-grab (fake xwd sleeps 30 s)","stoppedAfterMs":55,"daemon":"captureElement stopped before its first emission because the driver had already asked; nothing was sent, and the element requires fresh observation before anyone resumes"}
+{"case":"successor after both","sent":1}
+PROOF: GREEN — a driver that closed during the aim gets no emission; a screen grab is killed when its driver closes; a successor is admitted; real daemon over a real socket, scripted registry
