@@ -1,5 +1,23 @@
 # Proofs
 
+## Running a native proof
+
+Every proof that loads `@mastra-cc/desktop` runs against an INSTALL of this
+workspace's packages, not against its source, because the thing under test
+should be the thing a consumer would get. Build that install with:
+
+```sh
+node tools/proof-consumer.mjs /tmp/proof-consumer \
+  --mastra <an existing node_modules to borrow @mastra/* from>
+```
+
+It prints the `node_modules` path the runners take as their second argument.
+`pnpm pack` is used rather than `npm pack` because only the former resolves
+`workspace:*`; the leftover protocol specifier is pinned back to the tarball
+beside it with an override, so nothing is looked up in a registry it was never
+published to. Framework dependencies are borrowed from an existing install
+rather than fetched, so a run that claims to make no network calls makes none.
+
 Measurements taken from M0.5 onward, and the record of how each milestone
 checked itself. No count is stated here: a count that isn't checked is a claim
 without a receipt, and the coverage now has a real check instead —
