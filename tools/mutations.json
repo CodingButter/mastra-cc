@@ -1984,5 +1984,21 @@
     "find": "          this.#ledger.endWatch(String((params as { subscriptionId?: unknown })?.subscriptionId ?? \"\"));\n",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/a-watch-that-ended-says-nothing-more.test.ts"
+  },
+  {
+    "name": "the-adapter-types-again-when-it-reads-unverified",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "        return await call.call(client, input ?? {});\n",
+    "replace": "        const first = await call.call(client, input ?? {});\n        if (JSON.stringify(first).includes(\"typing-unverified\")) return await call.call(client, input ?? {});\n        return first;\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/an-uncertain-keystroke-is-never-sent-twice.test.ts"
+  },
+  {
+    "name": "the-adapter-types-again-when-the-answer-is-lost",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "        return await call.call(client, input ?? {});\n",
+    "replace": "        try { return await call.call(client, input ?? {}); } catch { return await call.call(client, input ?? {}); }\n",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/an-uncertain-keystroke-is-never-sent-twice.test.ts"
   }
 ]

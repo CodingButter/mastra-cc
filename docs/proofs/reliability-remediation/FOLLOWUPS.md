@@ -12,7 +12,8 @@ in this file is claimed as implemented.
 | Mousepad / visual review | Gemini video inspection | human-only | `GOOGLE_API_KEY` absent on this host. Frame-sampled Anthropic inspection was used and disclosed. |
 | CC-01 | Live foreground preparation, occlusion and changed-layout characterization | autonomous | Needs a scripted multi-window Xvfb scenario; not built. |
 | CC-02 | IME / autocomplete / selection on a real user desk; human-takeover-safe focus restoration | human-only | Requires a person's live desktop and input method. |
-| CC-02 | Adapter-level uncertain-attempt / no-duplicate retry proof | autonomous | Scripted-channel test not written. |
+| CC-02 | Adapter-level uncertain-attempt / no-duplicate retry proof | closed Sep 17 | Real backend over the recorded tape, real daemon, transport and tool: one STRING emission whether the answer is unverified or the post-emission re-read fails; a retrying adapter (both mutations applied and built) emits twice. `cc02/adapter-retry/`. |
+| CC-02 | Bounded wait for a reply the daemon never sends | autonomous | The transport has no per-request timeout; a call whose line stays open but unanswered waits indefinitely. Not duplication, not bounded either. Needs a decision on who owns the budget (adapter or transport) before code. |
 | CC-04 | Immediate unsubscribe cleanup and no post-removal wake under the real framework | closed Sep 17 | The shared ledger records ended watches; the throttle forgets pending pointers for them (keeping only `watchEnded`). Real `Agent` + `LibSQLStore` proof in `cc04/framework/`: master build woke the thread once more after `ended: true` (`x2`), this branch does not. Grant revocation mid-watch stays the CC-06 design gap. |
 | CC-05 | Explicit human revoke / resume and takeover checkpoints | human-only | The revoke is a human act; needs a person to exercise. |
 | CC-05 | Complete-task serialization on a shared connection | autonomous | Design open: one connection, many tasks. |

@@ -1,0 +1,5 @@
+# mutant adapter: retry on unverified AND on error (both mutations applied), built and run
+{"trial":"UNVERIFIED","resolved":true,"unverified":true,"emissions":2,"strings":[[0,"example.com",4],[0,"example.com",4]]}
+daemon: typeText failed in the backend: Error: org.freedesktop.DBus.Error.NoReply: the read-back never came
+{"trial":"LOST","resolved":true,"unverified":true,"emissions":2,"strings":[[0,"example.com",4],[0,"example.com",4]]}
+PROOF: RED
