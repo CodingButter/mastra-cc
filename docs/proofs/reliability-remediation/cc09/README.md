@@ -56,3 +56,7 @@ In this run, 4K table-like full captures at concurrency four reached 616 ms capt
 ## Recorded rhythm and retention in bytes
 
 [`load/README.md`](load/README.md) records a native typing and replacement-burst trace from one Mousepad desk, replays it through the consumer throttle, and sizes retention at the 256-pointer limit in GC-differenced heap bytes (about 117 KB). The first trace exposed a daemon backstop that silenced sustained change; it is repaired and pinned there.
+
+## A consumer that stops reading
+
+[`stalled-consumer/README.md`](stalled-consumer/README.md) is the decision (ADR-0106) on the unbounded retention `daemon-queue/` measured: past 256 KiB unsent toward one connection, its watches hold the newest pointer per element and deliver on drain. Retention flat at 262 KB across 8,000 events on the built daemon.

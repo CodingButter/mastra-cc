@@ -1932,5 +1932,35 @@
     "find": "        deliver({ id: root?.id ?? deriveId(\"generic\", anchor.busName, anchor.rootPath), role: root?.role ?? \"generic\", kind: \"changed\" });\n",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/signal-subscription.test.ts"
+  },
+  {
+    "name": "a-stopped-consumer-is-still-written-to",
+    "file": "daemon/src/server.ts",
+    "find": "    if (change.kind !== \"watchEnded\" && this.stalled(entry)) {",
+    "replace": "    if (false) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts"
+  },
+  {
+    "name": "the-drain-forgets-what-was-held",
+    "file": "daemon/src/server.ts",
+    "find": "      for (const [id, change] of held) this.write(subscriptionId, entry, { id, ...change });\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts"
+  },
+  {
+    "name": "the-watch-end-is-held-with-the-rest",
+    "file": "daemon/src/server.ts",
+    "find": "    if (change.kind !== \"watchEnded\" && this.stalled(entry)) {",
+    "replace": "    if (this.stalled(entry)) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts"
+  },
+  {
+    "name": "held-pointers-grow-without-bound",
+    "file": "daemon/src/server.ts",
+    "find": "      if (held.size > STALLED_CONSUMER_POINTERS) held.delete(held.keys().next().value as string);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts"
   }
 ]

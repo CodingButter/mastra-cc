@@ -18,6 +18,8 @@ export {
   type LaunchContext,
   type Pipe,
   serveConnection,
+  STALLED_CONSUMER_PENDING_BYTES,
+  STALLED_CONSUMER_POINTERS,
   startServer,
   startWebSocketServer,
   type WebSocketListener,
