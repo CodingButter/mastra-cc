@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createTool } from "@mastra/core/tools";
 import { METHOD_DESCRIPTORS, METHOD_NAMES, type CapturedImage, type MethodName } from "@mastra-cc/protocol-types";
 import { describeCapture } from "./capture-geometry.js";
@@ -5,7 +6,7 @@ import type { TransportClient } from "@mastra-cc/transport";
 import type { SignalProviderTarget } from "@mastra/core/signals";
 import { connect, type ConnectOptions } from "./index.js";
 import { DesktopSignals, type DesktopSignalsOptions } from "./signals.js";
-import { ObservationLedger } from "./observations.js";
+import { EFFECT_METHODS, ObservationLedger } from "./observations.js";
 
 export { isTransportConnectionError } from "@mastra-cc/transport";
 
@@ -104,6 +105,26 @@ export function desktopTools(client: TransportClient): DesktopTools {
  * a signal provider is a value import of `@mastra/core`, and the base entry has
  * to stay importable by a runtime that has no agent framework installed (C5).
  */
+/**
+ * How many tasks may WAIT for the desk before one is refused outright.
+ *
+ * A queue is a courtesy to a caller that arrived a moment early; it is not a
+ * scheduler. A deep queue turns "the desk is busy" into a request that lands
+ * minutes later against a desk the caller never observed - which is the
+ * interleaving this serialization exists to prevent, arriving slowly.
+ */
+export const WAITING_TASK_LIMIT = 8;
+
+/** Raised when the desk is held by another task and this caller cannot have it. */
+export class DeskBusyError extends Error {
+  readonly holder: string;
+  constructor(holder: string, reason: string) {
+    super(reason);
+    this.name = "DeskBusyError";
+    this.holder = holder;
+  }
+}
+
 export class MastraCC {
   readonly #options: ConnectOptions;
   // The dial is a PROMISE, not a client, and it is created once. Storing the
@@ -115,9 +136,89 @@ export class MastraCC {
   // cares about, fed by every pointer this connection receives regardless of
   // attribution, and stamped by every effect these tools dispatch.
   readonly #ledger = new ObservationLedger();
+  // CC-05, the half the daemon cannot see: the daemon enforces ONE DRIVER, and
+  // this connection is that driver. Two agent loops sharing this instance are
+  // two drivers as far as the desk is concerned, and the daemon has no way to
+  // tell them apart - one connection, one generation, two goals interleaving
+  // keystrokes into whatever window happens to be focused. So the lease lives
+  // here, where the two loops are distinguishable.
+  static readonly #inTask = new AsyncLocalStorage<number>();
+  #holder: { name: string; generation: number } | undefined;
+  #generation = 0;
+  #waiting: Array<() => void> = [];
 
   constructor(options: ConnectOptions = {}) {
     this.#options = options;
+  }
+
+  /**
+   * Hold the desk for one complete task, and release it when the task is done.
+   *
+   * Effects dispatched from outside the holding task are refused while it
+   * holds - not queued behind it, because an effect aimed from an observation
+   * taken before someone else's task ran is aimed at a desk that no longer
+   * exists. A caller that wants its turn asks for a turn, which is what this
+   * is. Observations are never refused: looking at a desk someone else is
+   * driving is how a second loop learns it should wait.
+   *
+   * A task that arrives while another holds WAITS, up to `WAITING_TASK_LIMIT`
+   * waiters; past that the desk is honestly busy and says so rather than
+   * accepting work it will run against an unrecognisable desk.
+   */
+  async withTask<T>(name: string, run: () => Promise<T>): Promise<T> {
+    if (this.#holder !== undefined && this.#waiting.length >= WAITING_TASK_LIMIT) {
+      throw new DeskBusyError(
+        this.#holder.name,
+        `this desk is held by the task ${JSON.stringify(this.#holder.name)} and ${this.#waiting.length} task(s) are already waiting - ` +
+          "the desk takes one task at a time, and a queue this deep would run this one against a desk it never observed",
+      );
+    }
+    if (this.#holder !== undefined) {
+      await new Promise<void>((resolve) => this.#waiting.push(resolve));
+    }
+    this.#generation += 1;
+    const holder = { name, generation: this.#generation };
+    this.#holder = holder;
+    try {
+      // The generation travels with the async context rather than being passed
+      // through every call: the tools an agent holds were built before the task
+      // existed, and a lease a caller has to remember to carry is a lease the
+      // second loop forgets to carry.
+      return await MastraCC.#inTask.run(holder.generation, run);
+    } finally {
+      // Release even when the task threw: a failed task that keeps the desk
+      // forever is a worse failure than the one it had.
+      this.#holder = undefined;
+      this.#waiting.shift()?.();
+    }
+  }
+
+  /** The task holding this desk, or undefined when no task holds it. */
+  get heldBy(): string | undefined {
+    return this.#holder?.name;
+  }
+
+  /**
+   * Refuse an effect dispatched from outside the task that holds this desk.
+   *
+   * Only effects (ADR-0108). An observation from a rival loop changes nothing
+   * and refusing it would hide the desk from the loop that most needs to see
+   * it is busy. A caller that holds no lease at all is not refused either -
+   * a single-loop consumer that never asked for a task is not competing with
+   * anyone, and serialization it did not ask for would be a breaking change
+   * dressed as a safety feature. The rule is narrow on purpose: an effect
+   * while ANOTHER task holds the desk.
+   */
+  #refuseRivalEffect(method: MethodName): void {
+    const holder = this.#holder;
+    if (holder === undefined || !EFFECT_METHODS.has(method)) return;
+    if (MastraCC.#inTask.getStore() === holder.generation) return;
+    throw new DeskBusyError(
+      holder.name,
+      `${method} was refused and nothing was sent: this desk is held by the task ${JSON.stringify(holder.name)}, ` +
+        "and two tasks taking turns at one desk is two drivers however few connections they share - " +
+        "wait for the desk with withTask, then observe it again before acting on it",
+    );
   }
 
   /**
@@ -173,6 +274,10 @@ export class MastraCC {
     const deferred: Record<string, unknown> = {};
     for (const method of METHOD_NAMES) {
       deferred[method] = async (params: unknown) => {
+        // Checked before the dial and before any veto: a task that does not
+        // hold the desk should not open a connection to find that out, and an
+        // effect refused here has been refused everywhere it could be sent.
+        this.#refuseRivalEffect(method);
         const client = await this.client();
         const call = client[method] as (p: unknown) => Promise<unknown>;
         // Synchronous and local to these tools: a caller may veto after the dial.

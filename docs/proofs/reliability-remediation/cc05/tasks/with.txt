@@ -1,0 +1,8 @@
+without the lease, the desk was asked to type: invoice-1 holiday-1 invoice-2 holiday-2 invoice-3 holiday-3
+   invoice contiguous: [33mfalse[39m  holiday contiguous: [33mfalse[39m
+with the lease, the desk was asked to type:    invoice-1 invoice-2 invoice-3 holiday-1 holiday-2 holiday-3
+   invoice contiguous: [33mtrue[39m  holiday contiguous: [33mtrue[39m
+   tasks refused as busy: [33m0[39m
+a rival loop's effect while a task held the desk: refused (invoice)
+   did it reach the desk: [33mfalse[39m
+PROOF: GREEN

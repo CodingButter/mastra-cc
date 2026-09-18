@@ -13,6 +13,7 @@ Two kinds of record live here, and the difference matters when you are deciding 
 | # | Decision | One-line reason |
 |---|---|---|
 | [0107](0107-a-press-aimed-from-a-picture-names-the-picture.md) | A press aimed from a picture names the picture | `clickElement` takes the picture's `capturedAt`; refused before sending if the element moved or was re-photographed since (schema 1.26.0) |
+| [0108](0108-one-desk-takes-one-task-at-a-time.md) | One desk takes one task at a time | The daemon's one-driver rule cannot see two agent loops sharing one connection, so the consumer holds the lease: `withTask` takes the desk for a complete task, a rival loop's effect is refused before anything is sent, observation is never refused, and waiting is bounded at eight |
 | [0106](0106-a-consumer-that-stops-reading-is-not-written-to.md) | A consumer that stops reading is not written to | Past 256 KiB unsent toward one connection its watches hold the newest pointer per element (64 max) until the pipe drains; never disconnected, never replayed, `watchEnded` never held |
 | [0105](0105-a-picture-says-which-part-of-the-element-it-is.md) | A picture says which part of the element it is | Clipped captures carry a normalized crop instead of being refused |
 | [0104](0104-measure-serial-queue-and-native-capture-costs.md) | Measure serial queue and native capture costs | Establish content-free phase costs before selecting latency budgets |

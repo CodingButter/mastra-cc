@@ -2040,5 +2040,37 @@
     "replace": "      if (false) {",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "the-rival-loop-takes-its-turn-anyway",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    if (holder === undefined || !EFFECT_METHODS.has(method)) return;",
+    "replace": "    if (holder === undefined || !EFFECT_METHODS.has(method)) return;\n    return;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/one-desk-takes-one-task-at-a-time.test.ts"
+  },
+  {
+    "name": "a-failed-task-keeps-the-desk",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "      this.#holder = undefined;\n      this.#waiting.shift()?.();",
+    "replace": "      this.#waiting.shift()?.();",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/one-desk-takes-one-task-at-a-time.test.ts"
+  },
+  {
+    "name": "the-waiting-line-has-no-end",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    if (this.#holder !== undefined && this.#waiting.length >= WAITING_TASK_LIMIT) {",
+    "replace": "    if (false) {",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/one-desk-takes-one-task-at-a-time.test.ts"
+  },
+  {
+    "name": "looking-at-a-busy-desk-is-refused-too",
+    "file": "packages/desktop/src/mastra.ts",
+    "find": "    if (holder === undefined || !EFFECT_METHODS.has(method)) return;",
+    "replace": "    if (holder === undefined) return;",
+    "cwd": "packages/desktop",
+    "testFile": "src/__tests__/one-desk-takes-one-task-at-a-time.test.ts"
   }
 ]
