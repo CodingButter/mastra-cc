@@ -26,6 +26,8 @@ answered by argument.
 
 [One task at a time on a shared connection](reliability-remediation/cc05/tasks/README.md) shows two agent loops on one connection interleaving their edits with every call valid and nothing refused, and the same two goals each holding the desk for their whole run once they ask for it.
 
+[A reply that never comes](reliability-remediation/cc02/unanswered/README.md) shows a request on a healthy socket waiting forever, and the same request under an opt-in budget reporting its outcome as unknown rather than failed so the caller does not resend an effect that may have landed.
+
 [Unknown event origin](reliability-remediation/cc06/README.md) records built-server RED/GREEN attribution and default-wake counters across three peers and two independent backends; raw pointers remain available to active consumers.
 
 [Partial capture safety](reliability-remediation/cc07/README.md) records real native pixel acquisition with scripted accessibility geometry: complete images remain available, four edge-clipped images are refused until crop provenance exists.
