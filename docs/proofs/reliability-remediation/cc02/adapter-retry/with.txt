@@ -1,0 +1,4 @@
+{"trial":"UNVERIFIED","resolved":true,"unverified":true,"emissions":1,"strings":[[0,"example.com",4]]}
+daemon: typeText failed in the backend: Error: org.freedesktop.DBus.Error.NoReply: the read-back never came
+{"trial":"LOST","resolved":false,"error":"the desktop could not be read by this session's backend","emissions":1,"strings":[[0,"example.com",4]]}
+PROOF: GREEN
