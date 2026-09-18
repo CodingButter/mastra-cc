@@ -497,6 +497,29 @@ describe("the gates in front of the pointer", () => {
     expect((answer.result as { element?: { name?: string } }).element?.name).toBe("Mastra logo");
   });
 
+  // MEASURED 2026-09-17 on the live CC-01 fixture: a press that named the
+  // picture it was aimed from landed on an element that had moved 120 pixels
+  // since. The backend freshness check (ADR-0107) was written and tested, but
+  // this function built the backend call field by field and never copied
+  // capturedAt, so the claim died one frame short of the only code that could
+  // check it. A dropped claim is worse than no claim: the caller is told the
+  // press was checked against its picture when nothing checked anything.
+  it("carries the picture a press was aimed from through to the backend that can check it", async () => {
+    const clicked: unknown[] = [];
+    const answer = await click({ id: "el-1", capturedAt: 1712000000123 }, ARMED, backendThat({ clicked }));
+    expect(refusalIn(answer)).toBe("");
+    expect(clicked).toEqual([{ id: "el-1", button: "left", count: 1, x: 0.5, y: 0.5, capturedAt: 1712000000123 }]);
+  });
+
+  it("refuses a picture named by something that is not a finite time, rather than pressing unchecked", async () => {
+    for (const capturedAt of ["1712000000123", Number.NaN, Number.POSITIVE_INFINITY, null]) {
+      const clicked: unknown[] = [];
+      const answer = await click({ id: "el-1", capturedAt }, ARMED, backendThat({ clicked }));
+      expect(refusalIn(answer)).toMatch(/names no picture this daemon could check/);
+      expect(clicked).toEqual([]);
+    }
+  });
+
   it("has no edge from a semantic verb into the pointer route", async () => {
     // ADR-0046 clause 3, the same assertion the raw-input verbs carry: an
     // activateElement that was refused for want of a published action must not

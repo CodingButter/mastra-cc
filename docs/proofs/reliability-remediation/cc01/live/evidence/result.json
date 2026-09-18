@@ -1,0 +1,166 @@
+{
+  "scope": "three GTK3 windows under Openbox on Xvfb; the shell task-bar button is a fixture stand-in; one desk, one toolkit",
+  "phases": [
+    {
+      "phase": "covered-capture",
+      "fieldAsObserved": {
+        "id": "el-fbbcc69b161d",
+        "role": "text",
+        "name": "field",
+        "states": [
+          "enabled",
+          "visible"
+        ],
+        "content": {
+          "kind": "text",
+          "value": "untouched"
+        },
+        "labelObservation": {
+          "kind": "available",
+          "labels": []
+        },
+        "compositeObservation": {
+          "kind": "unavailable",
+          "reason": "not-exposed"
+        },
+        "actions": [
+          {
+            "name": "activate",
+            "availability": "available",
+            "description": "Activates the entry",
+            "localizedName": "Activate"
+          }
+        ],
+        "operations": [
+          {
+            "operation": "setValue",
+            "availability": "not-exposed"
+          },
+          {
+            "operation": "setText",
+            "availability": "available"
+          },
+          {
+            "operation": "setCaret",
+            "availability": "available"
+          },
+          {
+            "operation": "reveal",
+            "availability": "available"
+          }
+        ],
+        "diagnostic": {
+          "mastra-cc/action-name-disagreement": "0:\"Activate\"!=\"activate\"",
+          "mastra-cc/visibility-route": "accessibility-bus"
+        }
+      },
+      "pixels": {
+        "width": 320,
+        "height": 34,
+        "share": 1,
+        "name": "cover-blue",
+        "rgbBucket": [
+          0,
+          0,
+          192
+        ]
+      },
+      "clipped": false,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "source": "visible-desktop",
+      "receiptsWritten": [
+        {
+          "scope": "observe",
+          "outcome": "read"
+        }
+      ],
+      "reading": "the picture is the Cover window, the contract reports no occlusion, and the receipt is a read, not an effect",
+      "ok": true
+    },
+    {
+      "phase": "keystroke-while-covered",
+      "outcome": "landed",
+      "refusal": null,
+      "fieldText": "'covered'",
+      "focusNote": null,
+      "pixelsAfter": {
+        "width": 320,
+        "height": 34,
+        "share": 0.846875,
+        "name": "entry-light",
+        "rgbBucket": [
+          224,
+          224,
+          224
+        ]
+      },
+      "reading": "the focus grab handed the keyboard to Target and the keys landed; pixelsAfter says whether that grab also raised the window",
+      "ok": true
+    },
+    {
+      "phase": "raised-by-task-bar-button",
+      "action": "click",
+      "pixels": {
+        "width": 320,
+        "height": 34,
+        "share": 0.846875,
+        "name": "entry-light",
+        "rgbBucket": [
+          224,
+          224,
+          224
+        ]
+      },
+      "focusNote": null,
+      "reading": "after the permitted route and a fresh observation, the picture is the entry itself",
+      "ok": true
+    },
+    {
+      "phase": "keystroke-after-raise",
+      "fieldText": "'raised'",
+      "focusNote": null,
+      "pixelsAfter": {
+        "width": 320,
+        "height": 34,
+        "share": 0.8501838235294118,
+        "name": "entry-light",
+        "rgbBucket": [
+          224,
+          224,
+          224
+        ]
+      },
+      "reading": "the key lands; pixelsAfter records whether focus restoration re-covered Target",
+      "ok": true
+    },
+    {
+      "phase": "press-from-old-picture-after-move",
+      "refusal": "the picture taken at 1789698659909 was cropped from 320x34 at (141,182) but the element now sits at 320x34 at (261,182) - the desk has moved under the picture; look again and aim again. Nothing was sent",
+      "fieldText": "'raised'",
+      "reading": "the element moved after the picture; the press is refused, nothing sent",
+      "ok": true
+    },
+    {
+      "phase": "covered-again",
+      "pixels": {
+        "width": 320,
+        "height": 34,
+        "share": 1,
+        "name": "cover-blue",
+        "rgbBucket": [
+          0,
+          0,
+          192
+        ]
+      },
+      "reading": "a later overlay is visible only by looking again; nothing in the earlier route promised otherwise",
+      "ok": true
+    }
+  ],
+  "receipts": 20
+}

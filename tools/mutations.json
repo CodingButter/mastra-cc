@@ -2024,5 +2024,21 @@
     "replace": "    if (was.width !== fresh.width || was.height !== fresh.height) {",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-press-aimed-from-an-old-picture.test.ts"
+  },
+  {
+    "name": "the-press-forgets-the-picture-it-was-aimed-from",
+    "file": "daemon/src/server.ts",
+    "find": "      return backend.clickElement({ id, button, count, x, y, capturedAt });",
+    "replace": "      return backend.clickElement({ id, button, count, x, y });",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
+  },
+  {
+    "name": "a-picture-named-by-nonsense-is-pressed-anyway",
+    "file": "daemon/src/server.ts",
+    "find": "      if (capturedAt !== undefined && (typeof capturedAt !== \"number\" || !Number.isFinite(capturedAt))) {",
+    "replace": "      if (false) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
   }
 ]
