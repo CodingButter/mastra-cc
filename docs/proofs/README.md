@@ -24,6 +24,8 @@ answered by argument.
 
 [Connection-bound desktop driver](reliability-remediation/cc05/README.md) records real Unix/WebSocket peer exclusion against a scripted effect sink; human takeover and task-level serialization remain follow-up.
 
+[One task at a time on a shared connection](reliability-remediation/cc05/tasks/README.md) shows two agent loops on one connection interleaving their edits with every call valid and nothing refused, and the same two goals each holding the desk for their whole run once they ask for it.
+
 [Unknown event origin](reliability-remediation/cc06/README.md) records built-server RED/GREEN attribution and default-wake counters across three peers and two independent backends; raw pointers remain available to active consumers.
 
 [Partial capture safety](reliability-remediation/cc07/README.md) records real native pixel acquisition with scripted accessibility geometry: complete images remain available, four edge-clipped images are refused until crop provenance exists.
