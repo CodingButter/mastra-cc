@@ -2,8 +2,17 @@
 
 Companion to [`AUDIT.md`](AUDIT.md). Each row is a plan sub-requirement that is
 not closed by a retained proof. Disposition is one of **human-only** (blocked on
-a person) or **autonomous** (could be done without one; not yet done). Nothing
-in this file is claimed as implemented.
+a person), **autonomous** (could be done without one; not yet done), **closed**
+(a retained proof now covers it), or a **scope boundary** (decided against, with
+the evidence behind the decision). Nothing in this file is claimed as
+implemented.
+
+As of 17 September 2026 no autonomous row remains. What is left is a person's
+act (approving a batch, revoking a grant, typing on a real desk with an input
+method), a host credential this machine does not have, one measured defect that
+cannot be corrected honestly from inside the daemon without a design decision
+(capture under display scaling), and one deliberate scope boundary (no cancel
+verb on the wire, ADR-0110).
 
 | Item | Sub-requirement | Disposition | Why |
 | --- | --- | --- | --- |
@@ -18,7 +27,6 @@ in this file is claimed as implemented.
 | CC-05 | Explicit human revoke / resume and takeover checkpoints | human-only | The revoke is a human act; needs a person to exercise. |
 | CC-05 | Complete-task serialization on a shared connection | closed Sep 17 | `withTask` holds the desk for one complete task: a rival loop's effect is refused before anything is sent, observation is never refused, waiting is bounded at eight, and the desk is released even when the task throws. Two loops on one connection interleave without it and do not with it (`cc05/tasks/`, ADR-0108). |
 | CC-06 | Transfer/takeover across one task's lifetime | closed Sep 17 | Daemon-level test: A's watch closes on disconnect, B's watch answered after A's effect settles, B's own effect narrated unattributed. Revocation is a restart by construction (`cc06/README.md`). |
-| CC-07 | Fractional display scaling on real pixels | autonomous | Crop provenance (ADR-0105) and stale-picture refusal (ADR-0107, `cc07/freshness/README.md`) landed. Remaining: a real fractional-scale display fixture; content change inside an unmoved rectangle is read-back's to catch, by design. |
 | CC-07 | Capture under display scaling | **measured; blocked on a design decision** | Two native runs, same fixture, differing only in scale (`cc07/scaling/`). Unscaled: 580x120, one colour, 100% of the picture is the element, asserted across a layout change. At `GDK_SCALE=2`: 391x120, two colours, **49% of the picture is window background** - the accessibility rectangle is in logical units while the grab is in device pixels. Not fixed, because it cannot be corrected honestly from inside the daemon: the tree carries no scale factor and no logical-screen size to compare the grabbed root against, and the scaled rectangle is fully in-bounds so no bounds check sees it. Both candidate fixes are design decisions - cross-check a toplevel's geometry against the X server, or have the desk declare its scale at the protocol boundary. Wayland per-output fractional scaling is not reachable on this harness at all. |
 | CC-08 | Live-induced degraded ancestry (a hung or unreadable ancestor on a real bus) | closed Sep 17 | Induced natively by detaching a live widget from its parent: the change arrives from an element with no ancestry to climb, and the watch answers with a root-level nudge rather than silence or a false location claim (`cc08/degraded-live/`). |
 | CC-09 | Daemon-side retained-queue byte sizing (subscription book buffer, watch state) | closed Sep 17 | Measured in `cc09/daemon-queue/` (socket buffer, ~124 B/event) and bounded by ADR-0106 (`cc09/stalled-consumer/`). Per-watch state beyond the socket is the 256-pointer initialization buffer and, while stalled, up to 64 held pointers. |
