@@ -2000,5 +2000,29 @@
     "replace": "        try { return await call.call(client, input ?? {}); } catch { return await call.call(client, input ?? {}); }\n",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/an-uncertain-keystroke-is-never-sent-twice.test.ts"
+  },
+  {
+    "name": "a-press-ignores-the-picture-it-names",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (params.capturedAt !== undefined) this.refuseStalePicture(params.id, params.capturedAt, rectangle);",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-aimed-from-an-old-picture.test.ts"
+  },
+  {
+    "name": "an-older-picture-passes-as-the-latest",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (picture.capturedAt !== capturedAt) {",
+    "replace": "    if (picture.capturedAt < capturedAt) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-aimed-from-an-old-picture.test.ts"
+  },
+  {
+    "name": "a-moved-element-still-matches-its-picture",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    if (was.x !== fresh.x || was.y !== fresh.y || was.width !== fresh.width || was.height !== fresh.height) {",
+    "replace": "    if (was.width !== fresh.width || was.height !== fresh.height) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-press-aimed-from-an-old-picture.test.ts"
   }
 ]

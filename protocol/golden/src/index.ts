@@ -1,8 +1,8 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.25.0
+// Mastra CC protocol v1.26.0
 
-export const PROTOCOL_VERSION = "1.25.0";
-export const SCHEMA_DIGEST = "6c4016bde9fa921cfc84ab64af2ba741a4208f2c238eff39584c7e08bea77a23";
+export const PROTOCOL_VERSION = "1.26.0";
+export const SCHEMA_DIGEST = "ee9919e49bd6190f8531174f29f6d92b3831d3a4063b7d957ea1cf41246f38e3";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
@@ -640,6 +640,8 @@ export interface ClickElementParams {
   x?: number;
   /** Where inside the element to press, vertically, as a fraction of its own height from its top edge. Defaults to 0.5, the centre. Refused outside 0 through 1 for the same reason. */
   y?: number;
+  /** The capturedAt of the picture this press was aimed from, when it was aimed from one. A fraction chosen by looking at a picture is only as good as the picture: if the element has been re-photographed since, or its rectangle on the desk is no longer the one the picture was cropped from, the press is refused before anything is sent and says which of those it was - look again and aim again. Omitted, no picture is claimed and the press goes to the freshly read rectangle as before (ADR-0107). A time this daemon never answered for this element is refused too, because a claim it cannot check is not a claim. */
+  capturedAt?: number;
 }
 
 export interface ClickElementResult {
@@ -1170,6 +1172,10 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
         },
         "y": {
           "description": "Where inside the element to press, vertically, as a fraction of its own height from its top edge. Defaults to 0.5, the centre. Refused outside 0 through 1 for the same reason.",
+          "type": "number"
+        },
+        "capturedAt": {
+          "description": "The capturedAt of the picture this press was aimed from, when it was aimed from one. A fraction chosen by looking at a picture is only as good as the picture: if the element has been re-photographed since, or its rectangle on the desk is no longer the one the picture was cropped from, the press is refused before anything is sent and says which of those it was - look again and aim again. Omitted, no picture is claimed and the press goes to the freshly read rectangle as before (ADR-0107). A time this daemon never answered for this element is refused too, because a claim it cannot check is not a claim.",
           "type": "number"
         }
       },

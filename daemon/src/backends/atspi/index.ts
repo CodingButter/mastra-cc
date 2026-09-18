@@ -200,6 +200,11 @@ export class AtspiBackend implements Backend {
   private readonly byNative = new Map<string, { id: string; role: SemanticElement["role"] }>();
   // Live watches by subscription id. The channel is what feeds them.
   private readonly watches = new Map<string, ChannelWatch>();
+  // The latest picture answered for each element: when it was taken and the
+  // desk rectangle it was cropped from. A press that names a capturedAt is
+  // checked against this before anything is sent (ADR-0107). Bounded by the
+  // answered map - one entry per element, latest picture only.
+  private readonly pictured = new Map<string, { capturedAt: number; rectangle: { x: number; y: number; width: number; height: number } }>();
 
   // The walk budgets. Only a test may pass its own: the seam exists so the
   // UNCHANGED comparisons below can be exercised at small numbers, because a
@@ -1059,6 +1064,39 @@ export class AtspiBackend implements Backend {
     throw new WriteNotObservedError(sentence);
   }
 
+  // A press aimed from a picture is only as good as the picture. The caller
+  // names the picture by its capturedAt; this checks it is the LATEST picture
+  // this daemon answered for the element, and that the element still sits in
+  // the rectangle that picture was cropped from. Each refusal names which of
+  // the two it was, so the caller knows to look again rather than aim again
+  // (ADR-0107). A capturedAt this daemon never answered is refused as well: a
+  // claim it cannot check is not a claim. Nothing is sent on any of these.
+  private refuseStalePicture(id: string, capturedAt: number, fresh: { x: number; y: number; width: number; height: number }): void {
+    if (!Number.isFinite(capturedAt)) {
+      throw new UnperformableElementError("capturedAt must be a finite number - nothing was sent");
+    }
+    const picture = this.pictured.get(id);
+    if (picture === undefined) {
+      throw new PointerBlockedError(
+        `no picture of element "${id}" was answered by this daemon, so a press aimed from one cannot be checked - nothing was sent`,
+      );
+    }
+    if (picture.capturedAt !== capturedAt) {
+      throw new PointerBlockedError(
+        `the picture taken at ${capturedAt} is not the latest picture of this element (taken at ${picture.capturedAt}) - ` +
+          `it has been re-photographed since; look at the newer picture and aim from that. Nothing was sent`,
+      );
+    }
+    const was = picture.rectangle;
+    if (was.x !== fresh.x || was.y !== fresh.y || was.width !== fresh.width || was.height !== fresh.height) {
+      throw new PointerBlockedError(
+        `the picture taken at ${capturedAt} was cropped from ${was.width}x${was.height} at (${was.x},${was.y}) but the element now ` +
+          `sits at ${fresh.width}x${fresh.height} at (${fresh.x},${fresh.y}) - the desk has moved under the picture; ` +
+          `look again and aim again. Nothing was sent`,
+      );
+    }
+  }
+
   // Aim from fresh semantic geometry; read-back is observation, not recipient proof.
   async clickElement(params: ClickElementParams): Promise<ClickElementResult> {
     if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.clickElement(params));
@@ -1104,6 +1142,7 @@ export class AtspiBackend implements Backend {
     if (rectangle.x < 0 || rectangle.y < 0) {
       throw new PointerBlockedError("this element's rectangle sits off the screen - nothing was sent");
     }
+    if (params.capturedAt !== undefined) this.refuseStalePicture(params.id, params.capturedAt, rectangle);
     // Fractions at 1 select the last pixel INSIDE the rectangle, not a neighbour.
     const point = {
       x: Math.min(Math.round(rectangle.x + rectangle.width * fractionX), Math.ceil(rectangle.x + rectangle.width) - 1),
@@ -1375,7 +1414,13 @@ export class AtspiBackend implements Backend {
       );
     }
     try {
-      return { image: await capture(rectangle) };
+      const image = await capture(rectangle);
+      // Remember what the picture was cropped from, so a press aimed from it
+      // can be checked against the desk at press time (ADR-0107). One entry per
+      // answered element: a newer picture replaces the older one, which is the
+      // point - the older one is then stale.
+      this.pictured.set(params.id, { capturedAt: image.capturedAt, rectangle });
+      return { image };
     } catch (failure) {
       // A grab that failed is a fact about this desk, not about the element:
       // said plainly so a caller stops asking rather than retrying forever.
