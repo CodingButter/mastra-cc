@@ -328,3 +328,55 @@ async function waitFor(probe, budgetMs = 10000) {
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
 }
+
+describe("one runner per tree", () => {
+  // Measured 2026-09-17, three times: a second runner (or a build, or a suite)
+  // in the tree a sweep is mutating reads the sweep's bytes and reports things
+  // that are not true - a survivor that was a restore, a stale table that was a
+  // mutation. The tree is claimed for the run; a live claimant is refused by pid.
+  it("refuses to start while another runner holds the tree, naming its pid", async () => {
+    // The fake vitest sleeps, so the first runner is provably still holding the
+    // tree when the second one asks and when the signal arrives. The signal goes
+    // to the process GROUP, as a terminal Ctrl-C does: spawnSync blocks the
+    // runner's handler until vitest exits, so the observable interruption is
+    // the child dying of the signal and the loop stopping on `run.signal`.
+    // (A signal to the runner alone is not seen until the table has finished,
+    // by which time the run has already ended on its own.)
+    const { root, sourcePath, source } = scratchTree({
+      vitest: "#!/bin/sh\nsleep 30\n",
+      source: "keep this line\nGUARDED_LINE\nand this one\n",
+    });
+    const first = spawn(process.execPath, [runner, "--root", root], { stdio: ["ignore", "pipe", "pipe"], detached: true });
+    await waitFor(() => (readFileSync(sourcePath, "utf8") !== source ? true : null));
+    expect(existsSync(join(root, ".mutations.lock", "pid"))).toBe(true);
+
+    const second = runRunner(root);
+    expect(second.status).toBe(1);
+    expect(second.stderr).toContain(`pid ${first.pid}`);
+    expect(second.stderr).toContain("two runners in one tree");
+
+    const exit = new Promise((resolve) => first.on("exit", (code) => resolve(code)));
+    process.kill(-first.pid, "SIGTERM");
+    // Stopped on the interrupted run and reported no result for it.
+    expect(await exit).toBe(1);
+    expect(readFileSync(sourcePath, "utf8")).toBe(source);
+    // The interrupted runner let go of the tree on its way out.
+    expect(existsSync(join(root, ".mutations.lock"))).toBe(false);
+  }, 20000);
+
+  it("takes over a lock whose holder is dead, and releases its own on the normal path", () => {
+    const { root } = scratchTree({
+      vitest: fakeVitest({ numTotalTests: 3, numFailedTests: 1 }),
+      source: "keep this line\nGUARDED_LINE\nand this one\n",
+    });
+    // A pid no process holds: a runner that was SIGKILLed left this behind.
+    const dead = spawnSync(process.execPath, ["-e", "0"]);
+    mkdirSync(join(root, ".mutations.lock"));
+    writeFileSync(join(root, ".mutations.lock", "pid"), String(dead.pid));
+
+    const r = runRunner(root);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("none survived");
+    expect(existsSync(join(root, ".mutations.lock"))).toBe(false);
+  });
+});

@@ -2024,5 +2024,21 @@
     "replace": "    if (was.width !== fresh.width || was.height !== fresh.height) {",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-press-aimed-from-an-old-picture.test.ts"
+  },
+  {
+    "name": "the-runner-races-a-live-runner",
+    "file": "tools/mutations.mjs",
+    "find": "      if (Number.isInteger(holder) && holder !== process.pid && alive(holder)) {",
+    "replace": "      if (false) {",
+    "cwd": "tools",
+    "testFile": "__tests__/mutations-runner.test.mjs"
+  },
+  {
+    "name": "the-finished-runner-keeps-the-tree",
+    "file": "tools/mutations.mjs",
+    "find": "process.on(\"exit\", releaseTree);\n",
+    "replace": "",
+    "cwd": "tools",
+    "testFile": "__tests__/mutations-runner.test.mjs"
   }
 ]
