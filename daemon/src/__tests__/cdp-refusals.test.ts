@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { openAuditLog, useAuditLog, type AuditEntry } from "../audit.js";
 import type { Channel, Exchange } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
-import { CdpDeadlineError } from "../backends/cdp/channel.js";
+import { CdpDeadlineError, DialogBlockingError } from "../backends/cdp/channel.js";
 import { BACKEND_UNREADABLE_REFUSAL, handleRequest, type LaunchContext } from "../server.js";
 import { OwnershipTable } from "../launch/table.js";
 import { DEFANGED_CATALOG } from "./support/defanged-catalog.js";
@@ -91,7 +91,7 @@ afterEach(() => {
   temporary = undefined;
 });
 
-async function silentOn(verb: "activateElement" | "queryElements", error: CdpDeadlineError) {
+async function silentOn(verb: "activateElement" | "queryElements", error: Error) {
   const backend = new AtspiBackend(stage(), "all");
   const { elements } = await backend.queryElements({});
   const id = elements.find((element) => element.role === "button")!.id;
@@ -145,6 +145,57 @@ describe("a read the browser never answered", () => {
     expect(parsed.result?.refusal).not.toBe(BACKEND_UNREADABLE_REFUSAL);
     expect(line).not.toContain("refusalClass");
     expect(line).not.toContain(BACKEND_UNREADABLE_REFUSAL);
+    expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
+  });
+});
+
+describe("a page held by a native dialog", () => {
+  const dialog = (effectSent: boolean) =>
+    new DialogBlockingError({ type: "alert", message: "hi there", method: "Runtime.callFunctionOn", effectSent });
+
+  it("refuses an effect naming the dialog, and says UNKNOWN only when the effect was sent", async () => {
+    for (const sent of [true, false]) {
+      const path = auditing();
+      const { backend, id } = await silentOn("activateElement", dialog(sent));
+      const { line, parsed } = await wire("activateElement", { id, action: "click" }, backend);
+      expect(parsed.result?.refusal).toContain('alert dialog ("hi there")');
+      expect(parsed.result?.refusal?.includes("UNKNOWN")).toBe(sent);
+      expect(line).not.toContain("refusalClass");
+      expect(entries(path).map((e) => e.outcome)).toEqual(["refused:BlockedByDialog"]);
+    }
+  });
+
+  it("refuses a read at handler level, not with the backend-unreadable backstop", async () => {
+    const path = auditing();
+    const { backend } = await silentOn("queryElements", dialog(true));
+    const { line, parsed } = await wire("queryElements", {}, backend);
+    expect(parsed.refusal).toBeUndefined();
+    expect(parsed.result?.refusal).toContain("until a person answers it");
+    expect(parsed.result?.refusal).not.toContain("UNKNOWN");
+    expect(line).not.toContain("refusalClass");
+    expect(line).not.toContain(BACKEND_UNREADABLE_REFUSAL);
+    expect(entries(path).map((e) => e.outcome)).toEqual(["refused:BlockedByDialog"]);
+  });
+});
+
+describe("a page that did not answer the attach", () => {
+  it("says it may be a dialog or busy, and that nothing changed", async () => {
+    auditing();
+    const { backend } = await silentOn("queryElements", new CdpDeadlineError({ method: "Page.enable", effectSent: false }));
+    const { parsed } = await wire("queryElements", {}, backend);
+    expect(parsed.result?.refusal).toContain("may be showing a dialog or be busy");
+    expect(parsed.result?.refusal).toContain("nothing was changed");
+  });
+});
+
+describe("a page that does not answer when attached", () => {
+  it("says it may be a dialog or a busy page, and that nothing was changed", async () => {
+    const path = auditing();
+    const { backend } = await silentOn("queryElements", new CdpDeadlineError({ method: "Page.enable", effectSent: false }));
+    const { line, parsed } = await wire("queryElements", {}, backend);
+    expect(parsed.result?.refusal).toContain("may be showing a dialog or be busy");
+    expect(parsed.result?.refusal).toContain("nothing was changed");
+    expect(line).not.toContain("refusalClass");
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
   });
 });

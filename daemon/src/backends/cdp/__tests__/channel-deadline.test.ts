@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CDP_CALL_DEADLINE_MS, CdpDeadlineError, CdpUnreachableError, liveCdpChannel } from "../channel.js";
+import {
+  CDP_CALL_DEADLINE_MS,
+  CDP_INIT_DEADLINE_MS,
+  CdpDeadlineError,
+  CdpUnreachableError,
+  DialogBlockingError,
+  liveCdpChannel,
+} from "../channel.js";
 
 // The live channel's waits, driven by fake timers and an in-memory socket.
 // Nothing here dials a browser: the socket is a stand-in that records what
@@ -11,11 +18,16 @@ type Listener = (event: { data?: unknown }) => void;
 class FakeSocket {
   static last: FakeSocket | undefined;
   static opens = true;
+  // Initialisation the fake answers by itself unless a test withholds it.
+  static answers = new Set(["Page.enable", "Page.getFrameTree"]);
+  static all: FakeSocket[] = [];
+  readonly frames: Array<{ id: number; method: string }> = [];
   readonly sent: Array<{ id: number; method: string }> = [];
   readonly listeners = new Map<string, Set<Listener>>();
   closed = false;
   constructor(readonly url: string) {
     FakeSocket.last = this;
+    FakeSocket.all.push(this);
     if (FakeSocket.opens) queueMicrotask(() => this.emit("open", {}));
   }
   addEventListener(type: string, listener: Listener) {
@@ -27,7 +39,19 @@ class FakeSocket {
     this.listeners.get(type)?.delete(listener);
   }
   send(data: string) {
-    this.sent.push(JSON.parse(data));
+    const frame = JSON.parse(data) as { id: number; method: string };
+    this.frames.push(frame);
+    if (frame.method === "Page.enable" || frame.method === "Page.getFrameTree") {
+      if (FakeSocket.answers.has(frame.method)) {
+        const result = frame.method === "Page.getFrameTree" ? { frameTree: { frame: { id: "F-main" } } } : {};
+        queueMicrotask(() => this.reply(frame.id, result));
+      }
+      return;
+    }
+    this.sent.push(frame);
+  }
+  event(method: string, params: Record<string, unknown> = {}) {
+    this.emit("message", { data: JSON.stringify({ method, params }) });
   }
   close() {
     this.closed = true;
@@ -68,6 +92,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   FakeSocket.last = undefined;
   FakeSocket.opens = true;
+  FakeSocket.answers = new Set(["Page.enable", "Page.getFrameTree"]);
+  FakeSocket.all = [];
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -172,5 +198,113 @@ describe("a watch", () => {
     expect(error).toBeInstanceOf(CdpDeadlineError);
     expect(error).toMatchObject({ method: "Runtime.enable" });
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe("attaching to a target", () => {
+  for (const stalled of ["Page.enable", "Page.getFrameTree"]) {
+    it(`refuses at the attach deadline when ${stalled} never answers, and drops the socket`, async () => {
+      FakeSocket.answers.delete(stalled);
+      const c = await listed();
+      const first = c.exchange(call()).catch((e: unknown) => e);
+      const queued = c.exchange(call("DOM.enable")).catch((e: unknown) => e);
+      await vi.advanceTimersByTimeAsync(CDP_INIT_DEADLINE_MS);
+      for (const answer of [first, queued]) {
+        const error = await answer;
+        expect(error).toBeInstanceOf(CdpDeadlineError);
+        expect(error).toMatchObject({ method: stalled, effectSent: false });
+      }
+      const socket = FakeSocket.last!;
+      expect(socket.sent).toHaveLength(0);
+      expect(socket.closed).toBe(true);
+      expect(c.pendingCalls()).toBe(0);
+      expect(vi.getTimerCount()).toBe(0);
+      // Evicted: the next call attaches afresh.
+      FakeSocket.answers.add(stalled);
+      const again = c.exchange(call()).catch((e: unknown) => e);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(FakeSocket.all).toHaveLength(2);
+      FakeSocket.last!.reply(FakeSocket.last!.sent[0]!.id, { ok: 1 });
+      expect(await again).toEqual({ result: { ok: 1 } });
+    });
+  }
+
+  it("enables Page before anything else is sent", async () => {
+    const c = await listed();
+    const answer = c.exchange(call());
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = FakeSocket.last!;
+    expect(socket.frames.map((f) => f.method)).toEqual(["Page.enable", "Page.getFrameTree", "DOM.getDocument"]);
+    socket.reply(socket.sent[0]!.id);
+    await answer;
+  });
+});
+
+describe("a native dialog on the page", () => {
+  it("rejects every pending call at once with DialogBlockingError, leaving no timers", async () => {
+    const c = await listed();
+    const answers = [call(), call("DOM.enable"), call("Runtime.evaluate")].map((e) => c.exchange(e).catch((x: unknown) => x));
+    await vi.advanceTimersByTimeAsync(0);
+    FakeSocket.last!.event("Page.javascriptDialogOpening", { type: "alert", message: "hi there" });
+    for (const answer of answers) {
+      const error = await answer;
+      expect(error).toBeInstanceOf(DialogBlockingError);
+      expect(error).toMatchObject({ type: "alert", dialogMessage: "hi there", effectSent: true });
+    }
+    expect(c.pendingCalls()).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("is heard on a socket no watch listens to, refuses new calls unsent, and lifts when it closes", async () => {
+    const c = await listed();
+    const first = c.exchange(call());
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = FakeSocket.last!;
+    socket.reply(socket.sent[0]!.id);
+    await first;
+    socket.event("Page.javascriptDialogOpening", { type: "confirm", message: "sure?" });
+    const refused = await c.exchange(call("DOM.enable")).catch((e: unknown) => e);
+    expect(refused).toBeInstanceOf(DialogBlockingError);
+    expect(refused).toMatchObject({ type: "confirm", method: "DOM.enable", effectSent: false });
+    expect(socket.sent).toHaveLength(1);
+    socket.event("Page.javascriptDialogClosed", { result: true });
+    const next = c.exchange(call("DOM.enable"));
+    await vi.advanceTimersByTimeAsync(0);
+    socket.reply(socket.sent[1]!.id, { ok: 1 });
+    expect(await next).toEqual({ result: { ok: 1 } });
+  });
+
+  it("opening during attach refuses as a dialog, keeps the socket, and re-attaches after it closes", async () => {
+    FakeSocket.answers.delete("Page.enable");
+    const c = await listed();
+    const answer = c.exchange(call()).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = FakeSocket.last!;
+    socket.event("Page.javascriptDialogOpening", { type: "alert", message: "x" });
+    const error = await answer;
+    expect(error).toBeInstanceOf(DialogBlockingError);
+    expect(error).toMatchObject({ effectSent: false });
+    expect(socket.closed).toBe(false);
+    FakeSocket.answers.add("Page.enable");
+    socket.event("Page.javascriptDialogClosed");
+    const next = c.exchange(call());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(FakeSocket.all).toHaveLength(1);
+    expect(socket.frames.filter((f) => f.method === "Page.enable")).toHaveLength(2);
+    socket.reply(socket.sent[0]!.id, { ok: 1 });
+    expect(await next).toEqual({ result: { ok: 1 } });
+  });
+
+  it("is never answered by the daemon", async () => {
+    const c = await listed();
+    const answer = c.exchange(call()).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(0);
+    FakeSocket.last!.event("Page.javascriptDialogOpening", { type: "alert", message: "x" });
+    await answer;
+    await c.exchange(call()).catch(() => undefined);
+    await vi.advanceTimersByTimeAsync(CDP_CALL_DEADLINE_MS);
+    for (const socket of FakeSocket.all) {
+      expect(socket.frames.some((f) => f.method.includes("handleJavaScriptDialog"))).toBe(false);
+    }
   });
 });

@@ -214,17 +214,20 @@ const scenarios = {
   async "dialog-after"(browser) {
     const daemon = await startDaemon(browser);
     try {
-      await pageTarget("Alert");
-      await sleep(500);
+      await pageTarget("AlertLater");
       const [a, b, c] = [await client(daemon.socket), await client(daemon.socket), await client(daemon.socket)];
-      const first = a.request("queryElements", { application: browser, window: "Alert" });
+      // Attached and answering before the page opens its alert at 2 s.
+      const before = await a.request("queryElements", { application: browser, window: "AlertLater" });
+      await sleep(2500);
+      const first = a.request("queryElements", { application: browser, window: "AlertLater" });
       await sleep(1000);
-      const [second, third] = await Promise.all([b.request("queryElements", { application: browser, window: "Alert" }), c.request("listApplications")]);
+      const [second, third] = await Promise.all([b.request("queryElements", { application: browser, window: "AlertLater" }), c.request("listApplications")]);
       const firstAnswer = await Promise.race([first, sleep(1).then(() => ({ pending: true }))]);
-      const green = !second.pending && second.ms <= 2000 && /dialog/.test(refusal(second) ?? "") && !third.pending && third.ms <= 2000;
+      const attachedFirst = !before.pending && refusal(before) === undefined;
+      const green = attachedFirst && !second.pending && second.ms <= 2000 && /showing a alert dialog/.test(refusal(second) ?? "") && !third.pending && third.ms <= 2000;
       return [
         green,
-        `A.queryElements=${firstAnswer.pending ? "PENDING" : "answered"} B.queryElements=${second.pending ? ">=30000(cap)" : second.ms}ms C.listApplications=${third.pending ? ">=30000(cap)" : third.ms}ms B.answer=${text(second)}`,
+        `before_alert=${attachedFirst ? "answered" : text(before)} A.queryElements=${firstAnswer.pending ? "PENDING" : "answered"} B.queryElements=${second.pending ? ">=30000(cap)" : second.ms}ms C.listApplications=${third.pending ? ">=30000(cap)" : third.ms}ms B.answer=${text(second)}`,
       ];
     } finally {
       daemon.stop();
@@ -299,7 +302,7 @@ const scenarios = {
   },
 };
 
-const pages = { deadline: "spin.html", "dialog-after": "alert.html", "dialog-before": "alert.html", isolation: "probe.html" };
+const pages = { deadline: "spin.html", "dialog-after": "alert-later.html", "dialog-before": "alert.html", isolation: "probe.html" };
 const REACT = ["react-accept", "react-filter", "react-async-revert", "react-number"];
 
 // ---- run ------------------------------------------------------------------

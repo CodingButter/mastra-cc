@@ -101,7 +101,7 @@ import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn
 import { OwnershipTable } from "./launch/table.js";
 import { driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
 import { CancelledAtBoundaryError, underCancellation } from "./cancellation.js";
-import { CdpDeadlineError } from "./backends/cdp/channel.js";
+import { CdpDeadlineError, DialogBlockingError } from "./backends/cdp/channel.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
 // then requests dispatched through the effect-class gate. Accessibility access
@@ -1643,6 +1643,9 @@ async function performEffect(
       if (error instanceof CdpDeadlineError) {
         return { refusal: deadlineRefusal(error, true), refusalClass: "DeadlineExceeded" };
       }
+      if (error instanceof DialogBlockingError) {
+        return { refusal: dialogRefusal(error, true), refusalClass: "BlockedByDialog" };
+      }
       if (
         error instanceof AttestationFailedError ||
         error instanceof UnperformableElementError ||
@@ -1679,10 +1682,25 @@ async function performEffect(
 // whether the request left this process: an unsent call changed nothing, a
 // sent effect has an outcome nobody observed.
 function deadlineRefusal(error: CdpDeadlineError, isEffect: boolean): string {
+  // Attaching is the one wait that cannot tell a dialog from a busy page: a
+  // page already holding a dialog never answers it and never reports it.
+  if (error.method === "Page.enable" || error.method === "Page.getFrameTree") {
+    return `the page did not answer when attached ("${error.method}") - it may be showing a dialog or be busy; nothing was changed by this call`;
+  }
   const base = `the browser did not answer "${error.method}" within 10s`;
   return isEffect && error.effectSent
     ? `${base} while an effect was in flight - its outcome is UNKNOWN; look before retrying`
     : `${base} - nothing was changed by this call`;
+}
+
+// A native dialog freezes the page until a person answers it; the daemon
+// never answers it for them.
+function dialogRefusal(error: DialogBlockingError, isEffect: boolean): string {
+  const shown = error.dialogMessage.length > 80 ? `${error.dialogMessage.slice(0, 80)}...` : error.dialogMessage;
+  const base = `the page is showing a ${error.type} dialog ("${shown}") - nothing can be read or done in it until a person answers it`;
+  return isEffect && error.effectSent
+    ? `${base}; the effect that was in flight has an UNKNOWN outcome - look before retrying`
+    : base;
 }
 
 // Identity, and the role only where the daemon actually answered one: a
@@ -2791,6 +2809,10 @@ export async function handleRequest(
     if (error instanceof CdpDeadlineError && entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: refused("DeadlineExceeded") });
       return { type: "response", id: request.id, result: { refusal: deadlineRefusal(error, false) } };
+    }
+    if (error instanceof DialogBlockingError && entry.effectClass === "observe") {
+      recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: refused("BlockedByDialog") });
+      return { type: "response", id: request.id, result: { refusal: dialogRefusal(error, false) } };
     }
     if (entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });

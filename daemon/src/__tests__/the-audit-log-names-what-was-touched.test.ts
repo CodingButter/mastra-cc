@@ -574,6 +574,7 @@ describe("the refusal vocabulary is closed", () => {
         "BackendUnreadable",
         "CouldNotStart",
         "DeadlineExceeded",
+      "BlockedByDialog",
         "DisabledByConfiguration",
         "EffectClassGate",
         "EffectUnsupportedError",

@@ -2172,7 +2172,7 @@
   {
     "name": "the-cdp-call-waits-forever",
     "file": "daemon/src/backends/cdp/channel.ts",
-    "find": "        timer: setTimeout(() => {\n          state.pending.delete(id);\n          reject(new CdpDeadlineError({ method, effectSent: call.sent }));\n        }, CDP_CALL_DEADLINE_MS),",
+    "find": "        timer: setTimeout(() => {\n          state.pending.delete(id);\n          reject(new CdpDeadlineError({ method, effectSent: call.sent }));\n        }, deadline),",
     "replace": "        timer: undefined as unknown as ReturnType<typeof setTimeout>,",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
@@ -2222,6 +2222,46 @@
     "file": "daemon/src/server.ts",
     "find": "return isEffect && error.effectSent",
     "replace": "return isEffect",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cdp-refusals.test.ts"
+  },
+  {
+    "name": "the-dialog-is-only-heard-by-watches",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "        if (message.method === \"Page.javascriptDialogOpening\") {",
+    "replace": "        if (message.method === \"Page.javascriptDialogOpening\" && eventListeners.get(targetId)?.size) {",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "a-dialog-leaves-calls-pending",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "          failAll(state, (call) => new DialogBlockingError({ ...state.dialog, method: call.method, effectSent: call.sent }));\n",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "the-page-answers-while-a-dialog-is-open",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "    if (state.dialog.open) {",
+    "replace": "    if (false) {",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "the-attach-waits-the-full-deadline",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "        await raw(state, \"Page.enable\", {}, CDP_INIT_DEADLINE_MS);",
+    "replace": "        await raw(state, \"Page.enable\", {}, CDP_CALL_DEADLINE_MS);",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "a-dialog-reads-as-unreadable",
+    "file": "daemon/src/server.ts",
+    "find": "    if (error instanceof DialogBlockingError && entry.effectClass === \"observe\") {",
+    "replace": "    if (false) {",
     "cwd": "daemon",
     "testFile": "src/__tests__/cdp-refusals.test.ts"
   }

@@ -82,6 +82,29 @@ export class CdpDeadlineError extends Error {
   }
 }
 
+// Attaching is bounded tighter than a call. A page already holding a dialog
+// when the daemon attaches never answers Page.enable and never reports the
+// dialog (measured on Chrome 151: nothing in 13s), so the attach itself is the
+// only signal - and a person waiting on the desk should hear it in under 2s.
+export const CDP_INIT_DEADLINE_MS = 1_500;
+
+// Thrown while a native dialog (alert/confirm/prompt/beforeunload) holds the
+// page: every call on that target is frozen until a person answers it. The
+// daemon never answers it for them.
+export class DialogBlockingError extends Error {
+  readonly type: string;
+  readonly dialogMessage: string;
+  readonly method: string;
+  readonly effectSent: boolean;
+  constructor(details: { type: string; message: string; method: string; effectSent: boolean }) {
+    super(`the page is showing a ${details.type} dialog`);
+    this.type = details.type;
+    this.dialogMessage = details.message;
+    this.method = details.method;
+    this.effectSent = details.effectSent;
+  }
+}
+
 // Thrown by the replay channel when asked for an exchange the tape never
 // recorded. Defined locally rather than importing the D-Bus channel's
 // UnrecordedExchangeError: the two transports must not be tied together by a
@@ -104,8 +127,11 @@ interface PendingCall {
 interface SocketState {
   readonly ws: WebSocket;
   readonly pending: Map<number, PendingCall>;
-  dialog: { open: boolean; type?: string; message?: string };
+  dialog: { open: boolean; type: string; message: string };
   ready: Promise<void>;
+  // Set when initialisation was stopped by a dialog: the close re-arms it.
+  initBlocked: boolean;
+  mainFrameId?: string;
 }
 
 export interface LiveCdpDeps {
@@ -156,12 +182,40 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
     }
   }
 
-  function failAll(state: SocketState, error: () => Error): void {
+  function failAll(state: SocketState, error: (call: PendingCall) => Error): void {
     for (const [id, call] of state.pending) {
       clearTimeout(call.timer);
       state.pending.delete(id);
-      call.reject(error());
+      call.reject(error(call));
     }
+  }
+
+  // The readiness gate: Page.enable (so dialogs are heard) then the frame
+  // tree, both under the attach deadline and neither waiting on ready itself.
+  // A dialog during init keeps the socket - its close event re-arms the gate;
+  // anything else drops the socket so the next call attaches afresh.
+  function arm(state: SocketState, drop: () => void): void {
+    state.initBlocked = false;
+    state.ready = (async () => {
+      try {
+        await raw(state, "Page.enable", {}, CDP_INIT_DEADLINE_MS);
+        const tree = (await raw(state, "Page.getFrameTree", {}, CDP_INIT_DEADLINE_MS)) as {
+          result?: { frameTree?: { frame?: { id?: string } } };
+        };
+        state.mainFrameId = tree.result?.frameTree?.frame?.id;
+      } catch (error) {
+        if (error instanceof DialogBlockingError) {
+          state.initBlocked = true;
+          throw new DialogBlockingError({ type: error.type, message: error.dialogMessage, method: error.method, effectSent: false });
+        }
+        drop();
+        if (error instanceof CdpDeadlineError) throw new CdpDeadlineError({ method: error.method, effectSent: false });
+        throw error;
+      }
+    })();
+    // Every caller awaits ready and receives its rejection; nobody owns it
+    // when no call is queued.
+    state.ready.catch(() => undefined);
   }
 
   function socketFor(targetId: string): Promise<SocketState> {
@@ -176,7 +230,13 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
     }
     const opened = new Promise<SocketState>((resolve, reject) => {
       const ws = new WebSocketImpl(url);
-      const state: SocketState = { ws, pending: new Map(), dialog: { open: false }, ready: Promise.resolve() };
+      const state: SocketState = {
+        ws,
+        pending: new Map(),
+        dialog: { open: false, type: "", message: "" },
+        ready: Promise.resolve(),
+        initBlocked: false,
+      };
       states.push(state);
       let isOpen = false;
       const evict = () => {
@@ -196,6 +256,14 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
         () => {
           clearTimeout(openTimer);
           isOpen = true;
+          arm(state, () => {
+            evict();
+            try {
+              ws.close();
+            } catch {
+              // best-effort
+            }
+          });
           resolve(state);
         },
         { once: true },
@@ -235,6 +303,15 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
           return;
         }
         if (message.method === undefined) return;
+        // Heard centrally, watched or not: a dialog freezes the whole target.
+        if (message.method === "Page.javascriptDialogOpening") {
+          const params = message.params ?? {};
+          state.dialog = { open: true, type: String(params.type ?? "alert"), message: String(params.message ?? "") };
+          failAll(state, (call) => new DialogBlockingError({ ...state.dialog, method: call.method, effectSent: call.sent }));
+        } else if (message.method === "Page.javascriptDialogClosed") {
+          state.dialog = { open: false, type: "", message: "" };
+          if (state.initBlocked) arm(state, () => evict());
+        }
         const listeners = eventListeners.get(targetId);
         if (listeners === undefined) return;
         for (const listener of listeners) listener(message.method, message.params ?? {});
@@ -248,6 +325,13 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
   // here, so all of them share the deadline.
   async function send(state: SocketState, method: string, params: unknown): Promise<unknown> {
     await state.ready;
+    if (state.dialog.open) {
+      throw new DialogBlockingError({ ...state.dialog, method, effectSent: false });
+    }
+    return raw(state, method, params, CDP_CALL_DEADLINE_MS);
+  }
+
+  function raw(state: SocketState, method: string, params: unknown, deadline: number): Promise<unknown> {
     const id = nextId++;
     return new Promise((resolve, reject) => {
       const call: PendingCall = {
@@ -256,7 +340,7 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
         timer: setTimeout(() => {
           state.pending.delete(id);
           reject(new CdpDeadlineError({ method, effectSent: call.sent }));
-        }, CDP_CALL_DEADLINE_MS),
+        }, deadline),
         resolve,
         reject,
       };
