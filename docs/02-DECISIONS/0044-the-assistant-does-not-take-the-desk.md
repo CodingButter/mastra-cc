@@ -1,6 +1,6 @@
 # 0044 — The assistant does not take the desk
 
-Status: accepted, 2026-08-16 (pre-M3)
+Status: accepted, 2026-08-16 (pre-M3); **superseded in part 2026-09-23 by [ADR-0111](0111-the-agent-takes-the-desk-explicitly.md)**. Effects now take the desk explicitly; launch restoration and "an unreported focus move is a bug" still stand.
 
 ## Context
 
