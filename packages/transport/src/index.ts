@@ -1,6 +1,10 @@
 import { createConnection, type Socket } from "node:net";
 import { join } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import WebSocket from "ws";
+
+/** An unterminated line longer than this ends the connection. Captures arrive as base64 PNG, so the bound is generous. */
+export const MAX_LINE_CHARS = 64 * 1024 * 1024;
 import {
   SCHEMA_DIGEST,
   type ActivateElementParams,
@@ -213,7 +217,10 @@ function socketWire(socketPath: string): Wire {
     drop: () => void socket.destroy(),
     end: () => void (socket as Socket).end(),
     onOpen: (handler) => void socket.once("connect", handler),
-    onData: (handler) => void socket.on("data", (chunk) => handler(chunk.toString("utf8"))),
+    onData: (handler) => {
+      const decoder = new StringDecoder("utf8");
+      socket.on("data", (chunk) => handler(decoder.write(chunk)));
+    },
     onError: (handler) => void socket.on("error", handler),
     onClose: (handler) => void socket.on("close", handler),
   };
@@ -227,14 +234,16 @@ function websocketWire(url: string): Wire {
     drop: (hard) => void (hard ? ws.terminate() : ws.close()),
     end: () => void ws.close(),
     onOpen: (handler) => void ws.addEventListener("open", handler, { once: true }),
-    onData: (handler) =>
-      void ws.addEventListener("message", (event) => {
+    onData: (handler) => {
+      const decoder = new StringDecoder("utf8");
+      ws.addEventListener("message", (event) => {
         const data = event.data;
         if (typeof data === "string") handler(data);
-        else if (Array.isArray(data)) handler(Buffer.concat(data).toString("utf8"));
-        else if (data instanceof ArrayBuffer) handler(Buffer.from(data).toString("utf8"));
-        else handler(data.toString("utf8"));
-      }),
+        else if (Array.isArray(data)) handler(decoder.write(Buffer.concat(data)));
+        else if (data instanceof ArrayBuffer) handler(decoder.write(Buffer.from(data)));
+        else handler(decoder.write(data));
+      });
+    },
     onError: (handler) =>
       void ws.addEventListener("error", () => handler(new Error(`transport: websocket to ${url} failed`))),
     onClose: (handler) => void ws.addEventListener("close", () => handler()),
@@ -288,8 +297,16 @@ export async function connect(
 
   wire.onData((chunk) => {
     if (starting && terminalError) return;
+    // Search only the new text: re-scanning the whole buffer per chunk is quadratic in a long line.
+    const searchFrom = buffer.length;
     buffer += chunk;
-    let newline = buffer.indexOf("\n");
+    if (buffer.length > MAX_LINE_CHARS && buffer.lastIndexOf("\n") < buffer.length - MAX_LINE_CHARS) {
+      buffer = "";
+      terminate(new Error(`transport: peer at ${peer} sent a line longer than ${MAX_LINE_CHARS} characters without a newline - refusing to continue`));
+      wire.drop(true);
+      return;
+    }
+    let newline = buffer.indexOf("\n", searchFrom);
     while (newline >= 0) {
       const line = buffer.slice(0, newline);
       buffer = buffer.slice(newline + 1);
