@@ -138,14 +138,14 @@ async function callOn(
 // surfaces to the caller on top of this.
 // The write goes through the element prototype's own value setter, the way a
 // person's keystroke lands, so a framework that watches the property hears it.
-// Then it waits a bounded settle - two animation frames or 50 ms, whichever
-// comes first (a background tab throttles animation frames) - and reads the
-// value back in the same call. What this proves is bounded: the DOM value was
+// Then it waits a bounded settle - at least 20 ms and two animation frames,
+// capped at 50 ms (two frames can pass in under 10 ms; a background tab
+// throttles frames) - and a separate call reads the value back. What this proves is bounded: the DOM value was
 // observed equal to the request after the settle window. It does not prove the
 // application's own state accepted it; a component that reverts later, or keeps
 // the DOM value while rejecting internally, is outside what this can see.
 export const WRITE_AND_SETTLE =
-  "async function(v){ const set = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(this), 'value').set; set.call(this, v); this.dispatchEvent(new Event('input', {bubbles:true})); this.dispatchEvent(new Event('change', {bubbles:true})); await new Promise((r) => { let n = 0, raf = 0, t = 0, done = false; const end = () => { if (done) return; done = true; cancelAnimationFrame(raf); clearTimeout(t); r(); }; const f = () => { if (++n >= 2) end(); else raf = requestAnimationFrame(f); }; raf = requestAnimationFrame(f); t = setTimeout(end, 50); }); }";
+  "async function(v){ const set = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(this), 'value').set; set.call(this, v); this.dispatchEvent(new Event('input', {bubbles:true})); this.dispatchEvent(new Event('change', {bubbles:true})); await new Promise((r) => { let n = 0, raf = 0, t = 0, fl = 0, floor = false, done = false; const end = () => { if (done) return; done = true; cancelAnimationFrame(raf); clearTimeout(t); clearTimeout(fl); r(); }; const settled = () => { if (n >= 2 && floor) end(); }; const f = () => { if (++n >= 2) settled(); else raf = requestAnimationFrame(f); }; raf = requestAnimationFrame(f); fl = setTimeout(() => { floor = true; settled(); }, 20); t = setTimeout(end, 50); }); }";
 export const READ_VALUE = "function(){ return this.value; }";
 
 async function writeAndObserve(seam: CallSeam, ref: NodeRef, requested: string): Promise<string> {

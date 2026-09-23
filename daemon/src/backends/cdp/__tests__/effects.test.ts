@@ -310,9 +310,9 @@ describe("the browser route writes the way a framework hears it, and claims only
     return { element, nativeSets, ownSets };
   };
 
-  const page = (stub: Stub, frames: { raf: boolean }) => {
+  const page = (stub: Stub, frames: { raf: boolean; frameMs?: number }) => {
     const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
-    const raf = (f: () => void) => (frames.raf ? (setTimeout(f, 16) as unknown as number) : 0);
+    const raf = (f: () => void) => (frames.raf ? (setTimeout(f, frames.frameMs ?? 16) as unknown as number) : 0);
     const channel = {
       calls,
       async exchange(exchange: CdpExchange): Promise<unknown> {
@@ -363,6 +363,11 @@ describe("the browser route writes the way a framework hears it, and claims only
     const write = setValueOf(page(stub, { raf: true }), REF, "hello");
     await expect(write).rejects.toBeInstanceOf(WriteNotObservedError);
     await expect(setValueOf(page(controlledInput({ revertAfterMs: 10 }), { raf: true }), REF, "hello")).rejects.toThrow(/found ""/);
+  });
+
+  it("waits at least 20 ms even when two frames pass at once, so a 10 ms revert is still seen", async () => {
+    const write = setValueOf(page(controlledInput({ revertAfterMs: 10 }), { raf: true, frameMs: 0 }), REF, "hello");
+    await expect(write).rejects.toThrow(/found ""/);
   });
 
   it("settles on the 50 ms timer when a background tab never gives an animation frame", async () => {

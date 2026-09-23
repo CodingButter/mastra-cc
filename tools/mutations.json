@@ -2368,5 +2368,13 @@
     "replace": "  if (false) {",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
+  },
+  {
+    "name": "two-quick-frames-end-the-settle",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "if (n >= 2 && floor) end();",
+    "replace": "if (n >= 2) end();",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
   }
 ]
