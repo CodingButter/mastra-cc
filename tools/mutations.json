@@ -2168,5 +2168,61 @@
     "replace": "    if (false &&",
     "cwd": "packages/transport",
     "testFile": "src/__tests__/a-line-arrives-in-pieces.test.ts"
+  },
+  {
+    "name": "the-cdp-call-waits-forever",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "        timer: setTimeout(() => {\n          state.pending.delete(id);\n          reject(new CdpDeadlineError({ method, effectSent: call.sent }));\n        }, CDP_CALL_DEADLINE_MS),",
+    "replace": "        timer: undefined as unknown as ReturnType<typeof setTimeout>,",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "the-timed-out-call-stays-pending",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "          state.pending.delete(id);\n          reject(new CdpDeadlineError",
+    "replace": "          reject(new CdpDeadlineError",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "the-discovery-waits-forever",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "fetchImpl(endpoint + path, { signal })",
+    "replace": "fetchImpl(endpoint + path)",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "the-watch-bypasses-the-dispatcher",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "call: (method, params) => send(state, method, params),",
+    "replace": "call: (method, params) => new Promise(() => state.ws.send(JSON.stringify({ id: 0, method, params }))),",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "a-detached-stream-call-crashes-the-daemon",
+    "file": "daemon/src/backends/cdp/subtree-stream.ts",
+    "find": ".catch(() => end());",
+    "replace": ";",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
+  },
+  {
+    "name": "a-deadline-reads-as-unreadable",
+    "file": "daemon/src/server.ts",
+    "find": "    if (error instanceof CdpDeadlineError && entry.effectClass === \"observe\") {",
+    "replace": "    if (false) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cdp-refusals.test.ts"
+  },
+  {
+    "name": "an-unsent-call-claims-an-unknown-effect",
+    "file": "daemon/src/server.ts",
+    "find": "return isEffect && error.effectSent",
+    "replace": "return isEffect",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cdp-refusals.test.ts"
   }
 ]

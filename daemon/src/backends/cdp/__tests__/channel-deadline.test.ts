@@ -1,0 +1,176 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CDP_CALL_DEADLINE_MS, CdpDeadlineError, CdpUnreachableError, liveCdpChannel } from "../channel.js";
+
+// The live channel's waits, driven by fake timers and an in-memory socket.
+// Nothing here dials a browser: the socket is a stand-in that records what
+// was sent and answers only when the test says so, which is exactly the
+// browser that goes silent.
+
+type Listener = (event: { data?: unknown }) => void;
+
+class FakeSocket {
+  static last: FakeSocket | undefined;
+  static opens = true;
+  readonly sent: Array<{ id: number; method: string }> = [];
+  readonly listeners = new Map<string, Set<Listener>>();
+  closed = false;
+  constructor(readonly url: string) {
+    FakeSocket.last = this;
+    if (FakeSocket.opens) queueMicrotask(() => this.emit("open", {}));
+  }
+  addEventListener(type: string, listener: Listener) {
+    const set = this.listeners.get(type) ?? new Set();
+    set.add(listener);
+    this.listeners.set(type, set);
+  }
+  removeEventListener(type: string, listener: Listener) {
+    this.listeners.get(type)?.delete(listener);
+  }
+  send(data: string) {
+    this.sent.push(JSON.parse(data));
+  }
+  close() {
+    this.closed = true;
+  }
+  emit(type: string, event: { data?: unknown }) {
+    for (const listener of [...(this.listeners.get(type) ?? [])]) listener(event);
+  }
+  reply(id: number, result: unknown = {}) {
+    this.emit("message", { data: JSON.stringify({ id, result }) });
+  }
+  listenerCount() {
+    let n = 0;
+    for (const set of this.listeners.values()) n += set.size;
+    return n;
+  }
+}
+
+const TARGET = { id: "T1", webSocketDebuggerUrl: "ws://fake/T1" };
+
+function answeringFetch(): typeof fetch {
+  return (async (url: string) =>
+    new Response(JSON.stringify(String(url).endsWith("/json/list") ? [TARGET] : { Browser: "Chrome/1" }))) as typeof fetch;
+}
+
+function channel(fetchImpl: typeof fetch = answeringFetch()) {
+  return liveCdpChannel("http://fake", { WebSocket: FakeSocket as unknown as typeof WebSocket, fetch: fetchImpl });
+}
+
+async function listed() {
+  const c = channel();
+  await c.exchange({ kind: "list" });
+  return c;
+}
+
+const call = (method = "DOM.getDocument") => ({ kind: "call", targetId: TARGET.id, method, params: {} }) as const;
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  FakeSocket.last = undefined;
+  FakeSocket.opens = true;
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("a call the browser never answers", () => {
+  it("rejects with CdpDeadlineError at the deadline, leaving no pending call or timer", async () => {
+    const c = await listed();
+    const answer = c.exchange(call()).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(CDP_CALL_DEADLINE_MS - 1);
+    expect(FakeSocket.last!.sent).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    const error = await answer;
+    expect(error).toBeInstanceOf(CdpDeadlineError);
+    expect(error).toMatchObject({ method: "DOM.getDocument", effectSent: true });
+    expect(c.pendingCalls()).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("ignores the reply that arrives after its call timed out", async () => {
+    const c = await listed();
+    const answer = c.exchange(call()).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(CDP_CALL_DEADLINE_MS);
+    expect(await answer).toBeInstanceOf(CdpDeadlineError);
+    const socket = FakeSocket.last!;
+    expect(() => socket.reply(socket.sent[0]!.id, { late: true })).not.toThrow();
+    // The socket still serves the next call.
+    const next = c.exchange(call("DOM.enable"));
+    await vi.advanceTimersByTimeAsync(0);
+    socket.reply(socket.sent[1]!.id, { ok: 1 });
+    expect(await next).toEqual({ result: { ok: 1 } });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("is rejected with every other pending call when the socket closes, and their timers go too", async () => {
+    const c = await listed();
+    const answers = [1, 2, 3].map(() => c.exchange(call()).catch((e: unknown) => e));
+    await vi.advanceTimersByTimeAsync(0);
+    FakeSocket.last!.emit("close", {});
+    for (const answer of answers) expect(await answer).toBeInstanceOf(CdpUnreachableError);
+    expect(c.pendingCalls()).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("ignores a malformed frame while a valid reply still resolves", async () => {
+    const c = await listed();
+    const answer = c.exchange(call());
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = FakeSocket.last!;
+    socket.emit("message", { data: "{not json" });
+    socket.reply(socket.sent[0]!.id, { root: 1 });
+    expect(await answer).toEqual({ result: { root: 1 } });
+  });
+
+  it("adds no listener per call: 1 and 50 concurrent calls leave the same count", async () => {
+    const c = await listed();
+    const one = c.exchange(call());
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = FakeSocket.last!;
+    const withOne = socket.listenerCount();
+    const fifty = Array.from({ length: 50 }, () => c.exchange(call()));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(socket.listenerCount()).toBe(withOne);
+    for (const frame of socket.sent) socket.reply(frame.id);
+    await Promise.all([one, ...fifty]);
+  });
+});
+
+describe("the stages before a call", () => {
+  it("bounds opening the socket", async () => {
+    FakeSocket.opens = false;
+    const c = await listed();
+    const answer = c.exchange(call()).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(CDP_CALL_DEADLINE_MS);
+    expect(await answer).toMatchObject({ method: "open", effectSent: false });
+    expect(await answer).toBeInstanceOf(CdpDeadlineError);
+    expect(FakeSocket.last!.closed).toBe(true);
+  });
+
+  it("bounds discovery: a fetch that never answers is aborted at the deadline", async () => {
+    const hanging = ((_url: string, init?: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+      })) as typeof fetch;
+    const c = channel(hanging);
+    const answer = c.exchange({ kind: "list" }).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(CDP_CALL_DEADLINE_MS);
+    expect(await answer).toBeInstanceOf(CdpDeadlineError);
+    expect(await answer).toMatchObject({ method: "discovery", effectSent: false });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe("a watch", () => {
+  it("sends through the same deadline as every exchange", async () => {
+    const c = await listed();
+    const watching = c
+      .watch("el-x", () => undefined, { targetId: TARGET.id, backendDOMNodeId: 5, role: "generic" })
+      .catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(CDP_CALL_DEADLINE_MS);
+    const error = await watching;
+    expect(error).toBeInstanceOf(CdpDeadlineError);
+    expect(error).toMatchObject({ method: "Runtime.enable" });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});

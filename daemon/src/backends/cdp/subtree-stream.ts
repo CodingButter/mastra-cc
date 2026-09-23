@@ -197,7 +197,10 @@ export async function openSubtreeStream(
       return;
     }
     for (const entry of message.batch ?? []) {
-      void report(entry.index, entry.kind as BackendChange["kind"]);
+      // Nobody awaits a report, so its failure (a deadline, a dead socket,
+      // including the releaseObject in its finally) must end the watch
+      // loudly here rather than escape as an unhandled rejection.
+      report(entry.index, entry.kind as BackendChange["kind"]).catch(() => end());
     }
   });
 

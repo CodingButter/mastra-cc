@@ -182,3 +182,33 @@ describe("the browser subtree stream", () => {
     expect(h.changes).toEqual([]);
   });
 });
+
+describe("a detached stream call that fails", () => {
+  // report() and its releaseObject run with nobody awaiting them. A deadline
+  // or a dead socket there must end the watch, not escape as an unhandled
+  // rejection that takes the daemon down.
+  for (const failing of ["Runtime.evaluate", "Runtime.releaseObject"]) {
+    it(`ends the watch when ${failing} rejects, and nothing goes unhandled`, async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => unhandled.push(reason);
+      process.on("unhandledRejection", onUnhandled);
+      try {
+        const h = harness();
+        await open(h);
+        const answer = h.deps.call;
+        let armed = false;
+        h.deps.call = async (method, params) => {
+          if (armed && method === failing) throw new Error(`${failing} timed out`);
+          return answer(method, params);
+        };
+        armed = true;
+        bindingCall(h, { batch: [{ index: 0, kind: "changed" }] });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(h.changes.at(-1)).toEqual({ id: watchedId, role: "generic", kind: "watchEnded" });
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
+    });
+  }
+});

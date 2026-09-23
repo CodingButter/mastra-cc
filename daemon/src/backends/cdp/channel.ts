@@ -63,6 +63,25 @@ export function exchangeKey(e: CdpExchange): string {
 // (ADR-0022), never silently retried here.
 export class CdpUnreachableError extends Error {}
 
+// The one deadline every wait on the browser shares. Internal policy, never
+// wire vocabulary, never configurable: a stage that has not settled by now is
+// reported, not waited on, because the daemon's request chain is serialised
+// and one silent browser must not hold every other client.
+export const CDP_CALL_DEADLINE_MS = 10_000;
+
+// Thrown when the browser did not answer within CDP_CALL_DEADLINE_MS.
+// effectSent says whether the request left this process: an unsent call
+// changed nothing, a sent one has an unknown outcome.
+export class CdpDeadlineError extends Error {
+  readonly method: string;
+  readonly effectSent: boolean;
+  constructor(details: { method: string; effectSent: boolean }) {
+    super(`the browser did not answer "${details.method}" within ${CDP_CALL_DEADLINE_MS / 1000}s`);
+    this.method = details.method;
+    this.effectSent = details.effectSent;
+  }
+}
+
 // Thrown by the replay channel when asked for an exchange the tape never
 // recorded. Defined locally rather than importing the D-Bus channel's
 // UnrecordedExchangeError: the two transports must not be tied together by a
@@ -74,34 +93,78 @@ interface DiscoveredTarget {
   readonly webSocketDebuggerUrl?: string;
 }
 
+interface PendingCall {
+  readonly method: string;
+  sent: boolean;
+  timer: ReturnType<typeof setTimeout>;
+  resolve(reply: unknown): void;
+  reject(error: Error): void;
+}
+
+interface SocketState {
+  readonly ws: WebSocket;
+  readonly pending: Map<number, PendingCall>;
+  dialog: { open: boolean; type?: string; message?: string };
+  ready: Promise<void>;
+}
+
+export interface LiveCdpDeps {
+  readonly WebSocket?: typeof WebSocket;
+  readonly fetch?: typeof fetch;
+}
+
 // Lazy: nothing dials until the first exchange, so constructing the backend
 // (as the conformance suite does at collection time) is free.
-export function liveCdpChannel(endpoint: string): CdpChannel {
-  const sockets = new Map<string, Promise<WebSocket>>();
+// pendingCalls() is diagnostic, not seam: the count of calls still waiting on
+// any socket, so a test can prove a settled call left nothing behind.
+export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpChannel & { pendingCalls(): number } {
+  const states: SocketState[] = [];
+  const WebSocketImpl = deps.WebSocket ?? WebSocket;
+  const fetchImpl = deps.fetch ?? fetch;
+  const sockets = new Map<string, Promise<SocketState>>();
   let targets: DiscoveredTarget[] = [];
   let nextId = 1;
-  // The event direction, per target. rpc() ignores messages that answer no
-  // request; these listeners are what they are for (ADR-0039).
+  // The event direction, per target (ADR-0039).
   const eventListeners = new Map<string, Set<(method: string, params: Record<string, unknown>) => void>>();
 
   async function http(path: string): Promise<unknown> {
-    let response: Response;
+    // One signal bounds both the request and the body read.
+    // A plain timer rather than AbortSignal.timeout, so the deadline is one
+    // clock the tests can drive.
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const timer = setTimeout(() => controller.abort(), CDP_CALL_DEADLINE_MS);
     try {
-      response = await fetch(endpoint + path);
-    } catch {
-      throw new CdpUnreachableError(`no debugging endpoint answered at ${endpoint}${path}`);
-    }
-    try {
-      if (!response.ok) throw new Error();
-      return await response.json();
-    } catch {
-      // A proxy page or an endpoint mid-shutdown is honestly "unreachable",
-      // not a raw SyntaxError from the parse.
-      throw new CdpUnreachableError(`the endpoint at ${endpoint}${path} did not answer usable JSON`);
+      let response: Response;
+      try {
+        response = await fetchImpl(endpoint + path, { signal });
+      } catch {
+        if (signal.aborted) throw new CdpDeadlineError({ method: "discovery", effectSent: false });
+        throw new CdpUnreachableError(`no debugging endpoint answered at ${endpoint}${path}`);
+      }
+      try {
+        if (!response.ok) throw new Error();
+        return await response.json();
+      } catch {
+        if (signal.aborted) throw new CdpDeadlineError({ method: "discovery", effectSent: false });
+        // A proxy page or an endpoint mid-shutdown is honestly "unreachable",
+        // not a raw SyntaxError from the parse.
+        throw new CdpUnreachableError(`the endpoint at ${endpoint}${path} did not answer usable JSON`);
+      }
+    } finally {
+      clearTimeout(timer);
     }
   }
 
-  function socketFor(targetId: string): Promise<WebSocket> {
+  function failAll(state: SocketState, error: () => Error): void {
+    for (const [id, call] of state.pending) {
+      clearTimeout(call.timer);
+      state.pending.delete(id);
+      call.reject(error());
+    }
+  }
+
+  function socketFor(targetId: string): Promise<SocketState> {
     const cached = sockets.get(targetId);
     if (cached) return cached;
     const target = targets.find((t) => t.id === targetId);
@@ -111,33 +174,69 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
         new CdpUnreachableError(`no target "${targetId}" in the most recent list reply - list before call`),
       );
     }
-    const opened = new Promise<WebSocket>((resolve, reject) => {
-      const ws = new WebSocket(url);
-      ws.addEventListener("open", () => resolve(ws), { once: true });
+    const opened = new Promise<SocketState>((resolve, reject) => {
+      const ws = new WebSocketImpl(url);
+      const state: SocketState = { ws, pending: new Map(), dialog: { open: false }, ready: Promise.resolve() };
+      states.push(state);
+      let isOpen = false;
+      const evict = () => {
+        if (sockets.get(targetId) === opened) sockets.delete(targetId);
+      };
+      const openTimer = setTimeout(() => {
+        evict();
+        reject(new CdpDeadlineError({ method: "open", effectSent: false }));
+        try {
+          ws.close();
+        } catch {
+          // closing a socket that never opened is best-effort
+        }
+      }, CDP_CALL_DEADLINE_MS);
       ws.addEventListener(
-        "error",
+        "open",
         () => {
-          sockets.delete(targetId);
-          reject(new CdpUnreachableError(`the debugging socket for target "${targetId}" could not be opened`));
+          clearTimeout(openTimer);
+          isOpen = true;
+          resolve(state);
         },
         { once: true },
       );
-      // A dead socket must not stay cached: the next exchange redials
-      // instead of sending into a closed connection.
-      ws.addEventListener("close", () => sockets.delete(targetId), { once: true });
-      // Every message without an id is an event. One reader per socket fans
-      // them out; a socket with no watches has an empty listener set and the
-      // messages go nowhere, which is what discarding them was.
+      // A hang is not a refusal (refuses-malformed-lines.test.ts:10-12): a
+      // dying socket rejects everything still waiting on it, and a dead
+      // socket must not stay cached.
+      const gone = () => {
+        clearTimeout(openTimer);
+        evict();
+        if (!isOpen) {
+          reject(new CdpUnreachableError(`the debugging socket for target "${targetId}" could not be opened`));
+        }
+        failAll(state, () => new CdpUnreachableError(`the debugging socket for target "${targetId}" closed before its call was answered`));
+      };
+      ws.addEventListener("error", gone);
+      ws.addEventListener("close", gone);
+      // The one reader per socket: replies settle their pending call, every
+      // message without an id is an event.
       ws.addEventListener("message", (event) => {
-        const listeners = eventListeners.get(targetId);
-        if (listeners === undefined || listeners.size === 0) return;
         let message: { id?: number; method?: string; params?: Record<string, unknown> };
         try {
           message = JSON.parse(String(event.data));
         } catch {
           return;
         }
-        if (message.id !== undefined || message.method === undefined) return;
+        if (message.id !== undefined) {
+          const call = state.pending.get(message.id);
+          // A late reply (its call already timed out) or a foreign id.
+          if (call === undefined) return;
+          clearTimeout(call.timer);
+          state.pending.delete(message.id);
+          // The reply is stored minus the connection-local id, so tapes are
+          // connection-independent: {result} or {error}, never {id, ...}.
+          const { id: _connectionLocal, ...reply } = message;
+          call.resolve(reply);
+          return;
+        }
+        if (message.method === undefined) return;
+        const listeners = eventListeners.get(targetId);
+        if (listeners === undefined) return;
         for (const listener of listeners) listener(message.method, message.params ?? {});
       });
     });
@@ -145,39 +244,37 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
     return opened;
   }
 
-  function rpc(ws: WebSocket, method: string, params: unknown): Promise<unknown> {
+  // The single send path: every exchange and every watch call goes through
+  // here, so all of them share the deadline.
+  async function send(state: SocketState, method: string, params: unknown): Promise<unknown> {
+    await state.ready;
     const id = nextId++;
     return new Promise((resolve, reject) => {
-      // A hang is not a refusal (refuses-malformed-lines.test.ts:10-12): if
-      // the socket dies before the reply arrives - tab closed, browser
-      // crashed, terminateOwned mid-query - the pending call must reject, or
-      // the server's serialised chain never advances again for any client.
-      const onGone = () => {
-        cleanup();
-        reject(new CdpUnreachableError(`the debugging socket closed before "${method}" was answered`));
+      const call: PendingCall = {
+        method,
+        sent: false,
+        timer: setTimeout(() => {
+          state.pending.delete(id);
+          reject(new CdpDeadlineError({ method, effectSent: call.sent }));
+        }, CDP_CALL_DEADLINE_MS),
+        resolve,
+        reject,
       };
-      const onMessage = (event: MessageEvent) => {
-        const message = JSON.parse(String(event.data)) as { id?: number };
-        if (message.id !== id) return;
-        cleanup();
-        // The reply is stored minus the connection-local id, so tapes are
-        // connection-independent: {result} or {error}, never {id, ...}.
-        const { id: _connectionLocal, ...reply } = message;
-        resolve(reply);
-      };
-      const cleanup = () => {
-        ws.removeEventListener("message", onMessage);
-        ws.removeEventListener("close", onGone);
-        ws.removeEventListener("error", onGone);
-      };
-      ws.addEventListener("message", onMessage);
-      ws.addEventListener("close", onGone);
-      ws.addEventListener("error", onGone);
-      ws.send(JSON.stringify({ id, method, params: params ?? {} }));
+      state.pending.set(id, call);
+      try {
+        state.ws.send(JSON.stringify({ id, method, params: params ?? {} }));
+      } catch {
+        clearTimeout(call.timer);
+        state.pending.delete(id);
+        reject(new CdpUnreachableError(`the debugging socket could not carry "${method}"`));
+        return;
+      }
+      call.sent = true;
     });
   }
 
   return {
+    pendingCalls: () => states.reduce((n, state) => n + state.pending.size, 0),
     async exchange(e) {
       switch (e.kind) {
         case "version":
@@ -188,7 +285,7 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
           return reply;
         }
         case "call":
-          return rpc(await socketFor(e.targetId), e.method, e.params);
+          return send(await socketFor(e.targetId), e.method, e.params);
       }
     },
     async watch(subscribedTo, sink, anchor) {
@@ -200,10 +297,10 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
           "the browser's own application element names no node in a page - a watch needs a subtree to anchor on, and accepting one that could never report would be indistinguishable from a quiet page",
         );
       }
-      const ws = await socketFor(anchor.targetId);
+      const state = await socketFor(anchor.targetId);
       return openSubtreeStream(
         {
-          call: (method, params) => rpc(ws, method, params),
+          call: (method, params) => send(state, method, params),
           onProtocolEvent: (listener) => {
             const listeners = eventListeners.get(anchor.targetId) ?? new Set();
             listeners.add(listener);
@@ -219,7 +316,7 @@ export function liveCdpChannel(endpoint: string): CdpChannel {
     async close() {
       for (const pending of sockets.values()) {
         try {
-          (await pending).close();
+          (await pending).ws.close();
         } catch {
           // a socket that never opened has nothing to close
         }

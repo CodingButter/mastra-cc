@@ -101,6 +101,7 @@ import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn
 import { OwnershipTable } from "./launch/table.js";
 import { driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
 import { CancelledAtBoundaryError, underCancellation } from "./cancellation.js";
+import { CdpDeadlineError } from "./backends/cdp/channel.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
 // then requests dispatched through the effect-class gate. Accessibility access
@@ -1639,6 +1640,9 @@ async function performEffect(
       // the sentence the seam wrote. AttestationFailedError is the daemon's own
       // inability to describe a commit (ADR-0008 rule 2) and is deliberately in
       // the same list: it refuses the call, it does not fail it.
+      if (error instanceof CdpDeadlineError) {
+        return { refusal: deadlineRefusal(error, true), refusalClass: "DeadlineExceeded" };
+      }
       if (
         error instanceof AttestationFailedError ||
         error instanceof UnperformableElementError ||
@@ -1669,6 +1673,16 @@ async function performEffect(
   }
   recordAudit({ application, element: [elementOf(id, answer.element)], scope: effectClass, cause: causeOf(application), attestation, outcome: outcomeOf(answer) });
   return answer;
+}
+
+// A browser that did not answer in time. Whether anything changed depends on
+// whether the request left this process: an unsent call changed nothing, a
+// sent effect has an outcome nobody observed.
+function deadlineRefusal(error: CdpDeadlineError, isEffect: boolean): string {
+  const base = `the browser did not answer "${error.method}" within 10s`;
+  return isEffect && error.effectSent
+    ? `${base} while an effect was in flight - its outcome is UNKNOWN; look before retrying`
+    : `${base} - nothing was changed by this call`;
 }
 
 // Identity, and the role only where the daemon actually answered one: a
@@ -2773,6 +2787,10 @@ export async function handleRequest(
       console.error(`daemon: ${request.method} ${message}`);
     } else {
       console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
+    }
+    if (error instanceof CdpDeadlineError && entry.effectClass === "observe") {
+      recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: refused("DeadlineExceeded") });
+      return { type: "response", id: request.id, result: { refusal: deadlineRefusal(error, false) } };
     }
     if (entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
