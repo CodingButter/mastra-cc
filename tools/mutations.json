@@ -2220,8 +2220,8 @@
   {
     "name": "an-unsent-call-claims-an-unknown-effect",
     "file": "daemon/src/server.ts",
-    "find": "return isEffect && error.effectSent",
-    "replace": "return isEffect",
+    "find": "within 10s`;\n  return isEffect && error.effectSent",
+    "replace": "within 10s`;\n  return isEffect",
     "cwd": "daemon",
     "testFile": "src/__tests__/cdp-refusals.test.ts"
   },
