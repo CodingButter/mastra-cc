@@ -72,7 +72,7 @@ import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { capture } from "./capture.js";
 import { emitChord, emitString } from "./rawinput/keys.js";
-import { boundary } from "../../cancellation.js";
+import { boundary, CancelledAtBoundaryError } from "../../cancellation.js";
 import { emitClick, isPointerButton, POINTER_BUTTONS, screenRectangle } from "./rawinput/pointer.js";
 import type { AtspiWatchAnchor } from "./signal-stream.js";
 import { applicationName, nameMatches, normalise } from "./names.js";
@@ -894,6 +894,9 @@ export class AtspiBackend implements Backend {
         `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
       );
     }
+    // Every effect's first boundary is before it: a driver that asked to stop
+    // while this request waited its turn is answered without an emission.
+    boundary(0, 1);
     await effect(ref);
     return { element: await this.readElement(ref) } as { element: SemanticElement } & T;
   }
@@ -1233,6 +1236,9 @@ export class AtspiBackend implements Backend {
           `a key that arrived - so the ${sent} WAS sent. Compare the element above against what you expected before ` +
           "believing it landed here.";
       }
+      // The last point with nothing in flight: the aim is done, the one
+      // emission has not begun. A driver that asked during the aim stops here.
+      boundary(0, 1);
       await emit();
     });
 
@@ -1422,6 +1428,9 @@ export class AtspiBackend implements Backend {
       this.pictured.set(params.id, { capturedAt: image.capturedAt, rectangle });
       return { image };
     } catch (failure) {
+      // The driver asked to stop and the grab was stopped: not a fact about
+      // the desk, and the server logs it as the acknowledgement it is.
+      if (failure instanceof CancelledAtBoundaryError) throw failure;
       // A grab that failed is a fact about this desk, not about the element:
       // said plainly so a caller stops asking rather than retrying forever.
       throw new UnperformableElementError(failure instanceof Error ? failure.message : String(failure));

@@ -13,10 +13,17 @@ const current = new AsyncLocalStorage<AbortSignal>();
 export class CancelledAtBoundaryError extends Error {
   constructor(readonly emitted: number, readonly of: number) {
     super(
-      `stopped at a supported boundary after ${emitted} of ${of} emissions; ` +
-        "the emitted keys cannot be retracted and the element requires fresh observation before anyone resumes",
+      emitted === 0
+        ? "stopped before its first emission because the driver had already asked; nothing was sent, and the element requires fresh observation before anyone resumes"
+        : `stopped at a supported boundary after ${emitted} of ${of} emissions; ` +
+          "the emitted keys cannot be retracted and the element requires fresh observation before anyone resumes",
     );
   }
+}
+
+/** A subprocess the effect or observation is about to start can be told to stop by this; undefined outside any cancellable operation. */
+export function cancellationSignal(): AbortSignal | undefined {
+  return current.getStore();
 }
 
 export function underCancellation<T>(signal: AbortSignal, work: () => Promise<T>): Promise<T> {

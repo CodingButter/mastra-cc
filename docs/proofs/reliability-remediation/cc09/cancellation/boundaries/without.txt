@@ -1,0 +1,8 @@
+PROOF: RED — a chord aimed for a closed driver was sent
+[32m+ actual[39m [31m- expected[39m
+
+[32m+[39m [
+[32m+[39m   'GenerateKeyboardEvent'
+[32m+[39m ]
+[31m-[39m []
+

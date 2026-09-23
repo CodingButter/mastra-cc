@@ -2094,6 +2094,34 @@
     "file": "daemon/src/server.ts",
     "find": "    const result = await serialised<unknown>(async () => {",
     "replace": "    const result = await (async () => {",
+    "name": "an-effect-begins-though-its-driver-asked-to-stop",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "    boundary(0, 1);\n    await effect(ref);",
+    "replace": "    await effect(ref);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "a-key-is-sent-though-its-driver-asked-during-the-aim",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      boundary(0, 1);\n      await emit();",
+    "replace": "      await emit();",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "the-screen-grab-outlives-its-driver",
+    "file": "daemon/src/backends/atspi/capture.ts",
+    "find": "    signal?.addEventListener(\"abort\", onAbort, { once: true });",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
+  },
+  {
+    "name": "the-screen-grab-starts-though-its-driver-already-asked",
+    "file": "daemon/src/backends/atspi/capture.ts",
+    "find": "    if (signal?.aborted) return reject(new CancelledAtBoundaryError(0, 1));",
+    "replace": "",
     "cwd": "daemon",
     "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts",
     "name": "the-runner-races-a-live-runner",
