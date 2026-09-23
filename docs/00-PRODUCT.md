@@ -39,7 +39,7 @@ The desktop exposes an accessibility tree — the same structure a screen reader
 
 **Concretely, the system does not:**
 
-- take a screenshot and ask a model where to click
+- take a whole-screen screenshot and ask a model where to click (pixel actions are aimed inside an element's own fresh capture, [ADR-0112](02-DECISIONS/0112-pixels-are-aimed-in-the-picture-the-agent-was-shown.md))
 - synthesise raw input events at the X11 or `uinput` layer
 - run shell commands on the user's behalf as a substitute for interacting with an app
 
@@ -79,10 +79,10 @@ The Linux backend is **one backend, not the architecture**. Portability across o
 These are non-goals with teeth. Each one was a live temptation during the prototype and each one has an issue, a commit, or a ban behind it.
 
 1. **Not a remote shell.** The agent never gets arbitrary command execution as a desktop-control primitive. The prototype's minted-token tool surface was deliberately read-only — `READ_FILE`, `LIST_FILES`, `FILE_STAT`, `GREP` — and adding a launch capability was a *separate, tracked, still-open decision* (issue #183), not something that leaked in.
-2. **Not a screen recorder.** Screen capture is off by design. Pixels are a tier of last resort addressed by an already-resolved window, never an ambient capture and never a way to find things.
+2. **Not a screen recorder.** There is no ambient capture. Pixels are addressed by an already-resolved element. Since 2026-09-23 they are an option the agent may choose, aimed in the UV space of that element's fresh capture ([ADR-0112](02-DECISIONS/0112-pixels-are-aimed-in-the-picture-the-agent-was-shown.md)), never a way to find things.
 3. **Not a keylogger.** Watching a field the user is typing in is a *feature with an owner and an expiry*, not ambient logging. The prototype ruled that a human at the keyboard outranks the agent (issue #25) and that an element is *owned while it is being written*.
 4. **Not a microphone at all, any more.** Wake detection, audio capture and voice sessions were removed with the client surface on 2026-08-28 ([ADR-0057](02-DECISIONS/0057-mastra-cc-is-a-peripheral-not-an-assistant.md)). This repository holds no audio path. If a consumer wants one it builds it above the transport, and the reasoning that kept audio off the server ([ADR-0006](02-DECISIONS/0006-hub-holds-no-audio.md)) is worth reading before it does.
-5. **Not a general RPA platform.** No record-and-replay macros, no coordinate scripts. If the accessibility layer cannot describe it, the honest answer is that we cannot do it — and the prototype's security doc has a whole section titled "What this model does NOT guarantee" for exactly this reason.
+5. **Not a general RPA platform.** No record-and-replay macros, no screen-coordinate scripts. Learned skills live in the Mastra layer and come from verified receipts ([14-DIRECTION.md](14-DIRECTION.md) §5). If the accessibility layer cannot describe it, the honest answer is that we cannot do it — and the prototype's security doc has a whole section titled "What this model does NOT guarantee" for exactly this reason.
 6. **Not a thing that pretends.** When a browser's accessibility layer is unreadable, the system reports the browser as *running but unreadable*, not as *absent* (`6657915`, `08-04 10:31`). A refusal must explain itself from a check that actually ran (issue #194).
 
 ## 7. Consent, in product terms

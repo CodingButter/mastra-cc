@@ -1,6 +1,6 @@
 # ADR-0004 — Semantic first; pixels are a last resort, addressed by window
 
-**Status:** accepted; one clause amended by [ADR-0046](0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md) (2026-08-17)
+**Status:** accepted; one clause amended by [ADR-0046](0046-raw-input-is-the-most-restricted-class-not-a-banned-one.md) (2026-08-17); pixels-as-last-resort amended by [ADR-0112](0112-pixels-are-aimed-in-the-picture-the-agent-was-shown.md) (2026-09-23): element-anchored pixels are an agent-choosable option
 **Date:** 2026-08-08
 **Carried forward from the prototype unchanged.** This is the founding bet and it held.
 

@@ -38,7 +38,7 @@ An agent asks what applications are open, asks a window what is inside it, reads
 ## What it does today
 
 - **Observes semantically.** Resolves *the compose button* to an element with role `push button`, name `Compose`, inside the mail client's window — and reads its ordinary text and numeric content. A platform-protected control returns a structured redaction, never a value. → [ADR-0056](docs/02-DECISIONS/0056-permitted-content-is-observable-protected-content-is-redacted.md)
-- **Acts and proves it.** Typing delivers text to a focused element, the daemon verifies the platform read-back internally, and the caller can prove the result by observing the element again afterwards.
+- **Acts and proves it.** Typing delivers text to a focused element. The daemon does not claim the text arrived: its answer carries a `mastra-cc/typing-unverified` diagnostic, and the caller proves the result by observing the element again afterwards.
 - **Attributes change.** Every effect carries who caused it, and a person reaching for a field the agent is working in takes it — the change is attributed to them.
 - **Subscribes to a subtree.** Subscribe to one element and get a content-free pointer when it or any descendant changes; content requires a fresh authorised query. That closed loop — act, be told, confirm, act — is the speed feature, not only the safety one.
 - **Refuses honestly.** Authority is capability-scoped per application. A refusal names its reason in bytes the caller can act on, and never widens itself as a fallback.
@@ -57,7 +57,8 @@ waits for you to say you are done. It cannot take control back.
 
 These are not preferences. Each one is a scar.
 
-- **Pixels are the tier of last resort.** Semantic first, always, and a refusal explains itself. → [ADR-0004](docs/02-DECISIONS/0004-semantic-first-pixels-last.md)
+- **Semantic first; pixels are aimed, never guessed.** The tree is the primary way to see and act. Pixel actions are an agent option, anchored to an element and a fresh capture in UV space, and the daemon converts and refuses rather than clamps. → [ADR-0004](docs/02-DECISIONS/0004-semantic-first-pixels-last.md), [ADR-0112](docs/02-DECISIONS/0112-pixels-are-aimed-in-the-picture-the-agent-was-shown.md)
+- **Every refusal says whose it is:** agent, world or daemon. → [ADR-0113](docs/02-DECISIONS/0113-every-refusal-says-whose-it-is.md). Current direction: [docs/14-DIRECTION.md](docs/14-DIRECTION.md)
 - **The protocol freeze is a CI job**, not a comment. The prototype's schema was frozen in its own commit and then changed twenty-two more times. → [ADR-0002](docs/02-DECISIONS/0002-schema-freeze-is-a-ci-job.md)
 - **One transport package from the first commit.** The prototype grew a second, drifted daemon client and did not notice for a week. → [ADR-0003](docs/02-DECISIONS/0003-one-shared-transport-package.md)
 - **Machine configuration lives in this repository**, in `infra/`, applied by a checked-in script. → [ADR-0001](docs/02-DECISIONS/0001-machine-config-lives-in-the-repo.md)
