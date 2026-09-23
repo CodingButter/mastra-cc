@@ -2172,7 +2172,7 @@
   {
     "name": "the-cdp-call-waits-forever",
     "file": "daemon/src/backends/cdp/channel.ts",
-    "find": "        timer: setTimeout(() => {\n          state.pending.delete(id);\n          reject(new CdpDeadlineError({ method, effectSent: call.sent }));\n        }, deadline),",
+    "find": "        timer: setTimeout(() => {\n          state.pending.delete(id);\n          reject(new CdpDeadlineError({ method, effectSent: mayHaveChanged(call) }));\n        }, deadline),",
     "replace": "        timer: undefined as unknown as ReturnType<typeof setTimeout>,",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
@@ -2236,7 +2236,7 @@
   {
     "name": "a-dialog-leaves-calls-pending",
     "file": "daemon/src/backends/cdp/channel.ts",
-    "find": "          failAll(state, (call) => new DialogBlockingError({ ...state.dialog, method: call.method, effectSent: call.sent }));\n",
+    "find": "          failAll(state, (call) => new DialogBlockingError({ ...state.dialog, method: call.method, effectSent: mayHaveChanged(call) }));\n",
     "replace": "",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
