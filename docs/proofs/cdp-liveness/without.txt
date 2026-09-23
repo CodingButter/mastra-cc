@@ -1,0 +1,9 @@
+# cdp-liveness proof - daemon /tmp/cdp-lt-base/daemon/dist/main.mjs at bb9b89c7c2cb06e5f9331dc0df38836123b40424 - 2026-09-23T06:25:10.683Z
+SCENARIO deadline: RED queryElements answered_in=>=30000(cap)ms answer=PENDING
+SCENARIO dialog-after: RED A.queryElements=PENDING B.queryElements=>=30000(cap)ms C.listApplications=>=30000(cap)ms B.answer=PENDING
+SCENARIO dialog-before: RED first queryElements=>=30000(cap)ms answer=PENDING
+SCENARIO isolation: RED page_sees_stream=object page_sees_binding=function real_events=1 forgery=forged forged_events_delivered=1 changed_total=3
+SCENARIO react-accept: SKIPPED (fixture not yet built)
+SCENARIO react-filter: SKIPPED (fixture not yet built)
+SCENARIO react-async-revert: SKIPPED (fixture not yet built)
+SCENARIO react-number: SKIPPED (fixture not yet built)

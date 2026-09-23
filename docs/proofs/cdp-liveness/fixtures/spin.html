@@ -1,0 +1,4 @@
+<!doctype html>
+<title>Spin</title>
+<p>This page stops answering 200 ms after it loads: its main thread never returns.</p>
+<script>setTimeout(() => { for (;;) {} }, 200);</script>
