@@ -2312,5 +2312,37 @@
     "replace": "",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
+  },
+  {
+    "name": "the-write-skips-the-native-setter",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "set.call(this, v);",
+    "replace": "this.value = v;",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "the-write-reads-back-before-it-settles",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "await new Promise((r) =>",
+    "replace": "void new Promise((r) =>",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-canonicalised-number-counts-as-written",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "  if (observed !== value) {",
+    "replace": "  if (Number(observed) !== Number(value)) {",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "the-readback-returns-a-promise",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "      awaitPromise: true,\n",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
   }
 ]

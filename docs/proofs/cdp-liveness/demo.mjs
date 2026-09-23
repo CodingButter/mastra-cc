@@ -302,8 +302,56 @@ const scenarios = {
   },
 };
 
-const pages = { deadline: "spin.html", "dialog-after": "alert-later.html", "dialog-before": "alert.html", isolation: "probe.html" };
-const REACT = ["react-accept", "react-filter", "react-async-revert", "react-number"];
+// React 19 fixtures: each renders its state into <output id="state">, so the
+// demo reads application state, not just the input's DOM value.
+async function reactWrite(browser, title, role, method, params, name) {
+  const daemon = await startDaemon(browser);
+  try {
+    const target = await pageTarget(title);
+    const a = await client(daemon.socket);
+    const found = await a.request("queryElements", { application: browser, window: title, ...(role ? { role } : {}) });
+    const field = found.message?.result?.elements?.find((e) => !name || e.name === name);
+    if (!field) throw new SetupFailure(`no ${role} on ${title}: ${text(found)}`);
+    const writes = [];
+    for (const p of params) {
+      const answer = await a.request(method, { id: field.id, ...p });
+      await sleep(300);
+      const state = await pageScript(target, "document.getElementById('state').textContent");
+      writes.push({ answer, state, said: answer.pending ? "PENDING" : refusal(answer) ? `refused(${refusal(answer)})` : "success" });
+    }
+    return writes;
+  } finally {
+    daemon.stop();
+  }
+}
+const q = (s) => JSON.stringify(s);
+
+Object.assign(scenarios, {
+  async "react-accept"(browser) {
+    const [w] = await reactWrite(browser, "React-Accept", "textbox", "setElementText", [{ text: "hello" }]);
+    return [w.said === "success" && w.state === "hello", `setElementText("hello")=${w.said} rendered_output=${q(w.state)}`];
+  },
+  async "react-filter"(browser) {
+    const [w] = await reactWrite(browser, "React-Filter", "textbox", "setElementText", [{ text: "hello" }]);
+    const green = w.said !== "success" && /found "heo"/.test(refusal(w.answer) ?? "");
+    return [green, `setElementText("hello")=${w.said} rendered_output=${q(w.state)}`];
+  },
+  async "react-async-revert"(browser) {
+    const [w] = await reactWrite(browser, "React-Revert", "textbox", "setElementText", [{ text: "hello" }]);
+    return [w.said !== "success" && !w.answer.pending, `setElementText("hello")=${w.said} rendered_output=${q(w.state)}`];
+  },
+  async "react-number"(browser) {
+    const [ok, bad] = await reactWrite(browser, "React-Number", undefined, "setElementValue", [{ value: 42 }, { value: 500 }], "Amount");
+    const green = ok.said === "success" && ok.state === "42" && bad.said !== "success" && /found "42"/.test(refusal(bad.answer) ?? "");
+    return [green, `setElementValue(42)=${ok.said} rendered_output=${q(ok.state)} setElementValue(500)=${bad.said} rendered_output=${q(bad.state)}`];
+  },
+});
+
+const pages = {
+  deadline: "spin.html", "dialog-after": "alert-later.html", "dialog-before": "alert.html", isolation: "probe.html",
+  "react-accept": "react/accept.html", "react-filter": "react/filter.html", "react-async-revert": "react/async-revert.html", "react-number": "react/number.html",
+};
+const REACT = [];
 
 // ---- run ------------------------------------------------------------------
 

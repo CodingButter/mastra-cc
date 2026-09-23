@@ -10,7 +10,10 @@ import {
   setCaretOf,
   setMagnitudeOf,
   setValueOf,
+  WRITE_AND_SETTLE,
 } from "../effects.js";
+
+const WRITE_KEY = `callFunctionOn:${WRITE_AND_SETTLE.slice(0, 47)}`;
 
 const REF = { targetId: "TARGET", backendDOMNodeId: 24 } as const;
 
@@ -34,7 +37,7 @@ const scriptedChannel = (replies: Record<string, unknown>) => {
       // Every effect function arrives wrapped in the frame guard; the key is
       // the function the guard wraps.
       const declaration = String(params?.functionDeclaration ?? "");
-      const inner = /return \((function[\s\S]*)\)\.apply\(this, a\); \}$/.exec(declaration)?.[1] ?? declaration;
+      const inner = /return await \(((?:async )?function[\s\S]*)\)\.apply\(this, a\); \}$/.exec(declaration)?.[1] ?? declaration;
       const key =
         exchange.method === "Runtime.callFunctionOn"
           ? `callFunctionOn:${inner.slice(0, 47)}`
@@ -62,7 +65,7 @@ describe("the browser route's write is verified by reading it back", () => {
     // thing with an insert past the end, which is why both routes check.
     const channel = scriptedChannel({
       ...RESOLVES,
-      "callFunctionOn:function(v){ this.value = v; this.dispatchEvent": returns(undefined),
+      [WRITE_KEY]: returns(undefined),
       "callFunctionOn:function(){ return this.value; }": returns("typed by the"),
     });
 
@@ -73,7 +76,7 @@ describe("the browser route's write is verified by reading it back", () => {
   it("accepts a write only when the element reads back holding exactly what was intended", async () => {
     const channel = scriptedChannel({
       ...RESOLVES,
-      "callFunctionOn:function(v){ this.value = v; this.dispatchEvent": returns(undefined),
+      [WRITE_KEY]: returns(undefined),
       "callFunctionOn:function(){ return this.value; }": returns("typed by the daemon"),
     });
 
@@ -89,7 +92,7 @@ describe("the browser route's write is verified by reading it back", () => {
     // call this a success.
     const channel = scriptedChannel({
       ...RESOLVES,
-      "callFunctionOn:function(v){ this.value = v; this.dispatchEvent": { exceptionDetails: { text: "Cannot set property value" } },
+      [WRITE_KEY]: { exceptionDetails: { text: "Cannot set property value" } },
     });
 
     await expect(setValueOf(channel, REF, "anything")).rejects.toThrow(/the page raised an exception/);
@@ -98,11 +101,11 @@ describe("the browser route's write is verified by reading it back", () => {
   it("reports a magnitude the page clamped, rather than the number that was aimed for", async () => {
     const channel = scriptedChannel({
       ...RESOLVES,
-      "callFunctionOn:function(v){ this.value = String(v); this.dispa": returns(undefined),
-      "callFunctionOn:function(){ return Number(this.value); }": returns(100),
+      [WRITE_KEY]: returns(undefined),
+      "callFunctionOn:function(){ return this.value; }": returns("100"),
     });
 
-    await expect(setMagnitudeOf(channel, REF, 250)).rejects.toThrow(/found 100 where 250 was intended/);
+    await expect(setMagnitudeOf(channel, REF, 250)).rejects.toThrow(/found "100" where "250" was intended/);
   });
 });
 
@@ -234,7 +237,8 @@ describe("the browser route acts from the daemon's own world", () => {
         const params = (exchange.params ?? {}) as Record<string, unknown>;
         calls.push({ method: exchange.method, params });
         if (exchange.method === "DOM.resolveNode") return RESOLVES["DOM.resolveNode"];
-        return returns(value(String(params.functionDeclaration)));
+        // awaitPromise: the page settles an async function before answering.
+        return returns(await value(String(params.functionDeclaration)));
       },
       async watch(): Promise<never> {
         throw new Error("unexpected");
@@ -267,5 +271,112 @@ describe("the browser route acts from the daemon's own world", () => {
     await expect(contentOf(channel, REF)).rejects.toBeInstanceOf(EffectUnsupportedError);
     await expect(setValueOf(channel, REF, "x")).rejects.toThrow(/in a frame this session cannot reach/);
     expect(touched).toBe(false);
+  });
+});
+
+// A controlled input, the shape a framework gives one: the framework installs
+// its own `value` property on the instance to hear assignments, while the real
+// value lives behind the prototype's native setter. The real injected functions
+// run against it, with the page's timers supplied as the world would have them.
+describe("the browser route writes the way a framework hears it, and claims only what settles", () => {
+  type Stub = {
+    element: Record<string, unknown>;
+    nativeSets: string[];
+    ownSets: string[];
+  };
+  const controlledInput = (opts: { canonical?: (v: string) => string; revertAfterMs?: number } = {}): Stub => {
+    const nativeSets: string[] = [];
+    const ownSets: string[] = [];
+    let actual = "";
+    const proto = {
+      get value() { return actual; },
+      set value(v: string) { nativeSets.push(v); actual = opts.canonical ? opts.canonical(v) : v; },
+    };
+    const element = Object.create(proto) as Record<string, unknown>;
+    const document = {};
+    Object.defineProperty(element, "value", {
+      configurable: true,
+      get() { return actual; },
+      set(v: string) { ownSets.push(v); },
+    });
+    element.ownerDocument = document;
+    element.dispatchEvent = (event: { type: string }) => {
+      if (event.type === "input" && opts.revertAfterMs !== undefined) {
+        setTimeout(() => { actual = ""; }, opts.revertAfterMs);
+      }
+      return true;
+    };
+    (element as { __doc: unknown }).__doc = document;
+    return { element, nativeSets, ownSets };
+  };
+
+  const page = (stub: Stub, frames: { raf: boolean }) => {
+    const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
+    const raf = (f: () => void) => (frames.raf ? (setTimeout(f, 16) as unknown as number) : 0);
+    const channel = {
+      calls,
+      async exchange(exchange: CdpExchange): Promise<unknown> {
+        if (exchange.kind !== "call") throw new Error("unexpected");
+        const params = (exchange.params ?? {}) as Record<string, unknown>;
+        calls.push({ method: exchange.method, params });
+        if (exchange.method === "DOM.resolveNode") return RESOLVES["DOM.resolveNode"];
+        const run = new Function(
+          "document", "requestAnimationFrame", "cancelAnimationFrame", "setTimeout", "clearTimeout", "Event",
+          `return (${String(params.functionDeclaration)});`,
+        )(
+          (stub.element as { __doc: unknown }).__doc, raf, (id: number) => clearTimeout(id), setTimeout, clearTimeout,
+          class { constructor(public type: string) {} },
+        ) as (this: unknown, ...a: unknown[]) => unknown;
+        const args = ((params.arguments ?? []) as Array<{ value: unknown }>).map((a) => a.value);
+        const result = run.apply(stub.element, args);
+        // Without awaitPromise the page answers with the promise, not its value.
+        const value = params.awaitPromise === true ? await result : result instanceof Promise ? {} : result;
+        return returns(value);
+      },
+      async watch(): Promise<never> { throw new Error("unexpected"); },
+      async close(): Promise<void> {},
+    };
+    return channel;
+  };
+
+  it("asks the page to settle its async functions and answer by value", async () => {
+    const stub = controlledInput();
+    const channel = page(stub, { raf: true });
+    await setValueOf(channel, REF, "hello");
+    const fnCalls = channel.calls.filter((c) => c.method === "Runtime.callFunctionOn");
+    expect(fnCalls.length).toBeGreaterThanOrEqual(2);
+    for (const call of fnCalls) {
+      expect(call.params.awaitPromise).toBe(true);
+      expect(call.params.returnByValue).toBe(true);
+    }
+  });
+
+  it("writes through the prototype's native setter, not the framework's own property", async () => {
+    const stub = controlledInput();
+    await expect(setValueOf(page(stub, { raf: true }), REF, "hello")).resolves.toBeUndefined();
+    expect(stub.nativeSets).toEqual(["hello"]);
+    expect(stub.ownSets).toEqual([]);
+  });
+
+  it("reads back only after the settle, so a revert inside the window is refused naming what stayed", async () => {
+    const stub = controlledInput({ revertAfterMs: 10 });
+    const write = setValueOf(page(stub, { raf: true }), REF, "hello");
+    await expect(write).rejects.toBeInstanceOf(WriteNotObservedError);
+    await expect(setValueOf(page(controlledInput({ revertAfterMs: 10 }), { raf: true }), REF, "hello")).rejects.toThrow(/found ""/);
+  });
+
+  it("settles on the 50 ms timer when a background tab never gives an animation frame", async () => {
+    const stub = controlledInput();
+    const started = Date.now();
+    await expect(setValueOf(page(stub, { raf: false }), REF, "hello")).resolves.toBeUndefined();
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("refuses a number the control canonicalised, naming what it holds", async () => {
+    const canonical = (v: string) => (v.trim() === "" || Number.isNaN(Number(v)) ? "" : String(Number(v)));
+    await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "01")).rejects.toThrow(/found "1"/);
+    await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "abc")).rejects.toThrow(/found ""/);
+    await expect(setMagnitudeOf(page(controlledInput({ canonical }), { raf: true }), REF, 42)).resolves.toBeUndefined();
+    await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "7")).resolves.toBeUndefined();
   });
 });

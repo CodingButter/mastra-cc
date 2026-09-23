@@ -100,7 +100,7 @@ async function callOn(
   // frame's world (measured, Chrome 151). The world therefore checks the
   // element's document before the effect runs: another frame's element is
   // refused, never touched from the wrong document.
-  const guarded = `function(...a){ if (this.ownerDocument !== document) return ${JSON.stringify(OTHER_FRAME)}; return (${functionDeclaration}).apply(this, a); }`;
+  const guarded = `async function(...a){ if (this.ownerDocument !== document) return ${JSON.stringify(OTHER_FRAME)}; return await (${functionDeclaration}).apply(this, a); }`;
   const reply = (await seam.exchange({
     kind: "call",
     targetId: ref.targetId,
@@ -110,6 +110,7 @@ async function callOn(
       functionDeclaration: guarded,
       arguments: args.map((value) => ({ value })),
       returnByValue: true,
+      awaitPromise: true,
     },
   })) as CallFunctionReply;
   if (reply.exceptionDetails !== undefined) {
@@ -135,14 +136,31 @@ async function callOn(
 // can get to the desktop route's read-back. The tree-side observation - the
 // StaticText child carrying the typed string - is what the backend's re-read
 // surfaces to the caller on top of this.
-export async function setValueOf(seam: CallSeam, ref: NodeRef, value: string): Promise<void> {
+// The write goes through the element prototype's own value setter, the way a
+// person's keystroke lands, so a framework that watches the property hears it.
+// Then it waits a bounded settle - two animation frames or 50 ms, whichever
+// comes first (a background tab throttles animation frames) - and reads the
+// value back in the same call. What this proves is bounded: the DOM value was
+// observed equal to the request after the settle window. It does not prove the
+// application's own state accepted it; a component that reverts later, or keeps
+// the DOM value while rejecting internally, is outside what this can see.
+export const WRITE_AND_SETTLE =
+  "async function(v){ const set = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(this), 'value').set; set.call(this, v); this.dispatchEvent(new Event('input', {bubbles:true})); this.dispatchEvent(new Event('change', {bubbles:true})); await new Promise((r) => { let n = 0, raf = 0, t = 0, done = false; const end = () => { if (done) return; done = true; cancelAnimationFrame(raf); clearTimeout(t); r(); }; const f = () => { if (++n >= 2) end(); else raf = requestAnimationFrame(f); }; raf = requestAnimationFrame(f); t = setTimeout(end, 50); }); }";
+export const READ_VALUE = "function(){ return this.value; }";
+
+async function writeAndObserve(seam: CallSeam, ref: NodeRef, requested: string): Promise<string> {
   const objectId = await objectFor(seam, ref);
-  await callOn(seam, ref, objectId, "function(v){ this.value = v; this.dispatchEvent(new Event('input', {bubbles:true})); this.dispatchEvent(new Event('change', {bubbles:true})); }", [value]);
-  // Read back, separately, rather than trusting what the write returned.
-  const observed = await callOn(seam, ref, objectId, "function(){ return this.value; }", []);
-  if (String(observed ?? "") !== value) {
+  await callOn(seam, ref, objectId, WRITE_AND_SETTLE, [requested]);
+  // The read-back is its own call: the write's answer is not evidence.
+  const observed = await callOn(seam, ref, objectId, READ_VALUE, []);
+  return String(observed ?? "");
+}
+
+export async function setValueOf(seam: CallSeam, ref: NodeRef, value: string): Promise<void> {
+  const observed = await writeAndObserve(seam, ref, value);
+  if (observed !== value) {
     throw new WriteNotObservedError(
-      `writing this element reported success, but reading it back found ${JSON.stringify(String(observed ?? ""))} where ${JSON.stringify(value)} was intended - the page performed something other than what was asked`,
+      `writing this element reported success, but reading it back found ${JSON.stringify(observed)} where ${JSON.stringify(value)} was intended - the page performed something other than what was asked`,
     );
   }
 }
@@ -197,12 +215,11 @@ export async function contentLength(seam: CallSeam, ref: NodeRef): Promise<numbe
 // reads back to confirm the value LANDED, because a range input silently
 // clamps exactly the way the desktop platform does.
 export async function setMagnitudeOf(seam: CallSeam, ref: NodeRef, value: number): Promise<void> {
-  const objectId = await objectFor(seam, ref);
-  await callOn(seam, ref, objectId, "function(v){ this.value = String(v); this.dispatchEvent(new Event('input', {bubbles:true})); this.dispatchEvent(new Event('change', {bubbles:true})); }", [value]);
-  const observed = await callOn(seam, ref, objectId, "function(){ return Number(this.value); }", []);
-  if (Number(observed) !== value) {
+  const requested = String(value);
+  const observed = await writeAndObserve(seam, ref, requested);
+  if (observed !== requested) {
     throw new WriteNotObservedError(
-      `setting this element's value reported success, but reading it back found ${String(observed)} where ${value} was intended - the page clamped or ignored the write`,
+      `setting this element's value reported success, but reading it back found ${JSON.stringify(observed)} where ${JSON.stringify(requested)} was intended - the page clamped, reformatted or ignored the write`,
     );
   }
 }

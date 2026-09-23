@@ -118,4 +118,43 @@ describe.skipIf(process.env.MASTRA_CC_LIVE !== "1")("the daemon's own world in a
     },
     60_000,
   );
+
+  it(
+    "writes a field in a background tab, where animation frames are throttled, on the 50 ms settle",
+    async () => {
+      await withChrome(async (endpoint) => {
+        const channel = liveCdpChannel(endpoint);
+        const list = (await channel.exchange({ kind: "list" })) as Array<{ id: string; type: string }>;
+        const front = list.find((t) => t.type === "page")!.id;
+        const browserCall = (method: string, params: Record<string, unknown>) =>
+          channel.exchange({ kind: "call", targetId: front, method, params }) as Promise<{ result?: Record<string, unknown> }>;
+        // Open a second tab and keep the first in front, so the written one is backgrounded.
+        const created = await browserCall("Target.createTarget", {
+          url: `data:text/html,${encodeURIComponent('<title>Bg</title><input id="f">')}`,
+          background: true,
+        });
+        const targetId = String(created.result?.targetId);
+        await browserCall("Page.bringToFront", {});
+        await channel.exchange({ kind: "list" });
+        const call = (method: string, params: Record<string, unknown> = {}) =>
+          channel.exchange({ kind: "call", targetId, method, params }) as Promise<{ result?: Record<string, unknown> }>;
+        await sleep(500);
+        const visibility = ((await call("Runtime.evaluate", { expression: "document.visibilityState", returnByValue: true })).result?.result as { value?: unknown })?.value;
+        const doc = (await call("DOM.getDocument", { depth: -1 })).result?.root as unknown;
+        const find = (node: unknown): number | undefined => {
+          const n = node as { attributes?: string[]; backendNodeId: number; children?: unknown[] };
+          if ((n.attributes ?? []).join() === "id,f") return n.backendNodeId;
+          for (const c of n.children ?? []) { const f = find(c); if (f !== undefined) return f; }
+          return undefined;
+        };
+        const started = Date.now();
+        await setValueOf(channel, { targetId, backendDOMNodeId: find(doc)! }, "behind");
+        const took = Date.now() - started;
+        expect(visibility).toBe("hidden");
+        expect(took).toBeLessThan(2_000);
+        await channel.close();
+      });
+    },
+    30_000,
+  );
 });
