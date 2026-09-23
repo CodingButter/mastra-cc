@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -16,10 +16,19 @@ const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const check = join(repoRoot, "tools", "mutations.mjs");
 const table = JSON.parse(readFileSync(join(repoRoot, "tools", "mutations.json"), "utf8"));
 
+// A scratch tree holding a copy of each file the entries name, so the runner
+// under test claims THAT tree's lock and not this checkout's: a sweep running
+// here would otherwise refuse these children, and these cases would go red for
+// a reason that has nothing to do with the table.
 function runWithTable(entries) {
-  const path = join(mkdtempSync(join(tmpdir(), "mutations-table-")), "mutations.json");
+  const root = mkdtempSync(join(tmpdir(), "mutations-table-"));
+  for (const file of new Set(entries.map((entry) => entry.file))) {
+    mkdirSync(join(root, file, ".."), { recursive: true });
+    copyFileSync(join(repoRoot, file), join(root, file));
+  }
+  const path = join(root, "mutations.json");
   writeFileSync(path, JSON.stringify(entries));
-  return spawnSync(process.execPath, [check, "--table", path], { encoding: "utf8" });
+  return { ...spawnSync(process.execPath, [check, "--root", root, "--table", path], { encoding: "utf8" }), root };
 }
 
 describe("the mutation table", () => {
@@ -83,9 +92,8 @@ describe("the mutation runner", () => {
   });
 
   it("refuses before touching the file, so no suite runs against a site nobody chose", () => {
-    const server = join(repoRoot, "daemon", "src", "server.ts");
-    const before = readFileSync(server, "utf8");
-    runWithTable([
+    const before = readFileSync(join(repoRoot, "daemon", "src", "server.ts"), "utf8");
+    const { root } = runWithTable([
       {
         name: "scratch-ambiguous",
         file: "daemon/src/server.ts",
@@ -94,6 +102,6 @@ describe("the mutation runner", () => {
         testFile: "__tests__/mutations.test.mjs",
       },
     ]);
-    expect(readFileSync(server, "utf8")).toBe(before);
+    expect(readFileSync(join(root, "daemon", "src", "server.ts"), "utf8")).toBe(before);
   });
 });
