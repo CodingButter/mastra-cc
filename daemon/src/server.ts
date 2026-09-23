@@ -3,6 +3,10 @@ import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { StringDecoder } from "node:string_decoder";
+
+/** An unterminated request line longer than this ends the connection instead of growing without bound. */
+export const MAX_REQUEST_LINE_CHARS = 8 * 1024 * 1024;
 import { measureAsyncCost, recordCost } from "./costs.js";
 // Type-only here; the value is reached through a dynamic import inside
 // startWebSocketServer, so a daemon nobody asked for a port never pays to load
@@ -2819,7 +2823,10 @@ function socketPipe(socket: Socket): Pipe {
       return socket.destroyed;
     },
     onData: (handler) => {
-      socket.on("data", (chunk: Buffer) => handler(chunk.toString("utf8")));
+      // One decoder per connection: a multi-byte character split across two
+      // TCP chunks must be joined, not turned into two replacement characters.
+      const decoder = new StringDecoder("utf8");
+      socket.on("data", (chunk: Buffer) => handler(decoder.write(chunk)));
     },
     onClose: (handler) => {
       socket.on("close", handler);
@@ -2869,9 +2876,20 @@ export function serveConnection(
     void book.closeAll();
   };
   pipe.onClose(teardown);
+  let overlong = false;
   pipe.onData((chunk) => {
+    if (overlong || pipe.closed) return;
+    // Search only the new text: re-scanning the whole buffer per chunk is quadratic in a long line.
+    const searchFrom = buffer.length;
     buffer += chunk;
-    let newline = buffer.indexOf("\n");
+    if (buffer.length > MAX_REQUEST_LINE_CHARS && buffer.lastIndexOf("\n") < buffer.length - MAX_REQUEST_LINE_CHARS) {
+      buffer = "";
+      overlong = true;
+      pipe.write(`${JSON.stringify({ type: "refusal", refusal: `daemon: a request line exceeded ${MAX_REQUEST_LINE_CHARS} characters without a newline` })}\n`);
+      pipe.end();
+      return;
+    }
+    let newline = buffer.indexOf("\n", searchFrom);
     while (newline >= 0) {
       const line = buffer.slice(0, newline);
       buffer = buffer.slice(newline + 1);
@@ -2988,8 +3006,9 @@ function webSocketPipe(socket: WebSocket): Pipe {
       // uses. A WebSocket has message boundaries of its own; the protocol
       // does not care about them, and pretending it does is how a peer that
       // batches two lines into one frame starts behaving differently.
+      const decoder = new StringDecoder("utf8");
       socket.on("message", (data: Buffer | ArrayBuffer | Buffer[]) => {
-        handler(Array.isArray(data) ? Buffer.concat(data).toString("utf8") : Buffer.from(data as Buffer).toString("utf8"));
+        handler(decoder.write(Array.isArray(data) ? Buffer.concat(data) : Buffer.from(data as Buffer)));
       });
     },
     onClose: (handler) => {

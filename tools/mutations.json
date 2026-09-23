@@ -2137,6 +2137,36 @@
     "find": "process.on(\"exit\", releaseTree);\n",
     "replace": "",
     "cwd": "tools",
-    "testFile": "__tests__/mutations-runner.test.mjs"
+    "testFile": "__tests__/mutations-runner.test.mjs",
+    "name": "a-request-character-is-split-in-two",
+    "file": "daemon/src/server.ts",
+    "find": "handler(decoder.write(chunk))",
+    "replace": "handler(chunk.toString(\"utf8\"))",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-request-arrives-in-pieces.test.ts"
+  },
+  {
+    "name": "a-request-line-grows-without-bound",
+    "file": "daemon/src/server.ts",
+    "find": "    if (buffer.length > MAX_REQUEST_LINE_CHARS &&",
+    "replace": "    if (false &&",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-request-arrives-in-pieces.test.ts"
+  },
+  {
+    "name": "a-reply-character-is-split-in-two",
+    "file": "packages/transport/src/index.ts",
+    "find": "socket.on(\"data\", (chunk) => handler(decoder.write(chunk)));",
+    "replace": "socket.on(\"data\", (chunk) => handler(chunk.toString(\"utf8\")));",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/a-line-arrives-in-pieces.test.ts"
+  },
+  {
+    "name": "a-reply-line-grows-without-bound",
+    "file": "packages/transport/src/index.ts",
+    "find": "    if (buffer.length > MAX_LINE_CHARS &&",
+    "replace": "    if (false &&",
+    "cwd": "packages/transport",
+    "testFile": "src/__tests__/a-line-arrives-in-pieces.test.ts"
   }
 ]
