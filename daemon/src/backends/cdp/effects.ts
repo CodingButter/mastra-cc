@@ -27,6 +27,7 @@ import {
   UnpublishedActionError,
   WriteNotObservedError,
 } from "../../backend.js";
+import { ISOLATED_WORLD } from "./subtree-stream.js";
 
 export interface CallSeam {
   exchange(exchange: { kind: "call"; targetId: string; method: string; params: Record<string, unknown> }): Promise<unknown>;
@@ -69,7 +70,9 @@ async function objectFor(seam: CallSeam, ref: NodeRef): Promise<string> {
     kind: "call",
     targetId: ref.targetId,
     method: "DOM.resolveNode",
-    params: { backendNodeId: ref.backendDOMNodeId },
+    // Resolved into the daemon's own world: the page's scripts share the
+    // element but cannot see, patch or intercept what is called on it.
+    params: { backendNodeId: ref.backendDOMNodeId, executionContextId: ISOLATED_WORLD },
   })) as ResolveReply;
   const objectId = reply.result?.object?.objectId;
   if (objectId === undefined) {
@@ -79,6 +82,8 @@ async function objectFor(seam: CallSeam, ref: NodeRef): Promise<string> {
   }
   return objectId;
 }
+
+const OTHER_FRAME = "\u0000mastra-cc:other-frame";
 
 // A page exception is not a thrown error at the protocol level: the call
 // answers normally and reports the exception in the reply. Letting that pass
@@ -91,13 +96,18 @@ async function callOn(
   functionDeclaration: string,
   args: ReadonlyArray<unknown>,
 ): Promise<unknown> {
+  // CDP hands back a node from a same-process iframe wrapped in the main
+  // frame's world (measured, Chrome 151). The world therefore checks the
+  // element's document before the effect runs: another frame's element is
+  // refused, never touched from the wrong document.
+  const guarded = `function(...a){ if (this.ownerDocument !== document) return ${JSON.stringify(OTHER_FRAME)}; return (${functionDeclaration}).apply(this, a); }`;
   const reply = (await seam.exchange({
     kind: "call",
     targetId: ref.targetId,
     method: "Runtime.callFunctionOn",
     params: {
       objectId,
-      functionDeclaration,
+      functionDeclaration: guarded,
       arguments: args.map((value) => ({ value })),
       returnByValue: true,
     },
@@ -107,7 +117,13 @@ async function callOn(
       `the page raised an exception performing this: ${String(reply.exceptionDetails.text ?? "no detail given")}`,
     );
   }
-  return reply.result?.result?.value;
+  const value = reply.result?.result?.value;
+  if (value === OTHER_FRAME) {
+    throw new EffectUnsupportedError(
+      "this element is in a frame this session cannot reach - nothing was done to it",
+    );
+  }
+  return value;
 }
 
 // WRITING A FIELD'S CONTENT.

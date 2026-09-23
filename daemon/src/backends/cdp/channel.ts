@@ -8,7 +8,9 @@ import {
   WatchUnsupportedError,
 } from "../../backend.js";
 import { fixturesDir } from "../atspi/channel.js";
-import { type CdpWatchAnchor, openSubtreeStream } from "./subtree-stream.js";
+import { type CdpWatchAnchor, ISOLATED_WORLD, openSubtreeStream } from "./subtree-stream.js";
+
+export { ISOLATED_WORLD };
 
 // The browser channel: every debugging-protocol exchange the CDP backend
 // performs goes through exactly one exchange() seam, mirroring the posture of
@@ -111,6 +113,7 @@ export class DialogBlockingError extends Error {
 // shared error type. Refuse-on-ignorance, not invention.
 export class UnrecordedCdpExchangeError extends Error {}
 
+
 interface DiscoveredTarget {
   readonly id?: string;
   readonly webSocketDebuggerUrl?: string;
@@ -132,6 +135,10 @@ interface SocketState {
   // Set when initialisation was stopped by a dialog: the close re-arms it.
   initBlocked: boolean;
   mainFrameId?: string;
+  // The isolated world in the main frame's current document, created on
+  // first use and forgotten when that document goes.
+  world?: Promise<number>;
+  worldId?: number;
 }
 
 export interface LiveCdpDeps {
@@ -304,6 +311,17 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
         }
         if (message.method === undefined) return;
         // Heard centrally, watched or not: a dialog freezes the whole target.
+        if (message.method === "Runtime.executionContextsCleared") {
+          forgetWorld(state);
+        } else if (message.method === "Runtime.executionContextDestroyed") {
+          if (message.params?.executionContextId === state.worldId) forgetWorld(state);
+        } else if (message.method === "Page.frameNavigated") {
+          const frame = message.params?.frame as { id?: string; parentId?: string } | undefined;
+          if (frame?.parentId === undefined) {
+            if (frame?.id !== undefined) state.mainFrameId = frame.id;
+            forgetWorld(state);
+          }
+        }
         if (message.method === "Page.javascriptDialogOpening") {
           const params = message.params ?? {};
           state.dialog = { open: true, type: String(params.type ?? "alert"), message: String(params.message ?? "") };
@@ -328,7 +346,44 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
     if (state.dialog.open) {
       throw new DialogBlockingError({ ...state.dialog, method, effectSent: false });
     }
-    return raw(state, method, params, CDP_CALL_DEADLINE_MS);
+    return raw(state, method, await inWorld(state, params), CDP_CALL_DEADLINE_MS);
+  }
+
+  function forgetWorld(state: SocketState): void {
+    state.world = undefined;
+    state.worldId = undefined;
+  }
+
+  function worldOf(state: SocketState): Promise<number> {
+    if (state.world !== undefined) return state.world;
+    // eslint-disable-next-line prefer-const -- read inside its own body
+    let world: Promise<number> | undefined;
+    world = (async () => {
+      const reply = (await raw(
+        state,
+        "Page.createIsolatedWorld",
+        { frameId: state.mainFrameId, worldName: ISOLATED_WORLD, grantUniversalAccess: false },
+        CDP_CALL_DEADLINE_MS,
+      )) as { result?: { executionContextId?: number }; error?: { message?: string } };
+      const id = reply.result?.executionContextId;
+      if (id === undefined) {
+        throw new CdpUnreachableError(`the page would not create the daemon's own world: ${reply.error?.message ?? "no context id"}`);
+      }
+      if (state.world === world) state.worldId = id;
+      return id;
+    })();
+    state.world = world;
+    world.catch(() => {
+      if (state.world === world) forgetWorld(state);
+    });
+    return world;
+  }
+
+  async function inWorld(state: SocketState, params: unknown): Promise<unknown> {
+    const p = params as Record<string, unknown> | undefined;
+    if (p?.executionContextId === ISOLATED_WORLD) return { ...p, executionContextId: await worldOf(state) };
+    if (p?.contextId === ISOLATED_WORLD) return { ...p, contextId: await worldOf(state) };
+    return params;
   }
 
   function raw(state: SocketState, method: string, params: unknown, deadline: number): Promise<unknown> {
@@ -385,6 +440,7 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
       return openSubtreeStream(
         {
           call: (method, params) => send(state, method, params),
+          isIsolated: (contextId) => contextId !== undefined && contextId === state.worldId,
           onProtocolEvent: (listener) => {
             const listeners = eventListeners.get(anchor.targetId) ?? new Set();
             listeners.add(listener);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { UnpublishedActionError, WriteNotObservedError } from "../../../backend.js";
+import { EffectUnsupportedError, UnpublishedActionError, WriteNotObservedError } from "../../../backend.js";
+import { ISOLATED_WORLD } from "../subtree-stream.js";
 import type { CdpExchange } from "../channel.js";
 import {
   contentLength,
@@ -30,9 +31,13 @@ const scriptedChannel = (replies: Record<string, unknown>) => {
       // Keyed by method, and for a function call by the function's own source,
       // because a write and the read-back that checks it are two different
       // calls on the same method.
+      // Every effect function arrives wrapped in the frame guard; the key is
+      // the function the guard wraps.
+      const declaration = String(params?.functionDeclaration ?? "");
+      const inner = /return \((function[\s\S]*)\)\.apply\(this, a\); \}$/.exec(declaration)?.[1] ?? declaration;
       const key =
         exchange.method === "Runtime.callFunctionOn"
-          ? `callFunctionOn:${String(params?.functionDeclaration ?? "").slice(0, 47)}`
+          ? `callFunctionOn:${inner.slice(0, 47)}`
           : exchange.method;
       asked.push(key);
       if (!(key in replies)) throw new Error(`test channel: nothing scripted for ${key}`);
@@ -216,5 +221,51 @@ describe("the browser route reads and reveals", () => {
     });
 
     await expect(revealIn(channel, REF)).rejects.toBeInstanceOf(WriteNotObservedError);
+  });
+});
+
+describe("the browser route acts from the daemon's own world", () => {
+  const recorder = (value: (declaration: string) => unknown) => {
+    const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
+    return {
+      calls,
+      async exchange(exchange: CdpExchange): Promise<unknown> {
+        if (exchange.kind !== "call") throw new Error("unexpected");
+        const params = (exchange.params ?? {}) as Record<string, unknown>;
+        calls.push({ method: exchange.method, params });
+        if (exchange.method === "DOM.resolveNode") return RESOLVES["DOM.resolveNode"];
+        return returns(value(String(params.functionDeclaration)));
+      },
+      async watch(): Promise<never> {
+        throw new Error("unexpected");
+      },
+      async close(): Promise<void> {},
+    };
+  };
+
+  it("resolves every element into the isolated world and guards every function by its document", async () => {
+    const channel = recorder((d) => (d.includes("String(this.value") ? "abc" : undefined));
+    await contentOf(channel, REF);
+    const resolve = channel.calls.find((c) => c.method === "DOM.resolveNode");
+    expect(resolve?.params).toEqual({ backendNodeId: 24, executionContextId: ISOLATED_WORLD });
+    for (const call of channel.calls.filter((c) => c.method === "Runtime.callFunctionOn")) {
+      expect(String(call.params.functionDeclaration)).toContain("this.ownerDocument !== document");
+    }
+    expect(channel.calls.some((c) => c.method === "DOM.describeNode")).toBe(false);
+  });
+
+  it("refuses an element in another frame's document and does nothing to it", async () => {
+    // Run the real guarded declaration against an element whose document is
+    // not the world's: the wrapped effect must never execute.
+    let touched = false;
+    const frameDocument = {};
+    const element = { ownerDocument: frameDocument, set value(_v: string) { touched = true; }, dispatchEvent() {} };
+    const channel = recorder((declaration) => {
+      const run = new Function("document", `return (${declaration});`)({}) as (this: unknown, ...a: unknown[]) => unknown;
+      return run.call(element, "x");
+    });
+    await expect(contentOf(channel, REF)).rejects.toBeInstanceOf(EffectUnsupportedError);
+    await expect(setValueOf(channel, REF, "x")).rejects.toThrow(/in a frame this session cannot reach/);
+    expect(touched).toBe(false);
   });
 });

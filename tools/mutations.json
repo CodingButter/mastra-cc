@@ -2264,5 +2264,53 @@
     "replace": "    if (false) {",
     "cwd": "daemon",
     "testFile": "src/__tests__/cdp-refusals.test.ts"
+  },
+  {
+    "name": "the-stream-lives-in-the-page-world",
+    "file": "daemon/src/backends/cdp/subtree-stream.ts",
+    "find": "{ source: PAGE_SOURCE, worldName: ISOLATED_WORLD }",
+    "replace": "{ source: PAGE_SOURCE }",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
+  },
+  {
+    "name": "the-page-can-forge-stream-events",
+    "file": "daemon/src/backends/cdp/subtree-stream.ts",
+    "find": "    if (!deps.isIsolated(params.executionContextId)) return;\n",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
+  },
+  {
+    "name": "a-navigated-frame-keeps-a-dead-world",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "            if (frame?.id !== undefined) state.mainFrameId = frame.id;\n            forgetWorld(state);\n",
+    "replace": "            if (frame?.id !== undefined) state.mainFrameId = frame.id;\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "effects-run-in-the-page-world",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "params: { backendNodeId: ref.backendDOMNodeId, executionContextId: ISOLATED_WORLD },",
+    "replace": "params: { backendNodeId: ref.backendDOMNodeId },",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "an-effect-reaches-into-another-frame",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "if (this.ownerDocument !== document) return ${JSON.stringify(OTHER_FRAME)}; ",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-watch-anchors-in-another-frame",
+    "file": "daemon/src/backends/cdp/subtree-stream.ts",
+    "find": "if (this.ownerDocument !== document) return false; ",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
   }
 ]

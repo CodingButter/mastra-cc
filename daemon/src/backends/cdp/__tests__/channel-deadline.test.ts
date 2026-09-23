@@ -5,6 +5,7 @@ import {
   CdpDeadlineError,
   CdpUnreachableError,
   DialogBlockingError,
+  ISOLATED_WORLD,
   liveCdpChannel,
 } from "../channel.js";
 
@@ -306,5 +307,65 @@ describe("a native dialog on the page", () => {
     for (const socket of FakeSocket.all) {
       expect(socket.frames.some((f) => f.method.includes("handleJavaScriptDialog"))).toBe(false);
     }
+  });
+});
+
+describe("the daemon's own world", () => {
+  // Answer each world creation with a fresh context id, and each other call
+  // with nothing, so a test can see which id each call was sent into.
+  async function worldCall(c: ReturnType<typeof channel>, socket: () => FakeSocket, nextWorld: { id: number }) {
+    const answer = c.exchange({
+      kind: "call",
+      targetId: TARGET.id,
+      method: "DOM.resolveNode",
+      params: { backendNodeId: 1, executionContextId: ISOLATED_WORLD },
+    });
+    for (let i = 0; i < 4; i++) {
+      await vi.advanceTimersByTimeAsync(0);
+      for (const frame of socket().sent.splice(0)) {
+        if (frame.method === "Page.createIsolatedWorld") socket().reply(frame.id, { executionContextId: nextWorld.id++ });
+        else {
+          socket().reply(frame.id, {});
+          sentInto.push((frame as unknown as { params: { executionContextId: unknown } }).params.executionContextId);
+        }
+      }
+    }
+    return answer;
+  }
+  const sentInto: unknown[] = [];
+
+  it("is created once in the main frame, substituted for the token, and replaced after the page navigates", async () => {
+    sentInto.length = 0;
+    const c = await listed();
+    const world = { id: 40 };
+    await worldCall(c, () => FakeSocket.last!, world);
+    await worldCall(c, () => FakeSocket.last!, world);
+    const creations = () => FakeSocket.last!.frames.filter((f) => f.method === "Page.createIsolatedWorld");
+    expect(creations()).toHaveLength(1);
+    expect((creations()[0] as unknown as { params: unknown }).params).toEqual({
+      frameId: "F-main",
+      worldName: ISOLATED_WORLD,
+      grantUniversalAccess: false,
+    });
+    expect(sentInto).toEqual([40, 40]);
+
+    FakeSocket.last!.event("Page.frameNavigated", { frame: { id: "F-main" } });
+    await worldCall(c, () => FakeSocket.last!, world);
+    FakeSocket.last!.event("Runtime.executionContextsCleared");
+    await worldCall(c, () => FakeSocket.last!, world);
+    FakeSocket.last!.event("Runtime.executionContextDestroyed", { executionContextId: 42 });
+    await worldCall(c, () => FakeSocket.last!, world);
+    expect(creations()).toHaveLength(4);
+    expect(sentInto).toEqual([40, 40, 41, 42, 43]);
+  });
+
+  it("keeps its world when only a subframe navigates", async () => {
+    sentInto.length = 0;
+    const c = await listed();
+    const world = { id: 50 };
+    await worldCall(c, () => FakeSocket.last!, world);
+    FakeSocket.last!.event("Page.frameNavigated", { frame: { id: "F-child", parentId: "F-main" } });
+    await worldCall(c, () => FakeSocket.last!, world);
+    expect(sentInto).toEqual([50, 50]);
   });
 });
