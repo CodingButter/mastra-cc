@@ -254,6 +254,11 @@ export async function openSubtreeStream(
     returnByValue: true,
   }));
   await deps.call("Runtime.releaseObject", { objectId: rootObjectId });
+  if (installed?.exceptionDetails !== undefined) {
+    removeListener();
+    open = false;
+    throw new Error(`the watch could not be installed on "${watchedId}" - the page threw while it was being set up`);
+  }
   if ((installed?.result as { value?: unknown } | undefined)?.value !== true) {
     removeListener();
     open = false;
@@ -267,10 +272,12 @@ export async function openSubtreeStream(
       if (!open) return;
       open = false;
       removeListener();
+      // The daemon side is already closed; a page that cannot answer (a
+      // dialog, a dead socket) must not turn an unsubscribe into a failure.
       await deps.call("Runtime.evaluate", {
         expression: `(() => { const s = window.__mastraCcStream; if (s && s.stop) s.stop(${JSON.stringify(watchId)}); })()`,
         contextId: ISOLATED_WORLD,
-      });
+      }).catch(() => undefined);
     },
   };
 }

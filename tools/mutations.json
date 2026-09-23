@@ -2344,5 +2344,29 @@
     "replace": "",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-sent-read-claims-an-unknown-effect",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "return call.sent && call.method === \"Runtime.callFunctionOn\";",
+    "replace": "return call.sent;",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "a-failed-re-attach-leaves-the-socket-open",
+    "file": "daemon/src/backends/cdp/channel.ts",
+    "find": "if (state.initBlocked) arm(state, drop);",
+    "replace": "if (state.initBlocked) arm(state, () => evict());",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/channel-deadline.test.ts"
+  },
+  {
+    "name": "a-page-that-threw-is-called-another-frame",
+    "file": "daemon/src/backends/cdp/subtree-stream.ts",
+    "find": "  if (installed?.exceptionDetails !== undefined) {",
+    "replace": "  if (false) {",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/subtree-stream.test.ts"
   }
 ]

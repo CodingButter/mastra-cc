@@ -20,7 +20,7 @@ Decision: [ADR-0114](../../02-DECISIONS/0114-the-browser-cannot-hold-the-desk.md
 - A successful write means the DOM value equalled the request after two animation frames or 50 ms, whichever came first. It does not prove application state. A revert after that window is outside the claim.
 - A cold attach behind a dialog is refused as a deadline, not identified as a dialog; Chrome does not report such a dialog.
 - Only the main frame is covered; iframe elements are refused.
-- A stall with no dialog still holds other clients for up to 10 s, because request serialisation is unchanged.
+- A stall with no dialog still holds other clients for up to 10 s, because request serialisation is unchanged. The 10 s call deadline itself is proven offline (`daemon/src/backends/cdp/__tests__/channel-deadline.test.ts`, fake timers); no transcript here exercises it live - both `deadline` and `dialog-before` resolve at the 1.5 s attach deadline.
 
 ## Rerun
 

@@ -109,9 +109,19 @@ describe("a call the browser never answers", () => {
     await vi.advanceTimersByTimeAsync(1);
     const error = await answer;
     expect(error).toBeInstanceOf(CdpDeadlineError);
-    expect(error).toMatchObject({ method: "DOM.getDocument", effectSent: true });
+    expect(error).toMatchObject({ method: "DOM.getDocument", effectSent: false });
     expect(c.pendingCalls()).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("claims an effect was in flight only for page code, never for a read that was sent", async () => {
+    const c = await listed();
+    const run = c.exchange(call("Runtime.callFunctionOn")).catch((e: unknown) => e);
+    const resolve = c.exchange(call("DOM.resolveNode")).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(CDP_CALL_DEADLINE_MS);
+    expect(FakeSocket.last!.sent).toHaveLength(2);
+    expect(await run).toMatchObject({ method: "Runtime.callFunctionOn", effectSent: true });
+    expect(await resolve).toMatchObject({ method: "DOM.resolveNode", effectSent: false });
   });
 
   it("ignores the reply that arrives after its call timed out", async () => {
@@ -244,13 +254,15 @@ describe("attaching to a target", () => {
 describe("a native dialog on the page", () => {
   it("rejects every pending call at once with DialogBlockingError, leaving no timers", async () => {
     const c = await listed();
-    const answers = [call(), call("DOM.enable"), call("Runtime.evaluate")].map((e) => c.exchange(e).catch((x: unknown) => x));
+    const methods = ["DOM.getDocument", "DOM.resolveNode", "Runtime.callFunctionOn"];
+    const answers = methods.map((m) => c.exchange(call(m)).catch((x: unknown) => x));
     await vi.advanceTimersByTimeAsync(0);
     FakeSocket.last!.event("Page.javascriptDialogOpening", { type: "alert", message: "hi there" });
-    for (const answer of answers) {
+    for (const [i, answer] of answers.entries()) {
       const error = await answer;
       expect(error).toBeInstanceOf(DialogBlockingError);
-      expect(error).toMatchObject({ type: "alert", dialogMessage: "hi there", effectSent: true });
+      // Only running page code leaves an unknown outcome behind.
+      expect(error).toMatchObject({ type: "alert", dialogMessage: "hi there", effectSent: methods[i] === "Runtime.callFunctionOn" });
     }
     expect(c.pendingCalls()).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
@@ -294,6 +306,23 @@ describe("a native dialog on the page", () => {
     expect(socket.frames.filter((f) => f.method === "Page.enable")).toHaveLength(2);
     socket.reply(socket.sent[0]!.id, { ok: 1 });
     expect(await next).toEqual({ result: { ok: 1 } });
+  });
+
+  it("drops the socket whole when the re-attach after it closes also fails", async () => {
+    FakeSocket.answers.delete("Page.enable");
+    const c = await listed();
+    const answer = c.exchange(call()).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = FakeSocket.last!;
+    socket.event("Page.javascriptDialogOpening", { type: "alert", message: "x" });
+    await answer;
+    socket.event("Page.javascriptDialogClosed");
+    const next = c.exchange(call()).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(CDP_INIT_DEADLINE_MS);
+    expect(await next).toBeInstanceOf(CdpDeadlineError);
+    expect(socket.closed).toBe(true);
+    expect(c.pendingCalls()).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("is never answered by the daemon", async () => {

@@ -189,6 +189,12 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
     }
   }
 
+  // Only running page code can change the page; a resolve, a tree read or a
+  // world creation that went unanswered left it untouched, sent or not.
+  function mayHaveChanged(call: PendingCall): boolean {
+    return call.sent && call.method === "Runtime.callFunctionOn";
+  }
+
   function failAll(state: SocketState, error: (call: PendingCall) => Error): void {
     for (const [id, call] of state.pending) {
       clearTimeout(call.timer);
@@ -249,6 +255,16 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
       const evict = () => {
         if (sockets.get(targetId) === opened) sockets.delete(targetId);
       };
+      // Every failed initialisation - first or re-armed - drops the socket
+      // whole; the close event then rejects whatever still waits on it.
+      const drop = () => {
+        evict();
+        try {
+          ws.close();
+        } catch {
+          // best-effort
+        }
+      };
       const openTimer = setTimeout(() => {
         evict();
         reject(new CdpDeadlineError({ method: "open", effectSent: false }));
@@ -263,14 +279,7 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
         () => {
           clearTimeout(openTimer);
           isOpen = true;
-          arm(state, () => {
-            evict();
-            try {
-              ws.close();
-            } catch {
-              // best-effort
-            }
-          });
+          arm(state, drop);
           resolve(state);
         },
         { once: true },
@@ -281,6 +290,8 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
       const gone = () => {
         clearTimeout(openTimer);
         evict();
+        const at = states.indexOf(state);
+        if (at !== -1) states.splice(at, 1);
         if (!isOpen) {
           reject(new CdpUnreachableError(`the debugging socket for target "${targetId}" could not be opened`));
         }
@@ -325,10 +336,10 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
         if (message.method === "Page.javascriptDialogOpening") {
           const params = message.params ?? {};
           state.dialog = { open: true, type: String(params.type ?? "alert"), message: String(params.message ?? "") };
-          failAll(state, (call) => new DialogBlockingError({ ...state.dialog, method: call.method, effectSent: call.sent }));
+          failAll(state, (call) => new DialogBlockingError({ ...state.dialog, method: call.method, effectSent: mayHaveChanged(call) }));
         } else if (message.method === "Page.javascriptDialogClosed") {
           state.dialog = { open: false, type: "", message: "" };
-          if (state.initBlocked) arm(state, () => evict());
+          if (state.initBlocked) arm(state, drop);
         }
         const listeners = eventListeners.get(targetId);
         if (listeners === undefined) return;
@@ -394,7 +405,7 @@ export function liveCdpChannel(endpoint: string, deps: LiveCdpDeps = {}): CdpCha
         sent: false,
         timer: setTimeout(() => {
           state.pending.delete(id);
-          reject(new CdpDeadlineError({ method, effectSent: call.sent }));
+          reject(new CdpDeadlineError({ method, effectSent: mayHaveChanged(call) }));
         }, deadline),
         resolve,
         reject,

@@ -15,7 +15,7 @@ const CHILD_NODE = 41;
 
 const WORLD = 7;
 
-function harness(options: { axRole?: string; resolves?: boolean; otherFrame?: boolean } = {}) {
+function harness(options: { axRole?: string; resolves?: boolean; otherFrame?: boolean; throws?: boolean } = {}) {
   const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
   const listeners = new Set<(method: string, params: Record<string, unknown>) => void>();
   const changes: BackendChange[] = [];
@@ -29,6 +29,7 @@ function harness(options: { axRole?: string; resolves?: boolean; otherFrame?: bo
         case "Runtime.evaluate":
           return { result: { result: { objectId: "OBJ-CHANGED" } } };
         case "Runtime.callFunctionOn":
+          if (options.throws === true) return { result: { result: { type: "object" }, exceptionDetails: { text: "Uncaught" } } };
           return { result: { result: { value: options.otherFrame !== true } } };
         case "Accessibility.getPartialAXTree":
           return {
@@ -265,5 +266,13 @@ describe("the stream lives in the daemon's own world", () => {
     expect(String(install?.params.functionDeclaration)).toContain("this.ownerDocument !== document");
     expect(h.listenerCount()).toBe(0);
     expect(h.changes).toEqual([]);
+  });
+
+  it("says the page threw, not that the element is in another frame, when installing fails", async () => {
+    const h = harness({ throws: true });
+    const error = await open(h).catch((e: unknown) => e);
+    expect(String(error)).toMatch(/the page threw/);
+    expect(String(error)).not.toMatch(/another frame|cannot reach/);
+    expect(h.listenerCount()).toBe(0);
   });
 });
