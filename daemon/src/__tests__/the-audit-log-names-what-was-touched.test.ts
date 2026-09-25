@@ -622,6 +622,7 @@ describe("the refusal vocabulary is closed", () => {
         "WindowScopeAmbiguous",
         "ApplicationScopeUnmatched",
         "ApplicationScopeAmbiguous",
+        "ApplicationIdentityMismatch",
         "Unclassified",
       ].sort(),
     );

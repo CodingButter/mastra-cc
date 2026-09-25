@@ -34,12 +34,30 @@ export function loadGrantsFile(path: string): ReadonlySet<string> {
     );
   }
   const applications = (parsed as { applications?: unknown })?.applications;
-  if (!Array.isArray(applications) || applications.some((entry) => typeof entry !== "string")) {
+  const named = (entry: unknown): entry is { name: string; executable: string } =>
+    typeof entry === "object" && entry !== null && typeof (entry as { name?: unknown }).name === "string" &&
+    typeof (entry as { executable?: unknown }).executable === "string" && (entry as { executable: string }).executable.startsWith("/");
+  if (!Array.isArray(applications) || applications.some((entry) => typeof entry !== "string" && !named(entry))) {
     throw new MalformedGrantsFileError(
-      `the grants file at ${path} must be {"applications": ["name", ...]} - refusing to guess what was meant`,
+      `the grants file at ${path} must be {"applications": ["name" | {"name", "executable": "/absolute/path"}, ...]} - refusing to guess what was meant`,
     );
   }
-  return new Set(applications.map(applicationName));
+  return new Set(applications.map((entry) => applicationName(typeof entry === "string" ? entry : entry.name)));
+}
+
+// The executables a grants file names explicitly (ADR-0120). A bare-name entry
+// names none here; its executable is resolved through PATH at boot instead.
+export function loadGrantedExecutables(path: string): ReadonlyMap<string, readonly string[]> {
+  const out = new Map<string, string[]>();
+  if (!existsSync(path)) return out;
+  const applications = (JSON.parse(readFileSync(path, "utf8")) as { applications: unknown[] }).applications;
+  for (const entry of applications) {
+    if (typeof entry === "string") continue;
+    const { name, executable } = entry as { name: string; executable: string };
+    const key = applicationName(name);
+    out.set(key, [...(out.get(key) ?? []), executable]);
+  }
+  return out;
 }
 
 // The effective observe set = grants file ∪ --grant flags ∪ --permit names.

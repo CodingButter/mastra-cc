@@ -209,6 +209,11 @@ export class WindowScopeAmbiguousError extends Error {}
 export class ApplicationScopeUnmatchedError extends Error {}
 export class ApplicationScopeAmbiguousError extends Error {}
 
+// A name is a claim, not an identity (ADR-0120). A process that publishes a
+// granted name from an executable the grant does not name is refused, so a
+// scope aimed at "mousepad" never reaches a stranger calling itself that.
+export class ApplicationIdentityMismatchError extends Error {}
+
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody
 // can review"). This is not a judgement of the caller's attestation - the

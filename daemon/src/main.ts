@@ -12,7 +12,8 @@ import { applicationName } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
 import { selectAccessibilityLayer } from "./accessibility/select.js";
 import { selectKeyDelivery } from "./rawinput/select.js";
-import { loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
+import { loadGrantedExecutables, loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
+import { grantedExecutables } from "./backends/atspi/process-identity.js";
 import {
   composeBootNames,
   composeCatalog,
@@ -182,7 +183,12 @@ const accessibility = selectAccessibilityLayer();
 // (ADR-0066 clause 2).
 const keys = selectKeyDelivery();
 
-const backend = registry[backendName]({ capture, fixture, visibility });
+// Grants bind to executables, not to names (ADR-0120): resolved once, here.
+const executables =
+  visibility === "all"
+    ? undefined
+    : grantedExecutables(visibility, arg("--grants") !== null ? loadGrantedExecutables(arg("--grants") as string) : new Map());
+const backend = registry[backendName]({ capture, fixture, visibility, executables });
 
 const query = arg("--query");
 const resolve = arg("--resolve");
