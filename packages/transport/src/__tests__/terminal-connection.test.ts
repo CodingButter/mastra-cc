@@ -107,7 +107,10 @@ describe("terminal transport state", () => {
     peers.push(daemon);
     const client = await connect({ socketPath: daemon.socketPath });
     const pending = client.queryElements({});
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    // Destroy only after the peer has read the request. Destroying a socket
+    // with unread bytes makes the kernel reset it (ECONNRESET) instead of
+    // closing it, which a fixed sleep did not rule out under load.
+    while (daemon.requests.length === 0) await new Promise((resolve) => setTimeout(resolve, 1));
     for (const socket of daemon.sockets) socket.destroy();
 
     const first = await pending.catch((error: unknown) => error);

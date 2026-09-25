@@ -35,6 +35,7 @@ declare module "dbus-native" {
   export interface DbusBus {
     connection: DbusConnection;
     invoke(message: DbusMessage, callback: (err: unknown, ...results: unknown[]) => void): void;
+    invoke(message: DbusMessage, options: { timeout?: number }, callback: (err: unknown, ...results: unknown[]) => void): void;
   }
 
   export function sessionBus(): DbusBus;

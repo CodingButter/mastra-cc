@@ -1,3 +1,4 @@
+import { CallDeadlineError } from "../../backend.js";
 import { performance } from "node:perf_hooks";
 import type { LabelObservation as Observation, CompositeObservation } from "@mastra-cc/protocol-types";
 import type { Channel, Exchange } from "./channel.js";
@@ -73,7 +74,7 @@ export class LabelReader {
         let raw: unknown;
         try { raw = await call(here, "Get", "Parent"); }
         catch (error) {
-          if (error instanceof UnrecordedExchangeError || error instanceof Unavailable) throw error;
+          if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError || error instanceof Unavailable) throw error;
           throw new Unavailable("out-of-scope");
         }
         try { here = reference(raw); } catch { throw new Unavailable("out-of-scope"); }
@@ -165,7 +166,7 @@ export class LabelReader {
       };
       const before = await observe();
       const after = await observe().catch(error => {
-        if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
         if ((error instanceof Unavailable || error instanceof CompositeUnavailable) && error.reason === "limit-exceeded") throw error;
         return fail("unreadable");
       });
@@ -174,7 +175,7 @@ export class LabelReader {
       if (this.closed || performance.now() - started >= 250) return fail("unreadable");
       return { kind: "available", provenance: "immediate-combo-parent", parentRole: "combo box", relation: "labelled-by", label: after.name, immediateChildCount: 2, editableChildCount: 1, siblingRole: "menu" };
     } catch (error) {
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       return { kind: "unavailable", reason: error instanceof CompositeUnavailable || error instanceof Unavailable ? error.reason : "unreadable" };
     }
   }
@@ -187,7 +188,7 @@ export class LabelReader {
       let relations: unknown;
       try { relations = await call(field, "GetRelationSet"); }
       catch (error) {
-        if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
         if (error instanceof Error && /org\.freedesktop\.DBus\.Error\.(UnknownMethod|UnknownInterface)(?:["\s:]|$)/.test(error.message)) throw new Unavailable("not-exposed");
         throw error;
       }
@@ -225,7 +226,7 @@ export class LabelReader {
       if (performance.now() - started >= 250) throw new Unavailable("unreadable");
       return { kind: "available", labels };
     } catch (error) {
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       return { kind: "unavailable", reason: error instanceof Unavailable ? error.reason : "unreadable" };
     }
   }

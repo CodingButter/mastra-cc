@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import dbus from "dbus-native";
 import type { DbusBus, DbusWireMessage } from "dbus-native";
-import { ElementGoneError, PeerGoneError } from "../../backend.js";
+import { CallDeadlineError, ElementGoneError, PeerGoneError } from "../../backend.js";
 import type { BackendChange, ChannelWatch, TapeEvent } from "../../backend.js";
 import { type AtspiWatchAnchor, openSignalStream, type SignalBusOps } from "./signal-stream.js";
 
@@ -60,7 +60,24 @@ export function namesADeadPeer(err: unknown): boolean {
   );
 }
 
-function invoke(bus: DbusBus, x: Exchange): Promise<unknown[]> {
+// Every accessibility-bus call has a deadline (ADR-0117). The bus's own
+// NoReply takes 25s, and the daemon's request chain waits on every call, so one
+// frozen application used to hold every client for that long. dbus-native
+// removes the pending reply handler when the deadline fires, so a late answer
+// finds nothing waiting and is dropped instead of being delivered afterwards.
+export const ATSPI_CALL_DEADLINE_MS = 10_000;
+
+// Members that change the application. A deadline on one of these, once sent,
+// leaves an outcome nobody observed; a deadline on a read changed nothing.
+const EFFECT_MEMBERS = new Set(["DoAction", "GrabFocus", "InsertText", "ScrollTo", "Set", "SetCaretOffset", "SetTextContents", "SetCurrentValue", "DeleteText"]);
+
+export class AtspiDeadlineError extends CallDeadlineError {
+  constructor(details: { method: string; effectSent: boolean }) {
+    super({ ...details, peer: "application", seconds: ATSPI_CALL_DEADLINE_MS / 1000 });
+  }
+}
+
+function invoke(bus: DbusBus, x: Exchange, timeout = ATSPI_CALL_DEADLINE_MS): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
     bus.invoke(
       {
@@ -71,8 +88,11 @@ function invoke(bus: DbusBus, x: Exchange): Promise<unknown[]> {
         ...(x.signature !== undefined ? { signature: x.signature } : {}),
         ...(x.body !== undefined ? { body: x.body } : {}),
       },
+      { timeout },
       (err, ...results) => {
-        if (err) {
+        if ((err as { name?: string } | null)?.name === "TimeoutError") {
+          reject(new AtspiDeadlineError({ method: `${x.iface}.${x.member}`, effectSent: EFFECT_MEMBERS.has(x.member) }));
+        } else if (err) {
           const detail = `d-bus call failed for ${exchangeKey(x)}: ${JSON.stringify(err)}`;
           if (namesADeadNode(err)) reject(new ElementGoneError(detail));
           else reject(namesADeadPeer(err) ? new PeerGoneError(detail) : new Error(detail));

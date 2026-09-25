@@ -271,6 +271,24 @@ export class ApplicationScopeAmbiguousError extends Error {}
 // thing is gone and invite a fresh query, rather than condemning the desk.
 export class PeerGoneError extends Error {}
 
+// A peer that did not answer one call within its deadline (ADR-0114 for the
+// browser, ADR-0117 for the accessibility bus). effectSent says whether the
+// call left this process AND could have changed something: a read, or a call
+// never sent, changed nothing; a sent effect has an outcome nobody observed.
+export class CallDeadlineError extends Error {
+  readonly method: string;
+  readonly effectSent: boolean;
+  readonly peer: "browser" | "application";
+  readonly seconds: number;
+  constructor(details: { method: string; effectSent: boolean; peer: "browser" | "application"; seconds: number }) {
+    super(`the ${details.peer} did not answer "${details.method}" within ${details.seconds}s`);
+    this.method = details.method;
+    this.effectSent = details.effectSent;
+    this.peer = details.peer;
+    this.seconds = details.seconds;
+  }
+}
+
 // The same lesson one level down (ADR-0090, amended): the application is still
 // on the bus, the ELEMENT is not. AT-SPI answers a call aimed at a destroyed
 // node with UnknownObject, which the server used to widen into "the desktop

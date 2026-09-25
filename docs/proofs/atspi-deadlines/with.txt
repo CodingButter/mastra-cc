@@ -1,0 +1,4 @@
+alive: 471 ms, answered 1 elements
+SIGSTOP mousepad pid 3561978
+frozen: 10006 ms, refusal: "the application did not answer \"org.freedesktop.DBus.Properties.Get\" within 10s - nothing was changed by this call"
+VERDICT: GREEN (refused within the 10s deadline)
