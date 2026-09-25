@@ -457,7 +457,7 @@ describe("aiming a press from an element's own rectangle", () => {
 
   it("refuses an id it never answered, in the words it uses for one that was never real", async () => {
     const desk = deskAt([0, 0, 10, 10]);
-    await expect(desk.backend.clickElement({ id: "el-000000000000" })).rejects.toThrow(/was ever answered/);
+    await expect(desk.backend.clickElement({ id: "el-000000000000" })).rejects.toThrow(/is known to this daemon/);
     expect(desk.presses).toEqual([]);
   });
 });

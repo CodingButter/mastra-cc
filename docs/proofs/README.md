@@ -190,3 +190,5 @@ larger than the difference.
 [CDP liveness and truth](cdp-liveness/README.md) (ADR-0114): with a real Chrome, base `bb9b89c` hangs on a spinning page and on dialogs, exposes its stream to page forgery, and reports React writes that never reached state; the branch refuses in 1.5 s or a few ms, keeps the stream out of reach, and succeeds only when the reread matches after the settle window.
 
 [Socket ownership](socket-ownership/README.md) (ADR-0115): on `master` a second daemon deletes the live socket and takes the path; the branch refuses and the first keeps serving.
+
+[Element memory](element-memory/README.md) (ADR-0116): on `master` 50,000 answered ids are all held; the branch holds the 10,000 cap.

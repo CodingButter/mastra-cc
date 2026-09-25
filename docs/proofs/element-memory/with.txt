@@ -1,0 +1,1 @@
+SIZING ids_answered=50000 ids_held=10000 heap_growth_mb=6.1   # fix/bounded-element-memory

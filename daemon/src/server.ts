@@ -1256,7 +1256,7 @@ async function listApplications(backend: Backend, launch: LaunchContext): Promis
 // see": the byte-equality is the security property (ADR-0008 rule 6,
 // ADR-0036), exactly as it is for an unavailable application.
 export const SUBSCRIBE_UNKNOWN_REFUSAL =
-  'refused by the change stream: no element with that id was ever answered by this daemon - a watch is established on something this session has read, and nothing else';
+  'refused by the change stream: no element with that id is known to this daemon (never answered, or forgotten after newer answers) - a watch is established on something this session has read, and nothing else';
 
 // A watch is per-connection state: the connection that asked is the one that
 // is fed, and the watch dies with it. A subscribe arriving outside a

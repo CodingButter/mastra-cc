@@ -83,6 +83,7 @@ import { advertisesCollection, matchByRole, roleIsCollectable } from "./collecti
 import { readPublishedOperations } from "./magnitudes.js";
 import { claimsKeyboardActivation, stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 import type { Classified } from "../../audit.js";
+import { ELEMENT_MEMORY_CAP, ElementMemory } from "../element-memory.js";
 
 // The real Linux accessibility backend. Reads the desktop's accessibility
 // tree over plain D-Bus through the Channel seam - every exchange it performs
@@ -179,9 +180,11 @@ export class AtspiBackend implements Backend {
   // ABSENT from every answer - their subtrees are never read. Deny-by-default
   // is this backend's own posture: when no visibility is given, nothing is.
   private readonly visibility: Visibility;
-  // id -> native ref for every element this backend has answered; attestation
-  // re-reads the element live rather than replaying a cached snapshot.
-  private readonly answered = new Map<string, NativeRef>();
+  // id -> native ref for the elements this backend has answered, bounded and
+  // least-recently-used first (ADR-0116); attestation re-reads the element
+  // live rather than replaying a cached snapshot. Forgetting an id forgets
+  // every sibling fact keyed by it.
+  private readonly answered: ElementMemory<NativeRef>;
   private readonly applicationRootOf = new Map<string, NativeRef>();
   private readonly labelBudget = new AsyncLocalStorage<LabelBudget>();
   private readonly labels: LabelReader;
@@ -212,8 +215,16 @@ export class AtspiBackend implements Backend {
   // variable, configuration key or protocol field reaches this parameter.
   private readonly limits: TraversalLimits;
 
-  constructor(channel: Channel, visibility: Visibility = new Set(), limits: TraversalLimits = TRAVERSAL_LIMITS) {
+  constructor(channel: Channel, visibility: Visibility = new Set(), limits: TraversalLimits = TRAVERSAL_LIMITS, elementCap = ELEMENT_MEMORY_CAP) {
     this.channel = channel;
+    this.answered = new ElementMemory<NativeRef>(elementCap, (id, ref) => {
+      this.applicationRootOf.delete(id);
+      this.applicationOf.delete(id);
+      this.pictured.delete(id);
+      this.greyRefusals.delete(id);
+      const native = `${ref.busName}\0${ref.objectPath}`;
+      if (this.byNative.get(native)?.id === id) this.byNative.delete(native);
+    });
     this.labels = new LabelReader(channel);
     this.visibility = visibility;
     this.limits = limits;
@@ -636,7 +647,7 @@ export class AtspiBackend implements Backend {
     if (!this.labelBudget.getStore()) return this.labelBudget.run({ waited: 0 }, () => this.attestElement(params));
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
-      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest`, refusalClass: "UnknownElement" };
+      return { refusal: `no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to attest`, refusalClass: "UnknownElement" };
     }
     try {
       // Re-read live; the id re-derives from the same bus name + path, so a
@@ -655,7 +666,7 @@ export class AtspiBackend implements Backend {
     }
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
-      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to read`, refusalClass: "UnknownElement" };
+      return { refusal: `no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to read`, refusalClass: "UnknownElement" };
     }
     try {
       return { content: await readObservableContent(this.channel, ref, await this.nativeRoleOf(ref), params.offset, params.limit) };
@@ -672,7 +683,7 @@ export class AtspiBackend implements Backend {
   async subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
     const ref = this.answered.get(id);
     if (ref === undefined) {
-      throw new UnwatchableElementError(`no element with id "${id}" was ever answered by this daemon - nothing to watch`);
+      throw new UnwatchableElementError(`no element with id "${id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to watch`);
     }
     // The anchor: which bus connection owns the watched root (the sender
     // scope), and the walk's own book of answered nodes (so a change is
@@ -859,7 +870,7 @@ export class AtspiBackend implements Backend {
       // application this session cannot see must not be distinguishable from
       // one that was never real (ADR-0008 rule 6, ADR-0036).
       throw new UnperformableElementError(
-        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+        `no element with id "${id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to act on`,
       );
     }
     await grabFocus(this.channel, ref);
@@ -891,7 +902,7 @@ export class AtspiBackend implements Backend {
       // inside an application this session cannot see must not be told apart
       // from one that was never real (ADR-0008 rule 6, ADR-0036).
       throw new UnperformableElementError(
-        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+        `no element with id "${id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to act on`,
       );
     }
     // Every effect's first boundary is before it: a driver that asked to stop
@@ -969,7 +980,7 @@ export class AtspiBackend implements Backend {
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       throw new UnperformableElementError(
-        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+        `no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to act on`,
       );
     }
     const before = await this.readElement(ref);
@@ -1112,7 +1123,7 @@ export class AtspiBackend implements Backend {
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       throw new UnperformableElementError(
-        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+        `no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to act on`,
       );
     }
     const count = params.count ?? 1;
@@ -1341,7 +1352,7 @@ export class AtspiBackend implements Backend {
     if (ref === undefined) {
       // Byte-identical to every other unperformable id (ADR-0008 rule 6).
       throw new UnperformableElementError(
-        `no element with id "${params.id}" was ever answered by this daemon - nothing to act on`,
+        `no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to act on`,
       );
     }
     const element = await this.readElement(ref);
@@ -1410,7 +1421,7 @@ export class AtspiBackend implements Backend {
   async captureElement(params: CaptureElementParams): Promise<CaptureElementResult> {
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
-      throw new UnperformableElementError(`no element with id "${params.id}" was ever answered by this daemon - nothing to look at`);
+      throw new UnperformableElementError(`no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to look at`);
     }
     const rectangle = await screenRectangle(this.channel, ref);
     if (rectangle === undefined || rectangle.width <= 0 || rectangle.height <= 0) {
