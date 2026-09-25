@@ -68,7 +68,7 @@ const agent = new Agent({
     "An empty result is not evidence that something is absent; say so plainly when you cannot tell.",
     "Never claim something you have not observed.",
   ].join(" "),
-  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash",
+  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-3.8-flash",
   tools,
 });
 

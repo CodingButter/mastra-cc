@@ -67,7 +67,7 @@ const agent = new Agent({
     "using the name listApplications reports. After opening, confirm it is really there by",
     "querying elements. Never claim success you have not observed.",
   ].join(" "),
-  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash",
+  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-3.8-flash",
   tools,
 });
 
