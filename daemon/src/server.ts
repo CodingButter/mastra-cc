@@ -1374,6 +1374,9 @@ export const STALLED_CONSUMER_PENDING_BYTES = 256 * 1024;
  * it must reobserve on any pointer anyway.
  */
 export const STALLED_CONSUMER_POINTERS = 64;
+/** Requests a connection may have unanswered before the daemon stops reading
+ *  it (ADR-0106 amendment). Bounds the answers that can pile up at once. */
+export const MAX_IN_FLIGHT_REQUESTS = 64;
 
 // One connection's watches. The book belongs to the socket: it is created when
 // the connection is accepted and emptied when it closes, and no watch outlives
@@ -2845,6 +2848,9 @@ export interface Pipe extends PipePressure {
   readonly closed: boolean;
   onData(handler: (chunk: string) => void): void;
   onClose(handler: () => void): void;
+  /** stop / restart reading from the peer (ADR-0106 amendment) */
+  pause(): void;
+  resume(): void;
 }
 
 function socketPipe(socket: Socket): Pipe {
@@ -2870,6 +2876,12 @@ function socketPipe(socket: Socket): Pipe {
     },
     onClose: (handler) => {
       socket.on("close", handler);
+    },
+    pause: () => {
+      socket.pause();
+    },
+    resume: () => {
+      socket.resume();
     },
   };
 }
@@ -2917,6 +2929,23 @@ export function serveConnection(
   };
   pipe.onClose(teardown);
   let overlong = false;
+  // Responses are held to the same stalled-consumer bound as events
+  // (ADR-0106 amendment). A response cannot be coalesced or dropped, so the
+  // bound is kept on the request side: while the peer is not reading what it
+  // already asked for (over the pending-byte bound) or has
+  // MAX_IN_FLIGHT_REQUESTS unanswered, no further request is dispatched and
+  // the peer is not read. Requests resume, in order, when the pipe drains or
+  // an answer lands.
+  let inFlight = 0;
+  let paused = false;
+  const held = () => pipe.pending() > STALLED_CONSUMER_PENDING_BYTES || inFlight >= MAX_IN_FLIGHT_REQUESTS;
+  const pump = () => {
+    if (!paused || pipe.closed || held()) return;
+    paused = false;
+    pipe.resume();
+    readLines();
+  };
+  pipe.onDrain(pump);
   pipe.onData((chunk) => {
     if (overlong || pipe.closed) return;
     // Search only the new text: re-scanning the whole buffer per chunk is quadratic in a long line.
@@ -2929,8 +2958,16 @@ export function serveConnection(
       pipe.end();
       return;
     }
-    let newline = buffer.indexOf("\n", searchFrom);
+    if (buffer.indexOf("\n", searchFrom) >= 0 && !paused) readLines();
+  });
+  function readLines(): void {
+    let newline = buffer.indexOf("\n");
     while (newline >= 0) {
+      if (helloDone && held()) {
+        paused = true;
+        pipe.pause();
+        return;
+      }
       const line = buffer.slice(0, newline);
       buffer = buffer.slice(newline + 1);
       newline = buffer.indexOf("\n");
@@ -2965,8 +3002,11 @@ export function serveConnection(
         continue;
       }
       if (message.type === "request" && typeof message.id === "number" && typeof message.method === "string") {
+        inFlight++;
         void handleRequest(message as Request, backend, launch, book, driver).then((response) => {
+          inFlight--;
           if (!pipe.closed) pipe.write(`${JSON.stringify(response)}\n`);
+          pump();
         });
       } else {
         // Valid JSON that is not a well-formed request gets a named refusal,
@@ -2980,7 +3020,7 @@ export function serveConnection(
         );
       }
     }
-  });
+  }
 }
 
 export function startServer(options: {
@@ -3083,6 +3123,12 @@ function webSocketPipe(socket: WebSocket): Pipe {
     },
     onClose: (handler) => {
       socket.on("close", handler);
+    },
+    pause: () => {
+      socket.pause();
+    },
+    resume: () => {
+      socket.resume();
     },
   };
 }

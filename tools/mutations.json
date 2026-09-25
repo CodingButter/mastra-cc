@@ -2416,5 +2416,21 @@
     "replace": "      this.applicationRootOf.delete(id);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/element-memory-is-bounded.test.ts"
+  },
+  {
+    "name": "answers-ignore-the-stall-bound",
+    "file": "daemon/src/server.ts",
+    "find": "      if (helloDone && held()) {\n",
+    "replace": "      if (false && helloDone && held()) {\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/answers-wait-for-a-reader.test.ts"
+  },
+  {
+    "name": "a-stalled-reader-is-never-resumed",
+    "file": "daemon/src/server.ts",
+    "find": "  pipe.onDrain(pump);\n",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/answers-wait-for-a-reader.test.ts"
   }
 ]

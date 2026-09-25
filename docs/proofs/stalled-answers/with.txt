@@ -1,0 +1,4 @@
+ [32m✓[39m src/__tests__/answers-wait-for-a-reader.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1307[2mms[22m[39m
+   [33m[2m✓[22m[39m a client that stops reading bounds the answers the daemon retains, and gets every one in order when it reads [33m 1306[2mms[22m[39m
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
