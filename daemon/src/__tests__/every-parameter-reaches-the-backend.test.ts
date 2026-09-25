@@ -1,3 +1,4 @@
+import { serverSource } from "./server-source.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,7 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const schema = JSON.parse(readFileSync(join(here, "../../../protocol/schema.json"), "utf8")) as {
   methods: Record<string, { params?: Record<string, unknown> }>;
 };
-const server = readFileSync(join(here, "../server.ts"), "utf8");
+const server = serverSource();
 
 // Methods the server hands straight to `backend.<same name>({ ... })`. The
 // others are answered by the daemon itself (scoping, grants, subscriptions)

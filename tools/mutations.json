@@ -1,21 +1,21 @@
 [
   {
     "name": "subscription-initialization-ignores-connection-close",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "    this.closed = true;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-initialization.test.ts"
   },
   {
     "name": "subscription-initialization-drops-buffered-events",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "    for (const change of pending) this.deliver(subscriptionId, change);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-initialization.test.ts"
   },
   {
     "name": "subscription-initialization-accepts-overflow",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "        else overflow = true;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-initialization.test.ts"
@@ -50,7 +50,7 @@
   },
   {
     "name": "cost-counter-forgets-queue-wait",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/queues.ts",
     "find": "    recordCost(\"queueWait\", performance.now() - queued);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/costs.test.ts"
@@ -103,7 +103,7 @@
   },
   {
     "name": "events-inherit-operation-timing",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "const stamp: AttributionStamp = { attribution: \"unattributed\" };",
     "replace": "const stamp = attribute(entry.application);",
     "cwd": "daemon",
@@ -111,7 +111,7 @@
   },
   {
     "name": "events-guess-external-without-a-witness",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "const stamp: AttributionStamp = { attribution: \"unattributed\" };",
     "replace": "const stamp: AttributionStamp = { attribution: \"external\" };",
     "cwd": "daemon",
@@ -119,7 +119,7 @@
   },
   {
     "name": "events-leak-request-id-as-cause",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "const stamp: AttributionStamp = { attribution: \"unattributed\" };",
     "replace": "const stamp: AttributionStamp = { attribution: \"unattributed\", causeId: \"cause-invented\" };",
     "cwd": "daemon",
@@ -333,7 +333,7 @@
   },
   {
     "name": "effect-class-gate-name-dropped-from-refusal",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "refused by the effect-class gate: \"${request.method}\" is not a method of ",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
@@ -361,7 +361,7 @@
   },
   {
     "name": "server-swallows-a-malformed-post-hello-line",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "            refusal: 'daemon: a message after hello must be {type:\"request\", id:number, method:string} - refusing a malformed line',\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-malformed-lines.test.ts"
@@ -403,14 +403,14 @@
   },
   {
     "name": "b11-enforcement-marking-removed",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": ", enforcement: \"before-call\", handler: (p, b, l) => openApplication",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
     "name": "launch-skips-the-permit-check",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
@@ -452,49 +452,49 @@
   },
   {
     "name": "scope-gate-serves-edit",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  editElement: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => editElement((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "scope-gate-serves-activate",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  activateElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: (p, b, l) => activateElement((p ?? {}) as { id?: unknown; action?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "scope-gate-serves-submit",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  submitElement: { effectClass: \"submit\", enforcement: \"before-call\", handler: (p, b, l) => submitElement((p ?? {}) as { id?: unknown; attestation?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "the-wire-stops-serving-set-element-value",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  setElementValue: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementValue((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "the-wire-stops-serving-set-element-text",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  setElementText: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementText((p ?? {}) as { id?: unknown; text?: unknown; offset?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "the-wire-stops-serving-set-element-caret",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  setElementCaret: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementCaret((p ?? {}) as { id?: unknown; offset?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "the-wire-stops-serving-reveal-element",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  revealElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
@@ -508,7 +508,7 @@
   },
   {
     "name": "second-identity-conflict-never-checked",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  for (const key of contending) {\n    if (applicationName(key) === applicationName(name)) continue;\n    if (treeNameOf(key, launch.catalog) !== treeName) continue;\n    if (launch.table.ownsName(key) !== undefined) return { refusal: ONE_BROWSER_IDENTITY_REFUSAL, refusalClass: \"OneBrowserIdentity\", auditApplication: treeName };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/profile-launch.test.ts"
@@ -529,21 +529,21 @@
   },
   {
     "name": "attribution-guesses-instead-of-abstaining",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "    return { attribution: \"unattributed\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/attribution.test.ts"
   },
   {
     "name": "connection-close-leaks-subscriptions",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "    void book.closeAll();\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-lifetime.test.ts"
   },
   {
     "name": "event-delivery-skips-the-visibility-check",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "    if (!isVisible(this.visibility, entry.application)) return;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-visibility.test.ts"
@@ -613,14 +613,14 @@
   },
   {
     "name": "the-configuration-is-read-and-never-enforced",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    const withheld = configurationWithholding(launch, effectClass, application);\n    if (withheld !== undefined) {\n      return { refusal: withheldRefusal(method, effectClass, withheld), refusalClass: \"DisabledByConfiguration\" };\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/capability-configuration.test.ts"
   },
   {
     "name": "a-withheld-capability-is-reported-as-available",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  if (stamped.elements !== undefined) stamped.elements = stamped.elements.map(stamp);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/capability-configuration.test.ts"
@@ -641,21 +641,21 @@
   },
   {
     "name": "the-listing-answers-from-its-own-table-not-the-gate",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  const withheld = configurationWithholdingFor(launch, capability, resolved, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
   },
   {
     "name": "a-launch-takes-the-focus-and-never-gives-it-back",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "    held = await focusBeforeEffect(backend);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/focus-preservation.test.ts"
   },
   {
     "name": "the-restore-is-believed-instead-of-read-back",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (regained !== undefined && regained.id === held.element.id) return undefined;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/focus-preservation.test.ts"
@@ -669,14 +669,14 @@
   },
   {
     "name": "the-listing-forgets-what-this-daemon-can-launch",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "    if (!claimed.has(applicationName(key))) {\n      claimed.add(applicationName(key));\n      entries.push({ name: key });\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
   },
   {
     "name": "the-gate-is-more-permissive-than-the-listing-promised",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    if (!holdsEffectAuthority(launch, effectClass)) return { refusal, refusalClass: \"EffectClassGate\" };",
     "cwd": "daemon",
     "testFile": "src/__tests__/installed-inventory.test.ts"
@@ -732,14 +732,14 @@
   },
   {
     "name": "the-effect-that-leaves-no-receipt",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  recordAudit({ application, element: [elementOf(id, answer.element)], scope: effectClass, cause: causeOf(application), attestation, outcome: outcomeOf(answer) });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
   {
     "name": "the-failed-effect-that-leaves-no-receipt",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    recordAudit({ application, element: [{ id }], scope: effectClass, cause: causeOf(application), attestation, outcome: FAILED });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
@@ -753,42 +753,42 @@
   },
   {
     "name": "the-refusal-that-goes-unclassified",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": ", refusalClass: error.constructor.name as RefusalClass",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
   {
     "name": "the-launch-that-leaves-no-receipt",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  recordAudit({\n    application,\n    element: answer.application === undefined ? [] : [answer.application],\n    scope: \"launch\",\n    cause: causeOf(application),\n    outcome: outcomeOf(answer),\n  });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
   {
     "name": "the-failed-launch-that-leaves-no-receipt",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "    recordAudit({ application: applicationName(name), element: [], scope: \"launch\", cause: causeOf(undefined), outcome: FAILED });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
   {
     "name": "the-read-that-leaves-no-receipt",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "      recordAudit({ application, element: answeredElements(result), scope: \"observe\", cause: causeOf(application), outcome: observeOutcome(result) });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
   {
     "name": "the-watch-that-names-no-element",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": ", auditElement: [{ id }]",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
   },
   {
     "name": "the-ended-watch-that-names-no-element",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": ", ...(watched === undefined ? {} : { auditElement: [{ id: watched }] })",
     "cwd": "daemon",
     "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
@@ -1146,14 +1146,14 @@
   },
   {
     "name": "derived-launch-skips-the-permit-check",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
   },
   {
     "name": "browser-identity-guard-catches-ordinary-derived-apps",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": " && contendsForBrowserEndpoint(requested)",
     "cwd": "daemon",
     "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
@@ -1174,14 +1174,14 @@
   },
   {
     "name": "running-state-escapes-the-observe-grant",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  if (!entryVisible(launch, entry, index)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
   },
   {
     "name": "a-failed-census-reports-the-desk-closed",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "    census = { observable: new Set(), answersFor: new Set() };",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
@@ -1195,70 +1195,70 @@
   },
   {
     "name": "the-daemon-switches-the-desk-on-without-being-asked",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (launch.mayAcquireAccessibility !== true) {\n    return { refusal: ACQUIRE_WITHHELD_REFUSAL, refusalClass: \"DisabledByConfiguration\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
   },
   {
     "name": "an-unacquirable-platform-is-asked-to-acquire-anyway",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (layer === undefined || !layer.acquirable) {\n    return { refusal: ACQUIRE_NOT_EXPOSED_REFUSAL, refusalClass: \"AccessibilityNotAcquirable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
   },
   {
     "name": "the-restart-gate-lets-a-refusing-level-out-as-a-level",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  if (level === \"refuse\" || level === \"ask\") return restartRefusal(level, setting);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/restart-authority.test.ts"
   },
   {
     "name": "restart-signals-a-process-it-does-not-own",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "const owned = launch.table.ownsName(name);",
     "cwd": "daemon",
     "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   },
   {
     "name": "graceful-restart-escalates-to-a-kill",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "authority.level === \"force\" ? \"SIGKILL\" : \"SIGTERM\"",
     "cwd": "daemon",
     "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   },
   {
     "name": "a-dialog-in-the-same-instant-counts-as-a-refusal",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": " || looked < 2",
     "cwd": "daemon",
     "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   },
   {
     "name": "restart-never-checks-whether-the-process-ended",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "if (launch.table.owns(owned.pid) !== true) break;",
     "cwd": "daemon",
     "testFile": "src/__tests__/who-may-close-a-window.test.ts"
   },
   {
     "name": "raw-input-is-available-to-a-session-nobody-armed",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "if (allows.has(effectClass) !== true) return false;",
     "cwd": "daemon",
     "testFile": "src/__tests__/raw-input-authority.test.ts"
   },
   {
     "name": "the-key-route-forgets-the-chord-list-is-closed",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "if (!(KEY_CHORD_NAMES as readonly string[]).includes(chord)) return { refusal: unknownChordRefusal(chord), refusalClass: \"MalformedParameter\" as const };",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
   },
   {
     "name": "the-key-route-claims-a-machine-that-has-none",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "if (launch.keys === undefined) return { refusal: NO_KEY_ROUTE_REFUSAL, refusalClass: \"EffectUnsupportedError\" as const };",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
@@ -1279,7 +1279,7 @@
   },
   {
     "name": "an-unarmed-session-is-told-only-the-flattering-half",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  if (hasRoute) return sentence;",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
@@ -1300,21 +1300,21 @@
   },
   {
     "name": "the-listing-believes-a-desk-that-cannot-hear",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "if (heard === \"disabled\") return { running: \"cannot-tell\", runningUnknownBy: ACQUIRE_SETTING };",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
   },
   {
     "name": "an-unread-layer-is-treated-as-proof-the-ears-are-on",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "if (heard === \"cannot-tell\") return { running: \"cannot-tell\" };",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
   },
   {
     "name": "the-listing-forgets-it-launched-the-thing-itself",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "if ([...names].some((name) => ownedAndLive.has(name))) return { running: \"cannot-tell\" };",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
@@ -1328,21 +1328,21 @@
   },
   {
     "name": "the-gate-picks-a-claimant-instead-of-refusing-ambiguity",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  if (entry === undefined && claimants.length > 1) return { kind: \"ambiguous\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-entry-several-names.test.ts"
   },
   {
     "name": "a-contested-name-starts-carrying-permission-for-everyone",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  return claimants.length === 1;",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-entry-several-names.test.ts"
   },
   {
     "name": "an-enumerated-desk-that-claims-nothing-still-consults-the-permits",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  if (entry === undefined) return { kind: \"unpermitted\" };",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-entry-several-names.test.ts"
@@ -1363,7 +1363,7 @@
   },
   {
     "name": "a-restart-with-no-permits-at-all-still-touches-the-backend",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (launch.permits.size === 0) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/launch-authority.test.ts"
@@ -1377,35 +1377,35 @@
   },
   {
     "name": "the-typing-route-claims-a-machine-that-has-none",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "if (launch.keys === undefined) return { refusal: NO_TYPE_ROUTE_REFUSAL, refusalClass: \"EffectUnsupportedError\" as const };",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
   },
   {
     "name": "a-malformed-text-is-typed-anyway",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "      if (malformed !== undefined) return { refusal: malformed, refusalClass: \"MalformedParameter\" as const };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
   },
   {
     "name": "a-delete-character-is-printable",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": " || (code >= 0x7f && code <= 0x9f)",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
   },
   {
     "name": "everything-above-delete-is-a-control",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": " && code <= 0x9f",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
   },
   {
     "name": "a-text-of-any-length-is-a-field-entry",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/grants.ts",
     "find": "  if (text.length > TYPE_TEXT_MAX_LENGTH) {\n    return `refused before the call: \"typeText\" was given ${text.length} UTF-16 code units and this contract delivers at most ${TYPE_TEXT_MAX_LENGTH} in one call - a field entry is short, and a longer text is a payload this raw-input class does not carry`;\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/type-blind-read-back.test.ts"
@@ -1426,14 +1426,14 @@
   },
   {
     "name": "any-role-reaches-the-backend",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (params.role !== undefined && !(ROLES as readonly string[]).includes(params.role as string)) {\n    return { refusal: UNKNOWN_ROLE_REFUSAL, refusalClass: \"MalformedParameter\" as const };\n  }\n  if (params.window !== undefined && params.application === undefined) {\n    return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: \"MalformedParameter\" as const };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-bad-role-is-a-refusal.test.ts"
   },
   {
     "name": "a-backend-failure-is-silent-on-the-operators-side",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-bad-role-is-a-refusal.test.ts"
@@ -1468,7 +1468,7 @@
   },
   {
     "name": "discovery-audit-loses-resolved-application",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "      const application = (result as { auditApplication?: string }).auditApplication;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/discover-elements.test.ts"
@@ -1482,7 +1482,7 @@
   },
   {
     "name": "a-failed-acquire-hides-what-it-changed",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "accessibility, ",
     "cwd": "daemon",
     "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
@@ -1517,28 +1517,28 @@
   },
   {
     "name": "a-window-scope-that-answers-empty-instead-of-refusing",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (error instanceof WindowScopeUnmatchedError) return { refusal: `${WINDOW_SCOPE_UNMATCHED_REFUSAL}${asId}`, refusalClass: \"WindowScopeUnmatched\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
   },
   {
     "name": "a-window-scope-that-picks-one-of-several-windows",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: \"WindowScopeAmbiguous\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
   },
   {
     "name": "an-application-scope-that-answers-empty-instead-of-refusing",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (error instanceof ApplicationScopeUnmatchedError) return { refusal: APPLICATION_SCOPE_UNMATCHED_REFUSAL, refusalClass: \"ApplicationScopeUnmatched\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
   },
   {
     "name": "an-application-scope-that-picks-one-of-several-applications",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (error instanceof ApplicationScopeAmbiguousError) return { refusal: APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: \"ApplicationScopeAmbiguous\" };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
@@ -1553,14 +1553,14 @@
   },
   {
     "name": "a-press-at-a-fraction-outside-the-element",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "        if (typeof value !== \"number\" || !Number.isFinite(value) || value < 0 || value > 1) {\n          return { refusal: outsideElementRefusal(axis, value), refusalClass: \"MalformedParameter\" as const };\n        }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
   },
   {
     "name": "a-scope-that-was-an-id-and-was-not-told-so",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  const asId = looksLikeAnsweredId(scope?.window) ? ` - \"${scope?.window}\" is an id this daemon answers WITH, and a window scope is a window's name` : \"\";\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-window-scope-that-finds-nothing-says-so.test.ts"
@@ -1581,7 +1581,7 @@
   },
   {
     "name": "a-launch-budget-too-short-for-a-browser",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "const POLL_BUDGET_MS = 60_000;",
     "cwd": "daemon",
     "testFile": "src/__tests__/container-portability.test.ts"
@@ -1637,21 +1637,21 @@
   },
   {
     "name": "an-owned-application-that-is-never-opened-again",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (ours && running === undefined) ours = false;\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/an-owned-application-with-nothing-to-show-is-opened-again.test.ts"
   },
   {
     "name": "a-desk-that-guesses-a-home-it-was-never-given",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (home === undefined || home === \"\") return {};\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-desk-says-where-its-own-files-live.test.ts"
   },
   {
     "name": "a-download-folder-reported-without-being-seen",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  return exists(downloads) ? { home, downloads } : { home };",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-desk-says-where-its-own-files-live.test.ts"
@@ -1751,7 +1751,7 @@
   },
   {
     "name": "a-look-that-answers-a-blind-desk-as-if-the-desk-were-fine",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "        if (failure instanceof UnperformableElementError) return { refusal: failure.message };\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-look-is-a-look-and-not-a-new-authority.test.ts"
@@ -1798,7 +1798,7 @@
   },
   {
     "name": "an-empty-answer-that-never-asks-whether-the-desk-can-still-hear",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "    // something has already proved the desk can be heard.\n    if (isEmptyAnswer(answered)) return (await deafDesk(l)) ?? answered;\n",
     "replace": "    // something has already proved the desk can be heard.\n",
     "cwd": "daemon",
@@ -1806,14 +1806,14 @@
   },
   {
     "name": "a-layer-switched-back-on-for-a-session-that-was-never-granted-it",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (launch.mayAcquireAccessibility !== true || !layer.acquirable) {\n    return { refusal: DEAF_DESK_REFUSAL, refusalClass: \"AccessibilityLostMidSession\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-desk-that-went-deaf-does-not-answer-as-if-it-were-bare.test.ts"
   },
   {
     "name": "a-dead-application-answered-as-a-dead-desk",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    if (error instanceof PeerGoneError) {\n      return refusedResponse(request.id, \"ApplicationGone\", APPLICATION_GONE_REFUSAL);\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
@@ -1828,7 +1828,7 @@
   },
   {
     "name": "a-dead-element-answered-as-a-dead-desk",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    if (error instanceof ElementGoneError) {\n      return refusedResponse(request.id, \"ElementGone\", ELEMENT_GONE_REFUSAL);\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
@@ -1891,7 +1891,7 @@
   },
   {
     "name": "the-request-runs-outside-its-driver-signal",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "        return await (driver === undefined ? run() : underCancellation(driver.connection.signal, run));",
     "replace": "        return await run();",
     "cwd": "daemon",
@@ -1935,7 +1935,7 @@
   },
   {
     "name": "a-stopped-consumer-is-still-written-to",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "    if (change.kind !== \"watchEnded\" && this.stalled(entry)) {",
     "replace": "    if (false) {",
     "cwd": "daemon",
@@ -1943,14 +1943,14 @@
   },
   {
     "name": "the-drain-forgets-what-was-held",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "      for (const [id, change] of held) this.write(subscriptionId, entry, { id, ...change });\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts"
   },
   {
     "name": "the-watch-end-is-held-with-the-rest",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "    if (change.kind !== \"watchEnded\" && this.stalled(entry)) {",
     "replace": "    if (this.stalled(entry)) {",
     "cwd": "daemon",
@@ -1958,7 +1958,7 @@
   },
   {
     "name": "held-pointers-grow-without-bound",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/subscriptions.ts",
     "find": "      if (held.size > STALLED_CONSUMER_POINTERS) held.delete(held.keys().next().value as string);\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts"
@@ -2027,7 +2027,7 @@
   },
   {
     "name": "the-press-forgets-the-picture-it-was-aimed-from",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "      return backend.clickElement({ id, button, count, x, y, capturedAt });",
     "replace": "      return backend.clickElement({ id, button, count, x, y });",
     "cwd": "daemon",
@@ -2035,7 +2035,7 @@
   },
   {
     "name": "a-picture-named-by-nonsense-is-pressed-anyway",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "      if (capturedAt !== undefined && (typeof capturedAt !== \"number\" || !Number.isFinite(capturedAt))) {",
     "replace": "      if (false) {",
     "cwd": "daemon",
@@ -2139,7 +2139,7 @@
     "cwd": "tools",
     "testFile": "__tests__/mutations-runner.test.mjs",
     "name": "a-request-character-is-split-in-two",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "handler(decoder.write(chunk))",
     "replace": "handler(chunk.toString(\"utf8\"))",
     "cwd": "daemon",
@@ -2147,7 +2147,7 @@
   },
   {
     "name": "a-request-line-grows-without-bound",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "    if (buffer.length > MAX_REQUEST_LINE_CHARS &&",
     "replace": "    if (false &&",
     "cwd": "daemon",
@@ -2211,7 +2211,7 @@
   },
   {
     "name": "a-deadline-reads-as-unreadable",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    if (error instanceof CallDeadlineError && entry.effectClass === \"observe\") {",
     "replace": "    if (false) {",
     "cwd": "daemon",
@@ -2219,7 +2219,7 @@
   },
   {
     "name": "an-unsent-call-claims-an-unknown-effect",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "  const base = error.message;\n  return isEffect && error.effectSent",
     "replace": "  const base = error.message;\n  return isEffect",
     "cwd": "daemon",
@@ -2259,7 +2259,7 @@
   },
   {
     "name": "a-dialog-reads-as-unreadable",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "    if (error instanceof DialogBlockingError && entry.effectClass === \"observe\") {",
     "replace": "    if (false) {",
     "cwd": "daemon",
@@ -2379,7 +2379,7 @@
   },
   {
     "name": "a-second-daemon-steals-the-socket",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "    probe.once(\"connect\", () => {\n      probe.destroy();\n      reject(",
     "replace": "    probe.once(\"connect\", () => {\n      probe.destroy();\n      rmSync(socketPath, { force: true });\n      return resolve();\n      reject(",
     "cwd": "daemon",
@@ -2419,7 +2419,7 @@
   },
   {
     "name": "answers-ignore-the-stall-bound",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "      if (helloDone && held()) {\n",
     "replace": "      if (false && helloDone && held()) {\n",
     "cwd": "daemon",
@@ -2427,7 +2427,7 @@
   },
   {
     "name": "a-stalled-reader-is-never-resumed",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "  pipe.onDrain(pump);\n",
     "replace": "",
     "cwd": "daemon",
@@ -2435,7 +2435,7 @@
   },
   {
     "name": "a-schema-parameter-never-reaches-the-backend",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/dispatch.ts",
     "find": "backend.clickElement({ id, button, count, x, y, capturedAt })",
     "replace": "backend.clickElement({ id, button, count, x, y })",
     "cwd": "daemon",
@@ -2489,8 +2489,8 @@
     "cwd": "daemon",
     "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
   },
-  {"name": "every-call-waits-in-one-desk-queue", "file": "daemon/src/server.ts", "find": "  if (params === null || typeof params !== \"object\") return SPANNING;\n  const p = params", "replace": "  return SPANNING;\n  const p = params", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"},
-  {"name": "a-connection-requests-overtake-each-other", "file": "daemon/src/server.ts", "find": "const handled = inOrder.then(() => handleRequest(", "replace": "const handled = Promise.resolve().then(() => handleRequest(", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"},
+  {"name": "every-call-waits-in-one-desk-queue", "file": "daemon/src/server/queues.ts", "find": "  if (params === null || typeof params !== \"object\") return SPANNING;\n  const p = params", "replace": "  return SPANNING;\n  const p = params", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"},
+  {"name": "a-connection-requests-overtake-each-other", "file": "daemon/src/server/pipes.ts", "find": "const handled = inOrder.then(() => handleRequest(", "replace": "const handled = Promise.resolve().then(() => handleRequest(", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"},
   {"name": "the-launched-browser-opens-its-port-again", "file": "daemon/src/launch/recipes.ts", "find": "      \"--remote-debugging-pipe\",\n      `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`", "replace": "      \"--remote-debugging-port=9744\",\n      `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`", "cwd": "daemon", "testFile": "src/backends/cdp/__tests__/pipe.test.ts"},
   {"name": "the-pipe-splits-on-newlines", "file": "daemon/src/backends/cdp/pipe.ts", "find": "while ((end = this.#buffer.indexOf(\"\\0\")) >= 0)", "replace": "while ((end = this.#buffer.indexOf(\"\\n\")) >= 0)", "cwd": "daemon", "testFile": "src/backends/cdp/__tests__/pipe.test.ts"},
   {"name": "a-closed-pipe-leaves-its-sessions-waiting", "file": "daemon/src/backends/cdp/pipe.ts", "find": "    for (const session of [...this.#sessions.values()]) session.gone();", "replace": "", "cwd": "daemon", "testFile": "src/backends/cdp/__tests__/pipe.test.ts"},
@@ -2500,14 +2500,14 @@
   {"name": "a-snap-admits-its-launcher", "file": "daemon/src/backends/atspi/process-identity.ts", "find": "if (real === snapLauncher) return [`/snap/${name}/`];", "replace": "void real;", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
   {"name": "a-lost-owner-lookup-hides-forever", "file": "daemon/src/backends/atspi/process-identity.ts", "find": "          cache.delete(busName);\n", "replace": "\n", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
   {"name": "a-granted-name-admits-any-executable", "file": "daemon/src/backends/atspi/process-identity.ts", "find": "return executable !== undefined && matches(allowed, executable);", "replace": "return executable !== undefined;", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
-  {"name": "dispatch-walks-the-prototype", "file": "daemon/src/server.ts", "find": "Object.hasOwn(DISPATCH, request.method) ? DISPATCH[request.method] : undefined", "replace": "DISPATCH[request.method]", "cwd": "daemon", "testFile": "src/__tests__/refuses-beyond-observe.test.ts"},
-  {"name": "an-effect-runs-without-its-receipt", "file": "daemon/src/server.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (false) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
-  {"name": "an-observation-is-refused-for-its-receipt", "file": "daemon/src/server.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (!auditWritable()) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
-  {"name": "a-lost-receipt-goes-unsaid", "file": "daemon/src/server.ts", "find": "if (unwrittenEffectEntries() > unwrittenBefore) markUnwrittenReceipt(answered);", "replace": "void unwrittenBefore;", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
+  {"name": "dispatch-walks-the-prototype", "file": "daemon/src/server/dispatch.ts", "find": "Object.hasOwn(DISPATCH, request.method) ? DISPATCH[request.method] : undefined", "replace": "DISPATCH[request.method]", "cwd": "daemon", "testFile": "src/__tests__/refuses-beyond-observe.test.ts"},
+  {"name": "an-effect-runs-without-its-receipt", "file": "daemon/src/server/dispatch.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (false) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
+  {"name": "an-observation-is-refused-for-its-receipt", "file": "daemon/src/server/dispatch.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (!auditWritable()) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
+  {"name": "a-lost-receipt-goes-unsaid", "file": "daemon/src/server/dispatch.ts", "find": "if (unwrittenEffectEntries() > unwrittenBefore) markUnwrittenReceipt(answered);", "replace": "void unwrittenBefore;", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
   {"name": "a-proof-switch-reads-the-environment", "file": "daemon/src/backends/atspi/channel.ts", "find": "const deaf = options.deafForProof === true;", "replace": "const deaf = options.deafForProof === true || process.env.MASTRA_CC_ATSPI_DEAF_FOR_PROOF === \"1\";", "cwd": "daemon", "testFile": "src/__tests__/no-proof-switch-ships.test.ts"},
   {
     "name": "every-web-page-may-open-the-socket",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "      return origin === undefined || (typeof origin === \"string\" && allowedOrigins.has(origin));",
     "replace": "      return true;",
     "cwd": "daemon",
@@ -2515,7 +2515,7 @@
   },
   {
     "name": "a-script-without-an-origin-is-shut-out",
-    "file": "daemon/src/server.ts",
+    "file": "daemon/src/server/pipes.ts",
     "find": "      return origin === undefined || (typeof origin === \"string\" && allowedOrigins.has(origin));",
     "replace": "      return typeof origin === \"string\" && allowedOrigins.has(origin);",
     "cwd": "daemon",

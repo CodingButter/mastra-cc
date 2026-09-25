@@ -1,3 +1,4 @@
+import { serverSource } from "./server-source.js";
 import { refusalText } from "./refusal-text.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -228,7 +229,7 @@ describe("text, typed blind at one element", () => {
     // The same assertion as the chord's, against the source: the only edges
     // into the daemon's typing handler are its declaration and the dispatch
     // entry. `backend.typeText(` is excluded by the lookbehind.
-    const source = readFileSync(join(here, "..", "server.ts"), "utf8");
+    const source = serverSource();
     const callers = [...source.matchAll(/(?<![\w.])typeText\(/g)];
     expect(callers).toHaveLength(2);
     expect(source).toContain('typeText: { effectClass: "rawInput", enforcement: "before-call"');

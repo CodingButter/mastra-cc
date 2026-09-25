@@ -60,7 +60,7 @@ const cases = [
     // is what leaves openApplication's timing as the single planted violation,
     // which is the one this case exists to catch.
     pin: "b11",
-    plantPath: "daemon/src/server.ts",
+    plantPath: "daemon/src/server/dispatch.ts",
     plantSource:
       'const DISPATCH = {\n' +
       '  openApplication: { effectClass: "activate", enforcement: "at-result" },\n' +

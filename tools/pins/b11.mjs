@@ -18,7 +18,7 @@ import { fail, rootFromArgs, stripComments } from "./lib.mjs";
 // per-application permit. The pin and those tests together are B11.
 
 const root = rootFromArgs(process.argv);
-const serverPath = join(root, "daemon", "src", "server.ts");
+const serverPath = join(root, "daemon", "src", "server", "dispatch.ts");
 
 let source;
 try {
