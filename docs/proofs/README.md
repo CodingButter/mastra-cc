@@ -192,3 +192,5 @@ larger than the difference.
 [Socket ownership](socket-ownership/README.md) (ADR-0115): on `master` a second daemon deletes the live socket and takes the path; the branch refuses and the first keeps serving.
 
 [Element memory](element-memory/README.md) (ADR-0116): on `master` 50,000 answered ids are all held; the branch holds the 10,000 cap.
+
+[Stalled answers](stalled-answers/README.md) (ADR-0106 amendment): on `master` a non-reading client made the daemon retain ~49 MB of answers; the branch stays under the bound and delivers every answer in order.

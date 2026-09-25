@@ -1,0 +1,5 @@
+ [31m❯[39m src/__tests__/zz-red.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1109[2mms[22m[39m
+[31m   [31m×[31m a client that stops reading bounds the answers the daemon retains, and gets every one in order when it reads[39m[33m 1108[2mms[22m[39m
+[31m[1mAssertionError[22m: expected 49170922 to be less than 1343744[39m
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[90m (1)[39m

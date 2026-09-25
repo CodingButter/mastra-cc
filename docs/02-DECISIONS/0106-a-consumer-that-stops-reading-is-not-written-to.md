@@ -32,3 +32,11 @@ A consumer cannot tell a held-and-released pointer from a fresh one on the wire,
 ## Verification
 
 `daemon/src/__tests__/a-consumer-that-stops-reading-is-not-written-to.test.ts` drives the book with a scripted gauge (writes under the bound, holds the newest per element over it, keeps at most N, never holds `watchEnded`, holds nothing without a gauge) and then a real Unix socket with a client that pauses: 8000 changes emitted, retained bytes stop at the bound instead of reaching ~1 MB, and the held pointers arrive when the client resumes, followed at once by the next fresh change. `docs/proofs/reliability-remediation/cc09/stalled-consumer/` runs the same shape against the built daemon beside the pre-decision measurement.
+
+## Amendment (2026-09-24): answers are held on the request side
+
+The bound above covered events only. Answers to requests were written straight to the socket, so a client that pipelined large reads and never read the answers could make the daemon buffer all of them. The measurement: 3,000 pipelined 16 KB reads left about 49 MB retained.
+
+An answer cannot be coalesced or dropped, so it is bounded where it is caused. While a connection is over the pending-byte bound, or has `MAX_IN_FLIGHT_REQUESTS` (64) requests unanswered, the daemon dispatches no further request from it and stops reading it (`pause()` on the socket, so the kernel pushes back on the client). Reading and dispatch resume, in order, on drain or when an answer lands. The retained total per connection is at most the bound plus one round of in-flight answers.
+
+A consequence: a request sent behind 64 unanswered ones, cancellation included, waits its turn. Proof in [stalled-answers](../proofs/stalled-answers/README.md). Test: `daemon/src/__tests__/answers-wait-for-a-reader.test.ts`.
