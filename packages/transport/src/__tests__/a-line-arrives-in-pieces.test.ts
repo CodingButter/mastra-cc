@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
 import { connect, MAX_LINE_CHARS } from "../index.js";
 
+const CAP = 64 * 1024;
+
 // TCP delivers bytes, not characters. A reply whose multi-byte characters
 // straddle two chunks must reach the caller intact (audit C2), and a peer
 // that never ends its line must not grow the client's memory forever (M1).
@@ -53,10 +55,14 @@ describe("a line that arrives in pieces", () => {
 
   it("refuses a peer whose line never ends, rather than buffering it without bound", async () => {
     const socketPath = await peer((socket) => {
-      const piece = "x".repeat(1024 * 1024);
-      for (let i = 0; i <= MAX_LINE_CHARS / piece.length; i++) socket.write(piece);
+      const piece = "x".repeat(1024);
+      for (let i = 0; i <= CAP / piece.length; i++) socket.write(piece);
     });
-    const client = await connect({ socketPath });
+    const client = await connect({ socketPath, maxLineChars: CAP });
     await expect(client.listApplications({})).rejects.toThrow(/longer than .* without a newline/);
-  }, 30_000);
+  });
+
+  it("keeps the production cap generous enough for a base64 capture", () => {
+    expect(MAX_LINE_CHARS).toBe(64 * 1024 * 1024);
+  });
 });
