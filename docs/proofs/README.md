@@ -202,3 +202,5 @@ larger than the difference.
 [Per-target queues](per-target-queues/README.md) (ADR-0118): on the base one frozen application holds every client's call; on the branch other applications and unscoped calls answer in milliseconds, with per-connection order kept.
 
 [CDP over a pipe](cdp-pipe/README.md) (ADR-0119): on the base any local process reaches the daemon-launched browser on port 9744; on the branch it is refused, and the daemon drives the browser over fds 3/4.
+
+[Grant identity](grant-identity/README.md) (ADR-0120): on the base a process calling itself `firefox` is read as the granted Firefox; on the branch it is absent, and a scope aimed at it is refused as `world`.

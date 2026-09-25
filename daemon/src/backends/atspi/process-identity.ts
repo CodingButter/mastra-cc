@@ -20,14 +20,14 @@ export interface Identity {
 // it, with every symlink followed. Snap puts /usr/bin/snap behind /snap/bin/<name>
 // and runs the real binary from /snap/<name>/, so a snap resolution admits
 // that tree instead of the launcher every snap shares.
-export function executablesOfName(name: string, path = process.env.PATH ?? ""): string[] {
+export function executablesOfName(name: string, path = process.env.PATH ?? "", snapLauncher = "/usr/bin/snap"): string[] {
   for (const dir of path.split(delimiter)) {
     if (dir === "") continue;
     const candidate = join(dir, name);
     try {
       accessSync(candidate, constants.X_OK);
       const real = realpathSync(candidate);
-      if (real === "/usr/bin/snap") return [`/snap/${name}/`];
+      if (real === snapLauncher) return [`/snap/${name}/`];
       return [real];
     } catch {
       continue;
