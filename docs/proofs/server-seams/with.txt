@@ -1,0 +1,7 @@
+original lines 3001, moved lines 3001
+same multiset of lines: True
+lines only in branch: 0  lines only in base: 0
+
+# branch, daemon suite
+ Test Files  108 passed | 2 skipped (110)
+      Tests  1058 passed | 29 skipped (1087)

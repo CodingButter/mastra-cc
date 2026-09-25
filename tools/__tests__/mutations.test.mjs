@@ -77,7 +77,7 @@ describe("the mutation runner", () => {
     const result = runWithTable([
       {
         name: "scratch-ambiguous",
-        file: "daemon/src/server.ts",
+        file: "daemon/src/server/dispatch.ts",
         find: 'effectClass: "observe"',
         cwd: "tools",
         testFile: "__tests__/mutations.test.mjs",
@@ -85,23 +85,23 @@ describe("the mutation runner", () => {
     ]);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("scratch-ambiguous");
-    const sites = readFileSync(join(repoRoot, "daemon/src/server.ts"), "utf8").split(String.raw`effectClass: "observe"`).length - 1;
+    const sites = readFileSync(join(repoRoot, "daemon/src/server/dispatch.ts"), "utf8").split(String.raw`effectClass: "observe"`).length - 1;
     expect(sites).toBeGreaterThan(1);
     expect(result.stderr).toContain(`matches ${sites} sites`);
     expect(result.stderr).toContain("exactly one");
   });
 
   it("refuses before touching the file, so no suite runs against a site nobody chose", () => {
-    const before = readFileSync(join(repoRoot, "daemon", "src", "server.ts"), "utf8");
+    const before = readFileSync(join(repoRoot, "daemon", "src", "server", "dispatch.ts"), "utf8");
     const { root } = runWithTable([
       {
         name: "scratch-ambiguous",
-        file: "daemon/src/server.ts",
+        file: "daemon/src/server/dispatch.ts",
         find: 'effectClass: "observe"',
         cwd: "tools",
         testFile: "__tests__/mutations.test.mjs",
       },
     ]);
-    expect(readFileSync(join(root, "daemon", "src", "server.ts"), "utf8")).toBe(before);
+    expect(readFileSync(join(root, "daemon", "src", "server", "dispatch.ts"), "utf8")).toBe(before);
   });
 });

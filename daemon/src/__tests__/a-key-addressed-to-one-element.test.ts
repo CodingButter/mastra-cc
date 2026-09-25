@@ -1,3 +1,4 @@
+import { serverSource } from "./server-source.js";
 import { refusalText } from "./refusal-text.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -188,7 +189,7 @@ describe("a key, addressed to one element", () => {
     // this is the test that goes red - a daemon that answered "no" and then
     // pressed the key anyway would be escalating its own authority at exactly
     // the moment it was told not to.
-    const source = readFileSync(join(here, "..", "server.ts"), "utf8");
+    const source = serverSource();
     const callers = [...source.matchAll(/(?<![\w.])sendKeyChord\(/g)];
     // Two: the function's own declaration and the dispatch entry's call. The
     // seam call inside is `backend.sendKeyChord(`, excluded by the lookbehind,

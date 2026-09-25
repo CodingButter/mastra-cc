@@ -1,3 +1,4 @@
+import { serverSource } from "./server-source.js";
 import { refusalText } from "./refusal-text.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -526,7 +527,7 @@ describe("the gates in front of the pointer", () => {
     // activateElement that was refused for want of a published action must not
     // come back as a press. Two matches - the declaration and the dispatch
     // entry - because `backend.clickElement(` is excluded by the lookbehind.
-    const source = readFileSync(join(here, "..", "server.ts"), "utf8");
+    const source = serverSource();
     expect([...source.matchAll(/(?<![\w.])clickElement\(/g)]).toHaveLength(2);
     expect(source).toContain('clickElement: { effectClass: "rawInput", enforcement: "before-call"');
   });

@@ -1,3 +1,4 @@
+import { serverSource } from "./server-source.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -62,7 +63,7 @@ describe("the built daemon remains location-transparent", () => {
   });
 
   it("keeps launch readiness bounded and refuses to pretend spawn means readable", () => {
-    const server = readFileSync(join(root, "daemon", "src", "server.ts"), "utf8");
+    const server = serverSource();
     expect(server).toContain("POLL_BUDGET_MS = 60_000");
     expect(server).toContain("was opened but did not become readable within");
   });

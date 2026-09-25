@@ -1,3 +1,4 @@
+import { serverSource } from "./server-source.js";
 import { refusalText } from "./refusal-text.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -271,7 +272,7 @@ describe("the gates in front of clearing", () => {
     // carry: a setElementText that was refused must not come back as a field
     // emptied by keystroke. Two matches - the declaration and the dispatch
     // entry - because `backend.clearElementText(` is excluded by the lookbehind.
-    const source = readFileSync(join(here, "..", "server.ts"), "utf8");
+    const source = serverSource();
     expect([...source.matchAll(/(?<![\w.])clearElementText\(/g)]).toHaveLength(2);
     expect(source).toContain('clearElementText: { effectClass: "rawInput", enforcement: "before-call"');
   });

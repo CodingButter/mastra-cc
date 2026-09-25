@@ -1,0 +1,3 @@
+# base 8a2ae66, daemon suite
+ Test Files  108 passed | 2 skipped (110)
+      Tests  1058 passed | 29 skipped (1087)

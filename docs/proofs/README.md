@@ -205,6 +205,8 @@ larger than the difference.
 
 [Untrusted content](untrusted-content/README.md) (ADR-0121): on the base a browser page from any origin opens the WebSocket; on the branch unlisted origins get 401 and Origin-less clients are unaffected. A live Gemini agent ignored an injected "delete account" instruction 5/5 — on the base as well, so that half shows behaviour, not the rule's effect.
 
+[Server seams](server-seams/README.md) (ADR-0122): `server.ts` split into six modules; the same 3,001 code lines, the same 1,058 passing tests, every mutation anchor re-pointed and unique.
+
 [Grant identity](grant-identity/README.md) (ADR-0120): on the base a process calling itself `firefox` is read as the granted Firefox; on the branch it is absent, and a scope aimed at it is refused as `world`.
 
 [Truthful claims](truthful-claims/README.md) (ADR-0026 amended): no proof switch in production, dispatch refuses inherited names, and an effect whose receipt cannot be written is refused, or says so if the receipt is lost after the fact.
