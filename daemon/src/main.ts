@@ -265,6 +265,9 @@ if (wsPort !== null && (!Number.isInteger(wsPort) || wsPort < 0 || wsPort > 6553
   process.exit(1);
 }
 const wsHost = arg("--ws-host") ?? "127.0.0.1";
+// --ws-allow-origin <origin[,origin...]>: browser pages allowed to connect.
+// Absent means none: a page on any website could otherwise drive this desktop.
+const wsAllowedOrigins = new Set((arg("--ws-allow-origin") ?? "").split(",").map((o) => o.trim()).filter((o) => o !== ""));
 
 let server: Awaited<ReturnType<typeof startServer>> | undefined;
 let wsServer: Awaited<ReturnType<typeof startWebSocketServer>> | undefined;
@@ -303,6 +306,7 @@ if (wsPort !== null) {
   wsServer = await startWebSocketServer({
     port: wsPort,
     host: wsHost,
+    allowedOrigins: wsAllowedOrigins,
     backend,
     launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility, keys },
     visibility,

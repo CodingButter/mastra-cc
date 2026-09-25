@@ -203,6 +203,8 @@ larger than the difference.
 
 [CDP over a pipe](cdp-pipe/README.md) (ADR-0119): on the base any local process reaches the daemon-launched browser on port 9744; on the branch it is refused, and the daemon drives the browser over fds 3/4.
 
+[Untrusted content](untrusted-content/README.md) (ADR-0121): on the base a browser page from any origin opens the WebSocket; on the branch unlisted origins get 401 and Origin-less clients are unaffected. A live Gemini agent ignored an injected "delete account" instruction 5/5 — on the base as well, so that half shows behaviour, not the rule's effect.
+
 [Grant identity](grant-identity/README.md) (ADR-0120): on the base a process calling itself `firefox` is read as the granted Firefox; on the branch it is absent, and a scope aimed at it is refused as `world`.
 
 [Truthful claims](truthful-claims/README.md) (ADR-0026 amended): no proof switch in production, dispatch refuses inherited names, and an effect whose receipt cannot be written is refused, or says so if the receipt is lost after the fact.
