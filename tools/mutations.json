@@ -2432,5 +2432,13 @@
     "replace": "",
     "cwd": "daemon",
     "testFile": "src/__tests__/answers-wait-for-a-reader.test.ts"
+  },
+  {
+    "name": "a-schema-parameter-never-reaches-the-backend",
+    "file": "daemon/src/server.ts",
+    "find": "backend.clickElement({ id, button, count, x, y, capturedAt })",
+    "replace": "backend.clickElement({ id, button, count, x, y })",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/every-parameter-reaches-the-backend.test.ts"
   }
 ]

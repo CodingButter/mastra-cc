@@ -1,0 +1,4 @@
+$ git rev-parse HEAD   # origin/master + this branch's turbo.json and package.json
+a919bd937d461208935a24d416b09e2d4f7f720f
+$ rm -rf packages/protocol-types/src && pnpm turbo run typecheck --force
+[1m Tasks:    [32m[1m9 successful[0m, 9 total[0m

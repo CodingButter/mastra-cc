@@ -24,7 +24,10 @@ jobs:
           cache: pnpm
       # packages/protocol-types is generated build output (ADR-0009) and a
       # workspace member; it must exist before pnpm can resolve the workspace.
-      # The generator uses only the Node standard library.
+      # The generator uses only the Node standard library. This is the one-time
+      # bootstrap before install; after it, every build/lint/typecheck/test
+      # regenerates through turbo's //#generate task, so a schema edit can no
+      # longer be typechecked against stale bindings.
       - name: "generate protocol-types (build output, ADR-0009)"
         run: node protocol/generate.mjs
       - run: pnpm install --frozen-lockfile
