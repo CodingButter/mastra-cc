@@ -13,7 +13,7 @@
 import { describe, expect, it } from "vitest";
 import { handleRequest } from "../server.js";
 import { EffectUnsupportedError, UnperformableElementError, type Backend } from "../backend.js";
-import { scrollIntoView } from "../backends/atspi/effects.js";
+import { grabFocus, scrollIntoView } from "../backends/atspi/effects.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
 
 function capturing(failure: Error): Backend {
@@ -71,5 +71,28 @@ describe("a route that cannot do a thing says so with its own code", () => {
       },
     };
     await expect(scrollIntoView(seam as never, { busName: ":1.1", objectPath: "/o" } as never)).rejects.not.toThrow(UnperformableElementError);
+  });
+
+  // D5 (benchmark, GTK4 Settings): a key aimed at an element whose application
+  // answers GrabFocus with NotSupported came back as daemon/BackendUnreadable.
+  it("an application answering GrabFocus with NotSupported declines the focus before any key is sent", async () => {
+    const seam = {
+      call: async (m: { member: string }) => {
+        if (m.member === "GetInterfaces") return [["org.a11y.atspi.Component"]];
+        if (m.member === "GrabFocus") throw new Error('d-bus call failed: {"name":"DBusError","dbusName":"org.freedesktop.DBus.Error.NotSupported","body":[""]}');
+        return [true];
+      },
+    };
+    await expect(grabFocus(seam as never, { busName: ":1.1", objectPath: "/o" } as never)).rejects.toThrow(UnperformableElementError);
+  });
+
+  it("any other failure of GrabFocus is still not dressed up as the application's answer", async () => {
+    const seam = {
+      call: async (m: { member: string }) => {
+        if (m.member === "GetInterfaces") return [["org.a11y.atspi.Component"]];
+        throw new Error("d-bus call failed: connection reset");
+      },
+    };
+    await expect(grabFocus(seam as never, { busName: ":1.1", objectPath: "/o" } as never)).rejects.not.toThrow(UnperformableElementError);
   });
 });

@@ -2540,9 +2540,33 @@
   {
     "name": "a-declined-scroll-is-a-daemon-fault",
     "file": "daemon/src/backends/atspi/effects.ts",
-    "find": "      throw new UnperformableElementError(\"this application declines",
-    "replace": "      throw new Error(\"this application declines",
+    "find": "      throw new UnperformableElementError(\"this application declines to bring",
+    "replace": "      throw new Error(\"this application declines to bring",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts"
+  },
+  {
+    "name": "a-declined-focus-is-a-daemon-fault",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "      throw new UnperformableElementError(\"this application declines to give",
+    "replace": "      throw new Error(\"this application declines to give",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts"
+  },
+  {
+    "name": "a-submit-is-whatever-the-node-publishes-first",
+    "file": "daemon/src/backends/cdp/index.ts",
+    "find": "    await commitOf(this.channel, ref);\n",
+    "replace": "    await performDerivedAction(this.channel, ref, element.actions[0]!.name, [element.actions[0]!.name]);\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/a-commit-is-a-commit.test.ts"
+  },
+  {
+    "name": "any-button-submits-its-form",
+    "file": "daemon/src/backends/cdp/effects.ts",
+    "find": "if (!this.form || (this.type !== 'submit' && this.type !== 'image')) return 'no-form';",
+    "replace": "if (!this.form) return 'no-form';",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/a-commit-is-a-commit.test.ts"
   }
 ]

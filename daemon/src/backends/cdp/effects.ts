@@ -286,6 +286,26 @@ export async function performDerivedAction(
 // that boolean IS the reveal's whole claim - a scroll that was refused (a
 // display:none ancestor, a container that does not scroll) returns from
 // scrollIntoView without complaint and leaves the element exactly where it was.
+// COMMITTING (submitElement). The accessibility tree publishes no verb that
+// commits, so the one grounding this route has is the DOM's own: a submit
+// control that belongs to a form (`this.form`, type submit or image). Its
+// commit is `form.requestSubmit(control)` - the same validation and submit
+// event a person's press runs. Anything else has no commit to perform here, and
+// performing some other derived action (focus) and calling it a commit was the
+// benchmark's D4.
+export const REQUEST_SUBMIT =
+  "function(){ if (!this.form || (this.type !== 'submit' && this.type !== 'image')) return 'no-form'; this.form.requestSubmit(this); return 'requested'; }";
+
+export async function commitOf(seam: CallSeam, ref: NodeRef): Promise<void> {
+  const objectId = await objectFor(seam, ref);
+  const answer = await callOn(seam, ref, objectId, REQUEST_SUBMIT, []);
+  if (answer !== "requested") {
+    throw new EffectUnsupportedError(
+      "this element is not a submit control of a form, and this route has no other way to commit - nothing was committed",
+    );
+  }
+}
+
 export async function revealIn(seam: CallSeam, ref: NodeRef): Promise<void> {
   const objectId = await objectFor(seam, ref);
   await callOn(seam, ref, objectId, "function(){ this.scrollIntoView({block:'nearest', inline:'nearest'}); }", []);

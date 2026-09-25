@@ -362,12 +362,22 @@ export async function grabFocus(seam: CallSeam, ref: NativeRef): Promise<boolean
   // know that BEFORE it presses anything, because the key would land in whatever
   // window does hold the focus. Callers that only want the focus moved may
   // ignore it; the one that presses a key may not.
-  const [taken] = await seam.call({
-    destination: ref.busName,
-    path: ref.objectPath,
-    iface: COMPONENT_IFACE,
-    member: "GrabFocus",
-  });
+  let taken: unknown;
+  try {
+    [taken] = await seam.call({
+      destination: ref.busName,
+      path: ref.objectPath,
+      iface: COMPONENT_IFACE,
+      member: "GrabFocus",
+    });
+  } catch (error) {
+    // GTK4 publishes Component and answers GrabFocus with NotSupported. The
+    // application declined before anything was pressed, so nothing was sent.
+    if (error instanceof Error && /org\.freedesktop\.DBus\.Error\.(NotSupported|UnknownMethod)(?:["\s:]|$)/.test(error.message)) {
+      throw new UnperformableElementError("this application declines to give this element the focus (it answers GrabFocus with NotSupported) - nothing was sent to it");
+    }
+    throw error;
+  }
   return taken === true;
 }
 
