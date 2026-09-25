@@ -11,7 +11,7 @@
 // uses, bounded by the range the ELEMENT published. Pixels and enum constants
 // exist in this file and nowhere above it.
 
-import { CallDeadlineError } from "../../backend.js";
+import { CallDeadlineError, UnperformableElementError } from "../../backend.js";
 import {
   MagnitudeOutOfRangeError,
   OperationNotExposedError,
@@ -381,14 +381,24 @@ export async function grabFocus(seam: CallSeam, ref: NativeRef): Promise<boolean
 // a promise about one machine, and it is still not made.
 export async function scrollIntoView(seam: CallSeam, ref: NativeRef): Promise<void> {
   await requireInterface(seam, ref, COMPONENT_IFACE, "being brought into view");
-  await seam.call({
-    destination: ref.busName,
-    path: ref.objectPath,
-    iface: COMPONENT_IFACE,
-    member: "ScrollTo",
-    signature: "u",
-    body: [SCROLL_ANYWHERE],
-  });
+  try {
+    await seam.call({
+      destination: ref.busName,
+      path: ref.objectPath,
+      iface: COMPONENT_IFACE,
+      member: "ScrollTo",
+      signature: "u",
+      body: [SCROLL_ANYWHERE],
+    });
+  } catch (error) {
+    // The application publishes Component but declines ScrollTo (GTK4 answers
+    // NotSupported). That is the application's answer, not a daemon fault:
+    // nothing moved, and asking again will not change it.
+    if (error instanceof Error && /org\.freedesktop\.DBus\.Error\.(NotSupported|UnknownMethod)(?:["\s:]|$)/.test(error.message)) {
+      throw new UnperformableElementError("this application declines to bring this element into view (it answers ScrollTo with NotSupported) - nothing was scrolled");
+    }
+    throw error;
+  }
   const [states] = await seam.call({
     destination: ref.busName,
     path: ref.objectPath,

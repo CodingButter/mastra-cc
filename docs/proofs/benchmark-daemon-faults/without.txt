@@ -1,0 +1,111 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/tmp/core-10/daemon[39m
+
+[90mstderr[2m | src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts[2m > [22m[2ma route that cannot do a thing says so with its own code[2m > [22m[2ma capture on a route with no view of the screen is refused as unsupported, not as an unreadable desk
+[22m[39mdaemon: captureElement failed in the backend: EffectUnsupportedError: this route reads a browser through its debugging protocol and has no view of the machine's screen
+
+ [31m❯[39m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 10[2mms[22m[39m
+[31m     [31m×[31m a screen grab the display refuses is the desk's answer, not an unclassified daemon fault[39m[32m 6[2mms[22m[39m
+[31m     [31m×[31m a capture on a route with no view of the screen is refused as unsupported, not as an unreadable desk[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m an application answering ScrollTo with org.freedesktop.DBus.Error.NotSupported declines the reveal, and nothing is read afterwards[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m an application answering ScrollTo with org.freedesktop.DBus.Error.UnknownMethod declines the reveal, and nothing is read afterwards[39m[32m 0[2mms[22m[39m
+     [32m✓[39m any other failure of ScrollTo is still not dressed up as the application's answer[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts[2m > [22ma route that cannot do a thing says so with its own code[2m > [22ma screen grab the display refuses is the desk's answer, not an unclassified daemon fault
+[31m[1mAssertionError[22m: expected { class: 'daemon', …(3) } to match object { class: 'world', …(1) }
+(2 matching properties omitted from actual)[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "class": "world",[39m
+[32m-   "code": "UnperformableElementError",[39m
+[31m+   "class": "daemon",[39m
+[31m+   "code": "Unclassified",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts:[2m40:21[22m[39m
+    [90m 38|[39m   it("a screen grab the display refuses is the desk's answer, not an u…
+    [90m 39|[39m     const refusal = await refusalOf(new UnperformableElementError("scr…
+    [90m 40|[39m     expect(refusal).toMatchObject({ class: "world", code: "Unperformab…
+    [90m   |[39m                     [31m^[39m
+    [90m 41|[39m     [34mexpect[39m(refusal[33m?.[39mmessage)[33m.[39m[34mtoContain[39m([32m"BadMatch"[39m)[33m;[39m
+    [90m 42|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts[2m > [22ma route that cannot do a thing says so with its own code[2m > [22ma capture on a route with no view of the screen is refused as unsupported, not as an unreadable desk
+[31m[1mAssertionError[22m: expected { class: 'daemon', …(2) } to match object { class: 'world', …(1) }
+(1 matching property omitted from actual)[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "class": "world",[39m
+[32m-   "code": "EffectUnsupportedError",[39m
+[31m+   "class": "daemon",[39m
+[31m+   "code": "BackendUnreadable",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts:[2m46:21[22m[39m
+    [90m 44|[39m   it("a capture on a route with no view of the screen is refused as un…
+    [90m 45|[39m     const refusal = await refusalOf(new EffectUnsupportedError("this r…
+    [90m 46|[39m     expect(refusal).toMatchObject({ class: "world", code: "EffectUnsup…
+    [90m   |[39m                     [31m^[39m
+    [90m 47|[39m   })[33m;[39m
+    [90m 48|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts[2m > [22ma route that cannot do a thing says so with its own code[2m > [22man application answering ScrollTo with org.freedesktop.DBus.Error.NotSupported declines the reveal, and nothing is read afterwards
+[31m[1mAssertionError[22m: expected error to be instance of UnperformableElementError[39m
+
+[32m- Expected:[39m
+[Function UnperformableElementError]
+
+[31m+ Received:[39m
+Error {
+  "message": "d-bus call failed: {\"name\":\"DBusError\",\"dbusName\":\"org.freedesktop.DBus.Error.NotSupported\",\"body\":[\"\"]}",
+}
+
+[36m [2m❯[22m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts:[2m61:98[22m[39m
+    [90m 59|[39m         }[33m,[39m
+    [90m 60|[39m       }[33m;[39m
+    [90m 61|[39m       await expect(scrollIntoView(seam as never, { busName: ":1.1", ob…
+    [90m   |[39m                                                                                                  [31m^[39m
+    [90m 62|[39m       [34mexpect[39m(calls)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"GetState"[39m)[33m;[39m
+    [90m 63|[39m     }[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts[2m > [22ma route that cannot do a thing says so with its own code[2m > [22man application answering ScrollTo with org.freedesktop.DBus.Error.UnknownMethod declines the reveal, and nothing is read afterwards
+[31m[1mAssertionError[22m: expected error to be instance of UnperformableElementError[39m
+
+[32m- Expected:[39m
+[Function UnperformableElementError]
+
+[31m+ Received:[39m
+Error {
+  "message": "d-bus call failed: {\"name\":\"DBusError\",\"dbusName\":\"org.freedesktop.DBus.Error.UnknownMethod\",\"body\":[\"\"]}",
+}
+
+[36m [2m❯[22m src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts:[2m61:98[22m[39m
+    [90m 59|[39m         }[33m,[39m
+    [90m 60|[39m       }[33m;[39m
+    [90m 61|[39m       await expect(scrollIntoView(seam as never, { busName: ":1.1", ob…
+    [90m   |[39m                                                                                                  [31m^[39m
+    [90m 62|[39m       [34mexpect[39m(calls)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"GetState"[39m)[33m;[39m
+    [90m 63|[39m     }[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 03:27:00
+[2m   Duration [22m 364ms[2m (transform 208ms, setup 0ms, import 263ms, tests 10ms, environment 0ms)[22m
+

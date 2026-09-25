@@ -210,3 +210,4 @@ larger than the difference.
 [Grant identity](grant-identity/README.md) (ADR-0120): on the base a process calling itself `firefox` is read as the granted Firefox; on the branch it is absent, and a scope aimed at it is refused as `world`.
 
 [Truthful claims](truthful-claims/README.md) (ADR-0026 amended): no proof switch in production, dispatch refuses inherited names, and an effect whose receipt cannot be written is refused, or says so if the receipt is lost after the fact.
+- [benchmark-daemon-faults](benchmark-daemon-faults/README.md): capture and reveal failures the benchmark saw come back with their own world-class codes instead of daemon backstops.

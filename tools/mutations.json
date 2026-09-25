@@ -1752,7 +1752,7 @@
   {
     "name": "a-look-that-answers-a-blind-desk-as-if-the-desk-were-fine",
     "file": "daemon/src/server/dispatch.ts",
-    "find": "        if (failure instanceof UnperformableElementError) return { refusal: failure.message };\n",
+    "find": "        if (failure instanceof UnperformableElementError || failure instanceof EffectUnsupportedError) {\n          return { refusal: failure.message, refusalClass: failure.constructor.name as RefusalClass };\n        }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-look-is-a-look-and-not-a-new-authority.test.ts"
   },
@@ -2520,5 +2520,29 @@
     "replace": "      return typeof origin === \"string\" && allowedOrigins.has(origin);",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-web-page-cannot-reach-the-desk.test.ts"
+  },
+  {
+    "name": "a-refused-grab-forgets-whose-it-is",
+    "file": "daemon/src/server/dispatch.ts",
+    "find": "          return { refusal: failure.message, refusalClass: failure.constructor.name as RefusalClass };\n        }",
+    "replace": "          return { refusal: failure.message };\n        }",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts"
+  },
+  {
+    "name": "a-screenless-route-is-an-unreadable-desk",
+    "file": "daemon/src/server/dispatch.ts",
+    "find": "if (failure instanceof UnperformableElementError || failure instanceof EffectUnsupportedError) {",
+    "replace": "if (failure instanceof UnperformableElementError) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts"
+  },
+  {
+    "name": "a-declined-scroll-is-a-daemon-fault",
+    "file": "daemon/src/backends/atspi/effects.ts",
+    "find": "      throw new UnperformableElementError(\"this application declines",
+    "replace": "      throw new Error(\"this application declines",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-route-that-cannot-is-not-a-daemon-fault.test.ts"
   }
 ]
