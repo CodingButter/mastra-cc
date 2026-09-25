@@ -159,3 +159,34 @@ it("forgets a target's queue once nothing waits in it", async () => {
   await vi.waitFor(() => expect(a.answers.has(id)).toBe(true));
   await vi.waitFor(() => expect(queuedTargets()).toBe(0));
 });
+
+it("never runs two effects at once, even on different applications", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "per-target-fx-"));
+  dirs.push(dir);
+  let running = 0, peak = 0;
+  const effects: string[] = [];
+  const fx = {
+    ...backend,
+    typeText: async (params: { id: string; text: string }) => {
+      running++; peak = Math.max(peak, running);
+      await new Promise((r) => setTimeout(r, 40));
+      effects.push(params.text);
+      running--;
+      return { element: { id: params.id, role: "textbox", name: "f", actions: [], states: [], content: { kind: "text", value: params.text } } };
+    },
+  } as unknown as Backend;
+  const socketPath = join(dir, "d.sock");
+  const launch: LaunchContext = { permits: new Set(), allows: new Set(["rawInput"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const server = await startServer({ socketPath, backend: fx, launch });
+  const socket = connect(socketPath);
+  cleanups.push(async () => { socket.destroy(); await new Promise<void>((r) => server.close(() => r())); });
+  let text = "";
+  socket.on("data", (c: Buffer) => { text += c.toString("utf8"); });
+  await new Promise<void>((r) => socket.once("connect", r));
+  socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
+  const targets = [FROZEN, LIVE, FROZEN_TOO, LIVE];
+  targets.forEach((id, i) => socket.write(`${JSON.stringify({ type: "request", id: i + 1, method: "typeText", params: { id, text: `t${i}` } })}\n`));
+  await vi.waitFor(() => expect(text.split("\n").filter((l) => l.includes('"type":"response"')).length).toBe(4), { timeout: 3000 });
+  expect(peak).toBe(1);
+  expect(effects).toEqual(["t0", "t1", "t2", "t3"]);
+});
