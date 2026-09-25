@@ -1,7 +1,10 @@
 import { spawn } from "node:child_process";
+import { adoptLaunchedBrowser, PipeBrowser } from "../backends/cdp/pipe.js";
+import type { Readable, Writable } from "node:stream";
 import { applicationName } from "../backends/atspi/names.js";
 import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
 import type { OwnershipTable } from "./table.js";
+import type { Socket } from "node:net";
 
 // The launch primitive: the capability half only (ADR-0019 - authority is
 // checked by the caller BEFORE this module is ever consulted). Spawning is an
@@ -41,8 +44,11 @@ export function launchApplication(
     const child = spawn(recipe.argv[0], recipe.argv.slice(1), {
       env: { ...process.env, ...recipe.env },
       shell: false,
-      stdio: "ignore",
+      stdio: recipe.debugPipe === true ? ["ignore", "ignore", "ignore", "pipe", "pipe"] : "ignore",
     });
+    if (recipe.debugPipe === true) {
+      adoptLaunchedBrowser(new PipeBrowser(child.stdio[3] as Writable, child.stdio[4] as Readable));
+    }
     child.once("error", reject);
     child.once("spawn", () => {
       const pid = child.pid as number;
@@ -55,6 +61,9 @@ export function launchApplication(
       if (child.pid !== undefined) table.remove(child.pid);
     });
     child.unref();
+    // The pipe's streams are sockets; left referenced they would hold the
+    // daemon open after everything else has ended.
+    for (const fd of [3, 4]) (child.stdio[fd] as Socket | null | undefined)?.unref();
   });
 }
 

@@ -1,0 +1,3 @@
+recipe flags: --remote-debugging-port=9744
+another process reached the browser: Chrome/151.0.7922.137 at ws://127.0.0.1:9744/devtools/browser/d2ad5d82-c08c-4325-93d9-1ed076b511b1
+RESULT: RED - the browser can be driven around the daemon

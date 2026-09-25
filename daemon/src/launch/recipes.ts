@@ -12,7 +12,7 @@
 // here in daemon source and illegal on the wire (B10).
 
 import { homedir } from "node:os";
-import { DEBUG_PORT, PAGE_PORT } from "../backends/cdp/channel.js";
+import { PAGE_PORT } from "../backends/cdp/channel.js";
 
 export interface LaunchRecipe {
   readonly argv: readonly string[];
@@ -28,6 +28,10 @@ export interface LaunchRecipe {
   // because the test catalogs defang argv to a harmless sleep and the guard
   // this feeds must keep its meaning there.
   readonly sharesBrowserEndpoint?: true;
+  // Set on the daemon's own browsers: the debugging protocol runs over fds 3
+  // and 4 of the child (--remote-debugging-pipe), so no port exists for any
+  // other process to reach (ADR-0119).
+  readonly debugPipe?: true;
 }
 
 export type LaunchCatalog = Readonly<Record<string, LaunchRecipe>>;
@@ -82,7 +86,7 @@ export const CATALOG: LaunchCatalog = {
   chrome: {
     argv: [
       "google-chrome",
-      `--remote-debugging-port=${DEBUG_PORT}`,
+      "--remote-debugging-pipe",
       `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`,
       "--no-first-run",
       "--no-default-browser-check",
@@ -91,6 +95,7 @@ export const CATALOG: LaunchCatalog = {
     env: {},
     appearsAs: "chrome",
     sharesBrowserEndpoint: true,
+    debugPipe: true,
   },
   // The same browser under the operator's signed-in Gmail identity (M2.5).
   // Identical shape to the chrome entry - only the profile directory and the
@@ -100,7 +105,7 @@ export const CATALOG: LaunchCatalog = {
   gmail: {
     argv: [
       "google-chrome",
-      `--remote-debugging-port=${DEBUG_PORT}`,
+      "--remote-debugging-pipe",
       `--user-data-dir=${GMAIL_PROFILE_DIR}`,
       "--no-first-run",
       "--no-default-browser-check",
@@ -109,6 +114,7 @@ export const CATALOG: LaunchCatalog = {
     env: {},
     appearsAs: "chrome",
     sharesBrowserEndpoint: true,
+    debugPipe: true,
   },
   // Qt6 enabling (M2.5, Q05 - measured on minibeast, Qt 6.4): without a knob
   // the process registers an application root on the accessibility bus but

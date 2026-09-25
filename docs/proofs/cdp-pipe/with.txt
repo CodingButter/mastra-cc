@@ -1,0 +1,3 @@
+recipe flags: --remote-debugging-pipe
+another process was refused: ECONNREFUSED
+RESULT: GREEN - no debugging port; only the daemon's pipe reaches the browser

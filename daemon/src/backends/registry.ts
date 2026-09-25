@@ -2,6 +2,7 @@ import type { Backend } from "../backend.js";
 import type { Visibility } from "../grants.js";
 import { captureChannel, liveChannel } from "./atspi/channel.js";
 import { AtspiBackend } from "./atspi/index.js";
+import { followLaunchedBrowser } from "./cdp/pipe.js";
 import { captureCdpChannel, DEBUG_PORT, liveCdpChannel } from "./cdp/channel.js";
 import { CdpBackend, CdpReplayBackend } from "./cdp/index.js";
 import { ReplayBackend } from "./replay/index.js";
@@ -34,7 +35,7 @@ export const registry: Record<string, (options?: BackendOptions) => Backend> = {
   },
   replay: (options) => new ReplayBackend(options?.fixture ?? DEFAULT_FIXTURE, options?.visibility),
   cdp: (options) => {
-    const live = liveCdpChannel(`http://127.0.0.1:${DEBUG_PORT}`);
+    const live = liveCdpChannel(`http://127.0.0.1:${DEBUG_PORT}`, followLaunchedBrowser());
     return new CdpBackend(options?.capture ? captureCdpChannel(live, options.capture) : live, options?.visibility);
   },
   "cdp-replay": (options) => new CdpReplayBackend(options?.fixture ?? DEFAULT_CDP_FIXTURE, options?.visibility),
