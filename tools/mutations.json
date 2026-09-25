@@ -2376,5 +2376,13 @@
     "replace": "if (n >= 2) end();",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/effects.test.ts"
+  },
+  {
+    "name": "a-second-daemon-steals-the-socket",
+    "file": "daemon/src/server.ts",
+    "find": "    probe.once(\"connect\", () => {\n      probe.destroy();\n      reject(",
+    "replace": "    probe.once(\"connect\", () => {\n      probe.destroy();\n      rmSync(socketPath, { force: true });\n      return resolve();\n      reject(",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-socket-belongs-to-the-daemon-on-it.test.ts"
   }
 ]

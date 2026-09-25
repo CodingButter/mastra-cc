@@ -1,0 +1,5 @@
+[31m     [31m×[31m refuses a second daemon on a live path, and the first keeps serving[39m[32m 11[2mms[22m[39m
+     [32m✓[39m takes over a stale socket file nobody is listening on[32m 3[2mms[22m[39m
+     [32m✓[39m starts on a path where nothing exists yet[32m 0[2mms[22m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
