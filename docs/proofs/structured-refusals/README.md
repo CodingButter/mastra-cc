@@ -9,6 +9,6 @@ Decision: [ADR-0113](../../02-DECISIONS/0113-every-refusal-says-whose-it-is.md).
 
 The other owners are covered in unit tests:
 - `world`: `BlockedByDialog` in `cdp-refusals.test.ts`.
-- `daemon`: `BackendUnreadable`, `DeadlineExceeded`, and the `Unclassified` backstop in `refusal-on-unreadable-backend.test.ts`, `cdp-refusals.test.ts` and `every-refusal-says-whose-it-is.test.ts`.
+- `world`: `DeadlineExceeded` as well. `daemon`: `BackendUnreadable` and the `Unclassified` backstop in `refusal-on-unreadable-backend.test.ts`, `cdp-refusals.test.ts` and `every-refusal-says-whose-it-is.test.ts`.
 
-Mutations `a-refusal-forgets-whose-it-is` and `the-backstop-blames-the-caller` both go red.
+Mutations `a-refusal-forgets-whose-it-is`, `the-backstop-blames-the-caller` and `a-deadline-is-charged-to-the-daemon` all go red. Refusals whose next move never varies also carry `next`.

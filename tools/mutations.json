@@ -2468,8 +2468,8 @@
   {
     "name": "a-refusal-forgets-whose-it-is",
     "file": "daemon/src/audit.ts",
-    "find": "  return { class: REFUSAL_OWNER[code], code, message };",
-    "replace": "  return { code, message } as Refusal;",
+    "find": "  return next === undefined ? { class: REFUSAL_OWNER[code], code, message } : { class: REFUSAL_OWNER[code], code, message, next };",
+    "replace": "  return (next === undefined ? { code, message } : { code, message, next }) as Refusal;",
     "cwd": "daemon",
     "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
   },
