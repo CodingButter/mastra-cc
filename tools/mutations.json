@@ -135,7 +135,7 @@
   {
     "name": "driver-releases-before-quiescence",
     "file": "daemon/src/driver.ts",
-    "find": "    if (this.#running === connection) return;\n    if (this.#owner === connection) this.#owner = undefined;",
+    "find": "    if (this.running(connection)) return;\n    if (this.#owner === connection) this.#owner = undefined;",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-desktop-driver.test.ts",
     "replace": "    if (this.#owner === connection) this.#owner = undefined;"
@@ -1884,8 +1884,8 @@
   {
     "name": "ownership-settles-while-the-effect-still-runs",
     "file": "daemon/src/driver.ts",
-    "find": "    if (this.#running === connection) return;\n    if (this.#owner === connection) this.#owner = undefined;\n    this.#settled.get(connection)?.resolve(performance.now());",
-    "replace": "    if (this.#owner === connection && this.#running !== connection) this.#owner = undefined;\n    this.#settled.get(connection)?.resolve(performance.now());",
+    "find": "    if (this.running(connection)) return;\n    if (this.#owner === connection) this.#owner = undefined;\n    this.#settled.get(connection)?.resolve(performance.now());",
+    "replace": "    if (this.#owner === connection && !this.running(connection)) this.#owner = undefined;\n    this.#settled.get(connection)?.resolve(performance.now());",
     "cwd": "daemon",
     "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
   },
@@ -2488,5 +2488,7 @@
     "replace": "  DeadlineExceeded: \"daemon\",",
     "cwd": "daemon",
     "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
-  }
+  },
+  {"name": "every-call-waits-in-one-desk-queue", "file": "daemon/src/server.ts", "find": "  if (params === null || typeof params !== \"object\") return SPANNING;\n  const p = params", "replace": "  return SPANNING;\n  const p = params", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"},
+  {"name": "a-connection-requests-overtake-each-other", "file": "daemon/src/server.ts", "find": "const handled = inOrder.then(() => handleRequest(", "replace": "const handled = Promise.resolve().then(() => handleRequest(", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"}
 ]

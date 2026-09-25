@@ -198,3 +198,5 @@ larger than the difference.
 [Stalled answers](stalled-answers/README.md) (ADR-0106 amendment): on `master` a non-reading client made the daemon retain ~49 MB of answers; the branch stays under the bound and delivers every answer in order.
 [Protocol in turbo](protocol-in-turbo/README.md) (audit M4): on `master` a missing or stale generation fails typecheck; the branch regenerates first and passes 9/9, and a schema parameter the server drops goes red by name.
 [Structured refusals](structured-refusals/README.md) (ADR-0113, schema 1.27.0): on `master` refusals are untyped strings, one of them top-level; on the branch every refusal is `result.refusal` with `class`, `code` and `message`.
+
+[Per-target queues](per-target-queues/README.md) (ADR-0118): on the base one frozen application holds every client's call; on the branch other applications and unscoped calls answer in milliseconds, with per-connection order kept.

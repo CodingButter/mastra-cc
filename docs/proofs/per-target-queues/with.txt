@@ -1,0 +1,6 @@
+ ✓ src/__tests__/one-frozen-application-stalls-only-itself.test.ts > answers a second client about another application while one application is frozen 218ms
+ ✓ src/__tests__/one-frozen-application-stalls-only-itself.test.ts > keeps one application's calls one at a time, in arrival order 264ms
+ ✓ src/__tests__/one-frozen-application-stalls-only-itself.test.ts > does not hold an unscoped call behind one frozen application 167ms
+ ✓ src/__tests__/one-frozen-application-stalls-only-itself.test.ts > keeps one connection's requests in the order it sent them, even across applications 183ms
+ ✓ src/__tests__/one-frozen-application-stalls-only-itself.test.ts > forgets a target's queue once nothing waits in it 83ms
+      Tests  5 passed (5)
