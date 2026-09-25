@@ -56,6 +56,7 @@ import {
   ApplicationScopeAmbiguousError,
   ApplicationScopeUnmatchedError,
   WindowScopeUnmatchedError,
+  CallDeadlineError,
 } from "../../backend.js";
 import { desktopEntryDirectories, type InventoryEntry, scanInstalledApplications } from "../../inventory.js";
 import {
@@ -319,7 +320,7 @@ export class AtspiBackend implements Backend {
         body: [ACCESSIBLE, "Parent"],
       });
     } catch (error) {
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       return undefined;
     }
     // dbus-native hands the variant back unwrapped or as a [signature, [value]]
@@ -420,7 +421,10 @@ export class AtspiBackend implements Backend {
     try {
       if (!(await advertisesCollection(this.channel, app))) return undefined;
       return await matchByRole(this.channel, app, role);
-    } catch {
+    } catch (error) {
+      // A frozen application is not a declining instrument: falling back would
+      // spend another deadline on the walk before saying the same thing.
+      if (error instanceof CallDeadlineError) throw error;
       // The fast instrument declining - off tape, or a toolkit that advertises
       // Collection and then refuses the rule - is not ignorance about the
       // desktop. The walk answers the same question completely, so the query
@@ -463,7 +467,7 @@ export class AtspiBackend implements Backend {
         }
         selected.push({ root, applicationRoot: app, applicationName: selectedApplicationName });
       } catch (error) {
-        if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
         if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
         if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
@@ -513,7 +517,7 @@ export class AtspiBackend implements Backend {
             if (params.name !== undefined && !queryNameMatches(element, params.name)) continue;
             fastAnswer.push(element);
           } catch (error) {
-            if (error instanceof UnrecordedExchangeError) throw error;
+            if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
             continue;
           }
         }
@@ -562,7 +566,7 @@ export class AtspiBackend implements Backend {
         } catch (error) {
           // ...but an off-tape read under replay is not a dying process, it is
           // ignorance, and ignorance surfaces as a refusal - never a skip.
-          if (error instanceof UnrecordedExchangeError) throw error;
+          if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
           if (error instanceof IncompleteObservationError) throw error;
           continue;
         }
@@ -597,7 +601,7 @@ export class AtspiBackend implements Backend {
         }
         selected.push({ root, applicationName: application });
       } catch (error) {
-        if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
         if (error instanceof WindowScopeUnmatchedError || error instanceof WindowScopeAmbiguousError) throw error;
         if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
@@ -634,7 +638,7 @@ export class AtspiBackend implements Backend {
         }
         stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1 })));
       } catch (error) {
-        if (error instanceof UnrecordedExchangeError || error instanceof IncompleteObservationError) throw error;
+        if (error instanceof UnrecordedExchangeError || error instanceof IncompleteObservationError || error instanceof CallDeadlineError) throw error;
         throw new IncompleteObservationError(
           `an element inside "${selectedApplication}" stopped answering before discovery completed`,
         );
@@ -655,7 +659,7 @@ export class AtspiBackend implements Backend {
       const element = await this.readElement(ref);
       return { element };
     } catch (error) {
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again`, refusalClass: "ElementGone" };
     }
   }
@@ -671,7 +675,7 @@ export class AtspiBackend implements Backend {
     try {
       return { content: await readObservableContent(this.channel, ref, await this.nativeRoleOf(ref), params.offset, params.limit) };
     } catch (error) {
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       return { refusal: `element "${params.id}" no longer answers on the accessibility bus - it is gone; look again`, refusalClass: "ElementGone" };
     }
   }
@@ -749,7 +753,8 @@ export class AtspiBackend implements Backend {
         observable.add(applicationName(await this.nameOf(app)));
       } catch (error) {
         // Same rule the walk uses: an off-tape read under replay is ignorance
-        // and must surface.
+        // and must surface. A name that timed out is the case below, not this
+        // one: the census says cannot-tell instead of failing the whole desk.
         if (error instanceof UnrecordedExchangeError) throw error;
         // AN APPLICATION WHOSE NAME WOULD NOT READ IS NOT AN APPLICATION THAT
         // IS ABSENT. It answered the registry a moment ago; a name that times
@@ -811,7 +816,7 @@ export class AtspiBackend implements Backend {
         applicationName = await this.nameOf(app);
         if (!isVisible(this.visibility, applicationName)) continue;
       } catch (error) {
-        if (error instanceof UnrecordedExchangeError) throw error;
+        if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
         continue;
       }
       const stack: Array<{ ref: NativeRef; depth: number; activated: boolean }> = [
@@ -845,7 +850,7 @@ export class AtspiBackend implements Backend {
           }
           stack.unshift(...kids.map((kid) => ({ ref: kid, depth: depth + 1, activated: underActivation })));
         } catch (error) {
-          if (error instanceof UnrecordedExchangeError) throw error;
+          if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
           if (error instanceof IncompleteObservationError) throw error;
           continue;
         }

@@ -1,0 +1,4 @@
+alive: 477 ms, answered 1 elements
+SIGSTOP mousepad pid 3561902
+frozen: 25010 ms, refusal: "no application on this desktop answers to that name, so there is nothing this scope could have been asked about - listApplications names every application this desktop has, and an application just launched may not have arrived yet"
+VERDICT: RED (waited 25010 ms)

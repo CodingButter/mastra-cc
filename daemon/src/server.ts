@@ -43,6 +43,7 @@ import {
   type BackendSubscription,
   ElementGoneError,
   PeerGoneError,
+  CallDeadlineError,
   AttestationFailedError,
   IncompleteObservationError,
   ApplicationScopeAmbiguousError,
@@ -101,7 +102,7 @@ import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn
 import { OwnershipTable } from "./launch/table.js";
 import { driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
 import { CancelledAtBoundaryError, underCancellation } from "./cancellation.js";
-import { CdpDeadlineError, DialogBlockingError } from "./backends/cdp/channel.js";
+import { DialogBlockingError } from "./backends/cdp/channel.js";
 
 // The daemon's socket server: newline-delimited JSON, digest handshake first,
 // then requests dispatched through the effect-class gate. Accessibility access
@@ -1643,7 +1644,7 @@ async function performEffect(
       // the sentence the seam wrote. AttestationFailedError is the daemon's own
       // inability to describe a commit (ADR-0008 rule 2) and is deliberately in
       // the same list: it refuses the call, it does not fail it.
-      if (error instanceof CdpDeadlineError) {
+      if (error instanceof CallDeadlineError) {
         return { refusal: deadlineRefusal(error, true), refusalClass: "DeadlineExceeded" };
       }
       if (error instanceof DialogBlockingError) {
@@ -1681,16 +1682,16 @@ async function performEffect(
   return answer;
 }
 
-// A browser that did not answer in time. Whether anything changed depends on
+// A peer (browser or application) that did not answer in time. Whether anything changed depends on
 // whether the request left this process: an unsent call changed nothing, a
 // sent effect has an outcome nobody observed.
-function deadlineRefusal(error: CdpDeadlineError, isEffect: boolean): string {
+function deadlineRefusal(error: CallDeadlineError, isEffect: boolean): string {
   // Attaching is the one wait that cannot tell a dialog from a busy page: a
   // page already holding a dialog never answers it and never reports it.
   if (error.method === "Page.enable" || error.method === "Page.getFrameTree") {
     return `the page did not answer when attached ("${error.method}") - it may be showing a dialog or be busy; nothing was changed by this call`;
   }
-  const base = `the browser did not answer "${error.method}" within 10s`;
+  const base = error.message;
   return isEffect && error.effectSent
     ? `${base} while an effect was in flight - its outcome is UNKNOWN; look before retrying`
     : `${base} - nothing was changed by this call`;
@@ -2809,7 +2810,7 @@ export async function handleRequest(
     } else {
       console.error(`daemon: ${request.method} failed in the backend: ${name}: ${message}`);
     }
-    if (error instanceof CdpDeadlineError && entry.effectClass === "observe") {
+    if (error instanceof CallDeadlineError && entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: refused("DeadlineExceeded") });
       return { type: "response", id: request.id, result: { refusal: deadlineRefusal(error, false) } };
     }

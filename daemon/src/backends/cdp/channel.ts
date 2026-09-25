@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   type BackendChange,
+  CallDeadlineError,
   type ChannelWatch,
   replayWatch,
   type TapeEvent,
@@ -74,13 +75,9 @@ export const CDP_CALL_DEADLINE_MS = 10_000;
 // Thrown when the browser did not answer within CDP_CALL_DEADLINE_MS.
 // effectSent says whether the request left this process: an unsent call
 // changed nothing, a sent one has an unknown outcome.
-export class CdpDeadlineError extends Error {
-  readonly method: string;
-  readonly effectSent: boolean;
+export class CdpDeadlineError extends CallDeadlineError {
   constructor(details: { method: string; effectSent: boolean }) {
-    super(`the browser did not answer "${details.method}" within ${CDP_CALL_DEADLINE_MS / 1000}s`);
-    this.method = details.method;
-    this.effectSent = details.effectSent;
+    super({ ...details, peer: "browser", seconds: CDP_CALL_DEADLINE_MS / 1000 });
   }
 }
 

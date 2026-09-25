@@ -2212,7 +2212,7 @@
   {
     "name": "a-deadline-reads-as-unreadable",
     "file": "daemon/src/server.ts",
-    "find": "    if (error instanceof CdpDeadlineError && entry.effectClass === \"observe\") {",
+    "find": "    if (error instanceof CallDeadlineError && entry.effectClass === \"observe\") {",
     "replace": "    if (false) {",
     "cwd": "daemon",
     "testFile": "src/__tests__/cdp-refusals.test.ts"
@@ -2220,8 +2220,8 @@
   {
     "name": "an-unsent-call-claims-an-unknown-effect",
     "file": "daemon/src/server.ts",
-    "find": "within 10s`;\n  return isEffect && error.effectSent",
-    "replace": "within 10s`;\n  return isEffect",
+    "find": "  const base = error.message;\n  return isEffect && error.effectSent",
+    "replace": "  const base = error.message;\n  return isEffect",
     "cwd": "daemon",
     "testFile": "src/__tests__/cdp-refusals.test.ts"
   },
@@ -2440,5 +2440,29 @@
     "replace": "backend.clickElement({ id, button, count, x, y })",
     "cwd": "daemon",
     "testFile": "src/__tests__/every-parameter-reaches-the-backend.test.ts"
+  },
+  {
+    "name": "an-atspi-call-waits-for-the-bus",
+    "file": "daemon/src/backends/atspi/channel.ts",
+    "find": "      { timeout },\n",
+    "replace": "      {},\n",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/a-silent-application-is-refused-in-time.test.ts"
+  },
+  {
+    "name": "an-unanswered-atspi-effect-claims-nothing-changed",
+    "file": "daemon/src/backends/atspi/channel.ts",
+    "find": "effectSent: EFFECT_MEMBERS.has(x.member) }",
+    "replace": "effectSent: false }",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/a-silent-application-is-refused-in-time.test.ts"
+  },
+  {
+    "name": "an-atspi-timeout-is-a-plain-failure",
+    "file": "daemon/src/backends/atspi/channel.ts",
+    "find": "if ((err as { name?: string } | null)?.name === \"TimeoutError\") {",
+    "replace": "if (false) {",
+    "cwd": "daemon",
+    "testFile": "src/backends/atspi/__tests__/a-silent-application-is-refused-in-time.test.ts"
   }
 ]

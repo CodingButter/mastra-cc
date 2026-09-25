@@ -11,6 +11,7 @@
 // uses, bounded by the range the ELEMENT published. Pixels and enum constants
 // exist in this file and nowhere above it.
 
+import { CallDeadlineError } from "../../backend.js";
 import {
   MagnitudeOutOfRangeError,
   OperationNotExposedError,
@@ -148,7 +149,7 @@ export async function performAction(seam: CallSeam, ref: NativeRef, action: stri
       // An action that will not name itself cannot be the one that was asked
       // for: the request names a word, and this index has none to match it
       // against. Skipped rather than guessed at.
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       continue;
     }
     const name = String(named ?? "");

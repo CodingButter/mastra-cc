@@ -13,6 +13,7 @@
 // interfaces the element carries before asking a question only some elements
 // can answer, so capture and replay decide identically.
 
+import { CallDeadlineError } from "../../backend.js";
 import type { Operation, Range } from "@mastra-cc/protocol-types";
 import { UnrecordedExchangeError } from "./channel.js";
 
@@ -131,7 +132,7 @@ export async function readPublishedOperations(seam: CallSeam, ref: NativeRefLike
     // operations AND says why - the same shape actions.ts uses, for the same
     // reason: letting the error escape deletes the whole element from the
     // answer at the walk's catch.
-    if (error instanceof UnrecordedExchangeError) throw error;
+    if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
     return { operations: [], diagnostic: { "mastra-cc/operations-unreadable": describeError(error) } };
   }
 
@@ -152,7 +153,7 @@ export async function readPublishedOperations(seam: CallSeam, ref: NativeRefLike
     try {
       operations.push({ operation, availability: "available", range: await readRange(seam, ref) });
     } catch (error) {
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       // The interface is published and the numbers would not come. The
       // operation stays available - the element says it backs it - and the
       // range is ABSENT, which the schema defines as the element's own silence.

@@ -1,3 +1,4 @@
+import { CallDeadlineError } from "../../backend.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -116,7 +117,7 @@ export async function readPublishedActions(
     // carries publishes no actions AND says why. Letting the error escape would
     // delete the whole element from the answer at the walk's catch - a reader
     // that cannot list its verbs would become a reader nobody can see.
-    if (error instanceof UnrecordedExchangeError) throw error;
+    if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
     return { actions: [], diagnostic: { "mastra-cc/actions-unreadable": describeError(error) } };
   }
   if (!interfaces.includes(ACTION_IFACE)) return { actions: [] };
@@ -136,7 +137,7 @@ export async function readPublishedActions(
     // NO actions - which is not the same as an element that was asked and
     // published none, so the distinction is recorded rather than flattened.
     // Rethrown errors (an off-tape replay read) are the caller's business.
-    if (error instanceof UnrecordedExchangeError) throw error;
+    if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
     return { actions: [], diagnostic: { "mastra-cc/actions-unreadable": describeError(error) } };
   }
 
@@ -165,7 +166,7 @@ export async function readPublishedActions(
       // and its absence is stated. The alternatives are worse: publishing the
       // display form invents a verb the element will not answer to, and
       // letting the error escape deletes the entire element from the answer.
-      if (error instanceof UnrecordedExchangeError) throw error;
+      if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
       unnamed.push(`${index}:${describeError(error)}`);
       continue;
     }

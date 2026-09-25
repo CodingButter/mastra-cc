@@ -1,3 +1,4 @@
+import { CallDeadlineError } from "../../backend.js";
 import type { ObservableContent, ObservableRange } from "@mastra-cc/protocol-types";
 import { INLINE_TEXT_LIMIT, observableText } from "../observable-content.js";
 import type { Channel } from "./channel.js";
@@ -76,7 +77,8 @@ export async function readObservableContent(
   let interfaces: string[];
   try {
     interfaces = await interfacesOf(channel, ref);
-  } catch {
+  } catch (error) {
+    if (error instanceof CallDeadlineError) throw error;
     return { kind: "unavailable", reason: "unknown" };
   }
 
@@ -84,7 +86,8 @@ export async function readObservableContent(
     if (interfaces.includes(TEXT)) return observableText(await textOf(channel, ref), offset, limit);
     if (interfaces.includes(VALUE)) return await numericContent(channel, ref);
     return { kind: "unavailable", reason: "not-exposed" };
-  } catch {
+  } catch (error) {
+    if (error instanceof CallDeadlineError) throw error;
     return { kind: "unavailable", reason: "unknown" };
   }
 }
