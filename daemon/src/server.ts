@@ -3205,12 +3205,24 @@ export async function startWebSocketServer(options: {
   backend: Backend;
   launch?: LaunchContext;
   visibility?: Visibility;
+  // Browser origins allowed to open a connection (audit M6). A web page on any
+  // site can open a WebSocket to a loopback port, and the browser sends that
+  // page's Origin with it. With none listed, every browser page is refused.
+  // A handshake with no Origin at all is not a browser page and is unaffected.
+  allowedOrigins?: ReadonlySet<string>;
 }): Promise<WebSocketListener> {
-  const { port, host = "127.0.0.1", backend, visibility = "all" } = options;
+  const { port, host = "127.0.0.1", backend, visibility = "all", allowedOrigins = new Set<string>() } = options;
   const launch = options.launch === undefined ? undefined : { ...options.launch, visibility };
 
   const { WebSocketServer } = await import("ws");
-  const wss = new WebSocketServer({ host, port });
+  const wss = new WebSocketServer({
+    host,
+    port,
+    verifyClient: ({ req }: { req: { headers: Record<string, string | string[] | undefined> } }) => {
+      const origin = req.headers.origin;
+      return origin === undefined || (typeof origin === "string" && allowedOrigins.has(origin));
+    },
+  });
 
   wss.on("connection", (socket: WebSocket) => {
     // Same choice the socket adapter makes: a transport-level error means drop

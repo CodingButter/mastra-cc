@@ -65,7 +65,7 @@ const agent = new Agent({
     "listApplications is how you learn what the machine has and what it is doing.",
     "Never claim something you have not observed.",
   ].join(" "),
-  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash",
+  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-3.8-flash",
   tools,
 });
 

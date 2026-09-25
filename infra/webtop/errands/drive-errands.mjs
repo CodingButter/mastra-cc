@@ -45,7 +45,7 @@ const instructionsPath = process.env.MASTRA_CC_ERRAND_INSTRUCTIONS;
 const instructions = instructionsPath ? readFileSync(instructionsPath, "utf8") : INSTRUCTIONS;
 const instructionsSha = createHash("sha256").update(instructions).digest("hex");
 
-const model = process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash";
+const model = process.env.MASTRA_CC_MODEL ?? "google/gemini-3.8-flash";
 const maxSteps = Number(process.env.MASTRA_CC_ERRAND_STEPS ?? 24);
 const temperature = Number(process.env.MASTRA_CC_ERRAND_TEMPERATURE ?? 0);
 

@@ -55,7 +55,7 @@ const agent = new Agent({
     "When a desktop signal wakes you, do NOT call any tool. Answer in one line,",
     "starting with the word WOKEN, quoting the signal summary you were given.",
   ].join(" "),
-  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash",
+  model: process.env.MASTRA_CC_MODEL ?? "google/gemini-3.8-flash",
   memory: new Memory({ storage: store }),
   tools,
   // The provider is attached HERE and only here: notify() throws unless the

@@ -2504,5 +2504,21 @@
   {"name": "an-effect-runs-without-its-receipt", "file": "daemon/src/server.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (false) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
   {"name": "an-observation-is-refused-for-its-receipt", "file": "daemon/src/server.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (!auditWritable()) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
   {"name": "a-lost-receipt-goes-unsaid", "file": "daemon/src/server.ts", "find": "if (unwrittenEffectEntries() > unwrittenBefore) markUnwrittenReceipt(answered);", "replace": "void unwrittenBefore;", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
-  {"name": "a-proof-switch-reads-the-environment", "file": "daemon/src/backends/atspi/channel.ts", "find": "const deaf = options.deafForProof === true;", "replace": "const deaf = options.deafForProof === true || process.env.MASTRA_CC_ATSPI_DEAF_FOR_PROOF === \"1\";", "cwd": "daemon", "testFile": "src/__tests__/no-proof-switch-ships.test.ts"}
+  {"name": "a-proof-switch-reads-the-environment", "file": "daemon/src/backends/atspi/channel.ts", "find": "const deaf = options.deafForProof === true;", "replace": "const deaf = options.deafForProof === true || process.env.MASTRA_CC_ATSPI_DEAF_FOR_PROOF === \"1\";", "cwd": "daemon", "testFile": "src/__tests__/no-proof-switch-ships.test.ts"},
+  {
+    "name": "every-web-page-may-open-the-socket",
+    "file": "daemon/src/server.ts",
+    "find": "      return origin === undefined || (typeof origin === \"string\" && allowedOrigins.has(origin));",
+    "replace": "      return true;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-web-page-cannot-reach-the-desk.test.ts"
+  },
+  {
+    "name": "a-script-without-an-origin-is-shut-out",
+    "file": "daemon/src/server.ts",
+    "find": "      return origin === undefined || (typeof origin === \"string\" && allowedOrigins.has(origin));",
+    "replace": "      return typeof origin === \"string\" && allowedOrigins.has(origin);",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-web-page-cannot-reach-the-desk.test.ts"
+  }
 ]

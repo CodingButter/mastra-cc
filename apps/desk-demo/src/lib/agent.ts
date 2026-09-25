@@ -9,7 +9,7 @@ import { DeskCache } from "./desk-cache";
 import type { DemoEvent } from "./events";
 
 const DESK_URL = process.env.MASTRA_CC_URL ?? "ws://127.0.0.1:8787";
-const MODEL = process.env.MASTRA_CC_MODEL ?? "google/gemini-2.5-flash";
+const MODEL = process.env.MASTRA_CC_MODEL ?? "google/gemini-3.8-flash";
 const HANDOVER_TIMEOUT_MS = Number(process.env.MASTRA_CC_HANDOVER_TIMEOUT_MS ?? 10 * 60 * 1000);
 const CALL_ID_PREFIX = randomUUID();
 let callIdCounter = 0;
