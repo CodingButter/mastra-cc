@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it, vi } from "vitest";
 import type { SemanticElement } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
@@ -93,7 +94,7 @@ describe("a launched profile is readable", () => {
     const result = resultOf(
       await open("chrome-work", backend, launch({ permits: new Set(["chrome-work"]), table })),
     );
-    expect(result.refusal).toBeUndefined();
+    expect(refusalText(result)).toBeUndefined();
     expect(result.application?.name).toBe("chrome");
     expect(asked).toContain("chrome");
     expect(asked).not.toContain("chrome-work");
@@ -127,7 +128,7 @@ describe("a launched profile is readable", () => {
       close: async () => undefined,
     };
     const result = resultOf(await open("chrome-work", backend, launch({ catalog: trap })));
-    expect(result.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(result)).toBe(UNAVAILABLE_REFUSAL);
     expect(catalogTouched).toBe(false);
     expect(treeTouched).toBe(false);
   });
@@ -138,11 +139,11 @@ describe("a launched profile is readable", () => {
     const sibling = resultOf(await open("chrome-personal", backend, context));
     const builtIn = resultOf(await open("chrome", backend, context));
     const unknown = resultOf(await open("zz-no-such-identity", backend, context));
-    expect(sibling.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(builtIn.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(unknown.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(sibling.refusal).toBe(unknown.refusal);
-    expect(builtIn.refusal).toBe(unknown.refusal);
+    expect(refusalText(sibling)).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(builtIn)).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(unknown)).toBe(UNAVAILABLE_REFUSAL);
+    expect(sibling.refusal).toEqual(unknown.refusal);
+    expect(builtIn.refusal).toEqual(unknown.refusal);
   });
 });
 
@@ -160,7 +161,7 @@ describe("only one browser identity runs at a time", () => {
           launch({ permits: new Set(["chrome-work", "chrome-personal"]), table }),
         ),
       );
-      expect(result.refusal).toBe(ONE_BROWSER_IDENTITY_REFUSAL);
+      expect(refusalText(result)).toBe(ONE_BROWSER_IDENTITY_REFUSAL);
       expect(result.application).toBeUndefined();
       // nothing was launched and nothing was signalled to make room
       expect(table.entries()).toHaveLength(1);
@@ -187,7 +188,7 @@ describe("only one browser identity runs at a time", () => {
     const result = resultOf(
       await open("chrome-personal", backend, launch({ permits: new Set(["chrome-personal"]) })),
     );
-    expect(result.refusal).toBe(ALREADY_RUNNING_REFUSAL);
+    expect(refusalText(result)).toBe(ALREADY_RUNNING_REFUSAL);
   });
 
   it("does not fire for a dead entry - ownsName re-verifies the process is live", async () => {
@@ -200,8 +201,8 @@ describe("only one browser identity runs at a time", () => {
       const result = resultOf(await open("chrome-personal", backend, context));
       // the guard stayed quiet, so the request proceeded: it spawned, and the
       // stub's `sleep` never appears in the tree, so the poll budget refuses
-      expect(result.refusal).not.toBe(ONE_BROWSER_IDENTITY_REFUSAL);
-      expect(result.refusal).toContain("did not become readable");
+      expect(refusalText(result)).not.toBe(ONE_BROWSER_IDENTITY_REFUSAL);
+      expect(refusalText(result)).toContain("did not become readable");
     } finally {
       for (const entry of table.entries()) {
         if (entry.pid === process.pid) continue; // the stand-in for the dead row is this test itself
@@ -221,7 +222,7 @@ describe("only one browser identity runs at a time", () => {
     const result = resultOf(
       await open("chrome-work", backend, launch({ permits: new Set(["chrome-work"]), table })),
     );
-    expect(result.refusal).toBeUndefined();
+    expect(refusalText(result)).toBeUndefined();
     expect(result.application?.name).toBe("chrome");
   });
 
@@ -232,6 +233,6 @@ describe("only one browser identity runs at a time", () => {
     const result = resultOf(await open("yad", backend, launch({ permits: new Set(["yad"]), table })));
     // no cross-fire: yad's tree name is its own, so the guard has nothing to
     // match, and the already-running answer is the truthful one here
-    expect(result.refusal).toBe(ALREADY_RUNNING_REFUSAL);
+    expect(refusalText(result)).toBe(ALREADY_RUNNING_REFUSAL);
   });
 });

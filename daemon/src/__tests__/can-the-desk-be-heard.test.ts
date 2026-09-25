@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import type { Backend } from "../backend.js";
 import { ACQUIRE_SETTING, unsupportedPlatform, type AccessibilityLayer } from "../accessibility/index.js";
@@ -82,8 +83,8 @@ describe("acquiring is the operator's to permit", () => {
         }),
       }),
     );
-    expect(response.result).toMatchObject({ refusal: expect.stringContaining("disabled-by-configuration") });
-    expect(response.result).toMatchObject({ refusal: expect.stringContaining(ACQUIRE_SETTING) });
+    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining("disabled-by-configuration") } });
+    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining(ACQUIRE_SETTING) } });
     // THE ASSERTION THAT MATTERS: the gate ran before the adapter did.
     expect(acquired).toBe(false);
   });
@@ -102,7 +103,7 @@ describe("acquiring is the operator's to permit", () => {
         }),
       }),
     );
-    expect(response.result).toMatchObject({ refusal: expect.stringContaining(ACQUIRE_SETTING) });
+    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining(ACQUIRE_SETTING) } });
     // And the adapter was never reached, so the parameter did not arm anything
     // downstream either - the assertion that keeps this from restating the
     // test above.
@@ -137,7 +138,7 @@ describe("acquiring is the operator's to permit", () => {
       "acquireAccessibility",
       context({ accessibility: unsupportedPlatform("darwin"), mayAcquireAccessibility: true }),
     );
-    const refusal = (response.result as { refusal: string }).refusal;
+    const refusal = refusalText(response);
     expect(refusal).toContain("not-exposed");
     expect(refusal).not.toContain(ACQUIRE_SETTING);
   });
@@ -147,7 +148,7 @@ describe("acquiring is the operator's to permit", () => {
       throw new Error("read-only status object");
     });
     const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
-    expect(response.result).toMatchObject({ refusal: expect.stringContaining("did not accept") });
+    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining("did not accept") } });
   });
 
   it("says what the half-acquired machine was left holding", async () => {
@@ -159,7 +160,7 @@ describe("acquiring is the operator's to permit", () => {
     });
     const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
     expect(response.result).toMatchObject({
-      refusal: expect.stringContaining("did not accept every property"),
+      refusal: expect.objectContaining({ message: expect.stringContaining("did not accept every property") }),
       accessibility: { state: "enabled" },
     });
   });
@@ -176,7 +177,7 @@ describe("acquiring is the operator's to permit", () => {
       },
     );
     const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
-    expect(response.result).toMatchObject({ refusal: expect.stringContaining("could not be read afterwards") });
+    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining("could not be read afterwards") } });
     expect((response.result as { accessibility?: unknown }).accessibility).toBeUndefined();
   });
 });

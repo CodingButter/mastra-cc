@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import type { Backend } from "../backend.js";
 import {
@@ -48,8 +49,8 @@ function ask(method: "queryElements" | "discoverElements", backend: Backend, win
   } as unknown as LaunchContext);
 }
 
-function refusalIn(answer: { refusal?: string; result?: unknown }): string | undefined {
-  return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal;
+function refusalIn(answer: unknown): string | undefined {
+  return refusalText(answer);
 }
 
 describe("a window scope that resolves to no single window", () => {

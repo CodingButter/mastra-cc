@@ -1,43 +1,8 @@
 import { randomBytes } from "node:crypto";
 import type { Classified } from "./audit.js";
 import type { InventoryEntry } from "./inventory.js";
-import type {
-  ActivateElementParams,
-  ActivateElementResult,
-  AttestElementParams,
-  AttestElementResult,
-  ChangeKind,
-  DiscoverElementsParams,
-  DiscoverElementsResult,
-  EditElementParams,
-  EditElementResult,
-  QueryElementsParams,
-  QueryElementsResult,
-  ReadElementContentParams,
-  ReadElementContentResult,
-  RevealElementParams,
-  RevealElementResult,
-  SendKeyChordParams,
-  SendKeyChordResult,
-  Role,
-  SemanticElement,
-  SetElementCaretParams,
-  SetElementCaretResult,
-  SetElementTextParams,
-  SetElementTextResult,
-  TypeTextParams,
-  TypeTextResult,
-  ClearElementTextParams,
-  ClearElementTextResult,
-  ClickElementParams,
-  ClickElementResult,
-  CaptureElementParams,
-  CaptureElementResult,
-  SetElementValueParams,
-  SetElementValueResult,
-  SubmitElementParams,
-  SubmitElementResult,
-} from "@mastra-cc/protocol-types";
+import type { ActivateElementParams, AttestElementParams, ChangeKind, DiscoverElementsParams, EditElementParams, QueryElementsParams, ReadElementContentParams, RevealElementParams, SendKeyChordParams, Role, SemanticElement, SetElementCaretParams, SetElementTextParams, TypeTextParams, ClearElementTextParams, ClickElementParams, CaptureElementParams, SetElementValueParams, SubmitElementParams } from "@mastra-cc/protocol-types";
+import type { ActivateElementResult, AttestElementResult, DiscoverElementsResult, EditElementResult, QueryElementsResult, ReadElementContentResult, RevealElementResult, SendKeyChordResult, SetElementCaretResult, SetElementTextResult, TypeTextResult, ClearElementTextResult, ClickElementResult, CaptureElementResult, SetElementValueResult, SubmitElementResult } from "./results.js";
 
 // The backend seam: one defined interface, per-platform implementations that
 // must implement every method, conformance enforced by the shared suite in

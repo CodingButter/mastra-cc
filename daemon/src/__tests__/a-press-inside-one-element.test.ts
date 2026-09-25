@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -170,7 +171,7 @@ async function click(params: Record<string, unknown>, launch: Partial<LaunchCont
 }
 
 function refusalIn(answer: { refusal?: string; result?: unknown }): string {
-  return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal ?? "";
+  return refusalText(answer) ?? "";
 }
 
 describe("aiming a press from an element's own rectangle", () => {

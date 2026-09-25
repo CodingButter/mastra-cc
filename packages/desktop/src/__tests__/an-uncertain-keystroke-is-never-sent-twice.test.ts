@@ -114,10 +114,11 @@ describe("an uncertain keystroke is never sent twice", () => {
     const desk = await deskOver(dying);
     const id = await aButton(desk);
 
-    await expect(desk.getTools().typeText.execute!({ id, text: "example.com" }, {} as never)).rejects.toThrow();
-
-    // The doubt is handed to the caller as an error, not resolved by trying
-    // again. One emission, and the same dial is still open for the caller to
+    // The doubt is handed to the caller as a daemon-owned refusal (ADR-0113),
+    await expect(desk.getTools().typeText.execute!({ id, text: "example.com" }, {} as never)).resolves.toMatchObject({
+      refusal: { class: "daemon" },
+    });
+    // not resolved by trying again. One emission, and the same dial is still open for the caller to
     // OBSERVE with, which is the next step ADR-0098 prescribes.
     expect(seam.generated).toEqual([[0, "example.com", 4]]);
   });

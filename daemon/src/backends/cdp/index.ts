@@ -1,30 +1,5 @@
-import type {
-  ActivateElementParams,
-  ActivateElementResult,
-  AttestElementParams,
-  AttestElementResult,
-  DiscoverElementsParams,
-  DiscoverElementsResult,
-  EditElementParams,
-  EditElementResult,
-  QueryElementsParams,
-  QueryElementsResult,
-  ReadElementContentParams,
-  ReadElementContentResult,
-  RevealElementParams,
-  RevealElementResult,
-  Role,
-  SemanticElement,
-  SetElementCaretParams,
-  SetElementCaretResult,
-  SetElementTextParams,
-  SetElementTextResult,
-  SetElementValueParams,
-  SetElementValueResult,
-  Range,
-  SubmitElementParams,
-  SubmitElementResult,
-} from "@mastra-cc/protocol-types";
+import type { ActivateElementParams, AttestElementParams, DiscoverElementsParams, EditElementParams, QueryElementsParams, ReadElementContentParams, RevealElementParams, Role, SemanticElement, SetElementCaretParams, SetElementTextParams, SetElementValueParams, Range, SubmitElementParams } from "@mastra-cc/protocol-types";
+import type { ActivateElementResult, AttestElementResult, DiscoverElementsResult, EditElementResult, QueryElementsResult, ReadElementContentResult, RevealElementResult, SetElementCaretResult, SetElementTextResult, SetElementValueResult, SubmitElementResult } from "../../results.js";
 import {
   type Backend,
   type BackendChange,

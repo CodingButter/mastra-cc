@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import type { QueryElementsResult } from "@mastra-cc/protocol-types";
 import { AtspiBackend } from "../backends/atspi/index.js";
@@ -47,7 +48,7 @@ describe.each(Object.entries(backends))("on %s, a forgotten id", (_, make) => {
       const forgotten = ids[0]!;
       expect(backend.applicationOfElement(forgotten)).toBeUndefined();
       const refused = await backend.attestElement({ id: forgotten });
-      expect(refused.refusal).toMatch(/forgotten after newer answers/);
+      expect(refusalText(refused)).toMatch(/forgotten after newer answers/);
       expect(refused.refusalClass).toBe("UnknownElement");
       expect(backend.applicationOfElement(ids.at(-1)!)).toBeDefined();
     } finally {

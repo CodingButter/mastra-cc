@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -39,7 +40,7 @@ function discover(params: Record<string, unknown>, backend: Backend) {
 }
 
 function refusalIn(answer: { refusal?: string; result?: unknown }): string | undefined {
-  return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal;
+  return refusalText(answer);
 }
 
 let temporary: string | undefined;

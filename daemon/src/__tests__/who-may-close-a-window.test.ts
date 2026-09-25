@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { spawn } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import type { SemanticElement } from "@mastra-cc/protocol-types";
@@ -129,7 +130,7 @@ describe("who may close a window", () => {
 
     // Byte-identical to the launch refusal: restarting starts an application,
     // so it is refused by the same authority and says the same thing.
-    expect(answer.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(answer)).toBe(UNAVAILABLE_REFUSAL);
     expect(answer.application).toBeUndefined();
   });
 
@@ -141,7 +142,7 @@ describe("who may close a window", () => {
     try {
       const answer = resultOf(await restart("test-app", backend, { table }));
 
-      expect(answer.refusal).toContain("restart.default");
+      expect(refusalText(answer)).toContain("restart.default");
       expect(spared.alive()).toBe(true);
     } finally {
       spared.stop();
@@ -159,7 +160,7 @@ describe("who may close a window", () => {
     try {
       const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("force") }));
 
-      expect(answer.refusal).toContain("does not signal processes it does not own");
+      expect(refusalText(answer)).toContain("does not signal processes it does not own");
       expect(foreign.alive()).toBe(true);
     } finally {
       foreign.stop();
@@ -180,7 +181,7 @@ describe("who may close a window", () => {
       // application said no; the person with unsaved work is the one whose
       // answer counts.
       expect(answer.blockedBy?.id).toBe(dialog.id);
-      expect(answer.refusal).toContain("does not answer that dialog");
+      expect(refusalText(answer)).toContain("does not answer that dialog");
       expect(answer.application).toBeUndefined();
       // And nothing escalated: graceful never becomes force because the
       // application was inconvenient.
@@ -199,8 +200,8 @@ describe("who may close a window", () => {
     try {
       const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
 
-      expect(answer.refusal).toContain("neither closed nor put anything up");
-      expect(answer.refusal).toContain("does not escalate because a timer expired");
+      expect(refusalText(answer)).toContain("neither closed nor put anything up");
+      expect(refusalText(answer)).toContain("does not escalate because a timer expired");
       expect(answer.application).toBeUndefined();
       expect(stubborn.alive()).toBe(true);
     } finally {
@@ -231,7 +232,7 @@ describe("who may close a window", () => {
       const answer = resultOf(await pending);
       clearTimeout(appear);
 
-      expect(answer.refusal).toBeUndefined();
+      expect(refusalText(answer)).toBeUndefined();
       expect(answer.application?.name).toBe("test-app");
       expect(obliging.alive()).toBe(false);
       // and it did start something again: the table owns the new process
@@ -297,7 +298,7 @@ describe("who may close a window", () => {
     try {
       const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
 
-      expect(answer.refusal).toContain("neither closed nor put anything up");
+      expect(refusalText(answer)).toContain("neither closed nor put anything up");
       expect(answer.application).toBeUndefined();
       expect(stubborn.alive()).toBe(true);
       expect(table.entries().filter((entry) => entry.name === "test-app").length).toBe(1);
@@ -352,7 +353,7 @@ describe("who may close a window", () => {
 
     const answer = resultOf(await restart("test-app", backend, { table: racing, capabilities: configured("graceful") }));
 
-    expect(answer.refusal).toBeUndefined();
+    expect(refusalText(answer)).toBeUndefined();
     expect(answer.application?.name).toBe("test-app");
     killEverything(racing);
   });
@@ -375,7 +376,7 @@ describe("who may close a window", () => {
       const answer = resultOf(await pending);
       clearTimeout(appear);
 
-      expect(answer.refusal).toBeUndefined();
+      expect(refusalText(answer)).toBeUndefined();
       expect(answer.application?.name).toBe("test-app");
       // The SIGTERM-proof process is gone: only SIGKILL does that, and only
       // "force" sends it.

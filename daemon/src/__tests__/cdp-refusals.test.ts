@@ -1,3 +1,4 @@
+import { refusalCode, refusalOwner, refusalText } from "./refusal-text.js";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -114,11 +115,12 @@ describe("an effect the browser never answered", () => {
     const { backend, id } = await silentOn("activateElement", new CdpDeadlineError({ method: "Runtime.callFunctionOn", effectSent: true }));
     const { line, parsed } = await wire("activateElement", { id, action: "click" }, backend);
 
-    expect(parsed.result?.refusal).toContain("UNKNOWN");
-    expect(parsed.result?.refusal).toContain("Runtime.callFunctionOn");
-    expect(parsed.result?.refusal).not.toContain("nothing was changed");
+    expect(refusalText(parsed.result)).toContain("UNKNOWN");
+    expect(refusalText(parsed.result)).toContain("Runtime.callFunctionOn");
+    expect(refusalText(parsed.result)).not.toContain("nothing was changed");
     expect(line).not.toContain("refusalClass");
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 
   it("says nothing was changed when the call never left, and never claims an unknown effect", async () => {
@@ -126,10 +128,11 @@ describe("an effect the browser never answered", () => {
     const { backend, id } = await silentOn("activateElement", new CdpDeadlineError({ method: "open", effectSent: false }));
     const { line, parsed } = await wire("activateElement", { id, action: "click" }, backend);
 
-    expect(parsed.result?.refusal).toContain("nothing was changed");
-    expect(parsed.result?.refusal).not.toContain("UNKNOWN");
+    expect(refusalText(parsed.result)).toContain("nothing was changed");
+    expect(refusalText(parsed.result)).not.toContain("UNKNOWN");
     expect(line).not.toContain("refusalClass");
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 });
 
@@ -139,13 +142,13 @@ describe("a read the browser never answered", () => {
     const { backend } = await silentOn("queryElements", new CdpDeadlineError({ method: "Accessibility.getFullAXTree", effectSent: true }));
     const { line, parsed } = await wire("queryElements", {}, backend);
 
-    expect(parsed.refusal).toBeUndefined();
-    expect(parsed.result?.refusal).toContain("did not answer");
-    expect(parsed.result?.refusal).toContain("nothing was changed");
-    expect(parsed.result?.refusal).not.toBe(BACKEND_UNREADABLE_REFUSAL);
+    expect(refusalText(parsed.result)).toContain("did not answer");
+    expect(refusalText(parsed.result)).toContain("nothing was changed");
+    expect(refusalText(parsed.result)).not.toBe(BACKEND_UNREADABLE_REFUSAL);
     expect(line).not.toContain("refusalClass");
     expect(line).not.toContain(BACKEND_UNREADABLE_REFUSAL);
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 });
 
@@ -158,10 +161,11 @@ describe("a page held by a native dialog", () => {
       const path = auditing();
       const { backend, id } = await silentOn("activateElement", dialog(sent));
       const { line, parsed } = await wire("activateElement", { id, action: "click" }, backend);
-      expect(parsed.result?.refusal).toContain('alert dialog ("hi there")');
-      expect(parsed.result?.refusal?.includes("UNKNOWN")).toBe(sent);
+      expect(refusalText(parsed.result)).toContain('alert dialog ("hi there")');
+      expect(refusalText(parsed.result)?.includes("UNKNOWN")).toBe(sent);
       expect(line).not.toContain("refusalClass");
       expect(entries(path).map((e) => e.outcome)).toEqual(["refused:BlockedByDialog"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "BlockedByDialog"]);
     }
   });
 
@@ -169,12 +173,12 @@ describe("a page held by a native dialog", () => {
     const path = auditing();
     const { backend } = await silentOn("queryElements", dialog(true));
     const { line, parsed } = await wire("queryElements", {}, backend);
-    expect(parsed.refusal).toBeUndefined();
-    expect(parsed.result?.refusal).toContain("until a person answers it");
-    expect(parsed.result?.refusal).not.toContain("UNKNOWN");
+    expect(refusalText(parsed.result)).toContain("until a person answers it");
+    expect(refusalText(parsed.result)).not.toContain("UNKNOWN");
     expect(line).not.toContain("refusalClass");
     expect(line).not.toContain(BACKEND_UNREADABLE_REFUSAL);
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:BlockedByDialog"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "BlockedByDialog"]);
   });
 });
 
@@ -183,8 +187,8 @@ describe("a page that did not answer the attach", () => {
     auditing();
     const { backend } = await silentOn("queryElements", new CdpDeadlineError({ method: "Page.enable", effectSent: false }));
     const { parsed } = await wire("queryElements", {}, backend);
-    expect(parsed.result?.refusal).toContain("may be showing a dialog or be busy");
-    expect(parsed.result?.refusal).toContain("nothing was changed");
+    expect(refusalText(parsed.result)).toContain("may be showing a dialog or be busy");
+    expect(refusalText(parsed.result)).toContain("nothing was changed");
   });
 });
 
@@ -193,9 +197,10 @@ describe("a page that does not answer when attached", () => {
     const path = auditing();
     const { backend } = await silentOn("queryElements", new CdpDeadlineError({ method: "Page.enable", effectSent: false }));
     const { line, parsed } = await wire("queryElements", {}, backend);
-    expect(parsed.result?.refusal).toContain("may be showing a dialog or be busy");
-    expect(parsed.result?.refusal).toContain("nothing was changed");
+    expect(refusalText(parsed.result)).toContain("may be showing a dialog or be busy");
+    expect(refusalText(parsed.result)).toContain("nothing was changed");
     expect(line).not.toContain("refusalClass");
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 });

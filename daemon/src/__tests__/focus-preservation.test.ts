@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import type { SemanticElement } from "@mastra-cc/protocol-types";
 import { FocusUnsupportedError, type Backend } from "../backend.js";
@@ -150,7 +151,7 @@ describe("a launch does not take the desk", () => {
     const context = launch({});
     try {
       const result = await open(launchable(world), context);
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(result.application?.name).toBe("test-app");
       // The launch DID take the focus - without that this test would pass
       // against a daemon that does nothing, because there would be nothing to
@@ -175,7 +176,7 @@ describe("a launch does not take the desk", () => {
     const context = launch({});
     try {
       const result = await open(launchable(world), context);
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(world.restoreCalls).toEqual([DESK.id]);
       const note = focusNote(result);
       expect(note).toBeDefined();
@@ -196,7 +197,7 @@ describe("a launch does not take the desk", () => {
     const context = launch({});
     try {
       const result = await open(launchable(world), context);
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(world.restoreCalls).toEqual([DESK.id]);
       expect(focusNote(result)).toContain("was not restored");
     } finally {
@@ -213,7 +214,7 @@ describe("a launch does not take the desk", () => {
     const context = launch({});
     try {
       const result = await open(launchable(world), context);
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       const note = focusNote(result);
       expect(note).toContain("not protected");
       expect(note).toContain("unmeasured");
@@ -244,7 +245,7 @@ describe("a launch does not take the desk", () => {
     const context = launch({});
     try {
       const result = await open(polite, context);
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(world.restoreCalls).toEqual([]);
       expect(world.focus?.id).toBe(DESK.id);
       expect(focusNote(result)).toBeUndefined();
@@ -258,7 +259,7 @@ describe("a launch does not take the desk", () => {
     const context = launch({});
     try {
       const result = await open(launchable(world), context);
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(world.restoreCalls).toEqual([]);
       expect(focusNote(result)).toBeUndefined();
     } finally {
@@ -277,8 +278,8 @@ describe("a launch does not take the desk", () => {
     try {
       const result = await open(neverReadable, context);
       expect(result.application).toBeUndefined();
-      expect(result.refusal).toContain("did not become readable");
-      expect(result.refusal).toContain("not protected");
+      expect(refusalText(result)).toContain("did not become readable");
+      expect(refusalText(result)).toContain("not protected");
     } finally {
       reap(context);
     }
@@ -299,7 +300,7 @@ describe("a launch does not take the desk", () => {
     context.table.record(child.pid as number, "test-app");
     try {
       const result = await open(launchable(world), context);
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(result.application?.name).toBe("test-app");
       expect(world.focusReads).toBe(0);
       expect(world.restoreCalls).toEqual([]);

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -149,7 +150,7 @@ async function listing(launch: LaunchContext, backend: Backend = inventoryBacken
   // listApplications is observe-class, so its refusal (when there is one) is
   // part of the RESULT, exactly as the schema's ListApplicationsResult says.
   const result = answer.result as { applications?: InstalledApplication[]; refusal?: string };
-  expect(result.refusal).toBeUndefined();
+  expect(refusalText(result)).toBeUndefined();
   const applications = result.applications;
   expect(applications).toBeDefined();
   return applications as InstalledApplication[];
@@ -342,7 +343,7 @@ describe("the application listing", () => {
     );
     const result = answer.result as { applications?: InstalledApplication[]; refusal?: string };
     expect(result.applications).toBeUndefined();
-    expect(result.refusal).toBe(LIST_APPLICATIONS_REFUSAL);
+    expect(refusalText(result)).toBe(LIST_APPLICATIONS_REFUSAL);
     // An empty list would say the machine has nothing installed, which is a
     // false belief about the machine rather than a true one about the route.
     expect(LIST_APPLICATIONS_REFUSAL).toContain("cannot enumerate");
@@ -434,7 +435,7 @@ describe("the listing and the enforcement do not disagree", () => {
       reached = undefined;
       const answer = await handleRequest({ type: "request", id: 3, ...request }, backend, launch);
       const result = (answer.result ?? {}) as { element?: SemanticElement; refusal?: string };
-      const refusal = answer.refusal ?? result.refusal;
+      const refusal = refusalText(answer);
       if (row?.availability === "available") {
         // The listing promised it; the method must have proceeded.
         expect(refusal).toBeUndefined();
@@ -486,7 +487,7 @@ describe("the listing and the enforcement do not disagree", () => {
       inventoryBackend(),
       launch,
     );
-    expect((refused.result as { refusal?: string }).refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText((refused.result as { refusal?: string }))).toBe(UNAVAILABLE_REFUSAL);
     expect(capabilityStateFor(launch, "launch", "sleep").availability).not.toBe("available");
   });
 

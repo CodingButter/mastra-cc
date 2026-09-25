@@ -132,7 +132,8 @@ describe("a client outside the daemon acts on the desktop and reads back what ch
     // route at all. The client must not flatten the two - "it was refused, and
     // here is which check ran" is a different thing from "the call broke".
     expect(result.element).toBeUndefined();
-    expect(result.refusal).toMatch(/holds no activate authority/);
+    expect(result.refusal?.message).toMatch(/holds no activate authority/);
+    expect(result.refusal?.class).toBe("agent");
     // The gate runs BEFORE the call, so the platform was never asked. This is
     // the assertion that makes the refusal mean something: a daemon that acted
     // and then reported a refusal would pass every other line above.
@@ -148,7 +149,7 @@ describe("a client outside the daemon acts on the desktop and reads back what ch
     // A refusal must not become an existence oracle (ADR-0008 rule 6).
     const result = await client.attestElement({ id: "el-000000000000" });
     expect(result.element).toBeUndefined();
-    expect(result.refusal).toContain("el-000000000000");
+    expect(result.refusal?.message).toContain("el-000000000000");
     client.close();
   });
 });

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -224,11 +225,11 @@ describe("the daemon enforces the configuration", () => {
     const capabilities = loadCapabilitiesFile(file("off.json", { applications: { yad: { edit: false } } }));
     const result = await edit(context({ allows: new Set(["edit"]), capabilities }));
     expect(result.element).toBeUndefined();
-    expect(result.refusal).toContain("capability configuration");
-    expect(result.refusal).toContain('applications["yad"].edit');
+    expect(refusalText(result)).toContain("capability configuration");
+    expect(refusalText(result)).toContain('applications["yad"].edit');
     // The remedy is named, which is the difference between this refusal and
     // one that says a thing is impossible (ADR-0042).
-    expect(result.refusal).toContain("changing that setting");
+    expect(refusalText(result)).toContain("changing that setting");
   });
 
   it("the same session with the capability on reaches the backend - the gate is not a constant", async () => {
@@ -241,8 +242,8 @@ describe("the daemon enforces the configuration", () => {
       untouchable,
       context({ allows: new Set(["edit"]), capabilities }),
     );
-    expect(response.refusal).toBeDefined();
-    expect(response.result).toBeUndefined();
+    expect(refusalText(response)).toBeDefined();
+    expect(Object.keys(response.result as object)).toEqual(["refusal"]);
   });
 
   it("the four routed operations are withheld by the same setting as the verb of their class", async () => {
@@ -269,9 +270,9 @@ describe("the daemon enforces the configuration", () => {
       );
       const result = response.result as { element?: SemanticElement; refusal?: string };
       expect(result.element).toBeUndefined();
-      expect(result.refusal).toContain("capability configuration");
-      expect(result.refusal).toContain(setting);
-      expect(result.refusal).toContain("changing that setting");
+      expect(refusalText(result)).toContain("capability configuration");
+      expect(refusalText(result)).toContain(setting);
+      expect(refusalText(result)).toContain("changing that setting");
     }
   });
 
@@ -281,7 +282,7 @@ describe("the daemon enforces the configuration", () => {
     // application it could not have touched anyway (ADR-0019).
     const capabilities = loadCapabilitiesFile(file("both.json", { applications: { yad: { edit: false } } }));
     const result = await edit(context({ allows: new Set(), capabilities }));
-    expect(result.refusal).toBe(EDIT_SCOPE_REFUSAL);
+    expect(refusalText(result)).toBe(EDIT_SCOPE_REFUSAL);
   });
 
   it("a launch the user turned off is refused by the configuration, not by the unavailable constant", async () => {
@@ -295,8 +296,8 @@ describe("the daemon enforces the configuration", () => {
       context({ permits: new Set(["yad"]), capabilities }),
     );
     const result = response.result as { refusal?: string };
-    expect(result.refusal).not.toBe(UNAVAILABLE_REFUSAL);
-    expect(result.refusal).toContain("defaults.launch");
+    expect(refusalText(result)).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(result)).toContain("defaults.launch");
   });
 
   it("an UNPERMITTED launch stays byte-identical to an unknown name even when configuration would also withhold it", async () => {
@@ -309,7 +310,7 @@ describe("the daemon enforces the configuration", () => {
       untouchable,
       context({ permits: new Set(), capabilities }),
     );
-    expect((response.result as { refusal?: string }).refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText((response.result as { refusal?: string }))).toBe(UNAVAILABLE_REFUSAL);
   });
 
   it("turning a launch off leaves the application VISIBLE - a permit still implies an observe grant", () => {
@@ -395,8 +396,8 @@ describe("the daemon enforces the configuration", () => {
         untouchable,
         context({ allows: new Set(["edit"]), capabilities }),
       );
-      expect(response.refusal).toBeDefined();
-      expect(response.result).toBeUndefined();
+      expect(refusalText(response)).toBeDefined();
+      expect(Object.keys(response.result as object)).toEqual(["refusal"]);
     }
   });
 });

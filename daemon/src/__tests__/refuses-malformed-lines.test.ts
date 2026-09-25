@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync } from "node:fs";
 import { connect as netConnect, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
@@ -51,7 +52,7 @@ describe("the daemon refuses malformed lines loudly instead of swallowing them",
     expect(JSON.parse(hello).type).toBe("hello");
     const parsed = JSON.parse(refusal) as { type: string; refusal: string };
     expect(parsed.type).toBe("refusal");
-    expect(parsed.refusal).toContain('{type:"request", id:number, method:string}');
+    expect(refusalText(parsed)).toContain('{type:"request", id:number, method:string}');
     socket.destroy();
   });
 
@@ -83,7 +84,7 @@ describe("the daemon refuses malformed lines loudly instead of swallowing them",
     const [, refusal, response] = await received;
     const parsed = JSON.parse(refusal) as { type: string; refusal: string };
     expect(parsed.type).toBe("refusal");
-    expect(parsed.refusal).toContain('{type:"request", id:number, method:string}');
+    expect(refusalText(parsed)).toContain('{type:"request", id:number, method:string}');
     // and the connection is still serving afterwards
     expect((JSON.parse(response) as { id: number }).id).toBe(1);
     socket.destroy();

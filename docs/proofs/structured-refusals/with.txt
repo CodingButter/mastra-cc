@@ -1,0 +1,4 @@
+# feat/structured-refusals
+noSuchMethod: {"type":"response","id":1,"result":{"refusal":{"class":"agent","code":"UnknownMethod","message":"refused by the effect-class gate: \"noSuchMethod\" is not a method of schema v1.27.0 - the daemon serves what the schema defines and nothing else"}}}
+attestElement: {"type":"response","id":2,"result":{"refusal":{"class":"agent","code":"UnknownElement","message":"no element with id \"el-000000000000\" is known to this daemon (never answered, or forgotten after newer answers) - nothing to attest"}}}
+activateElement: {"type":"response","id":3,"result":{"refusal":{"class":"agent","code":"EffectClassGate","message":"refused by the scope gate: \"activateElement\" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method"}}}

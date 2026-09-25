@@ -69,6 +69,13 @@ anyway. So when a method exists for what you are trying to do, call it and read
 the answer. A refusal is cheap and it is informative; declining to try on the
 strength of an absent entry in a list is neither.
 
+**Every refusal says whose it is.** A refusal arrives as `result.refusal`, an
+object with `class`, `code` and `message` (ADR-0113). `class` is `agent` when
+your request was wrong — fix the request; `world` when the desktop changed or
+would not cooperate — look again before retrying; `daemon` when the desk failed
+its own contract — report it, do not work around it. `code` is stable; the
+`message` explains it.
+
 **Scope the search when you know where the work lives.** Elements do not carry
 their owning application in the response, and many publish no name at all. Use
 `listApplications` to orient, then pass the observed application name to

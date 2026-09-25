@@ -1,4 +1,5 @@
-import { ROLES, type DiscoverElementsResult, type ElementDiscoveryEntry, type Role } from "@mastra-cc/protocol-types";
+import { ROLES, type ElementDiscoveryEntry, type Role } from "@mastra-cc/protocol-types";
+import type { DiscoverElementsResult } from "./results.js";
 
 export interface DiscoveryMetadata {
   role: Role;

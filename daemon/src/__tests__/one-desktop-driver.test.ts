@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { afterEach, expect, it } from "vitest";
 import { createConnection } from "node:net";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -69,7 +70,7 @@ it("retains a disconnected running generation until leave and permanently reject
   expect(authority.enter(old, true)).toContain("closed");
   expect(next.generation).toBeGreaterThan(old.generation);
 });
-const refusal = (answer: Answer) => answer.refusal ?? answer.result?.refusal;
+const refusal = (answer: Answer) => refusalText(answer);
 it.each([["unix", "unix"], ["websocket", "websocket"], ["unix", "websocket"], ["websocket", "unix"]] as const)("keeps one driver across %s and %s while permitting observations", async (first, second) => {
   const d = await desktop(), a = await peer(d.addresses[first]), b = await peer(d.addresses[second]);
   expect(refusal(await a.request("typeText", { id: "el-1", text: "first" }))).toBeUndefined();

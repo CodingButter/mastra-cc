@@ -1,6 +1,6 @@
 {
   "title": "Mastra CC protocol",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "description": "The wire contract between the daemon and its clients. The first effect attempt claims a connection-bound driver; other connections may observe under existing grants but cannot issue effects until that driver disconnects and its operation settles. Disconnected queued work is discarded. This does not cancel already-issued effects or serialize multiple tasks sharing one connection. Elements are named at the level of meaning: no platform or toolkit identifier appears in any field name, enum value, method name, or description. The single exemption is the diagnostic field.",
   "idPattern": "^(el|win|app)-[0-9a-f]{12}$",
   "roles": [
@@ -93,7 +93,92 @@
     "external",
     "unattributed"
   ],
+  "refusalOwners": [
+    "agent",
+    "world",
+    "daemon"
+  ],
+  "refusalCodes": [
+    "AttestationFailedError",
+    "EffectUnsupportedError",
+    "KeyboardHeldElsewhereError",
+    "MagnitudeOutOfRangeError",
+    "OperationNotExposedError",
+    "PointerBlockedError",
+    "RecordingNotPerformableError",
+    "TextOffsetOutOfRangeError",
+    "UnperformableElementError",
+    "UnpublishedActionError",
+    "WriteNotObservedError",
+    "AccessibilityNotAcquirable",
+    "AccessibilityNotAcquired",
+    "AccessibilityLostMidSession",
+    "AlreadyRunning",
+    "BackendUnreadable",
+    "CouldNotStart",
+    "DeadlineExceeded",
+    "BlockedByDialog",
+    "DisabledByConfiguration",
+    "EffectClassGate",
+    "ElementGone",
+    "EnforcementUnrepresentable",
+    "InventoryUnsupported",
+    "LaunchUnavailable",
+    "MalformedParameter",
+    "NoConnection",
+    "NoMatch",
+    "RestartNotConfirmed",
+    "RestartNotOurs",
+    "RestartRefusedByApplication",
+    "NoRecipe",
+    "NotReadableInTime",
+    "OneBrowserIdentity",
+    "UnknownElement",
+    "UnknownMethod",
+    "UnknownSubscription",
+    "WatchDeaf",
+    "WatchUnknownElement",
+    "WatchUnsupported",
+    "ApplicationGone",
+    "DriverBusy",
+    "DriverClosed",
+    "WindowScopeUnmatched",
+    "WindowScopeAmbiguous",
+    "ApplicationScopeUnmatched",
+    "ApplicationScopeAmbiguous",
+    "Unclassified"
+  ],
   "types": {
+    "refusal": {
+      "description": "Why the daemon did not do what was asked (ADR-0113). Every refusal says whose it is: agent (the request was malformed, stale, unknown, or beyond what the operator allowed; asking differently can succeed), world (the desktop or application said no, went away, froze, or changed under the call; the daemon reported it faithfully), or daemon (this daemon failed its own contract). A refusal always travels inside a response's result, never beside it.",
+      "fields": {
+        "class": {
+          "type": "refusalOwner",
+          "required": true,
+          "description": "Whose refusal it is: agent, world, or daemon."
+        },
+        "code": {
+          "type": "refusalCode",
+          "required": true,
+          "description": "The stable name of the refusal. Branch on this, not on the message."
+        },
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "The sentence a person reads: what was refused and, where known, what to do instead."
+        },
+        "observed": {
+          "type": "string",
+          "required": false,
+          "description": "What the daemon saw that decided the refusal, when that differs from what was asked."
+        },
+        "next": {
+          "type": "string",
+          "required": false,
+          "description": "A suggested next move, when the daemon knows one."
+        }
+      }
+    },
     "semanticElement": {
       "description": "One element, named for what a person means by it.",
       "fields": {
@@ -156,15 +241,36 @@
         {
           "name": "available",
           "fields": {
-            "kind": { "literal": "available", "required": true, "description": "The native relation set was read successfully." },
-            "labels": { "type": "string[]", "required": true, "description": "Verbatim explicit labels. Empty means a successfully read empty set; multiple labels remain multiple. At most eight targets, 1024 Unicode code points per label, 4096 total." }
+            "kind": {
+              "literal": "available",
+              "required": true,
+              "description": "The native relation set was read successfully."
+            },
+            "labels": {
+              "type": "string[]",
+              "required": true,
+              "description": "Verbatim explicit labels. Empty means a successfully read empty set; multiple labels remain multiple. At most eight targets, 1024 Unicode code points per label, 4096 total."
+            }
           }
         },
         {
           "name": "unavailable",
           "fields": {
-            "kind": { "literal": "unavailable", "required": true, "description": "No complete trustworthy label observation is available." },
-            "reason": { "literals": ["not-exposed", "unreadable", "out-of-scope", "limit-exceeded"], "required": true, "description": "Unsupported method, failed read, failed ownership/protection check, or exhausted bound respectively. Never a partial label list." }
+            "kind": {
+              "literal": "unavailable",
+              "required": true,
+              "description": "No complete trustworthy label observation is available."
+            },
+            "reason": {
+              "literals": [
+                "not-exposed",
+                "unreadable",
+                "out-of-scope",
+                "limit-exceeded"
+              ],
+              "required": true,
+              "description": "Unsupported method, failed read, failed ownership/protection check, or exhausted bound respectively. Never a partial label list."
+            }
           }
         }
       ]
@@ -175,21 +281,67 @@
         {
           "name": "available",
           "fields": {
-            "kind": { "literal": "available", "required": true, "description": "The bounded reciprocal structure was observed and rechecked." },
-            "provenance": { "literal": "immediate-combo-parent", "required": true, "description": "Explicit native immediate-parent evidence." },
-            "parentRole": { "literal": "combo box", "required": true, "description": "Observed native parent role, not the editable child's role." },
-            "relation": { "literal": "labelled-by", "required": true, "description": "Direction from parent to its explicit native label." },
-            "label": { "type": "string", "required": true, "description": "Untrusted parent label; not a direct child label, name or unique identity. At most 1024 Unicode code points and 2048 UTF-16 code units." },
-            "immediateChildCount": { "literal": 2, "required": true, "description": "Exactly two distinct immediate children; no descendant traversal." },
-            "editableChildCount": { "literal": 1, "required": true, "description": "Exactly one immediate editable text child, the observed element." },
-            "siblingRole": { "literal": "menu", "required": true, "description": "The other immediate child is a non-editable native menu." }
+            "kind": {
+              "literal": "available",
+              "required": true,
+              "description": "The bounded reciprocal structure was observed and rechecked."
+            },
+            "provenance": {
+              "literal": "immediate-combo-parent",
+              "required": true,
+              "description": "Explicit native immediate-parent evidence."
+            },
+            "parentRole": {
+              "literal": "combo box",
+              "required": true,
+              "description": "Observed native parent role, not the editable child's role."
+            },
+            "relation": {
+              "literal": "labelled-by",
+              "required": true,
+              "description": "Direction from parent to its explicit native label."
+            },
+            "label": {
+              "type": "string",
+              "required": true,
+              "description": "Untrusted parent label; not a direct child label, name or unique identity. At most 1024 Unicode code points and 2048 UTF-16 code units."
+            },
+            "immediateChildCount": {
+              "literal": 2,
+              "required": true,
+              "description": "Exactly two distinct immediate children; no descendant traversal."
+            },
+            "editableChildCount": {
+              "literal": 1,
+              "required": true,
+              "description": "Exactly one immediate editable text child, the observed element."
+            },
+            "siblingRole": {
+              "literal": "menu",
+              "required": true,
+              "description": "The other immediate child is a non-editable native menu."
+            }
           }
         },
         {
           "name": "unavailable",
           "fields": {
-            "kind": { "literal": "unavailable", "required": true, "description": "No complete trustworthy immediate-parent observation is available." },
-            "reason": { "literals": ["not-exposed", "ambiguous", "out-of-scope", "unreadable", "limit-exceeded"], "required": true, "description": "Unsupported shape, competing evidence, failed ownership/protection, malformed/stale/changing evidence or deadline, or cumulative/text bound respectively. Never partial evidence." }
+            "kind": {
+              "literal": "unavailable",
+              "required": true,
+              "description": "No complete trustworthy immediate-parent observation is available."
+            },
+            "reason": {
+              "literals": [
+                "not-exposed",
+                "ambiguous",
+                "out-of-scope",
+                "unreadable",
+                "limit-exceeded"
+              ],
+              "required": true,
+              "description": "Unsupported shape, competing evidence, failed ownership/protection, malformed/stale/changing evidence or deadline, or cumulative/text bound respectively. Never partial evidence."
+            }
           }
         }
       ]
@@ -772,7 +924,7 @@
           "description": "Present when the id still resolves."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present when it does not; names the reason."
         }
@@ -805,7 +957,7 @@
           "description": "Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present when scope, identity, or request bounds refuse the observation."
         }
@@ -833,7 +985,7 @@
           "description": "Present when the watch was established."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -855,7 +1007,7 @@
           "description": "Present when the watch is no longer running - true when this call ended it, false when it had already ended on its own."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -877,7 +1029,7 @@
           "description": "Present when the application was opened (or was already ours) and became readable."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the reason without revealing what is available to other sessions."
         }
@@ -905,7 +1057,7 @@
           "description": "Present when the edit was performed; the element as it reads afterwards."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -933,7 +1085,7 @@
           "description": "Present when the action was performed; the element as it reads afterwards."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -961,7 +1113,7 @@
           "description": "Present when the commit was performed; the element as it reads afterwards."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -989,7 +1141,7 @@
           "description": "Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -1022,7 +1174,7 @@
           "description": "Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -1050,7 +1202,7 @@
           "description": "Present when the operation was performed; the element as it reads afterwards, re-read rather than echoed."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -1073,7 +1225,7 @@
           "description": "Present when the operation was performed; the element as it reads afterwards, re-read so a reveal that changed nothing is reported as one rather than assumed to have worked."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -1089,7 +1241,7 @@
           "description": "Present when the inventory could be read; every application found, permitted or not."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer."
         }
@@ -1116,7 +1268,7 @@
           "description": "Present when the attempt ran; the layer's state as read back AFTER the attempt, never the state that was asked for. An acquire that reports success without re-reading is reporting its own intention."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the flag when the operator withheld it, and the missing adapter when no setting would help."
         }
@@ -1143,7 +1295,7 @@
           "description": "Present when the application refused to close and put something up instead - typically an unsaved-work dialog. The element is reported so a person can be shown it or an agent can read it; the application is still running, and this daemon did not touch the dialog."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the restart setting when configuration withheld it, the level that would act when the operator chose to be asked each time, and what was observed when the application neither closed nor put anything up."
         }
@@ -1171,7 +1323,7 @@
           "description": "Present when the chord was delivered; the element as it reads AFTERWARDS, read back from the desktop. It is evidence of what the element became, never a claim that the key did what the caller hoped - the caller compares it against what it expected."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the chord vocabulary when the name is not one of them, and what was observed when the element could not be focused or the machine has no way to deliver a key at all."
         }
@@ -1199,7 +1351,7 @@
           "description": "Present after input emission was attempted; the element as it reads AFTERWARDS. Delivery and the intended value remain unverified without trustworthy caret, selection and timing evidence. Length growth alone proves neither arrival nor failure. Observe before deciding whether to retry; never automatically resend or clear text following an uncertain attempt."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the character or the length when the text is not printable or too long, and what was observed when the element could not be focused or the machine has no way to deliver a key at all."
         }
@@ -1222,7 +1374,7 @@
           "description": "Present when the element read back empty; the element as it reads AFTERWARDS, read back from the desktop. An element that still carries text is reported as a refusal instead, because the whole point of this method is the comparison."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the session flag or the configuration key when this capability is switched off, the reason the element's text could not be read, the length when there is more text than this method will press through, and what was observed when the element did not come back empty."
         }
@@ -1270,7 +1422,7 @@
           "description": "Present when the press was delivered; the element as it reads AFTERWARDS, read back from the desktop. A pointer press is not aimed at an element the way a semantic action is - it is aimed at a point that was inside the element when the bounds were read - so this element is evidence to compare against what was expected, not a claim that the click did what the caller wanted."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - the effect class this session was not granted, the missing pointer route on a build that has none, the button or count or fraction that was not in this contract's vocabulary, and the reason the element could not be aimed at: no bounds published, an empty rectangle, or a rectangle that is off the screen."
         }
@@ -1304,7 +1456,7 @@
           "description": "Present when the picture was taken: currently visible pixels intersecting the element rectangle and captured display. It may be clipped, and it may show other windows drawn over the element; clipped and crop say which part of the element it is, so a location in the picture can be mapped to the fractions clickElement takes."
         },
         "refusal": {
-          "type": "string",
+          "type": "refusal",
           "required": false,
           "description": "Present otherwise; names the check that ran and what would change the answer - an element the platform gives no bounds for, one that is off screen, a desk with no way to grab its own pixels, or a picture past this daemon's ceiling."
         }

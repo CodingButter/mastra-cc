@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import type { CapabilityName, InstalledApplication } from "@mastra-cc/protocol-types";
 import {
@@ -142,7 +143,7 @@ describe("the launch gate on the wire", () => {
   it("an ambiguous request refuses with its own words, distinct from unpermitted", async () => {
     const launch = context({ permits: new Set(["org.kde.kate"]) });
     const answer = await open("kate", launch, backendWith([KATE, DECOY]));
-    expect(answer.refusal).toBe(AMBIGUOUS_NAME_REFUSAL);
+    expect(refusalText(answer)).toBe(AMBIGUOUS_NAME_REFUSAL);
     expect(AMBIGUOUS_NAME_REFUSAL).not.toBe(UNAVAILABLE_REFUSAL);
     expect(AMBIGUOUS_NAME_REFUSAL).toContain("full id");
   });
@@ -153,8 +154,8 @@ describe("the launch gate on the wire", () => {
     const answer = await open("kate", launch, backendWith([KATE]));
     // Defanged argv never becomes readable; what matters is the gate did NOT
     // turn the short name away, and the launch was owned under the full id.
-    expect(answer.refusal).not.toBe(UNAVAILABLE_REFUSAL);
-    expect(answer.refusal).not.toBe(AMBIGUOUS_NAME_REFUSAL);
+    expect(refusalText(answer)).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(answer)).not.toBe(AMBIGUOUS_NAME_REFUSAL);
     expect(launch.table.ownsName("org.kde.kate")).toBeDefined();
   });
 
@@ -163,7 +164,7 @@ describe("the launch gate on the wire", () => {
     const launch = context({ permits: new Set(["yad"]), catalog, pollBudgetMs: 30, pollIntervalMs: 10 });
     // The scan sees nothing; the catalog key becomes the synthetic entry.
     const answer = await open("yad", launch, backendWith([]));
-    expect(answer.refusal).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(answer)).not.toBe(UNAVAILABLE_REFUSAL);
     expect(launch.table.ownsName("yad")).toBeDefined();
   });
 });
@@ -260,7 +261,7 @@ describe("configuration withholding binds the entry, whichever name the rule use
       capabilities: configuration,
     });
     const answer = await open("org.kde.kate", launch, backendWith([KATE]));
-    expect(answer.refusal).toContain('applications["kate"].launch');
+    expect(refusalText(answer)).toContain('applications["kate"].launch');
     expect(launch.table.ownsName("org.kde.kate")).toBeUndefined();
   });
 });
@@ -301,8 +302,8 @@ describe("restart authority follows the resolved entry", () => {
     const opened = await open("kate", launch, backend);
     // Defanged argv never becomes readable; the gate passed and ownership was
     // recorded under the full id, which is the half this test is about.
-    expect(opened.refusal).not.toBe(UNAVAILABLE_REFUSAL);
-    expect(opened.refusal).not.toBe(AMBIGUOUS_NAME_REFUSAL);
+    expect(refusalText(opened)).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(opened)).not.toBe(AMBIGUOUS_NAME_REFUSAL);
     expect(launch.table.ownsName("org.kde.kate")).toBeDefined();
     const answer = await handleRequest(
       { type: "request", id: 2, method: "restartApplication", params: { name: "kate" } },
@@ -312,7 +313,7 @@ describe("restart authority follows the resolved entry", () => {
     const result = answer.result as { refusal?: string };
     // Whatever the relaunch reported, the gate did NOT disown its own process
     // and did NOT turn the short name away.
-    expect(result.refusal ?? "").not.toContain("not this daemon's");
-    expect(result.refusal).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(result) ?? "").not.toContain("not this daemon's");
+    expect(refusalText(result)).not.toBe(UNAVAILABLE_REFUSAL);
   });
 });

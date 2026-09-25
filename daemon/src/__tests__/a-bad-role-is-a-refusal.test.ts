@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type AuditEntry, useAuditLog } from "../audit.js";
 import { type Backend, IncompleteObservationError } from "../backend.js";
@@ -47,7 +48,7 @@ function query(params: Record<string, unknown>, backend: Backend) {
 }
 
 function refusalIn(answer: { refusal?: string; result?: unknown }): string | undefined {
-  return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal;
+  return refusalText(answer);
 }
 
 // An in-memory record so the sink-failure path in audit.ts can never write to
@@ -131,7 +132,7 @@ describe("the daemon says why", () => {
 
     const answer = await query({ role: "window" }, backendThat({ asked: [], throws: new IncompleteObservationError("x") }));
 
-    expect(answer).toEqual({ type: "response", id: 1, refusal: BACKEND_UNREADABLE_REFUSAL });
+    expect(answer).toEqual({ type: "response", id: 1, result: { refusal: { class: "daemon", code: "BackendUnreadable", message: BACKEND_UNREADABLE_REFUSAL } } });
     expect(stderr).toHaveBeenCalledTimes(1);
     const line = stderr.mock.calls[0]?.join(" ") ?? "";
     expect(line).toContain("queryElements");
@@ -145,7 +146,7 @@ describe("the daemon says why", () => {
 
     const answer = await query({ role: "window" }, backendThat({ asked: [], throws: "boom" }));
 
-    expect(answer).toEqual({ type: "response", id: 1, refusal: BACKEND_UNREADABLE_REFUSAL });
+    expect(answer).toEqual({ type: "response", id: 1, result: { refusal: { class: "daemon", code: "BackendUnreadable", message: BACKEND_UNREADABLE_REFUSAL } } });
     expect(stderr).toHaveBeenCalledTimes(1);
     expect(stderr.mock.calls[0]?.join(" ")).toContain("Error: boom");
   });

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { applicationName } from "../backends/atspi/names.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -96,7 +97,7 @@ async function listing(launch: Partial<LaunchContext>, census: RunningCensus): P
     },
   );
   const result = answer.result as { applications?: InstalledApplication[]; refusal?: string };
-  expect(result.refusal).toBeUndefined();
+  expect(refusalText(result)).toBeUndefined();
   return result.applications as InstalledApplication[];
 }
 

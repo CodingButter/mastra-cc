@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync } from "node:fs";
 import { connect as netConnect, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
@@ -232,7 +233,7 @@ describe("a watch lives and dies with the connection that asked for it", () => {
     socket = c.socket;
     c.request(1, "subscribeElement", { id: "el-ffffffffffff", priority: "low" });
     const answer = await c.waitFor((line) => line.id === 1, "the refusal");
-    const refusal = (answer.result as { refusal?: string }).refusal ?? "";
+    const refusal = refusalText(answer.result) ?? "";
     expect(refusal).toContain("no element with that id is known to this daemon");
     // The refusal names the check, not the element: an id that names nothing
     // and an id inside an unreadable application must be indistinguishable.
@@ -252,7 +253,7 @@ describe("a watch lives and dies with the connection that asked for it", () => {
     socket = c.socket;
     c.request(1, "unsubscribeElement", { subscriptionId: "sub-000000-abcdef" });
     const answer = await c.waitFor((line) => line.id === 1, "the refusal");
-    expect((answer.result as { refusal?: string }).refusal).toContain("a watch is per-connection state");
+    expect(refusalText((answer.result as { refusal?: string }))).toContain("a watch is per-connection state");
   });
 
   it("gives each connection its own book: one connection's watch is not another's to end", async () => {
@@ -268,7 +269,7 @@ describe("a watch lives and dies with the connection that asked for it", () => {
     try {
       second.request(1, "unsubscribeElement", { subscriptionId });
       const refused = await second.waitFor((line) => line.id === 1, "the refusal");
-      expect((refused.result as { refusal?: string }).refusal).toContain("a watch is per-connection state");
+      expect(refusalText((refused.result as { refusal?: string }))).toContain("a watch is per-connection state");
       // and the first connection's watch is untouched
       expect(desktop.open).toBe(1);
     } finally {
