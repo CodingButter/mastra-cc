@@ -2164,7 +2164,7 @@
   {
     "name": "a-reply-line-grows-without-bound",
     "file": "packages/transport/src/index.ts",
-    "find": "    if (buffer.length > MAX_LINE_CHARS &&",
+    "find": "    if (buffer.length > maxLineChars &&",
     "replace": "    if (false &&",
     "cwd": "packages/transport",
     "testFile": "src/__tests__/a-line-arrives-in-pieces.test.ts"

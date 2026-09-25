@@ -251,7 +251,13 @@ function websocketWire(url: string): Wire {
 }
 
 export async function connect(
-  options: { socketPath?: string; url?: string; replyBudgetMs?: number } = {},
+  options: {
+    socketPath?: string;
+    url?: string;
+    replyBudgetMs?: number;
+    /** @internal Test seam: a smaller line cap so the refusal can be proven without 64 MB. */
+    maxLineChars?: number;
+  } = {},
 ): Promise<TransportClient> {
   const deadline = performance.now() + 10_000;
   if (options.socketPath !== undefined && options.url !== undefined) {
@@ -273,6 +279,7 @@ export async function connect(
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   const listeners = new Set<(event: ChangeEvent) => void>();
   let nextId = 1;
+  const maxLineChars = options.maxLineChars ?? MAX_LINE_CHARS;
   let buffer = "";
   let helloResolve: ((h: Hello) => void) | null = null;
   let helloReject: ((e: Error) => void) | null = null;
@@ -300,9 +307,9 @@ export async function connect(
     // Search only the new text: re-scanning the whole buffer per chunk is quadratic in a long line.
     const searchFrom = buffer.length;
     buffer += chunk;
-    if (buffer.length > MAX_LINE_CHARS && buffer.lastIndexOf("\n") < buffer.length - MAX_LINE_CHARS) {
+    if (buffer.length > maxLineChars && buffer.lastIndexOf("\n") < buffer.length - maxLineChars) {
       buffer = "";
-      terminate(new Error(`transport: peer at ${peer} sent a line longer than ${MAX_LINE_CHARS} characters without a newline - refusing to continue`));
+      terminate(new Error(`transport: peer at ${peer} sent a line longer than ${maxLineChars} characters without a newline - refusing to continue`));
       wire.drop(true);
       return;
     }
