@@ -63,6 +63,7 @@ Non-goals are explicit: vision-first control, an assistant UI, and authenticatio
 
 - **Why it happens:** React's value tracker records the assignment, so the synthetic `input` event looks like no change. The effect reports success, the readback agrees, and the application never saw the text. It will revert on the next render or submit an empty form.
 - **Scope:** most modern web apps.
+- **Status (branch `fix/cdp-liveness-and-truth`, ADR-0114):** addressed for CDP. Writes go through the native setter in an isolated world and are reread after a bounded settle; the React 19 proof shows success with rendered state, and refusals for filtered and reverted writes. The claim is the DOM value after the settle window, not application state. [proof](../../proofs/cdp-liveness/README.md)
 - **Fix:** use the native prototype setter (`Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set`) or `Input.insertText`. Verify through the accessibility tree or the rendered state, not the property just written.
 
 **C2. UTF-8 is corrupted across chunk boundaries. [repro]**
@@ -86,6 +87,7 @@ Non-goals are explicit: vision-first control, an assistant UI, and authenticatio
 - **AT-SPI:** `invoke()` has no client timeout and relies on the bus's ~25 s NoReply. A tree walk against a frozen app costs 25 s per call. `dbus-native` 0.15.1 offers no per-call timeout.
 - **CDP:** the channel has no timeout and no `Page.javascriptDialogOpening` handling. The repro above shows the result: every client waits.
 - **Fix:** per-call deadlines on both channels, dialog detection for CDP, and let observes stop queuing behind a single global chain.
+- **Status (CDP half, ADR-0114):** CDP waits are bounded (10 s; 1.5 s at attach), and an open dialog refuses in milliseconds; proof `dialog-after` answers in 3–4 ms. Still open: AT-SPI deadlines, and the global chain (a stall with no dialog holds other clients for up to 10 s).
 
 ### High
 
@@ -97,6 +99,7 @@ Non-goals are explicit: vision-first control, an assistant UI, and authenticatio
   - monkeypatch `value` getters, `dispatchEvent` or `focus` so effects and readbacks lie
   - detect automation
 - **Fix:** `Page.createIsolatedWorld`, `addScriptToEvaluateOnNewDocument({worldName})`, and bindings scoped by `executionContextName`.
+- **Status (ADR-0114):** implemented for the main frame; proof `isolation` shows the stream `undefined` to the page and the forgery not delivered. Iframe elements are refused.
 
 **H2. The browser is reachable around the daemon. [verified]**
 - **Where:** Chrome runs with `--remote-debugging-port=9744` (fixed; `cdp/channel.ts:22`, `launch/recipes.ts:85,103`), including the Gmail profile.

@@ -1,5 +1,5 @@
 import type { Role } from "@mastra-cc/protocol-types";
-import type { BackendChange, ChannelWatch } from "../../backend.js";
+import { type BackendChange, type ChannelWatch, WatchUnsupportedError } from "../../backend.js";
 import { deriveId } from "../atspi/identity.js";
 import { toNeutralRole } from "./roles.js";
 
@@ -23,7 +23,19 @@ import { toNeutralRole } from "./roles.js";
 // it cannot report content even if asked to. Content is available exactly one
 // way, through attestElement, which runs the visibility gate (ADR-0032).
 
+// The daemon's own JavaScript world. Page scripts share the DOM with it but
+// not its globals, so nothing the daemon injects is visible to, callable by or
+// overwritable from the page. Callers name it by this token in the one
+// parameter that selects a context (`executionContextId` on DOM.resolveNode,
+// `contextId` on Runtime.evaluate); the live channel substitutes the real,
+// per-document context id - so a tape records the token, never an id that
+// only meant something in one browser session.
+export const ISOLATED_WORLD = "mastra-cc";
+
 const BINDING = "__mastraCcChange";
+
+const FRAME_GUARDED_WATCH =
+  "function (watchId) { if (this.ownerDocument !== document) return false; window.__mastraCcStream.watch(this, watchId); return true; }";
 
 // Installed at document start and in the document already loaded. Reads no
 // text and no attribute values anywhere: a MutationRecord's target and node
@@ -94,6 +106,8 @@ export interface CdpWatchAnchor {
 export interface StreamDeps {
   /** one protocol call on the watched target; resolves to {result} or {error} */
   call(method: string, params: unknown): Promise<unknown>;
+  /** whether a binding call came from the daemon's own world, not the page's */
+  isIsolated(contextId: unknown): boolean;
   /** every protocol message that answers no request; returns its own removal */
   onProtocolEvent(listener: (method: string, params: Record<string, unknown>) => void): () => void;
 }
@@ -164,6 +178,7 @@ export async function openSubtreeStream(
   async function report(index: number, kind: BackendChange["kind"]): Promise<void> {
     const evaluated = resultOf(await deps.call("Runtime.evaluate", {
       expression: `window.__mastraCcStream.take(${index})`,
+      contextId: ISOLATED_WORLD,
     }));
     const objectId = (evaluated?.result as { objectId?: string } | undefined)?.objectId;
     if (objectId === undefined) return;
@@ -185,6 +200,9 @@ export async function openSubtreeStream(
       return;
     }
     if (method !== "Runtime.bindingCalled" || params.name !== BINDING) return;
+    // Only the daemon's world holds the binding, but a payload is still
+    // believed only when it says so: anything else is a page speaking.
+    if (!deps.isIsolated(params.executionContextId)) return;
     let message: { watchId?: string; ended?: boolean; batch?: Array<{ index: number; kind: string }> };
     try {
       message = JSON.parse(String(params.payload));
@@ -197,16 +215,19 @@ export async function openSubtreeStream(
       return;
     }
     for (const entry of message.batch ?? []) {
-      void report(entry.index, entry.kind as BackendChange["kind"]);
+      // Nobody awaits a report, so its failure (a deadline, a dead socket,
+      // including the releaseObject in its finally) must end the watch
+      // loudly here rather than escape as an unhandled rejection.
+      report(entry.index, entry.kind as BackendChange["kind"]).catch(() => end());
     }
   });
 
   await deps.call("Runtime.enable", {});
   await deps.call("Page.enable", {});
   await deps.call("DOM.enable", {});
-  await deps.call("Runtime.addBinding", { name: BINDING });
-  await deps.call("Page.addScriptToEvaluateOnNewDocument", { source: PAGE_SOURCE });
-  await deps.call("Runtime.evaluate", { expression: PAGE_SOURCE });
+  await deps.call("Runtime.addBinding", { name: BINDING, executionContextName: ISOLATED_WORLD });
+  await deps.call("Page.addScriptToEvaluateOnNewDocument", { source: PAGE_SOURCE, worldName: ISOLATED_WORLD });
+  await deps.call("Runtime.evaluate", { expression: PAGE_SOURCE, contextId: ISOLATED_WORLD });
 
   // The anchor. DOM.resolveNode turns the backend node id the walk recorded
   // into a page object, and the observer is installed ON THAT OBJECT.
@@ -214,8 +235,8 @@ export async function openSubtreeStream(
     await deps.call(
       "DOM.resolveNode",
       anchor.backendDOMNodeId !== undefined
-        ? { backendNodeId: anchor.backendDOMNodeId }
-        : { nodeId: Number(anchor.nodeId) },
+        ? { backendNodeId: anchor.backendDOMNodeId, executionContextId: ISOLATED_WORLD }
+        : { nodeId: Number(anchor.nodeId), executionContextId: ISOLATED_WORLD },
     ),
   );
   const rootObjectId = (resolved?.object as { objectId?: string } | undefined)?.objectId;
@@ -223,21 +244,40 @@ export async function openSubtreeStream(
     removeListener();
     throw new Error(`the watched element "${watchedId}" no longer resolves in the page - nothing to anchor a watch on`);
   }
-  await deps.call("Runtime.callFunctionOn", {
+  // CDP will hand back a node from a same-process iframe wrapped in the main
+  // frame's world (measured, Chrome 151), so the world checks the document
+  // itself: an element in another frame is refused, never observed from here.
+  const installed = resultOf(await deps.call("Runtime.callFunctionOn", {
     objectId: rootObjectId,
-    functionDeclaration: "function (watchId) { window.__mastraCcStream.watch(this, watchId); }",
+    functionDeclaration: FRAME_GUARDED_WATCH,
     arguments: [{ value: watchId }],
-  });
+    returnByValue: true,
+  }));
   await deps.call("Runtime.releaseObject", { objectId: rootObjectId });
+  if (installed?.exceptionDetails !== undefined) {
+    removeListener();
+    open = false;
+    throw new Error(`the watch could not be installed on "${watchedId}" - the page threw while it was being set up`);
+  }
+  if ((installed?.result as { value?: unknown } | undefined)?.value !== true) {
+    removeListener();
+    open = false;
+    throw new WatchUnsupportedError(
+      `the watched element "${watchedId}" is in a frame this session cannot reach - it is not watched rather than watched from the wrong document`,
+    );
+  }
 
   return {
     async close() {
       if (!open) return;
       open = false;
       removeListener();
+      // The daemon side is already closed; a page that cannot answer (a
+      // dialog, a dead socket) must not turn an unsubscribe into a failure.
       await deps.call("Runtime.evaluate", {
         expression: `(() => { const s = window.__mastraCcStream; if (s && s.stop) s.stop(${JSON.stringify(watchId)}); })()`,
-      });
+        contextId: ISOLATED_WORLD,
+      }).catch(() => undefined);
     },
   };
 }

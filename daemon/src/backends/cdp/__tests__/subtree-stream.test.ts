@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BackendChange } from "../../../backend.js";
 import { deriveId } from "../../atspi/identity.js";
-import { openSubtreeStream, type StreamDeps } from "../subtree-stream.js";
+import { ISOLATED_WORLD, openSubtreeStream, type StreamDeps } from "../subtree-stream.js";
 
 // The browser stream, offline. No browser is started: the protocol calls are
 // recorded and answered by hand, and the page's push is fed in as the event it
@@ -13,7 +13,9 @@ const TARGET = "TARGET-1";
 const ROOT_NODE = 40;
 const CHILD_NODE = 41;
 
-function harness(options: { axRole?: string; resolves?: boolean } = {}) {
+const WORLD = 7;
+
+function harness(options: { axRole?: string; resolves?: boolean; otherFrame?: boolean; throws?: boolean } = {}) {
   const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
   const listeners = new Set<(method: string, params: Record<string, unknown>) => void>();
   const changes: BackendChange[] = [];
@@ -26,6 +28,9 @@ function harness(options: { axRole?: string; resolves?: boolean } = {}) {
           return options.resolves === false ? { error: { message: "No node with given id found" } } : { result: { object: { objectId: "OBJ-ROOT" } } };
         case "Runtime.evaluate":
           return { result: { result: { objectId: "OBJ-CHANGED" } } };
+        case "Runtime.callFunctionOn":
+          if (options.throws === true) return { result: { result: { type: "object" }, exceptionDetails: { text: "Uncaught" } } };
+          return { result: { result: { value: options.otherFrame !== true } } };
         case "Accessibility.getPartialAXTree":
           return {
             result: {
@@ -36,6 +41,7 @@ function harness(options: { axRole?: string; resolves?: boolean } = {}) {
           return { result: {} };
       }
     },
+    isIsolated: (contextId) => contextId === WORLD,
     onProtocolEvent(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -66,6 +72,7 @@ function bindingCall(h: ReturnType<typeof harness>, payload: unknown) {
   const watchId = (install?.params.arguments as Array<{ value: string }>)[0].value;
   h.push("Runtime.bindingCalled", {
     name: "__mastraCcChange",
+    executionContextId: WORLD,
     payload: JSON.stringify({ watchId, ...(payload as object) }),
   });
 }
@@ -76,7 +83,7 @@ describe("the browser subtree stream", () => {
     await open(h);
 
     const resolve = h.calls.find((c) => c.method === "DOM.resolveNode");
-    expect(resolve?.params).toEqual({ backendNodeId: ROOT_NODE });
+    expect(resolve?.params).toEqual({ backendNodeId: ROOT_NODE, executionContextId: ISOLATED_WORLD });
 
     // The observer is installed by calling a function ON the resolved object.
     // Installing it by evaluating against the document would watch the whole
@@ -180,5 +187,92 @@ describe("the browser subtree stream", () => {
     bindingCall(h, { batch: [{ index: 0, kind: "changed" }] });
     await new Promise((resolve) => setTimeout(resolve, 5));
     expect(h.changes).toEqual([]);
+  });
+});
+
+describe("a detached stream call that fails", () => {
+  // report() and its releaseObject run with nobody awaiting them. A deadline
+  // or a dead socket there must end the watch, not escape as an unhandled
+  // rejection that takes the daemon down.
+  for (const failing of ["Runtime.evaluate", "Runtime.releaseObject"]) {
+    it(`ends the watch when ${failing} rejects, and nothing goes unhandled`, async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => unhandled.push(reason);
+      process.on("unhandledRejection", onUnhandled);
+      try {
+        const h = harness();
+        await open(h);
+        const answer = h.deps.call;
+        let armed = false;
+        h.deps.call = async (method, params) => {
+          if (armed && method === failing) throw new Error(`${failing} timed out`);
+          return answer(method, params);
+        };
+        armed = true;
+        bindingCall(h, { batch: [{ index: 0, kind: "changed" }] });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(h.changes.at(-1)).toEqual({ id: watchedId, role: "generic", kind: "watchEnded" });
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
+    });
+  }
+});
+
+describe("the stream lives in the daemon's own world", () => {
+  it("installs its binding and page source only in the isolated world, and speaks to it only there", async () => {
+    const h = harness();
+    const watch = await open(h);
+    bindingCall(h, { batch: [{ index: 0, kind: "changed" }] });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    await watch.close();
+
+    const binding = h.calls.find((c) => c.method === "Runtime.addBinding");
+    expect(binding?.params).toEqual({ name: "__mastraCcChange", executionContextName: ISOLATED_WORLD });
+    const documentStart = h.calls.find((c) => c.method === "Page.addScriptToEvaluateOnNewDocument");
+    expect(documentStart?.params.worldName).toBe(ISOLATED_WORLD);
+    const evaluates = h.calls.filter((c) => c.method === "Runtime.evaluate");
+    // installation, event retrieval, teardown
+    expect(evaluates.length).toBe(3);
+    for (const evaluate of evaluates) expect(evaluate.params.contextId).toBe(ISOLATED_WORLD);
+    for (const resolve of h.calls.filter((c) => c.method === "DOM.resolveNode")) {
+      expect(resolve.params.executionContextId).toBe(ISOLATED_WORLD);
+    }
+    expect(h.calls.some((c) => c.method === "DOM.describeNode")).toBe(false);
+  });
+
+  it("ignores a binding call that did not come from the daemon's world", async () => {
+    const h = harness();
+    const install = () => h.calls.find((c) => c.method === "Runtime.callFunctionOn");
+    await open(h);
+    const watchId = (install()?.params.arguments as Array<{ value: string }>)[0].value;
+    for (const executionContextId of [1, undefined]) {
+      h.push("Runtime.bindingCalled", {
+        name: "__mastraCcChange",
+        executionContextId,
+        payload: JSON.stringify({ watchId, batch: [{ index: 0, kind: "changed" }] }),
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(h.changes).toEqual([]);
+    expect(h.calls.filter((c) => c.method === "Runtime.evaluate").length).toBe(1);
+  });
+
+  it("refuses to watch an element whose document is another frame's", async () => {
+    const h = harness({ otherFrame: true });
+    await expect(open(h)).rejects.toThrow(/in a frame this session cannot reach/);
+    const install = h.calls.find((c) => c.method === "Runtime.callFunctionOn");
+    expect(String(install?.params.functionDeclaration)).toContain("this.ownerDocument !== document");
+    expect(h.listenerCount()).toBe(0);
+    expect(h.changes).toEqual([]);
+  });
+
+  it("says the page threw, not that the element is in another frame, when installing fails", async () => {
+    const h = harness({ throws: true });
+    const error = await open(h).catch((e: unknown) => e);
+    expect(String(error)).toMatch(/the page threw/);
+    expect(String(error)).not.toMatch(/another frame|cannot reach/);
+    expect(h.listenerCount()).toBe(0);
   });
 });

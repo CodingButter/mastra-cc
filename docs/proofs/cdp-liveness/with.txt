@@ -1,0 +1,10 @@
+# cdp-liveness proof - daemon /tmp/cdp-lt/daemon/dist/main.mjs at c54d1335ba20173f753de284e102d7f8d08e7638 - 2026-09-23T22:44:59.378Z
+SCENARIO deadline: GREEN queryElements answered_in=1521ms answer={"refusal":"the page did not answer when attached (\"Page.enable\") - it may be showing a dialog or be busy; nothing was changed by this call"}
+SCENARIO dialog-after: GREEN before_alert=answered A.queryElements=answered B.queryElements=3ms C.listApplications=3ms B.answer={"refusal":"the page is showing a alert dialog (\"the page wants a person\") - nothing can be read or done in it until a person answers it"}
+SCENARIO dialog-before: GREEN first queryElements=1518ms answer={"refusal":"the page did not answer when attached (\"Page.enable\") - it may be showing a dialog or be busy; nothing was changed by this call"}
+SCENARIO isolation: GREEN page_sees_stream=undefined page_sees_binding=undefined real_events=1 forgery=no-binding forged_events_delivered=0 changed_total=1
+SCENARIO react-accept: GREEN setElementText("hello")=success rendered_output="hello"
+SCENARIO react-filter: GREEN setElementText("hello")=refused(writing this element reported success, but reading it back found "heo" where "hello" was intended - the page performed something other than what was asked) rendered_output="heo"
+SCENARIO react-async-revert: GREEN setElementText("hello")=refused(writing this element reported success, but reading it back found "" where "hello" was intended - the page performed something other than what was asked) rendered_output=""
+SCENARIO react-number: GREEN setElementValue(42)=success rendered_output="42" setElementValue(500)=refused(setting this element's value reported success, but reading it back found "42" where "500" was intended - the page clamped, reformatted or ignored the write) rendered_output="42"
+PROOF: GREEN

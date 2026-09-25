@@ -125,6 +125,8 @@ export const REFUSAL_CLASSES = [
   "AlreadyRunning",
   "BackendUnreadable",
   "CouldNotStart",
+  "DeadlineExceeded",
+  "BlockedByDialog",
   "DisabledByConfiguration",
   "EffectClassGate",
   "ElementGone",
