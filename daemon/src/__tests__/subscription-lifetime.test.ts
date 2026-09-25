@@ -233,7 +233,7 @@ describe("a watch lives and dies with the connection that asked for it", () => {
     c.request(1, "subscribeElement", { id: "el-ffffffffffff", priority: "low" });
     const answer = await c.waitFor((line) => line.id === 1, "the refusal");
     const refusal = (answer.result as { refusal?: string }).refusal ?? "";
-    expect(refusal).toContain("no element with that id was ever answered");
+    expect(refusal).toContain("no element with that id is known to this daemon");
     // The refusal names the check, not the element: an id that names nothing
     // and an id inside an unreadable application must be indistinguishable.
     //

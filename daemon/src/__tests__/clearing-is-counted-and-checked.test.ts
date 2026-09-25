@@ -235,7 +235,7 @@ describe("emptying a field one key at a time", () => {
 
   it("refuses an id it never answered, in the words it uses for one that was never real", async () => {
     const desk = deskCarrying("example.com");
-    await expect(desk.backend.clearElementText({ id: "el-000000000000" })).rejects.toThrow(/was ever answered/);
+    await expect(desk.backend.clearElementText({ id: "el-000000000000" })).rejects.toThrow(/is known to this daemon/);
     expect(desk.pressed).toEqual([]);
   });
 });

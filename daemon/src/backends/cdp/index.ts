@@ -66,6 +66,7 @@ import { NOTHING_TO_OPERATE_ON, readPublishedOperations } from "./magnitudes.js"
 import { type CdpChannel, replayCdpChannel } from "./channel.js";
 import { stampVisibilityRoute, toNeutralRole, toNeutralStates } from "./roles.js";
 import type { Classified } from "../../audit.js";
+import { ELEMENT_MEMORY_CAP, ElementMemory } from "../element-memory.js";
 
 // The browser backend: reads the page's own semantic tree over the browser's
 // debugging protocol, through the CdpChannel seam - every exchange it performs
@@ -119,9 +120,11 @@ export class CdpBackend implements Backend {
   // The observe-visibility set (M2.3, ADR-0036). Deny-by-default is this
   // backend's own posture: when no visibility is given, nothing is.
   private readonly visibility: Visibility;
-  // id -> native ref for every element this backend has answered; attestation
-  // re-reads the element live rather than replaying a cached snapshot.
-  private readonly answered = new Map<string, NativeRef>();
+  // id -> native ref for the elements this backend has answered, bounded and
+  // least-recently-used first (ADR-0116); attestation re-reads the element
+  // live rather than replaying a cached snapshot. Forgetting an id forgets
+  // every sibling fact keyed by it.
+  private readonly answered: ElementMemory<NativeRef>;
   // The role this backend gave each id, and the reverse lookup a watch needs:
   // target/backend-node-id -> the id and role the walk already minted. Both
   // are filled while walking, where the answer is already known.
@@ -137,8 +140,16 @@ export class CdpBackend implements Backend {
   // the backend closes.
   private readonly watches = new Map<string, ChannelWatch>();
 
-  constructor(channel: CdpChannel, visibility: Visibility = new Set()) {
+  constructor(channel: CdpChannel, visibility: Visibility = new Set(), elementCap = ELEMENT_MEMORY_CAP) {
     this.channel = channel;
+    this.answered = new ElementMemory<NativeRef>(elementCap, (id, ref) => {
+      this.roleOf.delete(id);
+      this.applicationOf.delete(id);
+      if (ref.kind === "node") {
+        const node = `${ref.targetId}/${ref.backendDOMNodeId}`;
+        if (this.mintedByNode.get(node)?.id === id) this.mintedByNode.delete(node);
+      }
+    });
     this.visibility = visibility;
   }
 
@@ -449,7 +460,7 @@ export class CdpBackend implements Backend {
   async attestElement(params: AttestElementParams): Promise<Classified<AttestElementResult>> {
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
-      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to attest`, refusalClass: "UnknownElement" };
+      return { refusal: `no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to attest`, refusalClass: "UnknownElement" };
     }
     if (ref.kind === "browser") {
       return { element: this.applicationElement(await this.version()) };
@@ -477,7 +488,7 @@ export class CdpBackend implements Backend {
     }
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
-      return { refusal: `no element with id "${params.id}" was ever answered by this daemon - nothing to read`, refusalClass: "UnknownElement" };
+      return { refusal: `no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to read`, refusalClass: "UnknownElement" };
     }
     if (ref.kind === "browser") return { content: { kind: "unavailable", reason: "not-exposed" } };
     for (const target of await this.pageTargets()) {
@@ -503,7 +514,7 @@ export class CdpBackend implements Backend {
   async subscribeElement(id: string, sink: (change: BackendChange) => void): Promise<BackendSubscription> {
     const ref = this.answered.get(id);
     if (ref === undefined) {
-      throw new UnwatchableElementError(`no element with id "${id}" was ever answered by this daemon - nothing to watch`);
+      throw new UnwatchableElementError(`no element with id "${id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to watch`);
     }
     const watch = await this.channel.watch(id, sink, {
       targetId: ref.kind === "node" ? ref.targetId : "",
@@ -559,7 +570,7 @@ export class CdpBackend implements Backend {
     const ref = this.answered.get(id);
     if (ref === undefined || ref.kind !== "node") {
       throw new UnperformableElementError(
-        `no element with id "${id}" was ever answered by this daemon - nothing to act on`,
+        `no element with id "${id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to act on`,
       );
     }
     return { targetId: ref.targetId, backendDOMNodeId: ref.backendDOMNodeId, nodeId: ref.nodeId };

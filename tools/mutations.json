@@ -425,7 +425,7 @@
   {
     "name": "cdp-attest-answers-unknown-id",
     "file": "daemon/src/backends/cdp/index.ts",
-    "find": "    if (ref === undefined) {\n      return { refusal: `no element with id \"${params.id}\" was ever answered by this daemon - nothing to attest`, refusalClass: \"UnknownElement\" };\n    }\n",
+    "find": "    if (ref === undefined) {\n      return { refusal: `no element with id \"${params.id}\" is known to this daemon (never answered, or forgotten after newer answers) - nothing to attest`, refusalClass: \"UnknownElement\" };\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/backend-conformance.test.ts"
   },
@@ -2384,5 +2384,37 @@
     "replace": "    probe.once(\"connect\", () => {\n      probe.destroy();\n      rmSync(socketPath, { force: true });\n      return resolve();\n      reject(",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-socket-belongs-to-the-daemon-on-it.test.ts"
+  },
+  {
+    "name": "element-memory-never-forgets",
+    "file": "daemon/src/backends/element-memory.ts",
+    "find": "    while (this.entries.size > this.cap) {",
+    "replace": "    while (false && this.entries.size > this.cap) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/element-memory-is-bounded.test.ts"
+  },
+  {
+    "name": "element-memory-forgets-by-age-not-use",
+    "file": "daemon/src/backends/element-memory.ts",
+    "find": "    if (value === undefined) return undefined;\n    this.entries.delete(id);\n    this.entries.set(id, value);\n",
+    "replace": "    if (value === undefined) return undefined;\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/element-memory-is-bounded.test.ts"
+  },
+  {
+    "name": "a-forgotten-id-keeps-its-siblings",
+    "file": "daemon/src/backends/cdp/index.ts",
+    "find": "      this.roleOf.delete(id);\n      this.applicationOf.delete(id);\n",
+    "replace": "      this.roleOf.delete(id);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/element-memory-is-bounded.test.ts"
+  },
+  {
+    "name": "a-forgotten-atspi-id-keeps-its-siblings",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "      this.applicationRootOf.delete(id);\n      this.applicationOf.delete(id);\n",
+    "replace": "      this.applicationRootOf.delete(id);\n",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/element-memory-is-bounded.test.ts"
   }
 ]
