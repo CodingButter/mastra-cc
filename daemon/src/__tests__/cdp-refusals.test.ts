@@ -120,7 +120,7 @@ describe("an effect the browser never answered", () => {
     expect(refusalText(parsed.result)).not.toContain("nothing was changed");
     expect(line).not.toContain("refusalClass");
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
-    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["daemon", "DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 
   it("says nothing was changed when the call never left, and never claims an unknown effect", async () => {
@@ -132,7 +132,7 @@ describe("an effect the browser never answered", () => {
     expect(refusalText(parsed.result)).not.toContain("UNKNOWN");
     expect(line).not.toContain("refusalClass");
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
-    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["daemon", "DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 });
 
@@ -148,7 +148,7 @@ describe("a read the browser never answered", () => {
     expect(line).not.toContain("refusalClass");
     expect(line).not.toContain(BACKEND_UNREADABLE_REFUSAL);
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
-    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["daemon", "DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 });
 
@@ -201,6 +201,6 @@ describe("a page that does not answer when attached", () => {
     expect(refusalText(parsed.result)).toContain("nothing was changed");
     expect(line).not.toContain("refusalClass");
     expect(entries(path).map((e) => e.outcome)).toEqual(["refused:DeadlineExceeded"]);
-    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["daemon", "DeadlineExceeded"]);
+    expect([refusalOwner(parsed.result), refusalCode(parsed.result)]).toEqual(["world", "DeadlineExceeded"]);
   });
 });

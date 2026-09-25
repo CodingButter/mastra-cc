@@ -185,7 +185,7 @@ export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
   AlreadyRunning: "world",
   BackendUnreadable: "daemon",
   CouldNotStart: "world",
-  DeadlineExceeded: "daemon",
+  DeadlineExceeded: "world",
   BlockedByDialog: "world",
   DisabledByConfiguration: "agent",
   EffectClassGate: "agent",
@@ -218,8 +218,22 @@ export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
   Unclassified: "daemon",
 };
 
+/**
+ * The next move, where one is the same every time a code is refused. Codes
+ * whose next move depends on the case leave it to the message.
+ */
+export const REFUSAL_NEXT: Partial<Record<RefusalClass, string>> = {
+  DeadlineExceeded: "the application did not answer in time; read the element again before retrying, since an effect may have happened",
+  BlockedByDialog: "a page dialog is open; it must be closed by a human or the page before this target answers again",
+  UnknownElement: "query again and use an id from the new answer",
+  EffectClassGate: "this session was not started with that class; ask the operator, do not route around it",
+  RestartNotOurs: "only an application this daemon started can be restarted by it",
+  Unclassified: "report this as a daemon fault; do not retry blindly",
+};
+
 export function refusalOf(code: RefusalClass, message: string): Refusal {
-  return { class: REFUSAL_OWNER[code], code, message };
+  const next = REFUSAL_NEXT[code];
+  return next === undefined ? { class: REFUSAL_OWNER[code], code, message } : { class: REFUSAL_OWNER[code], code, message, next };
 }
 
 const CLASS_SET: ReadonlySet<string> = new Set(REFUSAL_CLASSES);

@@ -2480,5 +2480,13 @@
     "replace": "  Unclassified: \"agent\",",
     "cwd": "daemon",
     "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
+  },
+  {
+    "name": "a-deadline-is-charged-to-the-daemon",
+    "file": "daemon/src/audit.ts",
+    "find": "  DeadlineExceeded: \"world\",",
+    "replace": "  DeadlineExceeded: \"daemon\",",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
   }
 ]

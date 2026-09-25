@@ -37,8 +37,8 @@ The costly confusion is between the agent being wrong and the daemon being wrong
 - `code` is one of the schema's `refusalCodes`. The daemon's `REFUSAL_OWNER` record (`daemon/src/audit.ts`) assigns each code exactly one owner. The compiler rejects a code that has no owner, and a test pins the record to the schema.
 - A refusal with no known code is sent as `Unclassified`, owned by `daemon` (rule 3).
 - Owner decisions that needed judgement:
-  - `DeadlineExceeded` is `daemon`. From the daemon's side, a frozen application and a lost reply look the same, so rule 3 applies.
+  - `DeadlineExceeded` is `world`. The deadline is the daemon keeping its contract: it bounded the wait and reported truthfully that the peer didn't answer, and UNKNOWN if an effect had already been sent. `daemon` is kept for failures of the daemon's own machinery: `BackendUnreadable`, `EnforcementUnrepresentable`, `WatchDeaf`, and `Unclassified`. This is also why the benchmark's zero-`daemon` gate can be reached: a third-party application that freezes is not charged to the daemon. If the benchmark shows deadlines firing against healthy applications, that is a daemon fault, and it becomes a new plan item. It is not reclassified.
   - `BlockedByDialog` is `world`. Chrome reported the dialog, so the cause is known.
   - `WriteNotObservedError` is `world`. The daemon did verify the write, and it read back a different value than the one it wrote.
   - `BackendUnreadable`, `EnforcementUnrepresentable` and `WatchDeaf` are `daemon`.
-- `observed` and `next` are in the schema but not filled in yet. Each code's message still carries both as prose.
+- `next` is filled in wherever a code's next move is always the same: `DeadlineExceeded`, `BlockedByDialog`, `UnknownElement`, `EffectClassGate`, `RestartNotOurs` and `Unclassified`. `observed` stays in the message prose for now.

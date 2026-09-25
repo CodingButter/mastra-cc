@@ -13,7 +13,9 @@ describe("every refusal says whose it is", () => {
 
   it("puts class, code and message on the wire and strips the internal class", () => {
     const wire = withoutInternals({ refusal: "no such element", refusalClass: "UnknownElement" });
-    expect(wire).toEqual({ refusal: { class: "agent", code: "UnknownElement", message: "no such element" } });
+    expect(wire).toEqual({
+      refusal: { class: "agent", code: "UnknownElement", message: "no such element", next: "query again and use an id from the new answer" },
+    });
   });
 
   it("names the world when the desktop changed under the call", () => {
@@ -24,8 +26,13 @@ describe("every refusal says whose it is", () => {
   it("charges an unclassified refusal - the backstop - to the daemon, never to the caller", () => {
     for (const refusalClass of [undefined, "NotACode"]) {
       const wire = withoutInternals({ refusal: "something failed", refusalClass });
-      expect(wire).toEqual({ refusal: { class: "daemon", code: "Unclassified", message: "something failed" } });
+      expect(wire.refusal).toMatchObject({ class: "daemon", code: "Unclassified", message: "something failed" });
     }
+  });
+
+  it("charges a peer that did not answer in time to the world, and says what to do next", () => {
+    const wire = withoutInternals({ refusal: "timed out", refusalClass: "DeadlineExceeded" });
+    expect(wire.refusal).toMatchObject({ class: "world", code: "DeadlineExceeded", next: expect.stringContaining("read the element again") });
   });
 
   it("charges an ownership refusal to the agent that asked", () => {
