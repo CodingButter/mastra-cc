@@ -1,0 +1,1324 @@
+mousepad#1 PASS steps=5 tokens=365009 refusals agent=0 world=0 daemon=0  observed=The core is finished.
+mousepad#2 PASS steps=5 tokens=365033 refusals agent=0 world=0 daemon=0  observed=The core is finished.
+mousepad#3 PASS steps=5 tokens=364972 refusals agent=0 world=0 daemon=0  observed=The core is finished.
+mousepad#4 PASS steps=5 tokens=364726 refusals agent=0 world=0 daemon=0  observed=The core is finished.
+mousepad#5 PASS steps=5 tokens=364516 refusals agent=0 world=0 daemon=0  observed=The core is finished.
+settings#1 FAIL steps=30 tokens=2643503 refusals agent=0 world=4 daemon=0  observed=expected Ubuntu
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+  * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash
+  Please retry in 52.843925576s.
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m429[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:23:07 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=478'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-gemini-service-tier'[39m: [32m'standard'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 429,\n'[39m +
+      [32m'    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash\\nPlease retry in 52.843925576s.",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED",\n'[39m +
+      [32m'    "details": [\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.Help",\n'[39m +
+      [32m'        "links": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "description": "Learn more about Gemini API quotas",\n'[39m +
+      [32m'            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n'[39m +
+      [32m'        "violations": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "quotaMetric": "generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count",\n'[39m +
+      [32m'            "quotaId": "GenerateContentPaidTierInputTokensPerModelPerMinute",\n'[39m +
+      [32m'            "quotaDimensions": {\n'[39m +
+      [32m'              "location": "global",\n'[39m +
+      [32m'              "model": "gemini-3.8-flash"\n'[39m +
+      [32m'            },\n'[39m +
+      [32m'            "quotaValue": "2000000"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n'[39m +
+      [32m'        "retryDelay": "52s"\n'[39m +
+      [32m'      }\n'[39m +
+      [32m'    ]\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'ca594fad-c0e8-4c6e-8685-97f05ed15406'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+settings#2 provider refused (attempt 1); retrying in 90s
+settings#2 FAIL steps=30 tokens=3484230 refusals agent=0 world=4 daemon=0  observed=expected Ubuntu
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+  * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash
+  Please retry in 44.49596646s.
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m429[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:26:15 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=317'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-gemini-service-tier'[39m: [32m'standard'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 429,\n'[39m +
+      [32m'    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash\\nPlease retry in 44.49596646s.",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED",\n'[39m +
+      [32m'    "details": [\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.Help",\n'[39m +
+      [32m'        "links": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "description": "Learn more about Gemini API quotas",\n'[39m +
+      [32m'            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n'[39m +
+      [32m'        "violations": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "quotaMetric": "generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count",\n'[39m +
+      [32m'            "quotaId": "GenerateContentPaidTierInputTokensPerModelPerMinute",\n'[39m +
+      [32m'            "quotaDimensions": {\n'[39m +
+      [32m'              "location": "global",\n'[39m +
+      [32m'              "model": "gemini-3.8-flash"\n'[39m +
+      [32m'            },\n'[39m +
+      [32m'            "quotaValue": "2000000"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n'[39m +
+      [32m'        "retryDelay": "44s"\n'[39m +
+      [32m'      }\n'[39m +
+      [32m'    ]\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'9366ef01-b16d-4753-8e64-0e7d99df30c9'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+settings#3 provider refused (attempt 1); retrying in 90s
+settings#3 FAIL steps=30 tokens=2419966 refusals agent=1 world=6 daemon=0  observed=expected Ubuntu
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+  * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash
+  Please retry in 40.253386725s.
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m429[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:29:19 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=447'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-gemini-service-tier'[39m: [32m'standard'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 429,\n'[39m +
+      [32m'    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash\\nPlease retry in 40.253386725s.",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED",\n'[39m +
+      [32m'    "details": [\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.Help",\n'[39m +
+      [32m'        "links": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "description": "Learn more about Gemini API quotas",\n'[39m +
+      [32m'            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n'[39m +
+      [32m'        "violations": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "quotaMetric": "generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count",\n'[39m +
+      [32m'            "quotaId": "GenerateContentPaidTierInputTokensPerModelPerMinute",\n'[39m +
+      [32m'            "quotaDimensions": {\n'[39m +
+      [32m'              "location": "global",\n'[39m +
+      [32m'              "model": "gemini-3.8-flash"\n'[39m +
+      [32m'            },\n'[39m +
+      [32m'            "quotaValue": "2000000"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n'[39m +
+      [32m'        "retryDelay": "40s"\n'[39m +
+      [32m'      }\n'[39m +
+      [32m'    ]\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'ee8f7351-931c-434e-a39d-d8db6d4feda7'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+settings#4 provider refused (attempt 1); retrying in 90s
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+  * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash
+  Please retry in 57.904615772s.
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m429[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:32:02 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=423'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-gemini-service-tier'[39m: [32m'standard'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 429,\n'[39m +
+      [32m'    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash\\nPlease retry in 57.904615772s.",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED",\n'[39m +
+      [32m'    "details": [\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.Help",\n'[39m +
+      [32m'        "links": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "description": "Learn more about Gemini API quotas",\n'[39m +
+      [32m'            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n'[39m +
+      [32m'        "violations": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "quotaMetric": "generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count",\n'[39m +
+      [32m'            "quotaId": "GenerateContentPaidTierInputTokensPerModelPerMinute",\n'[39m +
+      [32m'            "quotaDimensions": {\n'[39m +
+      [32m'              "model": "gemini-3.8-flash",\n'[39m +
+      [32m'              "location": "global"\n'[39m +
+      [32m'            },\n'[39m +
+      [32m'            "quotaValue": "2000000"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n'[39m +
+      [32m'        "retryDelay": "57s"\n'[39m +
+      [32m'      }\n'[39m +
+      [32m'    ]\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'1bc29998-a202-4f7e-a7b2-fc06bf904f8f'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+settings#4 provider refused (attempt 2); retrying in 90s
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+  * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash
+  Please retry in 52.415323043s.
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m429[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:35:07 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=633'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-gemini-service-tier'[39m: [32m'standard'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 429,\n'[39m +
+      [32m'    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 2000000, model: gemini-3.8-flash\\nPlease retry in 52.415323043s.",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED",\n'[39m +
+      [32m'    "details": [\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.Help",\n'[39m +
+      [32m'        "links": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "description": "Learn more about Gemini API quotas",\n'[39m +
+      [32m'            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n'[39m +
+      [32m'        "violations": [\n'[39m +
+      [32m'          {\n'[39m +
+      [32m'            "quotaMetric": "generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count",\n'[39m +
+      [32m'            "quotaId": "GenerateContentPaidTierInputTokensPerModelPerMinute",\n'[39m +
+      [32m'            "quotaDimensions": {\n'[39m +
+      [32m'              "model": "gemini-3.8-flash",\n'[39m +
+      [32m'              "location": "global"\n'[39m +
+      [32m'            },\n'[39m +
+      [32m'            "quotaValue": "2000000"\n'[39m +
+      [32m'          }\n'[39m +
+      [32m'        ]\n'[39m +
+      [32m'      },\n'[39m +
+      [32m'      {\n'[39m +
+      [32m'        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n'[39m +
+      [32m'        "retryDelay": "52s"\n'[39m +
+      [32m'      }\n'[39m +
+      [32m'    ]\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mtrue[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'eb01bc47-0aa2-46f8-a087-42075860e2d1'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+settings#4 provider refused (attempt 3); retrying in 90s
+settings#4 FAIL steps=30 tokens=1972239 refusals agent=0 world=4 daemon=0  observed=expected Ubuntu
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:21 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=328'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'5355f7cb-00bf-44dd-a600-f740d678ae8b'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+settings#5 FAIL steps=0 tokens=0 refusals agent=0 world=2 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:28 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=173'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'c29d51b8-9be0-4c9e-86e3-92f32898f4e6'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+files#1 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:33 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=131'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'49abe3ca-0f6b-47dc-9c57-31ecbec8750f'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+files#2 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:39 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=108'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'522aab4d-0b60-4884-ae5d-866bee3bf3a1'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+files#3 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:44 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=133'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'c795879a-f652-4c00-a174-88a0eb2ab68c'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+files#4 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:50 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=123'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'6236e317-620d-45f2-b8c2-fe6c3ca56f5c'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+files#5 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:54 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=130'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'8d074c61-6477-4257-b149-53f7f8568d94'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+form#1 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:38:59 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=124'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'bbbe6a6c-ee6c-4218-853e-dc3281c4cd97'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+form#2 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:04 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=111'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'f0d665f6-80fd-4341-bf00-93438b183d03'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+form#3 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:08 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=115'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'ec7a85c7-288a-4b66-88a6-620f573197cd'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+form#4 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:14 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=108'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'a3cb50e3-2e6f-4b3f-9d13-f1b901144fcd'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+form#5 FAIL steps=0 tokens=0 refusals agent=0 world=1 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:19 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=214'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'e605edf9-52c0-4fe8-9eeb-208c6e0c4759'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+react#1 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:24 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=129'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'0e9d3583-da3a-4fd9-b881-c30269d6a2e7'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+react#2 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:28 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=125'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'b8781b89-ea15-4a8a-88f9-bfb286bba116'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+react#3 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:33 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=127'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'6f24c120-1aa5-44be-bdbc-b4b4fb5fc57c'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+react#4 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=
+Upstream LLM API error {
+  error: APICallError [AI_APICallError]: Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. 
+      at [90m/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2349:11
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at async postToApi [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:2234:24[90m)[39m
+      at async GoogleGenerativeAILanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/dist-B40MYptK.cjs:16120:71[90m)[39m
+      at async AISDKV6LanguageModel.doGenerate [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/llm-DH7BpW-6.cjs:109:18[90m)[39m
+      at async retryResult.default.retries [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23355:13[90m)[39m
+      at async Module.pRetry [90m(file:///tmp/core-10/[39mnode_modules/[4m.pnpm[24m/p-retry@7.1.1/node_modules/[4mp-retry[24m/index.js:197:19[90m)[39m
+      at async createStream [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/agent-CKP-HU6l.cjs:23354:25[90m)[39m
+      at async Object.start [90m(/tmp/core-10/[39mnode_modules/[4m.pnpm[24m/@mastra+core@1.63.2_zod@4.6.5/node_modules/[4m@mastra/core[24m/dist/trip-wire-CuopBR2s.cjs:2496:20[90m)[39m {
+    cause: [90mundefined[39m,
+    url: [32m'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'[39m,
+    requestBodyValues: {
+      generationConfig: [36m[Object][39m,
+      contents: [36m[Array][39m,
+      systemInstruction: [36m[Object][39m,
+      safetySettings: [90mundefined[39m,
+      tools: [36m[Array][39m,
+      toolConfig: [36m[Object][39m,
+      cachedContent: [90mundefined[39m,
+      labels: [90mundefined[39m,
+      serviceTier: [90mundefined[39m
+    },
+    statusCode: [33m402[39m,
+    responseHeaders: {
+      [32m'alt-svc'[39m: [32m'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'[39m,
+      [32m'content-encoding'[39m: [32m'gzip'[39m,
+      [32m'content-type'[39m: [32m'application/json; charset=UTF-8'[39m,
+      date: [32m'Fri, 25 Sep 2026 09:39:37 GMT'[39m,
+      server: [32m'scaffolding on HTTPServer2'[39m,
+      [32m'server-timing'[39m: [32m'gfet4t7; dur=101'[39m,
+      [32m'transfer-encoding'[39m: [32m'chunked'[39m,
+      vary: [32m'Origin, X-Origin, Referer'[39m,
+      [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+      [32m'x-frame-options'[39m: [32m'SAMEORIGIN'[39m,
+      [32m'x-xss-protection'[39m: [32m'0'[39m
+    },
+    responseBody: [32m'{\n'[39m +
+      [32m'  "error": {\n'[39m +
+      [32m'    "code": 402,\n'[39m +
+      [32m'    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. ",\n'[39m +
+      [32m'    "status": "RESOURCE_EXHAUSTED"\n'[39m +
+      [32m'  }\n'[39m +
+      [32m'}\n'[39m,
+    isRetryable: [33mfalse[39m,
+    data: { error: [36m[Object][39m },
+    [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+    [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+  },
+  runId: [32m'65f26b6d-120a-45bb-af06-aa14151d1c67'[39m,
+  provider: [32m'google'[39m,
+  modelId: [32m'gemini-3.8-flash'[39m
+}
+react#5 FAIL steps=0 tokens=0 refusals agent=0 world=0 daemon=0 error=Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay.  observed=

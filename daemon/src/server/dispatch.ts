@@ -465,7 +465,9 @@ export const DISPATCH: Record<string, { effectClass: string; enforcement: string
         // and "this element has no rectangle" is a reason to look at a
         // different element. Collapsing them would spend turns on the wrong
         // recovery.
-        if (failure instanceof UnperformableElementError) return { refusal: failure.message };
+        if (failure instanceof UnperformableElementError || failure instanceof EffectUnsupportedError) {
+          return { refusal: failure.message, refusalClass: failure.constructor.name as RefusalClass };
+        }
         throw failure;
       }
     },

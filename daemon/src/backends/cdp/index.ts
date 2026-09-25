@@ -28,6 +28,7 @@ import { aggregateDiscovery, type DiscoveryMetadata } from "../../discovery.js";
 import { deriveActions, NO_NODE_TO_DERIVE_FROM } from "./actions.js";
 import { needsProtectedClassification, readObservableContent } from "./content.js";
 import {
+  commitOf,
   contentLength,
   contentOf,
   type NodeRef,
@@ -599,7 +600,7 @@ export class CdpBackend implements Backend {
     const ref = this.nodeRefFor(params.id);
     const element = await this.reread(params.id);
     commitDescription(element);
-    await performDerivedAction(this.channel, ref, element.actions[0]!.name, [element.actions[0]!.name]);
+    await commitOf(this.channel, ref);
     // The desktop route's reasoning applies here for the same reason, arrived
     // at through different machinery: a commit that submits a form navigates
     // the page, and the node the commit acted on stops existing. Omitting the

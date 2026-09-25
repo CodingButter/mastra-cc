@@ -1,0 +1,10 @@
+== core-10-base (73a5126 fix: say what the desk refused instead of blaming the daemon for capture and reveal)
+target el-72c4727d3357
+{"refusal":{"class":"daemon","code":"BackendUnreadable","message":"the desktop could not be read by this session's backend"}}
+DAEMON LOG:
+daemon: sendKeyChord failed in the backend: Error: d-bus call failed for :1.547|/org/gnome/Settings/a11y/910572cb_eef5_4251_a5ae_832afee6099f|org.a11y.atspi.Component|GrabFocus|[]: {"name":"DBusError","dbusName":"org.freedesktop.DBus.Error.NotSupported","body":[""],"reply":{"serial":2734,"errorName":"org.freedesktop.DBus.Error.NotSupported","destination":":1.548","signature":"s","replySerial":2517,"sender":":1.547","type":3,"flags":1,"body":[""]}}
+== core-10 (82afd8d fix: a browser commit is the form's own submit, and a declined focus is the world's refusal)
+target el-532a4e27ed93
+{"refusal":{"class":"world","code":"UnperformableElementError","message":"this application declines to give this element the focus (it answers GrabFocus with NotSupported) - nothing was sent to it"}}
+DAEMON LOG:
+
