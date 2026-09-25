@@ -15,7 +15,9 @@ export const DRIVER_CLOSED = "refused: this driver connection has closed; queued
 export class DriverAuthority {
   #generation = 0;
   #owner: DriverConnection | undefined;
-  #running: DriverConnection | undefined;
+  // Requests now run concurrently across targets, so "running" is a count
+  // per connection, not one slot for the whole desk.
+  readonly #running = new Map<DriverConnection, number>();
   readonly #controllers = new WeakMap<DriverConnection, AbortController>();
   readonly #settled = new WeakMap<DriverConnection, { promise: Promise<number>; resolve: (at: number) => void }>();
 
@@ -37,21 +39,23 @@ export class DriverAuthority {
     const refusal = this.refusal(connection, effect);
     if (refusal !== undefined) return refusal;
     if (effect) this.#owner = connection;
-    this.#running = connection;
+    this.#running.set(connection, (this.#running.get(connection) ?? 0) + 1);
     return undefined;
   }
   leave(connection: DriverConnection): void {
-    if (this.#running === connection) this.#running = undefined;
+    const left = (this.#running.get(connection) ?? 1) - 1;
+    if (left > 0) this.#running.set(connection, left);
+    else this.#running.delete(connection);
     if (connection.closed) this.disconnect(connection);
   }
   disconnect(connection: DriverConnection): void {
     connection.closed = true;
     this.#controllers.get(connection)?.abort();
-    if (this.#running === connection) return;
+    if (this.running(connection)) return;
     if (this.#owner === connection) this.#owner = undefined;
     this.#settled.get(connection)?.resolve(performance.now());
   }
-  running(connection: DriverConnection): boolean { return this.#running === connection; }
+  running(connection: DriverConnection): boolean { return this.#running.has(connection); }
   /** Resolves with the monotonic time at which this connection held nothing: no authority, nothing running. */
   settled(connection: DriverConnection): Promise<number> {
     return this.#settled.get(connection)?.promise ?? Promise.resolve(performance.now());

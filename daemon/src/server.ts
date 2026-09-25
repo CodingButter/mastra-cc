@@ -2667,17 +2667,48 @@ function refusedResponse(id: number, code: RefusalClass, message: string): Handl
   return { type: "response", id, result: { refusal: refusalOf(code, message) } };
 }
 
-// Serialise every backend call: one at a time, in arrival order.
-let chain: Promise<unknown> = Promise.resolve();
-function serialised<T>(work: () => Promise<T>): Promise<T> {
+// ONE QUEUE PER TARGET (C3). Calls on one application, or one browser
+// target, run one at a time in arrival order. Calls on different targets do
+// not wait for each other, so one frozen application stalls only its own
+// queue. A call that names no single target - an unscoped query, the
+// application listing - runs on its own SPANNING queue, and each application
+// it reaches is bounded by the backend's per-call deadline (ADR-0114,
+// ADR-0117). Order within one connection is kept separately by
+// serveConnection, which dispatches a connection's requests one after another.
+export const SPANNING = "*";
+const chains = new Map<string, Promise<unknown>>();
+function serialised<T>(target: string, work: () => Promise<T>): Promise<T> {
   const queued = performance.now();
   const measured = () => {
     recordCost("queueWait", performance.now() - queued);
     return measureAsyncCost("requestWork", work);
   };
-  const next = chain.then(measured, measured);
-  chain = next.catch(() => undefined);
+  const next = (chains.get(target) ?? Promise.resolve()).then(measured, measured);
+  const tail = next.catch(() => undefined);
+  chains.set(target, tail);
+  // forget an idle target, so the map is bounded by what is in flight
+  void tail.then(() => {
+    if (chains.get(target) === tail) chains.delete(target);
+  });
   return next;
+}
+
+/** How many target queues hold work - for tests that idle queues are forgotten. */
+export function queuedTargets(): number {
+  return chains.size;
+}
+
+/** Which queue a request waits in: the application its element or scope names, else the spanning queue. */
+export function targetOf(params: unknown, backend: Backend): string {
+  if (params === null || typeof params !== "object") return SPANNING;
+  const p = params as { id?: unknown; application?: unknown };
+  // choosing a queue must never be what fails a request
+  if (typeof p.id === "string" && typeof backend.applicationOfElement === "function") {
+    const owner = backend.applicationOfElement(p.id);
+    if (owner !== undefined) return `app:${applicationName(owner)}`;
+  }
+  if (typeof p.application === "string" && p.application !== "") return `app:${applicationName(p.application)}`;
+  return SPANNING;
 }
 
 // WHAT "TOUCHED" MEANS, DECIDED HERE. A query walks the tree - up to 150 nodes
@@ -2741,7 +2772,7 @@ export async function handleRequest(
   const ownershipRefusal = driver?.authority.refusal(driver.connection, entry.effectClass !== "observe");
   if (ownershipRefusal !== undefined) return refusedResponse(request.id, ownershipRefusal === DRIVER_CLOSED ? "DriverClosed" : "DriverBusy", ownershipRefusal);
   try {
-    const result = await serialised<unknown>(async () => {
+    const result = await serialised<unknown>(targetOf(request.params, backend), async () => {
       const retired = driver?.authority.enter(driver.connection, entry.effectClass !== "observe");
       if (retired !== undefined) return { refusal: retired, refusalClass: retired === DRIVER_CLOSED ? "DriverClosed" : "DriverBusy" };
       // Audit identity belongs to this request. Event origin is a separate question.
@@ -2919,6 +2950,7 @@ export function serveConnection(
   // the peer is not read. Requests resume, in order, when the pipe drains or
   // an answer lands.
   let inFlight = 0;
+  let inOrder: Promise<unknown> = Promise.resolve();
   let paused = false;
   const held = () => pipe.pending() > STALLED_CONSUMER_PENDING_BYTES || inFlight >= MAX_IN_FLIGHT_REQUESTS;
   const pump = () => {
@@ -2985,7 +3017,11 @@ export function serveConnection(
       }
       if (message.type === "request" && typeof message.id === "number" && typeof message.method === "string") {
         inFlight++;
-        void handleRequest(message as Request, backend, launch, book, driver).then((response) => {
+        // One connection's requests run in the order it sent them; only
+        // requests from different connections may overlap (per-target queues).
+        const handled = inOrder.then(() => handleRequest(message as Request, backend, launch, book, driver));
+        inOrder = handled.catch(() => undefined);
+        void handled.then((response) => {
           inFlight--;
           if (!pipe.closed) pipe.write(`${JSON.stringify(response)}\n`);
           pump();
