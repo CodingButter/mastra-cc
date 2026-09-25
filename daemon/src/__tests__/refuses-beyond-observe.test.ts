@@ -46,6 +46,16 @@ describe("the effect-class gate", () => {
     expect(Object.keys(response.result as object)).toEqual(["refusal"]);
   });
 
+  // Audit Low: DISPATCH is a plain object, so a lookup that walked the
+  // prototype would find Object's own members under these names.
+  it.each(["constructor", "toString", "hasOwnProperty", "__proto__"])(
+    "refuses %s, a name the dispatch table only inherits",
+    async (method) => {
+      const response = await handleRequest({ type: "request", id: 1, method, params: {} }, backend);
+      expect([refusalOwner(response), refusalCode(response)]).toEqual(["agent", "UnknownMethod"]);
+    },
+  );
+
   it("serves both observe-class methods the schema defines", async () => {
     const query = await handleRequest({ type: "request", id: 2, method: "queryElements", params: {} }, backend);
     expect(refusalText(query)).toBeUndefined();

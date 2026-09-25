@@ -392,23 +392,49 @@ describe("the receipt is kept only when one was asked for, and never at the cost
     expect(existsSync(path)).toBe(false);
   });
 
-  it("6: a sink that cannot be written to reports the lost entry, and the effect still completes", async () => {
+  it("6: an effect whose receipt cannot be written is refused, and nothing is touched", async () => {
     // /dev/null is a file, so neither the directory nor the append can be made.
-    const path = "/dev/null/nowhere/audit.jsonl";
-    useAuditLog(openAuditLog(path));
-    const reported = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    useAuditLog(openAuditLog("/dev/null/nowhere/audit.jsonl"));
+    const inner = stage();
+    const performed: string[] = [];
+    const counting: Channel = {
+      ...inner,
+      call: (exchange) => {
+        if (exchange.member === "DoAction") performed.push(exchange.member);
+        return inner.call(exchange);
+      },
+    };
+
+    const { backend, id } = await stagedSubject(counting);
+    const answer = await call("activateElement", { id, action: ACTION_NAME }, backend);
+    await backend.close();
+
+    expect(refusalCode(answer)).toBe("AuditUnwritable");
+    expect(refusalText(answer)).toContain("before anything was touched");
+    expect(performed, "the action never reached the application").toEqual([]);
+  });
+
+  it("6b: an effect whose receipt is lost after it happened says so in its result", async () => {
+    // Writable when asked, and then the write fails: the disk filled, say.
+    useAuditLog({ path: "(failing)", writable: () => true, record: () => false });
 
     const { backend, id } = await stagedSubject(stage());
     const answer = await call("activateElement", { id, action: ACTION_NAME }, backend);
     await backend.close();
 
-    expect(answer.result?.element, "bookkeeping never costs the effect (ADR-0022)").toBeDefined();
-    expect(reported).toHaveBeenCalledTimes(1);
-    const said = reported.mock.calls[0]![0] as string;
-    expect(said).toContain("audit entry NOT WRITTEN");
-    // The report names the entry by identity, on the same terms as the entry.
-    expect(said).toContain(id);
-    expect(said).not.toContain(SUBJECT_NAME);
+    const element = answer.result?.element as { diagnostic?: Record<string, string> } | undefined;
+    expect(element, "the effect happened and cannot un-happen").toBeDefined();
+    expect(element?.diagnostic?.["mastra-cc/audit-unwritten"]).toContain("audit entry could not be written");
+  });
+
+  it("6c: an observation is never refused for want of a receipt", async () => {
+    useAuditLog(openAuditLog("/dev/null/nowhere/audit.jsonl"));
+    const reported = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { backend } = await stagedSubject(stage());
+    const answer = await call("queryElements", {}, backend);
+    await backend.close();
+    expect(refusalCode(answer)).toBeUndefined();
+    expect(reported.mock.calls.some((c) => String(c[0]).includes("audit entry NOT WRITTEN"))).toBe(true);
     reported.mockRestore();
   });
 });
@@ -623,6 +649,7 @@ describe("the refusal vocabulary is closed", () => {
         "ApplicationScopeUnmatched",
         "ApplicationScopeAmbiguous",
         "ApplicationIdentityMismatch",
+        "AuditUnwritable",
         "Unclassified",
       ].sort(),
     );

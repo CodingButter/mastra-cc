@@ -1,0 +1,36 @@
+# base 4a4a5d9 (fix/grant-identity), this branch's tests
+     × reads no proof-only switch from the environment 18ms
+     ✓ refuses a method the schema does not define, naming the gate 2ms
+     × refuses constructor, a name the dispatch table only inherits 7ms
+     × refuses toString, a name the dispatch table only inherits 1ms
+     × refuses hasOwnProperty, a name the dispatch table only inherits 1ms
+     × refuses __proto__, a name the dispatch table only inherits 1ms
+     ✓ serves both observe-class methods the schema defines 6ms
+     ✓ no longer refuses openApplication at the gate when the session permits it 3ms
+     ✓ never claims the seam carries no operation, because the seam carries all four 0ms
+     ✓ no longer claims the answer is independent of authority, because it is not 2ms
+     ✓ refuses a number that is not a number, after the gate rather than instead of it 0ms
+     ✓ refuses editElement with the full byte-stable constant 0ms
+     ✓ refuses activateElement naming the scope gate, the method and its class 0ms
+     ✓ refuses submitElement naming the scope gate, the method and its class 0ms
+     ✓ never touches the backend to refuse 0ms
+     ✓ 1: a performed effect writes one entry naming the element the daemon answered 5ms
+     ✓ 1b: an effect that FAILED is recorded as an attempt, not omitted as untidy 2ms
+     ✓ keeps distinct audit request identities across asynchronous success and refusal without leaking into observation 2ms
+     ✓ 2a: the entry carries exactly seven fields - the set is frozen, not merely free of a name key 1ms
+     ✓ 2b: no word the tree said about itself reaches the record 1ms
+     ✓ 3: a refused effect records the refusal's CLASS, and the refusal's sentence stays off the disk 1ms
+     ✓ 4: an effect that could name no application is recorded as unattributed, not guessed at 1ms
+     ✓ 5: a daemon nobody asked to keep a receipt writes no file at all 1ms
+     × 6: an effect whose receipt cannot be written is refused, and nothing is touched 4ms
+     × 6b: an effect whose receipt is lost after it happened says so in its result 1ms
+     ✓ 6c: an observation is never refused for want of a receipt 1ms
+     ✓ 7: a launch writes a receipt - the one effect no element verb passes through 4ms
+     ✓ 7b: a launch that throws unclassified is recorded as an attempt 2ms
+     ✓ 8: a read writes exactly one entry naming every element it answered 5ms
+     ✓ 8b: establishing a watch records the element the watch was established ON 2ms
+     ✓ 8c: ending a watch records which element stopped being watched 1ms
+     × 9: every class the daemon records is in the set, and the set holds nothing else 2ms
+     ✓ 9b: every seam class performEffect translates records under a name the set holds 0ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  8 failed | 25 passed (33)

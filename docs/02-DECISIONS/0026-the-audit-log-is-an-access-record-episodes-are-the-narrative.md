@@ -101,3 +101,21 @@ own promise that the log shows exactly what was touched.
 - The attribution rule (`external` for a human-caused effect, a cause id for an
   agent-caused one) is carried forward from the prototype, where it already worked and is
   listed among the things not to renegotiate in [00-PRODUCT.md](../00-PRODUCT.md).
+
+## Amendment, 2026-09-25: the receipt is fail-closed (schema version 1.29.0)
+
+Until this amendment an unwritable log was reported on stderr and the effect went ahead,
+on ADR-0022's reasoning that refusing an effect over bookkeeping causes harm. That left
+the log's one promise, *exactly which elements were touched*, silently false. Now:
+
+- **Before an effect** (every method whose class is not `observe`), the daemon opens the
+  log for append. If it cannot, the effect is refused as `AuditUnwritable`, class `daemon`,
+  and nothing is touched. The check runs before the per-route gates, so on a broken log
+  every effect answers `AuditUnwritable` whether or not the session holds its class.
+- **After an effect** whose entry still fails to write (the disk filled between the check
+  and the write), the effect cannot be undone. The result's element carries the diagnostic
+  `mastra-cc/audit-unwritten`, and the operator's stderr names the lost entry as before.
+  A result that names no element (`acquireAccessibility`) has only the stderr line.
+- **Observations are not refused.** A read that could not be recorded is reported on
+  stderr, and the read is answered.
+- A daemon started without `--audit-log` keeps no receipt and refuses nothing for it.

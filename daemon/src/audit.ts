@@ -215,6 +215,8 @@ export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
   WindowScopeAmbiguous: "agent",
   ApplicationScopeUnmatched: "agent",
   ApplicationIdentityMismatch: "world",
+  // The daemon cannot keep the receipt it promised; the operator repairs it.
+  AuditUnwritable: "daemon",
   ApplicationScopeAmbiguous: "agent",
   Unclassified: "daemon",
 };
@@ -307,7 +309,12 @@ export function leakedTerms(record: string, vocabulary: readonly string[]): stri
 
 export interface AuditSink {
   readonly path: string;
-  record(entry: AuditEntry): void;
+  // False when the entry could not be written; the sink has already reported it.
+  // Only an explicit false means unwritten; an in-memory sink returns anything.
+  record(entry: AuditEntry): unknown;
+  // Whether an entry could be written now, asked before an effect starts.
+  // A sink without the question is always writable.
+  writable?(): boolean;
 }
 
 /**
@@ -351,12 +358,12 @@ function serialise(entry: AuditEntry): string {
   })}\n`;
 }
 
-// A sink that cannot be written to REPORTS, and the effect still completes.
-// ADR-0022's reasoning applied here: refusing an effect because the receipt
-// could not be filed causes harm to defend bookkeeping. The report names the
-// entry that was lost - identity only, on the same terms as the entry itself -
-// so an operator sees WHICH access went unrecorded rather than only that one
-// did.
+// FAIL-CLOSED, IN TWO HALVES (ADR-0026, amended). Before an effect starts the
+// route asks writable(), and an unwritable log refuses the effect: nothing is
+// touched that could not be recorded. An entry that still fails to write AFTER
+// the effect cannot un-happen the effect, so the failure is reported here to
+// the operator and in the caller's result. The report names the entry that was
+// lost - identity only, on the same terms as the entry itself.
 function reportUnwritten(path: string, entry: AuditEntry, error: unknown): void {
   const identity = entry.element.map((element) => element.id).join(", ");
   console.error(
@@ -376,11 +383,22 @@ export function openAuditLog(path: string): AuditSink {
   }
   return {
     path,
-    record(entry: AuditEntry): void {
+    record(entry: AuditEntry): boolean {
       try {
         appendFileSync(path, serialise(entry), "utf8");
+        return true;
       } catch (error) {
         reportUnwritten(path, entry, error);
+        return false;
+      }
+    },
+    writable(): boolean {
+      try {
+        // A zero-byte append opens the file exactly as a real entry would.
+        appendFileSync(path, "", "utf8");
+        return true;
+      } catch {
+        return false;
       }
     },
   };
@@ -396,9 +414,29 @@ export function useAuditLog(next: AuditSink | undefined): void {
   sink = next;
 }
 
-export function recordAudit(record: AuditRecord): void {
-  if (sink === undefined) return;
-  sink.record({
+// No sink means no receipt was asked for, which is not a failure to keep one.
+export function auditWritable(): boolean {
+  return sink?.writable?.() ?? true;
+}
+
+// Effect entries that failed to write. Effects never overlap (one driver,
+// ADR-0118), so a route compares this before and after its own effect to learn
+// whether ITS receipt was lost.
+let unwrittenEffects = 0;
+export function unwrittenEffectEntries(): number {
+  return unwrittenEffects;
+}
+
+export function recordAudit(record: AuditRecord): boolean {
+  if (sink === undefined) return true;
+  const written = writeEntry(record);
+  if (!written && record.scope !== "observe") unwrittenEffects += 1;
+  return written;
+}
+
+function writeEntry(record: AuditRecord): boolean {
+  if (sink === undefined) return true;
+  return false !== sink.record({
     at: new Date().toISOString(),
     application: record.application ?? null,
     element: record.element.map(identityOf),

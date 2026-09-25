@@ -61,6 +61,8 @@ import {
   type AuditSubject,
   type Classified,
   type RefusalClass,
+  auditWritable,
+  unwrittenEffectEntries,
 } from "./audit.js";
 import {
   ACQUIRE_SETTING,
@@ -2667,6 +2669,26 @@ export interface HandledResponse {
 // Every refusal leaves the daemon the same way: inside the result, with its
 // owner and code (ADR-0113). A route's own refusal gets there through
 // withoutInternals; the routing refusals below are built here.
+// Fail-closed, second half (ADR-0026 amended): the effect happened and its
+// receipt did not. The effect cannot be undone, so the caller is told on the
+// element the result names, through the diagnostic channel ADR-0056 reserves
+// for exactly this kind of daemon-side note. A result naming no element still
+// has the operator's stderr line from the sink.
+const AUDIT_UNWRITTEN_NOTE =
+  "mastra-cc/audit-unwritten: this effect was performed but its audit entry could not be written; the operator's log has the reason";
+function markUnwrittenReceipt(result: unknown): void {
+  for (const key of ["element", "application"]) {
+    const named = (result as Record<string, unknown> | undefined)?.[key];
+    if (named !== null && typeof named === "object") {
+      const element = named as { diagnostic?: Record<string, string> };
+      element.diagnostic = { ...element.diagnostic, "mastra-cc/audit-unwritten": AUDIT_UNWRITTEN_NOTE };
+    }
+  }
+}
+
+const AUDIT_UNWRITABLE_REFUSAL =
+  "refused before anything was touched: the audit log cannot be written, and an effect this daemon could not record is an effect it does not perform (ADR-0026) - the operator must repair the log's path or permissions";
+
 function refusedResponse(id: number, code: RefusalClass, message: string): HandledResponse {
   return { type: "response", id, result: { refusal: refusalOf(code, message) } };
 }
@@ -2754,7 +2776,7 @@ export async function handleRequest(
   book?: SubscriptionBook,
   driver?: { authority: DriverAuthority; connection: DriverConnection },
 ): Promise<HandledResponse> {
-  const entry = DISPATCH[request.method];
+  const entry = Object.hasOwn(DISPATCH, request.method) ? DISPATCH[request.method] : undefined;
   if (!entry) {
     return refusedResponse(request.id, "UnknownMethod",
       `refused by the effect-class gate: "${request.method}" is not a method of ` +
@@ -2775,6 +2797,12 @@ export async function handleRequest(
   }
   const ownershipRefusal = driver?.authority.refusal(driver.connection, entry.effectClass !== "observe");
   if (ownershipRefusal !== undefined) return refusedResponse(request.id, ownershipRefusal === DRIVER_CLOSED ? "DriverClosed" : "DriverBusy", ownershipRefusal);
+  // Fail-closed, first half (ADR-0026 amended): an effect whose receipt could
+  // not be written is refused before anything is touched.
+  if (entry.effectClass !== "observe" && !auditWritable()) {
+    return refusedResponse(request.id, "AuditUnwritable", AUDIT_UNWRITABLE_REFUSAL);
+  }
+  const unwrittenBefore = unwrittenEffectEntries();
   try {
     const result = await serialised<unknown>(targetOf(request.params, backend), async () => {
       const retired = driver?.authority.enter(driver.connection, entry.effectClass !== "observe");
@@ -2804,7 +2832,9 @@ export async function handleRequest(
       const application = (result as { auditApplication?: string }).auditApplication;
       recordAudit({ application, element: answeredElements(result), scope: "observe", cause: causeOf(application), outcome: observeOutcome(result) });
     }
-    return { type: "response", id: request.id, result: withoutInternals(result) };
+    const answered = withoutInternals(result);
+    if (unwrittenEffectEntries() > unwrittenBefore) markUnwrittenReceipt(answered);
+    return { type: "response", id: request.id, result: answered };
   } catch (error) {
     // Whatever the backend threw stays on this side of the wire; the client
     // gets one honest constant, never the raw error (98ac7fd's lesson). The
