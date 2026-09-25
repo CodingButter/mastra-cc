@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCHEMA_DIGEST, validateChangeEvent, type ChangeEvent } from "@mastra-cc/protocol-types";
 import { connect } from "../index.js";
 
@@ -85,9 +85,8 @@ describe("the daemon can speak without being asked, and the transport keeps the 
 
     // Any request will do; the mock answers it with an event instead of a reply.
     poke(client);
-    await settle();
-
-    expect(seen).toHaveLength(1);
+    // Wait for the event itself, not a fixed sleep: under load 20 ms is not enough.
+    await vi.waitFor(() => expect(seen).toHaveLength(1));
     expect(seen[0]).toEqual(WATCHED);
     // The event the listener received is a conforming changeEvent, not a bag
     // of fields that happened to arrive.
