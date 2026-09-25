@@ -166,7 +166,7 @@ for (const [name, task] of Object.entries(TASKS)) {
     let r;
     for (let attempt = 1; ; attempt++) {
       r = await runOnce(name, task, n);
-      const infra = /quota|RESOURCE_EXHAUSTED|high demand|\b429\b|\b503\b|overloaded|credits are depleted|billing/i.test(`${r.error ?? ""} ${r.answer ?? ""}`);
+      const infra = /quota|RESOURCE_EXHAUSTED|high demand|depleted|\b402\b|\b429\b|\b503\b|overloaded|credits are depleted|billing/i.test(`${r.error ?? ""} ${r.answer ?? ""}`);
       if (!infra || attempt === 4) { r.attempts = attempt; if (infra) r.infra = "provider"; break; }
       appendFileSync(join(here, "bench-provider-refused.jsonl"), JSON.stringify({ ...r, attempt }) + "\n");
       console.log(`${name}#${n} provider refused (attempt ${attempt}); retrying in 90s`);
