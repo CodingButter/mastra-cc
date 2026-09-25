@@ -1,0 +1,9 @@
+== core-10-base (73a5126 fix: say what the desk refused instead of blaming the daemon for capture and reveal)
+[31m     [31m×[31m submits a form through its submit button, and refuses a button that belongs to no form[39m[33m 1195[2mms[22m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1mAssertionError[22m: promise resolved "{ element: { …(8) } }" instead of rejecting[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+== core-10 (82afd8d fix: a browser commit is the form's own submit, and a declined focus is the world's refusal)
+ [32m✓[39m src/backends/cdp/__tests__/a-commit-is-a-commit.live.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1227[2mms[22m[39m
+     [33m[2m✓[22m[39m submits a form through its submit button, and refuses a button that belongs to no form [33m 1226[2mms[22m[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
