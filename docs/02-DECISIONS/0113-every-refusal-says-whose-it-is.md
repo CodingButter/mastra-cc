@@ -1,7 +1,7 @@
 # ADR-0113: Every refusal says whose it is
 
 Date: 2026-09-23
-Status: Accepted — implemented in schema 1.27.0. See [14-DIRECTION.md](../14-DIRECTION.md) §4.
+Status: Accepted — implemented in schema version 1.27.0. See [14-DIRECTION.md](../14-DIRECTION.md) §4.
 
 ## Context
 
