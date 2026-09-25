@@ -1,0 +1,4 @@
+fixture pid 3773624 runs python3 and publishes the name "firefox"
+unscoped query: 12 elements, including the field "impostor-secret"
+scoped to "firefox": 12 elements answered
+VERDICT: RED (the self-named impostor was read as the granted application)

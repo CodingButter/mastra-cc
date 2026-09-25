@@ -28,6 +28,7 @@ import {
   AttestationFailedError,
   IncompleteObservationError,
   ApplicationScopeAmbiguousError,
+  ApplicationIdentityMismatchError,
   ApplicationScopeUnmatchedError,
   WindowScopeAmbiguousError,
   WindowScopeUnmatchedError,
@@ -377,6 +378,8 @@ export const WINDOW_SCOPE_AMBIGUOUS_REFUSAL =
   "more than one visible window of that application answers to that name, so this scope names no single window - ask without the window, or by a name only one of them carries";
 export const APPLICATION_SCOPE_UNMATCHED_REFUSAL =
   "no application on this desktop answers to that name, so there is nothing this scope could have been asked about - listApplications names every application this desktop has, and an application just launched may not have arrived yet";
+export const APPLICATION_IDENTITY_MISMATCH_REFUSAL =
+  "an application on this desktop answers to that name, but its process runs an executable the grant does not name, so this daemon will not treat it as the granted application (ADR-0120) - the operator can grant that executable explicitly";
 export const APPLICATION_SCOPE_AMBIGUOUS_REFUSAL =
   "more than one application on this desktop answers to that name, so this scope names no single application - listApplications names them as the desktop publishes them";
 
@@ -2240,7 +2243,7 @@ function windowScopeRefusal(
   error: unknown,
   scope?: { application?: string; window?: string },
 ):
-  | { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" | "ApplicationScopeUnmatched" | "ApplicationScopeAmbiguous" }
+  | { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" | "ApplicationScopeUnmatched" | "ApplicationScopeAmbiguous" | "ApplicationIdentityMismatch" }
   | undefined {
   // A scope is a NAME. An id looks enough like an answer to be reached for as
   // one, and the bare not-found sentence sends the caller looking for a window
@@ -2250,6 +2253,7 @@ function windowScopeRefusal(
   if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "WindowScopeAmbiguous" };
   if (error instanceof ApplicationScopeUnmatchedError) return { refusal: APPLICATION_SCOPE_UNMATCHED_REFUSAL, refusalClass: "ApplicationScopeUnmatched" };
   if (error instanceof ApplicationScopeAmbiguousError) return { refusal: APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "ApplicationScopeAmbiguous" };
+  if (error instanceof ApplicationIdentityMismatchError) return { refusal: APPLICATION_IDENTITY_MISMATCH_REFUSAL, refusalClass: "ApplicationIdentityMismatch" };
   return undefined;
 }
 

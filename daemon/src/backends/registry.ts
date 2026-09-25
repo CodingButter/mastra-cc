@@ -2,6 +2,7 @@ import type { Backend } from "../backend.js";
 import type { Visibility } from "../grants.js";
 import { captureChannel, liveChannel } from "./atspi/channel.js";
 import { AtspiBackend } from "./atspi/index.js";
+import { busIdentity, type Executables } from "./atspi/process-identity.js";
 import { followLaunchedBrowser } from "./cdp/pipe.js";
 import { captureCdpChannel, DEBUG_PORT, liveCdpChannel } from "./cdp/channel.js";
 import { CdpBackend, CdpReplayBackend } from "./cdp/index.js";
@@ -22,6 +23,9 @@ export interface BackendOptions {
   // back to their own default - the EMPTY set. Deny-by-default is the
   // backend's own posture, not something a caller opts into.
   visibility?: Visibility;
+  // The executable each granted name must be run by (ADR-0120). Absent means
+  // no process binding - the replay flavours and "all" mode.
+  executables?: Executables;
 }
 
 // The committed corpora the fixture-less replay flavours answer from.
@@ -31,7 +35,8 @@ export const DEFAULT_CDP_FIXTURE = "chrome-page";
 export const registry: Record<string, (options?: BackendOptions) => Backend> = {
   atspi: (options) => {
     const channel = options?.capture ? captureChannel(liveChannel(), options.capture) : liveChannel();
-    return new AtspiBackend(channel, options?.visibility);
+    const identity = options?.executables ? busIdentity(channel, options.executables) : undefined;
+    return new AtspiBackend(channel, options?.visibility, undefined, undefined, identity);
   },
   replay: (options) => new ReplayBackend(options?.fixture ?? DEFAULT_FIXTURE, options?.visibility),
   cdp: (options) => {

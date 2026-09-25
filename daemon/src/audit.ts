@@ -214,6 +214,7 @@ export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
   WindowScopeUnmatched: "agent",
   WindowScopeAmbiguous: "agent",
   ApplicationScopeUnmatched: "agent",
+  ApplicationIdentityMismatch: "world",
   ApplicationScopeAmbiguous: "agent",
   Unclassified: "daemon",
 };

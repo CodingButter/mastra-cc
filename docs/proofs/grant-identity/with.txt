@@ -1,0 +1,4 @@
+fixture pid 3773650 runs python3 and publishes the name "firefox"
+unscoped query: 0 elements
+scoped to "firefox": refusal {"class":"world","code":"ApplicationIdentityMismatch"}
+VERDICT: GREEN (the impostor is invisible, and the scope is refused as an identity mismatch)
