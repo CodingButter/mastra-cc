@@ -179,6 +179,19 @@ ship, is outside the allowlist's reach and should be recorded as such with its r
 a permissive licence on an abandoned project is a different problem that this gate does not
 catch, so adoption records a maintenance note as well as a licence.
 
+**One malformed line.** The wire is newline-delimited JSON, and the two ends treat a line
+that is not JSON differently, on purpose:
+
+- **The transport terminates the connection.** A daemon that sends a non-JSON line is not
+  the daemon the client was built against, and nothing it says afterwards can be trusted.
+  Every pending request is rejected with the reason.
+- **The daemon refuses the line and keeps reading.** It answers
+  `{"type":"refusal","refusal":"daemon: not a JSON line"}`, because a broken client line
+  carries no request id to answer and one client's typo should not cost its session.
+  Before the hello, anything but a hello ends the connection.
+- **An unterminated line past its cap ends the connection** on both sides (8 MiB into the
+  daemon, 64 MiB into the transport).
+
 Two notes on how to write these, from prototype experience:
 
 - **A source-level test must assert its own file list is non-empty.** The prototype added a boundaries suite to the dashboard and discovered the widget's equivalent had never covered the dashboard package at all — the rule was "habit, not a rule". A glob that matches nothing passes vacuously and reports success (PR #226).

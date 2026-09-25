@@ -112,7 +112,11 @@ let signalSerial = 0x40000000;
 
 // Lazy: nothing touches a bus until the first call, so constructing the
 // backend (as the conformance suite does at collection time) is free.
-export function liveChannel(): Channel {
+// deafForProof is a test seam, never configuration: it makes the route drop its
+// signal registration so a proof can show that a route which cannot hear
+// REFUSES a watch rather than handing back one that never speaks. Nothing in
+// the daemon's startup path sets it (audit M5).
+export function liveChannel(options: { deafForProof?: boolean } = {}): Channel {
   let session: DbusBus | null = null;
   let a11y: DbusBus | null = null;
 
@@ -135,11 +139,7 @@ export function liveChannel(): Channel {
     },
     async watch(subscribedTo, sink, anchor) {
       const bus = await a11yBus();
-      // Proof-only deaf switch, read from the environment and never from the
-      // wire: leg M of the live proof disables the bus-side registration to
-      // show that a route that cannot hear REFUSES instead of returning a
-      // subscription that will never speak. In every other run this is off.
-      const deaf = process.env.MASTRA_CC_ATSPI_DEAF_FOR_PROOF === "1";
+      const deaf = options.deafForProof === true;
       const ops: SignalBusOps = {
         call: (exchange) =>
           deaf && exchange.member === "AddMatch" ? Promise.resolve([]) : invoke(bus, exchange),

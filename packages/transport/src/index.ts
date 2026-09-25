@@ -325,8 +325,9 @@ export async function connect(
         message = JSON.parse(line);
       } catch {
         // A peer that emits a non-JSON line is not the daemon this client was
-        // built for. Refuse loudly and stop, mirroring the daemon's own
-        // handling of the same case - never die in an event handler.
+        // built for. Refuse loudly and stop the connection - never die in an
+        // event handler. The daemon is the lenient side: it answers a non-JSON
+        // line from a client with a refusal and keeps reading (01-ARCHITECTURE §5).
         terminate(new Error(`transport: peer at ${peer} sent a non-JSON line - refusing to continue`));
         wire.drop(starting);
         return;

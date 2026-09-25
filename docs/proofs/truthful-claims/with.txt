@@ -1,0 +1,5 @@
+# branch fix/truthful-claims
+ ✓ src/__tests__/no-proof-switch-ships.test.ts (1 test) 7ms
+ ✓ src/__tests__/refuses-beyond-observe.test.ts (14 tests) 19ms
+ ✓ src/__tests__/the-audit-log-names-what-was-touched.test.ts (18 tests) 25ms
+      Tests  33 passed (33)
