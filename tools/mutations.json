@@ -1997,7 +1997,7 @@
     "name": "the-adapter-types-again-when-the-answer-is-lost",
     "file": "packages/desktop/src/mastra.ts",
     "find": "        return await call.call(client, input ?? {});\n",
-    "replace": "        try { return await call.call(client, input ?? {}); } catch { return await call.call(client, input ?? {}); }\n",
+    "replace": "        { const first = await call.call(client, input ?? {}) as { refusal?: unknown }; return first?.refusal !== undefined ? await call.call(client, input ?? {}) : first; }\n",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/an-uncertain-keystroke-is-never-sent-twice.test.ts"
   },
