@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -76,7 +77,7 @@ async function press(chord: string, launch: Partial<LaunchContext>, backend: Bac
 // A refusal may arrive as the response's own field or inside the result, and
 // which one it is is not what this file is about.
 function refusalIn(answer: { refusal?: string; result?: unknown }): string {
-  return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal ?? "";
+  return refusalText(answer) ?? "";
 }
 
 describe("a key, addressed to one element", () => {

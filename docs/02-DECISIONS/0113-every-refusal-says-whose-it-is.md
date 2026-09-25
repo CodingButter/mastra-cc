@@ -1,7 +1,7 @@
 # ADR-0113: Every refusal says whose it is
 
 Date: 2026-09-23
-Status: Accepted as direction; schema and implementation pending. See [14-DIRECTION.md](../14-DIRECTION.md) §4.
+Status: Accepted — implemented in schema 1.27.0. See [14-DIRECTION.md](../14-DIRECTION.md) §4.
 
 ## Context
 
@@ -30,3 +30,15 @@ The costly confusion is between the agent being wrong and the daemon being wrong
 ## Evidence
 
 - `docs/audits/2026-09-23/PROJECT-AUDIT.md` (refusals are unclassified prose; C1, C3).
+
+## Implementation (schema 1.27.0)
+
+- Every refusal travels as `result.refusal`, an object `{ class, code, message, observed?, next? }`. The daemon no longer sends a top-level `refusal` field on a response. The transport resolves a refused call with its result, and it rejects only when the connection itself fails. A malformed line still terminates the connection.
+- `code` is one of the schema's `refusalCodes`. The daemon's `REFUSAL_OWNER` record (`daemon/src/audit.ts`) assigns each code exactly one owner. The compiler rejects a code that has no owner, and a test pins the record to the schema.
+- A refusal with no known code is sent as `Unclassified`, owned by `daemon` (rule 3).
+- Owner decisions that needed judgement:
+  - `DeadlineExceeded` is `daemon`. From the daemon's side, a frozen application and a lost reply look the same, so rule 3 applies.
+  - `BlockedByDialog` is `world`. Chrome reported the dialog, so the cause is known.
+  - `WriteNotObservedError` is `world`. The daemon did verify the write, and it read back a different value than the one it wrote.
+  - `BackendUnreadable`, `EnforcementUnrepresentable` and `WatchDeaf` are `daemon`.
+- `observed` and `next` are in the schema but not filled in yet. Each code's message still carries both as prose.

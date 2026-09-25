@@ -14,27 +14,8 @@ import { measureAsyncCost, recordCost } from "./costs.js";
 // tree copies dist/ without node_modules, so `ws` is force-bundled by
 // daemon/tsdown.config.ts the way dbus-native is.
 import type { WebSocket } from "ws";
-import {
-  CAPABILITY_NAMES,
-  KEY_CHORD_NAMES,
-  type KeyChordName,
-  ROLES,
-  SCHEMA_DIGEST,
-  PRIORITIES,
-  PROTOCOL_VERSION,
-  type Attribution,
-  type Capability,
-  type CapabilityName,
-  type ListApplicationsResult,
-  type ChangeEvent,
-  type Diagnostic,
-  type OpenApplicationResult,
-  type RestartApplicationResult,
-  type Priority,
-  type SemanticElement,
-  type SubscribeElementResult,
-  type UnsubscribeElementResult,
-} from "@mastra-cc/protocol-types";
+import { CAPABILITY_NAMES, KEY_CHORD_NAMES, type KeyChordName, ROLES, SCHEMA_DIGEST, PRIORITIES, PROTOCOL_VERSION, type Attribution, type Capability, type CapabilityName, type ChangeEvent, type Diagnostic, type Priority, type SemanticElement } from "@mastra-cc/protocol-types";
+import type { ListApplicationsResult, OpenApplicationResult, RestartApplicationResult, SubscribeElementResult, UnsubscribeElementResult } from "./results.js";
 import {
   type Backend,
   type RunningCensus,
@@ -74,6 +55,7 @@ import {
   recordAudit,
   refused,
   withoutInternals,
+  refusalOf,
   type AuditCause,
   type AuditSubject,
   type Classified,
@@ -100,7 +82,7 @@ import { isVisible, type Visibility } from "./grants.js";
 import { CATALOG, contendsForBrowserEndpoint, type LaunchCatalog } from "./launch/recipes.js";
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
-import { driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
+import { DRIVER_CLOSED, driverAuthority, type DriverAuthority, type DriverConnection } from "./driver.js";
 import { CancelledAtBoundaryError, underCancellation } from "./cancellation.js";
 import { DialogBlockingError } from "./backends/cdp/channel.js";
 
@@ -2676,7 +2658,13 @@ export interface HandledResponse {
   type: "response";
   id: number;
   result?: unknown;
-  refusal?: string;
+}
+
+// Every refusal leaves the daemon the same way: inside the result, with its
+// owner and code (ADR-0113). A route's own refusal gets there through
+// withoutInternals; the routing refusals below are built here.
+function refusedResponse(id: number, code: RefusalClass, message: string): HandledResponse {
+  return { type: "response", id, result: { refusal: refusalOf(code, message) } };
 }
 
 // Serialise every backend call: one at a time, in arrival order.
@@ -2733,13 +2721,9 @@ export async function handleRequest(
 ): Promise<HandledResponse> {
   const entry = DISPATCH[request.method];
   if (!entry) {
-    return {
-      type: "response",
-      id: request.id,
-      refusal:
-        `refused by the effect-class gate: "${request.method}" is not a method of ` +
-        `schema v${PROTOCOL_VERSION} - the daemon serves what the schema defines and nothing else`,
-    };
+    return refusedResponse(request.id, "UnknownMethod",
+      `refused by the effect-class gate: "${request.method}" is not a method of ` +
+      `schema v${PROTOCOL_VERSION} - the daemon serves what the schema defines and nothing else`);
     // No receipt: a method the schema does not define reaches no route and
     // touches nothing, so there is no access to record. The refusal still has
     // a class (UnknownMethod) because the vocabulary is closed over what this
@@ -2749,20 +2733,17 @@ export async function handleRequest(
   // the table above (B11 reads the source to keep it that way); this check is
   // the runtime backstop with the same refusal shape.
   if (entry.effectClass !== "observe" && entry.enforcement !== "before-call") {
-    return {
-      type: "response",
-      id: request.id,
-      refusal: `refused by the effect-class gate: "${request.method}" is ${entry.effectClass}-class but not marked for before-call enforcement`,
-    };
+    return refusedResponse(request.id, "EnforcementUnrepresentable",
+      `refused by the effect-class gate: "${request.method}" is ${entry.effectClass}-class but not marked for before-call enforcement`);
     // No receipt, same reason: the backstop fires before the handler runs
     // (class EnforcementUnrepresentable).
   }
   const ownershipRefusal = driver?.authority.refusal(driver.connection, entry.effectClass !== "observe");
-  if (ownershipRefusal !== undefined) return { type: "response", id: request.id, refusal: ownershipRefusal };
+  if (ownershipRefusal !== undefined) return refusedResponse(request.id, ownershipRefusal === DRIVER_CLOSED ? "DriverClosed" : "DriverBusy", ownershipRefusal);
   try {
     const result = await serialised<unknown>(async () => {
       const retired = driver?.authority.enter(driver.connection, entry.effectClass !== "observe");
-      if (retired !== undefined) return { refusal: retired };
+      if (retired !== undefined) return { refusal: retired, refusalClass: retired === DRIVER_CLOSED ? "DriverClosed" : "DriverBusy" };
       // Audit identity belongs to this request. Event origin is a separate question.
       try {
         const run = () => operation.run(entry.effectClass === "observe" ? undefined : { causeId: mintCauseId() },
@@ -2812,22 +2793,22 @@ export async function handleRequest(
     }
     if (error instanceof CallDeadlineError && entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: refused("DeadlineExceeded") });
-      return { type: "response", id: request.id, result: { refusal: deadlineRefusal(error, false) } };
+      return refusedResponse(request.id, "DeadlineExceeded", deadlineRefusal(error, false));
     }
     if (error instanceof DialogBlockingError && entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: refused("BlockedByDialog") });
-      return { type: "response", id: request.id, result: { refusal: dialogRefusal(error, false) } };
+      return refusedResponse(request.id, "BlockedByDialog", dialogRefusal(error, false));
     }
     if (entry.effectClass === "observe") {
       recordAudit({ application: undefined, element: [], scope: "observe", cause: causeOf(undefined), outcome: FAILED });
     }
     if (error instanceof ElementGoneError) {
-      return { type: "response", id: request.id, refusal: ELEMENT_GONE_REFUSAL };
+      return refusedResponse(request.id, "ElementGone", ELEMENT_GONE_REFUSAL);
     }
     if (error instanceof PeerGoneError) {
-      return { type: "response", id: request.id, refusal: APPLICATION_GONE_REFUSAL };
+      return refusedResponse(request.id, "ApplicationGone", APPLICATION_GONE_REFUSAL);
     }
-    return { type: "response", id: request.id, refusal: BACKEND_UNREADABLE_REFUSAL };
+    return refusedResponse(request.id, "BackendUnreadable", BACKEND_UNREADABLE_REFUSAL);
   }
 }
 

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -53,8 +54,8 @@ describe("a daemon nobody configured restarts nothing", () => {
     // level would fail here.
     const answer = restartAuthority(WITHHOLDS_NOTHING, "kate");
     expect(answer).not.toHaveProperty("level");
-    expect((answer as { refusal: string }).refusal).toContain("restart.default");
-    expect((answer as { refusal: string }).refusal).toContain('"refuse"');
+    expect(refusalText((answer as { refusal: string }))).toContain("restart.default");
+    expect(refusalText((answer as { refusal: string }))).toContain('"refuse"');
   });
 
   it("refuses when the file configures other things and says nothing about restarting", () => {
@@ -139,7 +140,7 @@ describe("the two refusals are different answers, and both name the setting", ()
   });
 
   it("gives the two of them different sentences", () => {
-    expect(restartRefusal("ask", "restart.default").refusal).not.toBe(
+    expect(refusalText(restartRefusal("ask", "restart.default"))).not.toBe(
       restartRefusal("refuse", "restart.default").refusal,
     );
   });

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -74,7 +75,7 @@ async function call(method: string, params: Record<string, unknown>, launch: Par
 const type = (text: string, launch: Partial<LaunchContext>, backend: Backend) => call("typeText", { id: "el-1", text }, launch, backend);
 
 function refusalIn(answer: { refusal?: string; result?: unknown }): string {
-  return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal ?? "";
+  return refusalText(answer) ?? "";
 }
 
 const ARMED = { allows: new Set(["rawInput"]) };

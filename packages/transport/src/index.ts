@@ -141,8 +141,9 @@ interface Hello {
 interface Response {
   type: "response";
   id: number;
+  // A refusal is part of the result (ADR-0113): it resolves, carrying its
+  // class and code, and only a failed connection rejects.
   result?: unknown;
-  refusal?: string;
 }
 
 // The daemon's one server-initiated message (ADR-0039). It carries no `id`
@@ -354,8 +355,7 @@ export async function connect(
         const p = pending.get(message.id);
         if (p) {
           pending.delete(message.id);
-          if (message.refusal !== undefined) p.reject(new Error(message.refusal));
-          else p.resolve(message.result);
+          p.resolve(message.result);
         }
       }
     }

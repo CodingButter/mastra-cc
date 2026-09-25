@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 // A PICTURE IS OBSERVATION, and the route has to treat it as observation - not
 // as a sixth effect and not as an ungated back door. Two things are pinned.
 //
@@ -47,7 +48,7 @@ describe("looking at an element is observation, gated like every other look", ()
       { type: "request", id: 1, method: "captureElement", params: { id: "el-000000000000" } },
       backendThatCanSee(asked),
     );
-    expect(response.refusal).toBeUndefined();
+    expect(refusalText(response)).toBeUndefined();
     expect((response.result as { image?: typeof PICTURE }).image).toEqual(PICTURE);
     expect(asked).toEqual(["el-000000000000"]);
   });
@@ -65,6 +66,6 @@ describe("looking at an element is observation, gated like every other look", ()
     );
     const answer = (response.result ?? {}) as { image?: unknown; refusal?: string };
     expect(answer.image).toBeUndefined();
-    expect(answer.refusal ?? response.refusal).toContain("no rectangle");
+    expect(refusalText(response)).toContain("no rectangle");
   });
 });

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { expect, it, vi } from "vitest";
 import type { ChangeEvent } from "@mastra-cc/protocol-types";
 import { type Backend, type BackendChange, mintSubscriptionId } from "../backend.js";
@@ -32,7 +33,7 @@ it("delivers changes emitted before backend subscription resolution through publ
   const world = fixture(2);
   try {
     const response = await world.subscribe();
-    expect(response.refusal).toBeUndefined();
+    expect(refusalText(response)).toBeUndefined();
     expect(world.events).toHaveLength(2);
     expect(world.events.every(event => event.id === id && event.priority === "high")).toBe(true);
   } finally { await world.book.closeAll(); }
@@ -41,7 +42,7 @@ it("delivers changes emitted before backend subscription resolution through publ
 it("accepts exactly 256 initialization pointers", async () => {
   const world = fixture(256);
   try {
-    expect((await world.subscribe()).refusal).toBeUndefined();
+    expect(refusalText(await world.subscribe())).toBeUndefined();
     expect(world.events).toHaveLength(256);
   } finally { await world.book.closeAll(); }
 });
@@ -92,7 +93,7 @@ it("keeps the existing ended-watch tombstone contract without delivering later c
 it("reports overflow cleanup failure as a public refusal without accepting a watch", async () => {
   const world = fixture(257);
   world.close.mockRejectedValueOnce(new Error("close failed"));
-  expect((await world.subscribe()).refusal).toBeDefined();
+  expect(refusalText(await world.subscribe())).toBeDefined();
   expect(world.book.size).toBe(0);
   expect(world.events).toHaveLength(0);
 });
@@ -101,7 +102,7 @@ it("refuses initialization overflow and closes the backend instead of accepting 
   const world = fixture(257);
   try {
     const response = await world.subscribe();
-    expect(response.refusal).toBeDefined();
+    expect(refusalText(response)).toBeDefined();
     expect(world.close).toHaveBeenCalledTimes(1);
     expect(world.events).toHaveLength(0);
     expect(world.book.size).toBe(0);

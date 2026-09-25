@@ -1,6 +1,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
+import { REFUSAL_CODES, type Refusal, type RefusalOwner } from "@mastra-cc/protocol-types";
 
 // THE RECEIPT (ADR-0026). This module owns the entry shape, the serialisation
 // and the sink - and nothing else. It does not know what an effect is, what a
@@ -105,52 +106,18 @@ export interface AuditEntry {
 // constant of its own - a seam error the server translates is recorded under
 // the server's name for it, because the server's constant is what the caller
 // was actually handed.
-export const REFUSAL_CLASSES = [
-  // the seam's classes (daemon/src/backend.ts), by constructor name
-  "AttestationFailedError",
-  "EffectUnsupportedError",
-  "KeyboardHeldElsewhereError",
-  "MagnitudeOutOfRangeError",
-  "OperationNotExposedError",
-  "PointerBlockedError",
-  "RecordingNotPerformableError",
-  "TextOffsetOutOfRangeError",
-  "UnperformableElementError",
-  "UnpublishedActionError",
-  "WriteNotObservedError",
-  // the server's own refusals, which are sentences and not classes
-  "AccessibilityNotAcquirable",
-  "AccessibilityNotAcquired",
-  "AccessibilityLostMidSession",
-  "AlreadyRunning",
-  "BackendUnreadable",
-  "CouldNotStart",
-  "DeadlineExceeded",
-  "BlockedByDialog",
-  "DisabledByConfiguration",
-  "EffectClassGate",
-  "ElementGone",
-  "EnforcementUnrepresentable",
-  "InventoryUnsupported",
-  "LaunchUnavailable",
-  "MalformedParameter",
-  "NoConnection",
-  "NoMatch",
-  "RestartNotConfirmed",
-  "RestartNotOurs",
-  "RestartRefusedByApplication",
-  "NoRecipe",
-  "NotReadableInTime",
-  "OneBrowserIdentity",
-  "UnknownElement",
-  "UnknownMethod",
-  "UnknownSubscription",
-  "WatchDeaf",
-  "WatchUnknownElement",
-  "WatchUnsupported",
-] as const;
+// The vocabulary is the schema's (refusalCodes, ADR-0113): adding a class is
+// a schema change, and REFUSAL_OWNER below must then name its owner.
+export const REFUSAL_CLASSES = REFUSAL_CODES;
 
 export type RefusalClass = (typeof REFUSAL_CLASSES)[number];
+
+/**
+ * Inside the daemon a route writes its refusal as the sentence and states its
+ * class beside it; withoutInternals builds the wire object from the two. The
+ * wire type's structured refusal is therefore the sentence until then.
+ */
+export type Unwired<T> = T extends { refusal?: Refusal } ? Omit<T, "refusal"> & { refusal?: string } : T;
 
 /**
  * A result carrying the CLASS of its own refusal, and - where the shape of the
@@ -163,7 +130,7 @@ export type RefusalClass = (typeof REFUSAL_CLASSES)[number];
  * result reaches the wire, so nothing the schema does not define is ever
  * serialised to a client.
  */
-export type Classified<T> = T & {
+export type Classified<T> = Unwired<T> & {
   refusalClass?: RefusalClass;
   auditElement?: AuditSubject[];
   /**
@@ -183,8 +150,76 @@ export const INTERNAL_KEYS = ["refusalClass", "auditElement", "auditApplication"
 export function withoutInternals<T>(result: T): T {
   if (result === null || typeof result !== "object") return result;
   const stripped = { ...(result as Record<string, unknown>) };
+  if (typeof stripped.refusal === "string") {
+    const code = stripped.refusalClass;
+    stripped.refusal = refusalOf(typeof code === "string" && isRefusalClass(code) ? code : "Unclassified", stripped.refusal);
+  }
   for (const key of INTERNAL_KEYS) delete stripped[key];
   return stripped as T;
+}
+
+/**
+ * WHOSE REFUSAL IT IS (ADR-0113). Every code has exactly one owner, and the
+ * Record type makes a new code without one a compile error:
+ * - agent: the caller asked for something malformed, unknown, stale, or beyond
+ *   what the operator allowed; asking differently can succeed.
+ * - world: the desktop or the application said no, went away, froze, or
+ *   changed under the call; the daemon reported it faithfully.
+ * - daemon: this daemon failed its own contract. A benchmark counts these.
+ */
+export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
+  AttestationFailedError: "world",
+  EffectUnsupportedError: "world",
+  KeyboardHeldElsewhereError: "world",
+  MagnitudeOutOfRangeError: "agent",
+  OperationNotExposedError: "agent",
+  PointerBlockedError: "world",
+  RecordingNotPerformableError: "world",
+  TextOffsetOutOfRangeError: "agent",
+  UnperformableElementError: "world",
+  UnpublishedActionError: "agent",
+  WriteNotObservedError: "world",
+  AccessibilityNotAcquirable: "world",
+  AccessibilityNotAcquired: "world",
+  AccessibilityLostMidSession: "world",
+  AlreadyRunning: "world",
+  BackendUnreadable: "daemon",
+  CouldNotStart: "world",
+  DeadlineExceeded: "daemon",
+  BlockedByDialog: "world",
+  DisabledByConfiguration: "agent",
+  EffectClassGate: "agent",
+  ElementGone: "world",
+  EnforcementUnrepresentable: "daemon",
+  InventoryUnsupported: "world",
+  LaunchUnavailable: "world",
+  MalformedParameter: "agent",
+  NoConnection: "agent",
+  NoMatch: "agent",
+  RestartNotConfirmed: "world",
+  RestartNotOurs: "agent",
+  RestartRefusedByApplication: "world",
+  NoRecipe: "world",
+  NotReadableInTime: "world",
+  OneBrowserIdentity: "agent",
+  UnknownElement: "agent",
+  UnknownMethod: "agent",
+  UnknownSubscription: "agent",
+  WatchDeaf: "daemon",
+  WatchUnknownElement: "agent",
+  WatchUnsupported: "world",
+  ApplicationGone: "world",
+  DriverBusy: "world",
+  DriverClosed: "agent",
+  WindowScopeUnmatched: "agent",
+  WindowScopeAmbiguous: "agent",
+  ApplicationScopeUnmatched: "agent",
+  ApplicationScopeAmbiguous: "agent",
+  Unclassified: "daemon",
+};
+
+export function refusalOf(code: RefusalClass, message: string): Refusal {
+  return { class: REFUSAL_OWNER[code], code, message };
 }
 
 const CLASS_SET: ReadonlySet<string> = new Set(REFUSAL_CLASSES);

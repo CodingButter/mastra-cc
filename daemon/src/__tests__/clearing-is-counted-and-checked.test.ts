@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -125,7 +126,7 @@ async function clear(id: string, launch: Partial<LaunchContext>, backend: Backen
 }
 
 function refusalIn(answer: { refusal?: string; result?: unknown }): string {
-  return answer.refusal ?? (answer.result as { refusal?: string } | undefined)?.refusal ?? "";
+  return refusalText(answer) ?? "";
 }
 
 describe("emptying a field one key at a time", () => {

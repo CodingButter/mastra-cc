@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import type { Backend } from "../backend.js";
 import type { LaunchCatalog } from "../launch/recipes.js";
@@ -73,7 +74,7 @@ describe("opening an application this daemon already owns", () => {
 
     const answer = await open(backend, context(catalog, table));
 
-    expect(answer.refusal).toBeUndefined();
+    expect(refusalText(answer)).toBeUndefined();
     expect(answer.application?.name).toBe("Chromium");
     expect([...table.entries()]).toHaveLength(2);
   });
@@ -87,7 +88,7 @@ describe("opening an application this daemon already owns", () => {
 
     const answer = await open(backend, context(catalog, table));
 
-    expect(answer.refusal).toBeUndefined();
+    expect(refusalText(answer)).toBeUndefined();
     expect([...table.entries()]).toHaveLength(1);
   });
 
@@ -99,7 +100,7 @@ describe("opening an application this daemon already owns", () => {
 
     const answer = await open(backend, context(catalog, table));
 
-    expect(answer.refusal).toMatch(/already running/i);
+    expect(refusalText(answer)).toMatch(/already running/i);
     expect([...table.entries()]).toHaveLength(0);
   });
 });

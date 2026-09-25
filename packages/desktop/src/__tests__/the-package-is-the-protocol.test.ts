@@ -74,12 +74,12 @@ describe("the installable package", () => {
         role: "dialog",
         application: "gtk3-demo",
         window: "Dialog",
-      })) as { elements?: unknown[]; refusal?: string };
+      })) as { elements?: unknown[]; refusal?: { class: string } };
       // The tape holds no such application, and a scope that resolves to
       // nothing is a refusal now rather than an empty list (ADR-0077). Either
       // shape proves what this test is for: the two optional fields survived
       // the generated client, the wire and the daemon's own validation.
-      expect(Array.isArray(found.elements) || typeof found.refusal === "string").toBe(true);
+      expect(Array.isArray(found.elements) || typeof found.refusal?.class === "string").toBe(true);
     } finally {
       client.close();
     }

@@ -63,6 +63,10 @@ const VOCABULARIES = [
   { key: "priorities", constant: "PRIORITIES", type: "Priority", base: "priority" },
   { key: "changeKinds", constant: "CHANGE_KINDS", type: "ChangeKind", base: "changeKind" },
   { key: "attributions", constant: "ATTRIBUTIONS", type: "Attribution", base: "attribution" },
+  // Whose a refusal is, and its stable name (ADR-0113). Closed: a new code is
+  // a schema change, and the daemon's table of owners must name it.
+  { key: "refusalOwners", constant: "REFUSAL_OWNERS", type: "RefusalOwner", base: "refusalOwner" },
+  { key: "refusalCodes", constant: "REFUSAL_CODES", type: "RefusalCode", base: "refusalCode" },
 ];
 
 const vocabularyFor = (base) => VOCABULARIES.find((v) => v.base === base);

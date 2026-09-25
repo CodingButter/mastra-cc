@@ -1,23 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type {
-  ActivateElementResult,
-  AttestElementParams,
-  AttestElementResult,
-  DiscoverElementsParams,
-  DiscoverElementsResult,
-  EditElementResult,
-  QueryElementsParams,
-  QueryElementsResult,
-  ReadElementContentParams,
-  ReadElementContentResult,
-  RevealElementResult,
-  SemanticElement,
-  SetElementCaretResult,
-  SetElementTextResult,
-  SetElementValueResult,
-  SubmitElementResult,
-} from "@mastra-cc/protocol-types";
+import type { AttestElementParams, DiscoverElementsParams, QueryElementsParams, ReadElementContentParams, SemanticElement } from "@mastra-cc/protocol-types";
+import type { ActivateElementResult, AttestElementResult, DiscoverElementsResult, EditElementResult, QueryElementsResult, ReadElementContentResult, RevealElementResult, SetElementCaretResult, SetElementTextResult, SetElementValueResult, SubmitElementResult } from "../../results.js";
 import {
   type Backend,
   type BackendChange,

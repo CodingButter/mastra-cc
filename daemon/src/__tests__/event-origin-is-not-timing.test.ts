@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { expect, it } from "vitest";
 import type { ChangeEvent } from "@mastra-cc/protocol-types";
 import { type Backend, type BackendChange, mintSubscriptionId } from "../backend.js";
@@ -27,7 +28,7 @@ it("keeps origin unknown during, after and across independent desktop operations
     emit();
     const answer = await handleRequest({ type: "request", id: 1, method: "editElement", params: { id: element.id, value: "changed" } }, backend,
       { permits: new Set(), catalog: {}, table: new OwnershipTable(), allows: new Set(["edit"]), visibility: "all" });
-    expect(answer.refusal).toBeUndefined();
+    expect(refusalText(answer)).toBeUndefined();
     emit();
     for (const list of events) {
       expect(list).toHaveLength(3);

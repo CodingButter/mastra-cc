@@ -1,3 +1,4 @@
+import { refusalCode, refusalText } from "./refusal-text.js";
 import { readFileSync, mkdtempSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -278,9 +279,8 @@ describe("an effect writes exactly one receipt, and it names the element by iden
     await failing.close();
     await backend.close();
 
-    // The backstop constant, at the top of the response rather than inside a
-    // result: an unclassified throw never became an answer.
-    expect(answer.refusal, "an unclassified throw reaches the caller as the backstop").toBeDefined();
+    // The backstop, owned by the daemon: an unclassified throw never became an answer.
+    expect(refusalCode(answer), "an unclassified throw reaches the caller as the backstop").toBe("BackendUnreadable");
     const written = entries(path);
     expect(written).toHaveLength(1);
     expect(written[0]!.outcome).toBe("failed");
@@ -300,7 +300,7 @@ describe("an effect writes exactly one receipt, and it names the element by iden
         call("activateElement", { id: first.id, action: ACTION_NAME }, first.backend),
         call("activateElement", { id: second.id, action: ACTION_NAME }, second.backend),
       ]);
-      expect(results[1]!.result?.refusal).toContain("declined");
+      expect(refusalText(results[1]!.result)).toContain("declined");
       const effects = entries(path);
       expect(effects).toHaveLength(2);
       expect(effects.every(entry => entry.cause.attribution === "self")).toBe(true);
@@ -352,7 +352,7 @@ describe("an effect writes exactly one receipt, and it names the element by iden
 
     // The platform declined, so the seam refuses in its own words - and those
     // words quote the element's name, which is exactly why they do not travel.
-    expect(answer.result?.refusal).toContain("declined");
+    expect(refusalText(answer.result)).toContain("declined");
     const written = entries(path);
     expect(written).toHaveLength(1);
     expect(written[0]!.outcome).toBe("refused:WriteNotObservedError");
@@ -449,8 +449,8 @@ describe("the launch and the read keep receipts of their own", () => {
 
     // The caller gets the opaque backstop, as it always has - the throw stays
     // on this side of the wire.
-    expect(answer.refusal).toContain("the desktop could not be read");
-    expect(answer.refusal).not.toContain("went away mid-launch");
+    expect(refusalText(answer)).toContain("the desktop could not be read");
+    expect(refusalText(answer)).not.toContain("went away mid-launch");
 
     const written = entries(path);
     expect(written).toHaveLength(1);
@@ -612,6 +612,17 @@ describe("the refusal vocabulary is closed", () => {
         "WatchUnknownElement",
         "WatchUnsupported",
         "WriteNotObservedError",
+        // Routing refusals that never had a class until every refusal had to
+        // carry one on the wire (ADR-0113), the four scope refusals likewise,
+        // and the daemon-owned code for a refusal a route left unclassified.
+        "ApplicationGone",
+        "DriverBusy",
+        "DriverClosed",
+        "WindowScopeUnmatched",
+        "WindowScopeAmbiguous",
+        "ApplicationScopeUnmatched",
+        "ApplicationScopeAmbiguous",
+        "Unclassified",
       ].sort(),
     );
   });

@@ -1,0 +1,4 @@
+# master a919bd9
+noSuchMethod: {"type":"response","id":1,"refusal":"refused by the effect-class gate: \"noSuchMethod\" is not a method of schema v1.26.0 - the daemon serves what the schema defines and nothing else"}
+attestElement: {"type":"response","id":2,"result":{"refusal":"no element with id \"el-000000000000\" is known to this daemon (never answered, or forgotten after newer answers) - nothing to attest"}}
+activateElement: {"type":"response","id":3,"result":{"refusal":"refused by the scope gate: \"activateElement\" is activate-class and this session holds no activate authority for any element - this session was started without that class, and only a session started with it can perform this method"}}

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { afterEach, expect, it, vi } from "vitest";
 import { createConnection } from "node:net";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -150,12 +151,12 @@ it("stops a running effect at its next boundary when the driver closes, and admi
     a.close();
     // Cancellation requested while unit 2's pause is still in flight: the
     // successor is refused until the effect reaches its next boundary.
-    expect((await b.request("typeText", { id: "el-1", text: "too-early" })).refusal).toContain("another driver");
+    expect(refusalText(await b.request("typeText", { id: "el-1", text: "too-early" }))).toContain("another driver");
     const deadline = Date.now() + 1500;
     let admitted: Answer | undefined;
     while (Date.now() < deadline) {
       const answer = await b.request("typeText", { id: "el-1", text: "after" });
-      if (answer.refusal === undefined) { admitted = answer; break; }
+      if (refusalText(answer) === undefined) { admitted = answer; break; }
       await new Promise((r) => setTimeout(r, 5));
     }
     expect(admitted).toBeDefined();

@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 // CC-06 across a driver transfer. Three things have to hold at once, and the
 // one-desktop-driver suite proves none of them because it never subscribes:
 //
@@ -85,7 +86,7 @@ it("closes the old driver's watch on disconnect, answers the new driver's watch 
 
   const a = await peer(socketPath);
   const aWatch = await a.request("subscribeElement", { id: "el-1", priority: "high" });
-  expect(aWatch.refusal).toBeUndefined();
+  expect(refusalText(aWatch)).toBeUndefined();
   const aSubscription = aWatch.result!.subscription!.subscriptionId;
   expect(sinks.has(aSubscription)).toBe(true);
 
@@ -104,7 +105,7 @@ it("closes the old driver's watch on disconnect, answers the new driver's watch 
   // until the effect has landed.
   const b = await peer(socketPath);
   const tooEarly = await b.request("typeText", { id: "el-1", text: "too-early" });
-  expect(tooEarly.refusal ?? tooEarly.result?.refusal).toContain("another driver");
+  expect(refusalText(tooEarly)).toContain("another driver");
   const bWatch = b.request("subscribeElement", { id: "el-1", priority: "high" });
   let answered = false;
   void bWatch.then(() => { answered = true; });
@@ -116,7 +117,7 @@ it("closes the old driver's watch on disconnect, answers the new driver's watch 
   release.resolve();
   await running;
   const subscribed = await bWatch;
-  expect(subscribed.refusal).toBeUndefined();
+  expect(refusalText(subscribed)).toBeUndefined();
   const bSubscription = subscribed.result!.subscription!.subscriptionId;
   await new Promise(resolve => setTimeout(resolve, 50));
   expect(b.events()).toEqual([]);
@@ -125,7 +126,7 @@ it("closes the old driver's watch on disconnect, answers the new driver's watch 
   // (3) B is the driver now; its own effect is narrated to its own watch,
   // and the daemon says what it knows: nothing about who caused it.
   const mine = await b.request("typeText", { id: "el-1", text: "mine" });
-  expect(mine.refusal ?? mine.result?.refusal).toBeUndefined();
+  expect(refusalText(mine)).toBeUndefined();
   const arrived = Date.now() + 1500;
   while (b.events().length === 0) { if (Date.now() >= arrived) throw Error("B's watch never heard B's own effect"); await new Promise(resolve => setTimeout(resolve, 5)); }
   expect(b.events()).toEqual([expect.objectContaining({ subscriptionId: bSubscription, id: "el-1", kind: "changed", attribution: "unattributed" })]);

@@ -1,3 +1,4 @@
+import { refusalCode, refusalOwner, refusalText } from "./refusal-text.js";
 import { mkdtempSync } from "node:fs";
 import { connect as netConnect, createServer as netCreateServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
@@ -67,8 +68,10 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
       for (const line of [first, second]) {
         const parsed = JSON.parse(line) as { refusal?: string; result?: unknown };
         // equality, not substring: the constant IS the whole answer
-        expect(parsed.refusal).toBe(BACKEND_UNREADABLE_REFUSAL);
-        expect(parsed.result).toBeUndefined();
+        expect(refusalText(parsed)).toBe(BACKEND_UNREADABLE_REFUSAL);
+        // the desk failed its own contract, and says so (ADR-0113)
+        expect([refusalOwner(parsed), refusalCode(parsed)]).toEqual(["daemon", "BackendUnreadable"]);
+        expect(Object.keys(parsed.result as object)).toEqual(["refusal"]);
         expect(line).not.toContain("ECONNREFUSED");
         expect(line).not.toContain("fetch");
       }
@@ -124,7 +127,7 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
     try {
       // the pre-spawn check treated the throwing backend as "no daemon-visible
       // application" (so the spawn happened), and the poll outlasted the throws
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(result.application?.name).toBe("test-app");
       expect(table.entries()).toHaveLength(1);
       expect(calls).toBeGreaterThan(3);

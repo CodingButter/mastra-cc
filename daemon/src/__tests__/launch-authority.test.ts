@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { spawn } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import type { SemanticElement } from "@mastra-cc/protocol-types";
@@ -74,9 +75,9 @@ describe("launch authority", () => {
     const context = launch({ catalog: catalogued });
     const known = resultOf(await open("test-app", backend, context));
     const unknown = resultOf(await open("zz-no-such-app", backend, context));
-    expect(known.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(unknown.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(known.refusal).toBe(unknown.refusal);
+    expect(refusalText(known)).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(unknown)).toBe(UNAVAILABLE_REFUSAL);
+    expect(known.refusal).toEqual(unknown.refusal);
     expect(known.application).toBeUndefined();
   });
 
@@ -87,7 +88,7 @@ describe("launch authority", () => {
     // the spawned sleep never appears in the accessibility tree, so the poll
     // times out with a refusal naming the wait - but the spawn happened
     expect(table.entries()).toHaveLength(1);
-    expect(result.refusal).toContain("did not become readable");
+    expect(refusalText(result)).toContain("did not become readable");
     for (const entry of table.entries()) process.kill(entry.pid, "SIGKILL");
   });
 
@@ -97,9 +98,9 @@ describe("launch authority", () => {
     const broken: LaunchCatalog = { "test-app": { argv: ["zz-no-such-binary-m21", "30"], env: {} } };
     const context = launch({ permits: new Set(["test-app"]), catalog: broken });
     const result = resultOf(await open("test-app", backend, context));
-    expect(result.refusal).toBe(COULD_NOT_START_REFUSAL);
-    expect(result.refusal).not.toContain("zz-no-such-binary-m21");
-    expect(result.refusal).not.toContain("ENOENT");
+    expect(refusalText(result)).toBe(COULD_NOT_START_REFUSAL);
+    expect(refusalText(result)).not.toContain("zz-no-such-binary-m21");
+    expect(refusalText(result)).not.toContain("ENOENT");
     expect(context.table.entries()).toHaveLength(0);
   });
 
@@ -131,7 +132,7 @@ describe("launch authority", () => {
       close: async () => undefined,
     };
     const result = resultOf(await open("test-app", spy, launch({ catalog: trap })));
-    expect(result.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(result)).toBe(UNAVAILABLE_REFUSAL);
     expect(catalogTouched).toBe(false);
     expect(treeTouched).toBe(false);
   });
@@ -142,8 +143,8 @@ describe("launch authority", () => {
     const context = launch({ catalog: DEFANGED_CATALOG });
     const gmail = resultOf(await open("gmail", backend, context));
     const unknown = resultOf(await open("zz-no-such-app", backend, context));
-    expect(gmail.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(gmail.refusal).toBe(unknown.refusal);
+    expect(refusalText(gmail)).toBe(UNAVAILABLE_REFUSAL);
+    expect(gmail.refusal).toEqual(unknown.refusal);
     expect(gmail.application).toBeUndefined();
     expect(context.table.entries()).toHaveLength(0);
   });
@@ -153,8 +154,8 @@ describe("launch authority", () => {
     const context = launch({ catalog: DEFANGED_CATALOG });
     const qt6ct = resultOf(await open("qt6ct", backend, context));
     const unknown = resultOf(await open("zz-no-such-app", backend, context));
-    expect(qt6ct.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(qt6ct.refusal).toBe(unknown.refusal);
+    expect(refusalText(qt6ct)).toBe(UNAVAILABLE_REFUSAL);
+    expect(qt6ct.refusal).toEqual(unknown.refusal);
     expect(context.table.entries()).toHaveLength(0);
     // The enabling is launch-time data (ADR-0027): the one knob that measured
     // true on Qt 6.4 rides the recipe; the Qt5-era QT_ACCESSIBILITY does not
@@ -169,7 +170,7 @@ describe("launch authority", () => {
     const missing = resultOf(
       await handleRequest({ type: "request", id: 1, method: "openApplication", params: {} }, backend, context),
     );
-    expect(missing.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(missing)).toBe(UNAVAILABLE_REFUSAL);
   });
 
   it("d: the refusal names no path and no command, and points at where existence IS answered", () => {
@@ -186,8 +187,8 @@ describe("launch authority", () => {
   it("refuses a running copy the daemon does not own, naming the restart requirement", async () => {
     const context = launch({ permits: new Set(["yad"]), catalog: { yad: { argv: ["sleep", "30"], env: {} } } });
     const result = resultOf(await open("yad", backend, context));
-    expect(result.refusal).toBe(ALREADY_RUNNING_REFUSAL);
-    expect(result.refusal).toContain("was not opened by this daemon");
+    expect(refusalText(result)).toBe(ALREADY_RUNNING_REFUSAL);
+    expect(refusalText(result)).toContain("was not opened by this daemon");
     expect(context.table.entries()).toHaveLength(0);
   });
 
@@ -199,7 +200,7 @@ describe("launch authority", () => {
       const context = launch({ permits: new Set(["yad"]), catalog: { yad: { argv: ["sleep", "30"], env: {} } }, table });
       expect(table.entries()).toHaveLength(1);
       const result = resultOf(await open("yad", backend, context));
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(result.application?.role).toBe("application");
       expect(result.application?.name).toBe("yad");
       expect(table.entries()).toHaveLength(1);
@@ -219,7 +220,7 @@ describe("launch authority", () => {
     try {
       const context = launch({ permits: new Set(["yad"]), catalog: { yad: { argv: ["sleep", "30"], env: {} } }, table });
       const result = resultOf(await open("yad", backend, context));
-      expect(result.refusal).toBeUndefined();
+      expect(refusalText(result)).toBeUndefined();
       expect(result.application).toBeDefined();
       expect(table.entries()).toHaveLength(1);
       expect(table.entries()[0]?.pid).toBe(pid);
@@ -339,7 +340,7 @@ describe("effect authority: every element method is refused before the backend i
   for (const { method, params, refusal } of cases) {
     it(`${method} is refused before the call when this session holds no authority for its class`, async () => {
       const result = await call(method, params, launch({ allows: new Set() }));
-      expect(result.refusal).toBe(refusal);
+      expect(refusalText(result)).toBe(refusal);
       expect(result.element).toBeUndefined();
     });
   }
@@ -363,7 +364,7 @@ describe("effect authority: every element method is refused before the backend i
     for (const { method, params, refusal, allow } of cases) {
       if (allow === "edit") continue;
       const result = await call(method, params, editOnly);
-      expect(result.refusal).toBe(refusal);
+      expect(refusalText(result)).toBe(refusal);
     }
   });
 
@@ -374,9 +375,9 @@ describe("effect authority: every element method is refused before the backend i
     // - one needs a launch permit, the other an operator flag - but the
     // ordering property is identical: no authority, no backend touched.
     const restart = await call("restartApplication", { name: "kate" }, launch({ permits: new Set() }));
-    expect(restart.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(restart)).toBe(UNAVAILABLE_REFUSAL);
     const acquire = await call("acquireAccessibility", {}, launch({ mayAcquireAccessibility: false }));
-    expect(acquire.refusal).toContain("--acquire-accessibility");
+    expect(refusalText(acquire)).toContain("--acquire-accessibility");
   });
 
   it("holding the class gets past the gate and reaches the backend", async () => {
@@ -395,8 +396,8 @@ describe("effect authority: every element method is refused before the backend i
         untouchable,
         launch({ allows: new Set([allow]) }),
       );
-      expect(response.refusal).toBe(BACKEND_UNREADABLE_REFUSAL);
-      expect(response.result).toBeUndefined();
+      expect(refusalText(response)).toBe(BACKEND_UNREADABLE_REFUSAL);
+      expect(Object.keys(response.result as object)).toEqual(["refusal"]);
     }
   });
 });

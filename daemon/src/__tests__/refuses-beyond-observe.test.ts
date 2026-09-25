@@ -1,3 +1,4 @@
+import { refusalCode, refusalOwner, refusalText } from "./refusal-text.js";
 import type { Backend } from "../backend.js";
 import { describe, expect, it } from "vitest";
 import { registry } from "../backends/registry.js";
@@ -38,15 +39,16 @@ describe("the effect-class gate", () => {
     // destroyElement stays unknown deliberately: the destructive class has no
     // methods, and that absence is itself doctrine (ADR-0037)
     const response = await handleRequest({ type: "request", id: 1, method: "destroyElement", params: {} }, backend);
-    expect(response.refusal).toContain("effect-class gate");
-    expect(response.refusal).toContain("destroyElement");
-    expect(response.refusal).toContain("schema");
-    expect(response.result).toBeUndefined();
+    expect(refusalText(response)).toContain("effect-class gate");
+    expect([refusalOwner(response), refusalCode(response)]).toEqual(["agent", "UnknownMethod"]);
+    expect(refusalText(response)).toContain("destroyElement");
+    expect(refusalText(response)).toContain("schema");
+    expect(Object.keys(response.result as object)).toEqual(["refusal"]);
   });
 
   it("serves both observe-class methods the schema defines", async () => {
     const query = await handleRequest({ type: "request", id: 2, method: "queryElements", params: {} }, backend);
-    expect(query.refusal).toBeUndefined();
+    expect(refusalText(query)).toBeUndefined();
     expect((query.result as { elements: unknown[] }).elements.length).toBeGreaterThan(0);
 
     const attest = await handleRequest(
@@ -54,8 +56,7 @@ describe("the effect-class gate", () => {
       backend,
     );
     // an unknown id is a backend refusal inside a served method, not a gate refusal
-    expect(attest.refusal).toBeUndefined();
-    expect((attest.result as { refusal?: string }).refusal).toContain("el-000000000000");
+    expect(refusalText((attest.result as { refusal?: string }))).toContain("el-000000000000");
   });
 
   it("no longer refuses openApplication at the gate when the session permits it", async () => {
@@ -67,7 +68,7 @@ describe("the effect-class gate", () => {
       backend,
       { permits: new Set(["yad"]), catalog: DEFANGED_CATALOG, table: new OwnershipTable(), pollBudgetMs: 50, pollIntervalMs: 10 },
     );
-    expect(response.refusal).toBeUndefined();
+    expect(["UnknownMethod", "EnforcementUnrepresentable", "EffectClassGate"]).not.toContain(refusalCode(response));
     expect(response.result).toBeDefined();
   });
 });
@@ -126,8 +127,8 @@ describe("the four operations answer for the check that actually ran", () => {
       );
       const unheld = await handleRequest({ type: "request", id: 30 + index, method, params }, backend);
 
-      const heldRefusal = (held.result as { refusal?: string }).refusal;
-      const unheldRefusal = (unheld.result as { refusal?: string }).refusal;
+      const heldRefusal = refusalText(held);
+      const unheldRefusal = refusalText(unheld);
 
       // Unheld: the scope gate answered, by name, before the backend was
       // touched - byte-identical to the constant, which IS the contract.
@@ -153,13 +154,13 @@ describe("the four operations answer for the check that actually ran", () => {
       backend,
       { permits: new Set<string>(), allows: new Set(["edit"] as const), catalog: DEFANGED_CATALOG, table: new OwnershipTable() },
     );
-    expect((malformed.result as { refusal?: string }).refusal).toContain('"value" that is not a number');
+    expect(refusalText((malformed.result as { refusal?: string }))).toContain('"value" that is not a number');
 
     const withoutAuthority = await handleRequest(
       { type: "request", id: 41, method: "setElementValue", params: { id: "el-000000000000", value: "loud" } },
       backend,
     );
-    expect((withoutAuthority.result as { refusal?: string }).refusal).toBe(SET_VALUE_SCOPE_REFUSAL);
+    expect(refusalText((withoutAuthority.result as { refusal?: string }))).toBe(SET_VALUE_SCOPE_REFUSAL);
   });
 });
 
@@ -171,9 +172,8 @@ describe("the scope gate: a session holding no effect authority is refused by na
       { type: "request", id: 5, method: "editElement", params: { id: "el-000000000000", value: "x" } },
       backend,
     );
-    expect(response.refusal).toBeUndefined();
     // a served-method refusal, byte-stable: the constant IS the contract
-    expect((response.result as { refusal?: string }).refusal).toBe(EDIT_SCOPE_REFUSAL);
+    expect(refusalText((response.result as { refusal?: string }))).toBe(EDIT_SCOPE_REFUSAL);
   });
 
   it("refuses activateElement naming the scope gate, the method and its class", async () => {
@@ -181,7 +181,7 @@ describe("the scope gate: a session holding no effect authority is refused by na
       { type: "request", id: 6, method: "activateElement", params: { id: "el-000000000000", action: "click" } },
       backend,
     );
-    const refusal = (response.result as { refusal?: string }).refusal;
+    const refusal = refusalText(response);
     expect(refusal).toContain("scope gate");
     expect(refusal).toContain("activateElement");
     expect(refusal).toContain("activate-class");
@@ -192,7 +192,7 @@ describe("the scope gate: a session holding no effect authority is refused by na
       { type: "request", id: 7, method: "submitElement", params: { id: "el-000000000000", attestation: "sends nothing" } },
       backend,
     );
-    const refusal = (response.result as { refusal?: string }).refusal;
+    const refusal = refusalText(response);
     expect(refusal).toContain("scope gate");
     expect(refusal).toContain("submitElement");
     expect(refusal).toContain("submit-class");
@@ -230,8 +230,7 @@ describe("the scope gate: a session holding no effect authority is refused by na
       [10, "submitElement", { id: "el-000000000000", attestation: "commits nothing" }],
     ] as const) {
       const response = await handleRequest({ type: "request", id, method, params }, untouchable);
-      expect(response.refusal).toBeUndefined();
-      expect((response.result as { refusal?: string }).refusal).toContain("scope gate");
+      expect(refusalText((response.result as { refusal?: string }))).toContain("scope gate");
     }
   });
 });

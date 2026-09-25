@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync } from "node:fs";
 import { connect as netConnect, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
@@ -134,7 +135,7 @@ describe("an application outside the visible set is invisible on the change stre
 
     // toBe on the full string, deliberately: "similar" refusals are how a
     // probe distinguishes them.
-    const refusalOf = (line: Line) => (line.result as { refusal?: string; subscription?: unknown }).refusal;
+    const refusalOf = (line: Line) => refusalText(line.result);
     expect(refusalOf(invisible)).toBe(SUBSCRIBE_UNKNOWN_REFUSAL);
     expect(refusalOf(nonexistent)).toBe(SUBSCRIBE_UNKNOWN_REFUSAL);
     expect(refusalOf(invisible)).toBe(refusalOf(nonexistent));

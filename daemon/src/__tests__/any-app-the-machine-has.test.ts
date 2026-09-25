@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -126,9 +127,9 @@ describe("the machine's own catalog", () => {
     const context = launch({});
     const unpermitted = await open("ordinary", context);
     const unknown = await open("zz-no-such-app", context);
-    expect(unpermitted.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(unknown.refusal).toBe(UNAVAILABLE_REFUSAL);
-    expect(unpermitted.refusal).toBe(unknown.refusal);
+    expect(refusalText(unpermitted)).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(unknown)).toBe(UNAVAILABLE_REFUSAL);
+    expect(unpermitted.refusal).toEqual(unknown.refusal);
   });
 
   it("a permitted name the enumerated machine does not claim refuses at the gate, byte-identically to unpermitted", async () => {
@@ -138,7 +139,7 @@ describe("the machine's own catalog", () => {
     // not disclose whether the permit or the machine was the missing half.
     const context = launch({ permits: new Set(["zz-no-such-app"]) });
     const answer = await open("zz-no-such-app", context);
-    expect(answer.refusal).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(answer)).toBe(UNAVAILABLE_REFUSAL);
   });
 
   it("a backend that cannot enumerate keeps the exact-name gate, and NO_RECIPE past it", async () => {
@@ -158,7 +159,7 @@ describe("the machine's own catalog", () => {
       backend,
       context,
     );
-    expect((answer.result as { refusal?: string }).refusal).toBe(NO_RECIPE_REFUSAL);
+    expect(refusalText((answer.result as { refusal?: string }))).toBe(NO_RECIPE_REFUSAL);
   });
 
   it("a permitted derived name reaches the launch path", async () => {
@@ -167,8 +168,8 @@ describe("the machine's own catalog", () => {
     // Defanged argv is a sleep, so nothing observable ever appears: the answer
     // is the honest "opened but did not become readable", NOT either refusal
     // that would mean the name was turned away before spawning.
-    expect(answer.refusal).not.toBe(UNAVAILABLE_REFUSAL);
-    expect(answer.refusal).not.toBe(NO_RECIPE_REFUSAL);
+    expect(refusalText(answer)).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(answer)).not.toBe(NO_RECIPE_REFUSAL);
   });
 
   it("two derived applications over one binary are not competing browser identities", async () => {
@@ -193,7 +194,7 @@ describe("the machine's own catalog", () => {
     const context = launch({ permits: new Set(["office-writer", "office-calc"]), catalog, table });
     try {
       const answer = await open("office-calc", context);
-      expect(answer.refusal).not.toBe(ONE_BROWSER_IDENTITY_REFUSAL);
+      expect(refusalText(answer)).not.toBe(ONE_BROWSER_IDENTITY_REFUSAL);
     } finally {
       for (const entry of table.entries()) {
         if (entry.pid === process.pid) continue;

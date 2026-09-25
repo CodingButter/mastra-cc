@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import { handleRequest } from "../server.js";
 import { ElementGoneError, PeerGoneError } from "../backend.js";
@@ -39,33 +40,33 @@ async function ask(back: Backend, method = "queryElements") {
 describe("a call that fails because one application is gone", () => {
   it("says that application is gone, and that the rest of the desk is still there", async () => {
     const answer = await ask(throwing(new PeerGoneError("d-bus call failed for :1.14|...")));
-    expect(answer.refusal).toContain("no longer running");
-    expect(answer.refusal).toContain("the rest of the desk is still there");
-    expect(answer.refusal).not.toContain("the desktop could not be read");
+    expect(refusalText(answer)).toContain("no longer running");
+    expect(refusalText(answer)).toContain("the rest of the desk is still there");
+    expect(refusalText(answer)).not.toContain("the desktop could not be read");
   });
 
   it("tells the caller what to do next - ask what is on the desk again", async () => {
     const answer = await ask(throwing(new PeerGoneError("gone")));
-    expect(answer.refusal).toContain("ask what is on the desk again");
+    expect(refusalText(answer)).toContain("ask what is on the desk again");
   });
 
   it("carries no bus vocabulary out to the caller", async () => {
     const answer = await ask(
       throwing(new PeerGoneError('d-bus call failed for :1.14|/org/a11y/atspi/accessible/1923: {"name":"DBusError"}')),
     );
-    expect(answer.refusal).not.toContain(":1.14");
-    expect(answer.refusal).not.toContain("d-bus");
-    expect(answer.refusal).not.toContain("atspi");
+    expect(refusalText(answer)).not.toContain(":1.14");
+    expect(refusalText(answer)).not.toContain("d-bus");
+    expect(refusalText(answer)).not.toContain("atspi");
   });
 
   it("still condemns the desk when the failure names no application at all", async () => {
     const answer = await ask(throwing(new Error("the bus socket closed")));
-    expect(answer.refusal).toBe("the desktop could not be read by this session's backend");
+    expect(refusalText(answer)).toBe("the desktop could not be read by this session's backend");
   });
 
   it("holds the same line on a read as on a query - any method, one meaning", async () => {
     const answer = await ask(throwing(new PeerGoneError("gone")), "readElementContent");
-    expect(answer.refusal).toContain("no longer running");
+    expect(refusalText(answer)).toContain("no longer running");
   });
 });
 
@@ -95,14 +96,14 @@ describe("the bus errors that mean a peer is gone", () => {
 describe("a call aimed at an element that no longer exists", () => {
   it("says that element is gone and to work from a fresh answer", async () => {
     const answer = await ask(throwing(new ElementGoneError("No such object path")));
-    expect(answer.refusal).toContain("no longer on the desk");
-    expect(answer.refusal).toContain("ask what is there now");
-    expect(answer.refusal).not.toContain("the desktop could not be read");
+    expect(refusalText(answer)).toContain("no longer on the desk");
+    expect(refusalText(answer)).toContain("ask what is there now");
+    expect(refusalText(answer)).not.toContain("the desktop could not be read");
   });
 
   it("does not accuse the application of having died - it has not", async () => {
     const answer = await ask(throwing(new ElementGoneError("No such object path")));
-    expect(answer.refusal).not.toContain("no longer running");
+    expect(refusalText(answer)).not.toContain("no longer running");
   });
 
   it("reads the bus error the platform uses for a destroyed node", () => {

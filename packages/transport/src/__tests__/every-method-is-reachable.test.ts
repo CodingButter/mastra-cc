@@ -117,8 +117,9 @@ describe("every method the contract declares is reachable through this client", 
 
   it("hands a refusal back as a refusal, for an acting method as for an observing one", async () => {
     // The eight new bindings inherit the refusal path the five old ones use.
-    // This asserts that inheritance rather than assuming it: a refusal that
-    // arrived as a resolved promise would read to a caller as "it worked".
+    // This asserts that inheritance rather than assuming it: a refusal
+    // resolves as a result carrying its owner and code (ADR-0113), so no
+    // caller can read it as "it worked" without ignoring the refusal field.
     const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-refuse-")), "mock.sock");
     const refusing = createServer((socket: Socket) => {
       let buffer = "";
@@ -132,7 +133,7 @@ describe("every method the contract declares is reachable through this client", 
           if (!line.trim()) continue;
           const message = JSON.parse(line) as { type: string; id?: number };
           if (message.type === "hello") socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
-          else socket.write(`${JSON.stringify({ type: "response", id: message.id, refusal: "refused by the scope gate" })}\n`);
+          else socket.write(`${JSON.stringify({ type: "response", id: message.id, result: { refusal: { class: "agent", code: "EffectClassGate", message: "refused by the scope gate" } } })}\n`);
         }
       });
     });
@@ -140,9 +141,9 @@ describe("every method the contract declares is reachable through this client", 
     await new Promise<void>((resolve) => refusing.listen(socketPath, resolve));
     const client: TransportClient = await connect({ socketPath });
 
-    await expect(client.submitElement({ id: "el-0123456789ab", attestation: "commits" })).rejects.toThrow(
-      /refused by the scope gate/,
-    );
+    await expect(client.submitElement({ id: "el-0123456789ab", attestation: "commits" })).resolves.toEqual({
+      refusal: { class: "agent", code: "EffectClassGate", message: "refused by the scope gate" },
+    });
     client.close();
   });
 });

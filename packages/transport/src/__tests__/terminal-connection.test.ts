@@ -144,13 +144,14 @@ describe("terminal transport state", () => {
 
   it("keeps a response refusal non-terminal", async () => {
     const daemon = await peer((message, socket) => {
-      socket.write(`${JSON.stringify({ type: "response", id: message.id, refusal: "nope" })}\n`);
+      socket.write(`${JSON.stringify({ type: "response", id: message.id, result: { refusal: { class: "world", code: "ElementGone", message: "nope" } } })}\n`);
     });
     peers.push(daemon);
     const client = await connect({ socketPath: daemon.socketPath });
 
-    await expect(client.queryElements({})).rejects.toThrow("nope");
-    await expect(client.queryElements({})).rejects.toThrow("nope");
+    const refused = { refusal: { class: "world", code: "ElementGone", message: "nope" } };
+    await expect(client.queryElements({})).resolves.toEqual(refused);
+    await expect(client.queryElements({})).resolves.toEqual(refused);
 
     expect(daemon.requests).toHaveLength(2);
     client.close();

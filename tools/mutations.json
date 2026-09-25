@@ -922,7 +922,7 @@
   {
     "name": "semantic-content-reader-method-removed",
     "file": "protocol/schema.json",
-    "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"string\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
+    "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"refusal\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
     "cwd": "tools",
     "testFile": "__tests__/schema.test.mjs"
   },
@@ -1814,7 +1814,7 @@
   {
     "name": "a-dead-application-answered-as-a-dead-desk",
     "file": "daemon/src/server.ts",
-    "find": "    if (error instanceof PeerGoneError) {\n      return { type: \"response\", id: request.id, refusal: APPLICATION_GONE_REFUSAL };\n    }\n",
+    "find": "    if (error instanceof PeerGoneError) {\n      return refusedResponse(request.id, \"ApplicationGone\", APPLICATION_GONE_REFUSAL);\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
   },
@@ -1829,7 +1829,7 @@
   {
     "name": "a-dead-element-answered-as-a-dead-desk",
     "file": "daemon/src/server.ts",
-    "find": "    if (error instanceof ElementGoneError) {\n      return { type: \"response\", id: request.id, refusal: ELEMENT_GONE_REFUSAL };\n    }\n",
+    "find": "    if (error instanceof ElementGoneError) {\n      return refusedResponse(request.id, \"ElementGone\", ELEMENT_GONE_REFUSAL);\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/one-application-that-died-is-not-a-desk-that-died.test.ts"
   },
@@ -2464,5 +2464,21 @@
     "replace": "if (false) {",
     "cwd": "daemon",
     "testFile": "src/backends/atspi/__tests__/a-silent-application-is-refused-in-time.test.ts"
+  },
+  {
+    "name": "a-refusal-forgets-whose-it-is",
+    "file": "daemon/src/audit.ts",
+    "find": "  return { class: REFUSAL_OWNER[code], code, message };",
+    "replace": "  return { code, message } as Refusal;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
+  },
+  {
+    "name": "the-backstop-blames-the-caller",
+    "file": "daemon/src/audit.ts",
+    "find": "  Unclassified: \"daemon\",",
+    "replace": "  Unclassified: \"agent\",",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
   }
 ]

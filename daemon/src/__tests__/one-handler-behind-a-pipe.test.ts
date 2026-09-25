@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it, vi } from "vitest";
 import { PROTOCOL_VERSION, SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
 import { registry } from "../backends/registry.js";
@@ -87,7 +88,7 @@ describe("one connection handler, driven through a pipe", () => {
     expect(pipe.written).toHaveLength(1);
     const parsed = JSON.parse(pipe.written[0]) as { type: string; refusal: string };
     expect(parsed.type).toBe("refusal");
-    expect(parsed.refusal).toBe(
+    expect(refusalText(parsed)).toBe(
       `daemon: refused at connect - this daemon speaks schema digest ${SCHEMA_DIGEST} ` +
         `but the transport was built against schema digest deadbeefcafe (digest-agreement check)`,
     );

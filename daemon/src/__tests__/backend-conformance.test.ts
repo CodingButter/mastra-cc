@@ -1,3 +1,4 @@
+import { refusalText } from "./refusal-text.js";
 import { describe, expect, it } from "vitest";
 import { ROLES, validateSemanticElement } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
@@ -128,13 +129,13 @@ for (const [name, factory] of Object.entries(registry)) {
       const { elements } = await backend.queryElements({});
       const attested = await backend.attestElement({ id: elements[0].id });
       expect(attested.element?.id).toBe(elements[0].id);
-      expect(attested.refusal).toBeUndefined();
+      expect(refusalText(attested)).toBeUndefined();
     });
 
     it("refuses an unknown element with a named refusal, not an empty success", async () => {
       const attested = await backend.attestElement({ id: "el-000000000000" });
       expect(attested.element).toBeUndefined();
-      expect(attested.refusal).toContain("el-000000000000");
+      expect(refusalText(attested)).toContain("el-000000000000");
     });
 
     // The subscription half of the seam (ADR-0039). A route that cannot watch
