@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
-import { createServer, type Server, type Socket } from "node:net";
+import { createConnection, createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
 import { randomBytes } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -2996,7 +2996,6 @@ export function startServer(options: {
   // that filters events and hides subtrees, so the two can never disagree.
   const launch = options.launch === undefined ? undefined : { ...options.launch, visibility };
   mkdirSync(dirname(socketPath), { recursive: true });
-  rmSync(socketPath, { force: true });
 
   const server = createServer((socket) => {
     // The error -> hard drop behaviour stays in the adapter rather than in
@@ -3007,9 +3006,40 @@ export function startServer(options: {
     serveConnection(socketPipe(socket), { backend, launch, visibility });
   });
 
+  return claimSocketPath(socketPath).then(
+    () =>
+      new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(socketPath, () => resolve(server));
+      }),
+  );
+}
+
+/**
+ * A socket path belongs to the daemon listening on it (ADR-0115). A file at
+ * the path is removed only when nothing answers there - a stale leftover.
+ * If a live daemon answers, starting a second one refuses rather than
+ * orphaning every client of the first. Two daemons starting in the same
+ * instant can still race; that window is accepted.
+ */
+function claimSocketPath(socketPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(socketPath, () => resolve(server));
+    const probe = createConnection(socketPath);
+    probe.once("connect", () => {
+      probe.destroy();
+      reject(
+        new Error(
+          `daemon: a daemon is already listening at ${socketPath} - refusing to start a second one over it; stop the first, or choose another --socket`,
+        ),
+      );
+    });
+    probe.once("error", (error: NodeJS.ErrnoException) => {
+      probe.destroy();
+      if (error.code === "ECONNREFUSED" || error.code === "ENOENT") {
+        rmSync(socketPath, { force: true });
+        resolve();
+      } else reject(error);
+    });
   });
 }
 
