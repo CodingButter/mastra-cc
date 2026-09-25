@@ -1,0 +1,5 @@
+$ git rev-parse HEAD   # origin/master
+a919bd937d461208935a24d416b09e2d4f7f720f
+$ rm -rf packages/protocol-types/src && pnpm turbo run typecheck --force
+[1m Tasks:    [32m[1m0 successful[0m, 1 total[0m
+[1mFailed:    [31m[1m@mastra-cc/protocol-types#build[0m[0m

@@ -194,3 +194,4 @@ larger than the difference.
 [Element memory](element-memory/README.md) (ADR-0116): on `master` 50,000 answered ids are all held; the branch holds the 10,000 cap.
 
 [Stalled answers](stalled-answers/README.md) (ADR-0106 amendment): on `master` a non-reading client made the daemon retain ~49 MB of answers; the branch stays under the bound and delivers every answer in order.
+[Protocol in turbo](protocol-in-turbo/README.md) (audit M4): on `master` a missing or stale generation fails typecheck; the branch regenerates first and passes 9/9, and a schema parameter the server drops goes red by name.

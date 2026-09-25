@@ -21,9 +21,9 @@ Everything here exists because the prototype did the opposite at least once. Whe
 Since M1 there is code to install and gates to run. Node 22 or later and pnpm 10 are the toolchain; versions are pinned by the workspace, not by this document.
 
 ```sh
+node protocol/generate.mjs          # once, on a fresh clone: pnpm must see the generated package to link it
 pnpm install
-node protocol/generate.mjs          # generated bindings are build output, never committed
-pnpm turbo run build lint typecheck test
+pnpm turbo run build lint typecheck test   # regenerates from protocol/schema.json first (turbo task //#generate)
 ```
 
 On a fresh checkout, run the generator **before** the first install if install complains about `@mastra-cc/protocol-types` — CI does it in that order for the same reason. The wider gate set (freeze gate, determinism, mutations, boundary pins, licences, docs check, contract check) is what CI runs; each is a single `node tools/...` or `node scripts/...` invocation you can run locally, and [tools/pins/README.md](tools/pins/README.md) explains which boundary pins are wired and which are deliberately absent. Machine setup beyond the toolchain lives in `infra/apply.sh`, per §2.

@@ -1,16 +1,22 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
+    "//#generate": {
+      "inputs": ["protocol/schema.json", "protocol/generate.mjs"],
+      "outputs": ["packages/protocol-types/package.json", "packages/protocol-types/src/**", "packages/protocol-types/tsconfig.json"]
+    },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["//#generate", "^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
-    "lint": {},
+    "lint": {
+      "dependsOn": ["//#generate"]
+    },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["//#generate", "^build"]
     },
     "test": {
-      "dependsOn": ["^build", "build"]
+      "dependsOn": ["//#generate", "^build", "build"]
     }
   }
 }
