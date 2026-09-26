@@ -2568,5 +2568,13 @@
     "replace": "if (!this.form) return 'no-form';",
     "cwd": "daemon",
     "testFile": "src/backends/cdp/__tests__/a-commit-is-a-commit.test.ts"
+  },
+  {
+    "name": "a-missing-id-reaches-the-backend",
+    "file": "daemon/src/server/dispatch.ts",
+    "find": "  if (typeof params.id !== \"string\") return Promise.resolve({ refusal: missingIdRefusal(\"clickElement\"), refusalClass: \"MalformedParameter\" as const });\n  const id = params.id;",
+    "replace": "  const id = typeof params.id === \"string\" ? params.id : \"\";",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-missing-id-is-the-callers-mistake.test.ts"
   }
 ]

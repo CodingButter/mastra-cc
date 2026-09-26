@@ -164,13 +164,15 @@ export function causeOf(application: string | undefined): AuditCause {
 }
 
 export function editElement(params: { id?: unknown; value?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("editElement"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const value = typeof params.value === "string" ? params.value : "";
   return performEffect("edit", "editElement", EDIT_SCOPE_REFUSAL, launch, backend, id, () => backend.editElement({ id, value }) as Promise<{ element: SemanticElement }>);
 }
 
 export function activateElement(params: { id?: unknown; action?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("activateElement"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const action = typeof params.action === "string" ? params.action : "";
   return performEffect("activate", "activateElement", ACTIVATE_SCOPE_REFUSAL, launch, backend, id, () => backend.activateElement({ id, action }) as Promise<{ element: SemanticElement }>);
 }
@@ -180,7 +182,8 @@ export function activateElement(params: { id?: unknown; action?: unknown }, back
 // commit differ - so the check that means something is the daemon's own, made
 // on the seam against the element as it stands (AttestationFailedError above).
 export function submitElement(params: { id?: unknown; attestation?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("submitElement"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const attestation = typeof params.attestation === "string" ? params.attestation : "";
   return performEffect("submit", "submitElement", SUBMIT_SCOPE_REFUSAL, launch, backend, id, () => backend.submitElement({ id, attestation }) as Promise<{ element: SemanticElement }>, attestation);
 }
@@ -208,12 +211,20 @@ export function submitElement(params: { id?: unknown; attestation?: unknown }, b
 // The sentence names the method, the field, and what would change the answer
 // (ADR-0008 clause 5), in the shape the change stream's priority refusal
 // already uses for a malformed parameter.
+// An element id is the one thing every element method needs; a request that
+// names none (or names it under another key) is the caller's mistake, not a
+// vanished element - so it is refused here, before any backend is asked.
+export function missingIdRefusal(method: string): string {
+  return `refused before the call: "${method}" needs an "id" that is a string - the id an element query returned; this request carried none, so no element was touched`;
+}
+
 export function malformedNumberRefusal(method: string, field: string): string {
   return `refused before the call: "${method}" was given a ${JSON.stringify(field)} that is not a number - the operation is expressed in numbers the element itself published, and there is no value this daemon could substitute that the caller actually asked for`;
 }
 
 export function setElementValue(params: { id?: unknown; value?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("setElementValue"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const value = params.value;
   return performEffect("edit", "setElementValue", SET_VALUE_SCOPE_REFUSAL, launch, backend, id, async () => {
     if (typeof value !== "number" || !Number.isFinite(value)) return { refusal: malformedNumberRefusal("setElementValue", "value"), refusalClass: "MalformedParameter" as const };
@@ -231,7 +242,8 @@ export function offsetOf(offset: unknown): number | undefined | "malformed" {
 }
 
 export function setElementText(params: { id?: unknown; text?: unknown; offset?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("setElementText"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const text = typeof params.text === "string" ? params.text : "";
   const offset = offsetOf(params.offset);
   return performEffect("edit", "setElementText", SET_TEXT_SCOPE_REFUSAL, launch, backend, id, async () => {
@@ -241,7 +253,8 @@ export function setElementText(params: { id?: unknown; text?: unknown; offset?: 
 }
 
 export function setElementCaret(params: { id?: unknown; offset?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("setElementCaret"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const offset = offsetOf(params.offset);
   return performEffect("edit", "setElementCaret", SET_CARET_SCOPE_REFUSAL, launch, backend, id, async () => {
     if (offset === "malformed") return { refusal: malformedNumberRefusal("setElementCaret", "offset"), refusalClass: "MalformedParameter" as const };
@@ -250,7 +263,8 @@ export function setElementCaret(params: { id?: unknown; offset?: unknown }, back
 }
 
 export function revealElement(params: { id?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("revealElement"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   return performEffect("activate", "revealElement", REVEAL_SCOPE_REFUSAL, launch, backend, id, () => backend.revealElement({ id }));
 }
 
@@ -282,7 +296,8 @@ export function revealElement(params: { id?: unknown }, backend: Backend, launch
 // except a caller explicitly asking for one. It is asserted by a test rather
 // than left to a reader's grep.
 export function sendKeyChord(params: { id?: unknown; chord?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("sendKeyChord"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const chord = typeof params.chord === "string" ? params.chord : "";
   return performEffect(
     "rawInput",
@@ -328,7 +343,8 @@ export function sendKeyChord(params: { id?: unknown; chord?: unknown }, backend:
 // semantic write was refused would be doing by keystroke what it had just been
 // told it may not do (ADR-0046 clause 3).
 export function clearElementText(params: { id?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("clearElementText"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   return performEffect(
     "rawInput",
     "clearElementText",
@@ -371,7 +387,8 @@ export function clickElement(
   backend: Backend,
   launch: LaunchContext,
 ) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("clickElement"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   return performEffect(
     "rawInput",
     "clickElement",
@@ -412,7 +429,8 @@ export function clickElement(
 }
 
 export function typeText(params: { id?: unknown; text?: unknown }, backend: Backend, launch: LaunchContext) {
-  const id = typeof params.id === "string" ? params.id : "";
+  if (typeof params.id !== "string") return Promise.resolve({ refusal: missingIdRefusal("typeText"), refusalClass: "MalformedParameter" as const });
+  const id = params.id;
   const text = typeof params.text === "string" ? params.text : "";
   return performEffect(
     "rawInput",
