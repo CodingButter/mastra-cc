@@ -64,6 +64,20 @@ def inside():
     print("display processes: " + ", ".join(names), flush=True)
     if "kwin_wayland" not in names or "Xwayland" not in names:
         raise RuntimeError("not the KDE Wayland/Xwayland session this diagnosis covers")
+    xwayland = run(["pgrep", "-u", str(os.getuid()), "-x", "Xwayland"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).split()
+    matching = [Path(f"/proc/{pid.decode()}/cmdline").read_bytes().split(b"\0") for pid in xwayland]
+    matching = [args for args in matching if os.environ["DISPLAY"].encode() in args]
+    if len(matching) != 1 or b"-rootless" not in matching[0]:
+        raise RuntimeError("expected one rootless Xwayland serving the selected DISPLAY")
+    print("selected Xwayland: rootless=yes", flush=True)
+
+    xwayland = run(["pgrep", "-u", str(os.getuid()), "-x", "Xwayland"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).split()
+    display = os.environ["DISPLAY"].split(".")[0].encode()
+    matching = [Path(f"/proc/{pid.decode()}/cmdline").read_bytes().split(b"\0") for pid in xwayland]
+    matching = [args for args in matching if display in args]
+    if len(matching) != 1 or b"-rootless" not in matching[0]:
+        raise RuntimeError("expected exactly one rootless Xwayland for the selected display")
+    print("selected-display Xwayland rootless: yes", flush=True)
 
     code, size, _, error = capture(["xwd", "-root", "-silent"])
     print(f"desktop xwd: exit={code}; bytes={size}; {error.strip()}", flush=True)
