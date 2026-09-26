@@ -1,0 +1,6 @@
+kinfocenter: absent
+sidebar listitems (16): Quick Settings | Mouse & Touchpad | Keyboard | Touchscreen | Game Controller | Display & Monitor | Accessibility | Disks & Cameras | Wi-Fi & Internet | Wallpaper | Colors & Themes | Text & Fonts | Animations | Default Applications | User Feedback | Region & Language
+search -> {"kind":"text","value":"About"}
+listitems after search: 
+elements: 132; matches:
+PROBE: OS NAME NOT FOUND

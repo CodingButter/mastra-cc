@@ -1,4 +1,6 @@
-# Cold-agent benchmark — the daemon-core completion gate
+# Cold-agent benchmark — the daemon-core completion gate (host-only run)
+
+> **Host-only.** This run was on the minibeast host (GNOME on Wayland), not in the Webtop container, and its web tasks used the headless CDP route. For the Webtop run over the accessibility route (29/30, 0 daemon refusals), see [webtop/README.md](webtop/README.md).
 
 **Verdict: gate met.** In 25 cold runs there were **0 refusals of class `daemon`**. Every failed run can be traced to `world` or `agent` refusals, or to the agent running out of turns.
 

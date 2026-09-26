@@ -1,0 +1,11 @@
+kinfocenter: installed
+sidebar listitems (16): Quick Settings | Mouse & Touchpad | Keyboard | Touchscreen | Game Controller | Display & Monitor | Accessibility | Disks & Cameras | Wi-Fi & Internet | Wallpaper | Colors & Themes | Text & Fonts | Animations | Default Applications | User Feedback | Region & Language
+search -> {"kind":"text","value":"About"}
+listitems after search: About this System
+press "About this System" actions=Press
+ -> ok
+elements: 148; matches:
+  generic name="Kubuntu 26.04 LTS" content="Kubuntu 26.04 LTS"
+  label name="<a href='https://www.kubuntu.org'>https://www.kubuntu.org</a>" content="<a href='https://www.kubuntu.org'>https://www.kubuntu.org</a>"
+  generic name="KDE Plasma Version:" content="KDE Plasma Version:"
+PROBE: OS NAME REACHABLE

@@ -1,0 +1,31 @@
+chromium executable (/proc/<pid>/exe): /usr/lib/chromium/chromium
+AT-SPI applications: ['kwin', 'ActivityManager', 'plasmashell', 'kded6', 'systemsettings', 'Chromium']
+grant: {"applications":[{"name":"Chromium","executable":"/usr/lib/chromium/chromium"}]} --allow edit --allow activate --allow submit --allow rawInput
+== form
+  daemon: typeText textbox "Full name" -> ok
+OK   Full name holds the text - observed "Ada Lovelace"
+  daemon: typeText textbox "Email" -> ok
+OK   Email holds the text - observed "ada@example.org"
+  daemon: select menuitem "Evening" (published select,showContextMenu) -> ok
+OK   Shift is Evening - observed "Evening"
+  daemon: check checkbox "I would like a T-shirt" (published check,showContextMenu) -> ok
+OK   T-shirt box is checked - observed true
+  daemon: press button "Sign up" (published press,showContextMenu) -> ok
+OK   server received the sign-up - observed {"name":"Ada Lovelace","email":"ada@example.org","shift":"Evening","tshirt":"yes"}
+== react todo
+  daemon: typeText textbox "New item" -> ok
+OK   controlled input holds Milk - observed "Milk"
+  daemon: press button "Add item" (published press,showContextMenu) -> ok
+OK   server received the list - observed ["Milk"]
+== bad page
+  unlabelled text boxes over the daemon: "Address and search bar", "your name", ""
+  daemon: typeText "your name" text box -> ok
+OK   unlabelled input holds Grace - observed "Grace"
+  elements publishing click: button "Restore" | button "Home" | button "" | button "" | button "Clear input" | button "Close side panel" | button "Energy Saver is on" | button "Performance issue alert" | button "Control your music, videos, and more" | button "Apps" | generic "" | generic "" | button "Close this view" | button "Close this view" | generic ""
+  elements publishing clickAncestor: text "Send it" | text "☐ Subscribe"
+  daemon: clickAncestor "Send it" -> ok
+OK   #out says clicked - observed "clicked"
+OK   server saw the send - observed {"name":"Grace","sent":true,"subscribed":false}
+  daemon: clickAncestor "Subscribe" -> ok
+OK   fake checkbox turned on - observed "☑ Subscribe"
+ROUTE: GREEN
