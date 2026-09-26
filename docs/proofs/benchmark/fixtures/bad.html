@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>Newsletter</title>
+<!-- Deliberately badly built: a div for a button, a roleless span for a
+     checkbox, inputs with no labels. Every state change is reported to the
+     fixture server so the harness can check it without asking the daemon. -->
+<h1>Newsletter</h1>
+<input id="who" placeholder="your name"> <input id="extra">
+<div id="send" style="display:inline-block;padding:4px 10px;background:#36c;color:#fff;cursor:pointer">Send it</div>
+<p><span id="sub" style="cursor:pointer">☐ Subscribe</span></p>
+<p id="out"></p>
+<script>
+  const report = () => fetch("/state", { method: "POST", body: JSON.stringify({
+    name: document.getElementById("who").value,
+    sent: document.getElementById("out").textContent === "clicked",
+    subscribed: document.getElementById("sub").textContent.startsWith("☑") }) });
+  document.getElementById("send").onclick = () => { document.getElementById("out").textContent = "clicked"; report(); };
+  document.getElementById("sub").onclick = (e) => {
+    const s = e.currentTarget; s.textContent = (s.textContent.startsWith("☐") ? "☑" : "☐") + " Subscribe"; report(); };
+</script>
