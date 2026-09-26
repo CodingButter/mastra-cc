@@ -16,6 +16,7 @@ const opt = (n, d) => { const i = process.argv.indexOf(n); return i < 0 ? d : pr
 const RUNS = Number(opt("--runs", "5"));
 const ONLY = opt("--only", "")?.split(",").filter(Boolean);
 const OUT = opt("--out", "results.jsonl");
+const PROVIDER_OUT = OUT.replace(/\.jsonl$/, "") + "-provider-refused.jsonl";
 const MODEL = process.env.MODEL ?? "google/gemini-3.8-flash";
 const CONTAINER = process.env.MASTRA_CC_WEBTOP_CONTAINER ?? "mcc-bench";
 const WS_PORT = 9990;
@@ -173,9 +174,13 @@ for (const [name, task] of Object.entries(TASKS)) {
     let r;
     for (let attempt = 1; ; attempt++) {
       r = await runOnce(name, task, n);
-      const infra = /quota|RESOURCE_EXHAUSTED|high demand|depleted|\b402\b|\b429\b|\b503\b|overloaded|billing/i.test(`${r.error ?? ""} ${r.answer ?? ""}`);
-      if (!infra || attempt === 4) { r.attempts = attempt; if (infra) r.infra = "provider"; break; }
-      appendFileSync(join(here, "bench-webtop-provider-refused.jsonl"), JSON.stringify({ ...r, attempt }) + "\n");
+      const infra = /quota|RESOURCE_EXHAUSTED|high demand|depleted|\b402\b|\b429\b|\b503\b|overloaded|billing/i.test(r.error ?? "");
+      if (!infra) { r.attempts = attempt; break; }
+      appendFileSync(PROVIDER_OUT, JSON.stringify({ ...r, attempt, infra: "provider" }) + "\n");
+      if (attempt === 4) {
+        console.error(`${name}#${n} BLOCKED: provider refused all 4 attempts; no scored record written`);
+        process.exit(2);
+      }
       console.log(`${name}#${n} provider refused (attempt ${attempt}); retrying in 90s`);
       await sleep(90_000);
     }
