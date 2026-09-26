@@ -211,4 +211,5 @@ larger than the difference.
 
 [Truthful claims](truthful-claims/README.md) (ADR-0026 amended): no proof switch in production, dispatch refuses inherited names, and an effect whose receipt cannot be written is refused, or says so if the receipt is lost after the fact.
 - [benchmark-daemon-faults](benchmark-daemon-faults/README.md): capture and reveal failures the benchmark saw come back with their own world-class codes instead of daemon backstops.
-- [benchmark](benchmark/README.md): the 25-run cold-agent completion gate - 10/25 pass, zero daemon-class refusals, every failure owned by the world or the agent.
+- [benchmark](benchmark/README.md): the 25-run cold-agent completion gate - 10/25 pass, zero daemon-class refusals, every failure owned by the world or the agent. Host-only (minibeast, GNOME/Wayland).
+- [benchmark/webtop](benchmark/webtop/README.md): the same benchmark in the KDE Webtop container, with web tasks in visible Chromium over the accessibility route - 29/30 pass, zero daemon-class refusals; the earlier headless-CDP Webtop run is kept, labelled.
