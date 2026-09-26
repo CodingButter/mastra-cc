@@ -1,4 +1,4 @@
-# Why the Webtop benchmark's X root-window capture fails
+# Webtop X root-window capture diagnosis
 
 **Diagnosis, not a screenshot fix.** On September 26, 2026, the benchmark container's KDE Wayland/Xwayland desktop rejected `xwd -root -silent` with `BadMatch` at `X_GetImage`. The same executable and desktop user captured an isolated Xvfb screen successfully. The failure precedes the daemon's image decoding and cropping.
 
@@ -19,7 +19,7 @@ Expected final line: `DIAGNOSIS: VERIFIED (not a screenshot fix); pixels discard
 DOCKER_HOST=unix:///var/run/docker.sock python3 docs/proofs/webtop-capture/probe.py mcc-capture-no-such-container
 ```
 
-The script selects exactly one desktop-user `plasmashell`, copies only the display/session connection variables from its environment, and does not print the session bus address or full environment. Capture commands have eight-second limits; D-Bus calls have eight-second limits; helper commands have twelve-second limits; the in-container diagnostic has a 45-second limit and the host waits at most fifty seconds for `docker exec`. The nonexistent-container control tests setup failure only, not every unexpected-result branch. Xvfb is temporary and isolated, not a replacement for the benchmark desktop. Pixel output uses private temporary files and is discarded, never committed. No desktop apps are stopped, permission configuration changed, or model requests sent.
+The script selects exactly one desktop-user `plasmashell`, copies only the display/session connection variables from its environment, and does not print the session bus address or full environment. Capture commands have eight-second limits; D-Bus calls have eight-second limits; helper commands have twelve-second limits; the in-container diagnostic has a 45-second limit with three-second kill escalation and the host waits at most fifty seconds for `docker exec`. Termination unwinds active helper calls and kills their process groups. The nonexistent-container control tests setup failure only, not every unexpected-result branch. Xvfb is temporary and isolated, not a replacement for the benchmark desktop. Pixel output uses private temporary files and is discarded, never committed. No desktop apps are stopped, permission configuration changed, or model requests sent.
 
 ## Measured results
 

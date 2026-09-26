@@ -17,6 +17,10 @@ def run(command, **kwargs):
         os.killpg(child.pid, signal.SIGKILL)
         child.communicate()
         raise RuntimeError(f"timed out: {command[0]}") from None
+    finally:
+        if child.poll() is None:
+            os.killpg(child.pid, signal.SIGKILL)
+            child.wait()
     if child.returncode:
         raise RuntimeError(f"{command[0]} exited {child.returncode}: {(stderr or b'')[:1000].decode(errors='replace')}")
     return stdout
@@ -31,6 +35,10 @@ def capture(command):
             os.killpg(child.pid, signal.SIGKILL)
             child.wait()
             raise RuntimeError("capture timed out") from None
+        finally:
+            if child.poll() is None:
+                os.killpg(child.pid, signal.SIGKILL)
+                child.wait()
         size = pixels.tell()
         pixels.seek(0)
         header = pixels.read(100)
@@ -43,6 +51,10 @@ def inside():
     from gi.repository import Gio, GLib
     import resource
 
+    def terminated(signum, frame):
+        raise RuntimeError("diagnostic terminated; cleaning up active helpers")
+
+    signal.signal(signal.SIGTERM, terminated)
     resource.setrlimit(resource.RLIMIT_FSIZE, (64 * 1024 * 1024, 64 * 1024 * 1024))
     pids = run(["pgrep", "-u", str(os.getuid()), "-x", "plasmashell"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).split()
     if len(pids) != 1:
@@ -134,7 +146,7 @@ if __name__ == "__main__":
             # Docker exec gets its own bounded in-container timeout: killing only
             # the host Docker client does not necessarily kill the remote process.
             with Path(__file__).open("rb") as source:
-                child = subprocess.run(["docker", "exec", "-i", "-u", "1000", container, "timeout", "45", "python3", "-", "--inside"], stdin=source, timeout=50)
+                child = subprocess.run(["docker", "exec", "-i", "-u", "1000", container, "timeout", "--kill-after=3", "45", "python3", "-", "--inside"], stdin=source, timeout=50)
             if child.returncode:
                 raise RuntimeError(f"container diagnostic exited {child.returncode}")
     except Exception as error:
