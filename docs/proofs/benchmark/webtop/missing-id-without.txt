@@ -1,0 +1,5 @@
+repo: /tmp/core-11-base @ 235d043
+request: clickElement {"element":"el-000000000001"}  (no "id")
+refusal: world/UnperformableElementError
+message: no element with id "" is known to this daemon (never answered, or forgotten after newer answers) - nothing to act on
+MISSING-ID: BLAMED ON SOMEONE ELSE

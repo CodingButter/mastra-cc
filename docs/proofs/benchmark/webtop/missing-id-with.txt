@@ -1,0 +1,5 @@
+repo: /tmp/core-11 @ 5b28cd4
+request: clickElement {"element":"el-000000000001"}  (no "id")
+refusal: agent/MalformedParameter
+message: refused before the call: "clickElement" needs an "id" that is a string - the id an element query returned; this request carried none, so no element was touched
+MISSING-ID: CALLER'S MISTAKE
