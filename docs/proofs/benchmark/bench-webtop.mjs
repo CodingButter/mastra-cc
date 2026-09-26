@@ -102,6 +102,11 @@ const TASKS = {
     prompt: "Chrome has a shopping list app open. Add two items to the list: milk, then eggs.",
     check: () => { const s = seen().state; return { ok: JSON.stringify(s) === JSON.stringify(["milk", "eggs"]), observed: JSON.stringify(s ?? null) }; },
   },
+  bad: {
+    kind: "web", path: "/bad",
+    prompt: "Chrome has a newsletter page open. Enter the name Grace, press \"Send it\", and turn on Subscribe.",
+    check: () => { const s = seen().state; const ok = s?.name === "Grace" && s?.sent === true && s?.subscribed === true; return { ok, observed: JSON.stringify(s ?? null) }; },
+  },
 };
 
 async function runOnce(name, task, n) {
@@ -114,9 +119,15 @@ async function runOnce(name, task, n) {
     if (task.kind === "web") {
       background(`/usr/local/bin/node ${DEPLOY}/fixture-server.mjs ${DEPLOY}/fixtures /tmp/bench-seen.json 8088`, "/tmp/bench-fixtures.log");
       await sleep(500);
-      background(`chromium --headless=new --no-sandbox --disable-gpu --remote-debugging-address=127.0.0.1 --remote-debugging-port=9744 --user-data-dir=/tmp/bench-chrome --no-first-run http://127.0.0.1:8088${task.path}`, "/tmp/bench-chrome.log");
-      await sleep(3000);
-      daemon = await startDaemon("cdp", ["--permit", "chrome", "--grant", "chrome", ...allow]);
+      // A visible Chromium, driven over the accessibility bus (the desktop
+      // route). No debugging port: the agent's only way in is the daemon, and
+      // the check reads the fixture server's POST log, not the page.
+      const chrome = background(`chromium --no-sandbox --no-first-run --force-renderer-accessibility --user-data-dir=/tmp/bench-a11y-chrome http://127.0.0.1:8088${task.path}`, "/tmp/bench-chrome.log");
+      await sleep(5000);
+      const exe = session(`readlink -f /proc/$(pgrep -o -f 'chromium/chromium.*bench-a11y-chrome')/exe`).trim();
+      session(`echo '${JSON.stringify({ applications: [{ name: "Chromium", executable: exe }] })}' > /tmp/bench-grants.json`);
+      record.route = { backend: "atspi", chromium: exe, launcher: chrome };
+      daemon = await startDaemon("atspi", ["--grants", "/tmp/bench-grants.json", ...allow]);
     } else {
       task.prepare?.();
       task.setup();
