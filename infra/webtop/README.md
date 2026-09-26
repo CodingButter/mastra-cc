@@ -24,3 +24,7 @@ bash infra/webtop/cleanup.sh
 The live scenario writes a fixed non-sensitive proof sentence through built `@mastra-cc/transport`, re-queries the same element, and requires exact semantic read-back. It also observes a real password control and requires `{ kind: "redacted", reason: "protected" }` without carrying its value.
 
 Diagnostics contain container metadata, process state, socket state, and bounded daemon logs. They must not contain protected content. Proof screenshots and Playwright traces belong under the uncommitted plan proof directory, never in the repository.
+
+## Capture qualification
+
+The benchmark container was observed running KDE Wayland with Xwayland, not Xvnc. Its X root-window capture command (`xwd -root -silent`) returns `BadMatch`; accessibility-task success does not establish screenshot support. The [model-free capture diagnosis](../../docs/proofs/webtop-capture/README.md) pairs that failure with a same-container Xvfb control and records KDE screenshot authorization and portal availability. It changes neither desktop permissions nor the daemon's capture backend. Check the actual session rather than inferring its display architecture from the Webtop image name.

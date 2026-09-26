@@ -45,7 +45,7 @@ jq -s 'map(.tokens) | add' bench-webtop-a11y.jsonl
 
 ## Attribution
 
-- **All 13 `UnperformableElementError` refusals** came from `captureElement`. The X server in the container refuses the screen grab with `BadMatch`. This is the platform declining, and PR #138 (D1) maps it to `world`. No run needed a screenshot to succeed.
+- **All 13 `UnperformableElementError` refusals** came from `captureElement`. The X server in the container refuses the screen grab with `BadMatch`; PR #138 (D1) maps this attempted route's refusal to `world`. A [later model-free diagnosis](../../webtop-capture/README.md) reproduced the failure on the actual KDE Wayland/Xwayland desktop while the same `xwd` binary succeeded on an isolated Xvfb control. The daemon has no compositor/portal capture fallback. This is not evidence that the applications cannot be captured or that an authorized Wayland route is impossible. Successful task runs did not demonstrate working screenshot support.
 - **`ElementGone`** (bad#2): the agent used an element id after the page had redrawn. This is `world`, and the run still passed.
 - **`OperationNotExposedError`** (settings#1): the agent asked to set the text of an element that does not publish editing. This is `agent`, and the run still passed.
 - **bad#4, FAIL: the agent ran out of steps, and there is no daemon refusal.** In 30 steps it made:
