@@ -33,3 +33,18 @@ CLEANUP: GREEN — cancellation, timeout, early exit, malformed output; no remai
 Limitations: unresolved earlier fail-closed truncated payload; no same-UID isolation,
 atomic sampling, application-owned pixel guarantee or arbitrary rotation support.
 Pixel recordings remain uncommitted in the session proof directory.
+
+Final ship checks, September 29, 2026:
+Native tests: NATIVE: GREEN, including Qt-owned duplicate-writer lifetime.
+Focused capture tests: 77/77; uncached build/lint/typecheck/test: 20/20, exit 0.
+Targeted mutations: 4/4 caught. Full mutations: 368/368 caught, none survived.
+Fresh installed geometry and cleanup scenarios: GREEN, exit 0.
+Fresh installed pair: branch GREEN, base real XWD BadMatch RED; pair exit 0.
+Docs: 267 files checked; diff check clean.
+The FD lifetime test is local, not an end-to-end D-Bus transfer reproduction.
+Earlier intermittent truncation remains unexplained and fail-closed, not fixed.
+Independent ship reviewers returned no output:
+- anthropic/claude-opus-5-5: Error: Reviewer anthropic/claude-opus-5-5 returned no output
+- openai/gpt-6-astra: Error: Reviewer openai/gpt-6-astra returned no output
+No independent approval obtained; explicit judge fallback review is required.
+Human approval remains required before push/PR.

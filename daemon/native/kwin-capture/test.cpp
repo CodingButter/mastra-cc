@@ -60,6 +60,23 @@ int main() {
     { Fd writer(fds[1]); check(write(writer.value, "abcd", 4) == 4); }
     Stream first; first.drain(reader.value); check(first.eof && !first.complete());
     first.setExpected(4); check(first.complete());
+    // A Qt-owned duplicate keeps an empty pipe open before metadata arrives.
+    int delayed[2]; check(pipe2(delayed, O_NONBLOCK | O_CLOEXEC) == 0);
+    Fd delayedReader(delayed[0]);
+    Stream delayedStream;
+    {
+        QDBusUnixFileDescriptor transferred(delayed[1]);
+        check(transferred.isValid());
+        close(delayed[1]);
+        delayedStream.drain(delayedReader.value);
+        check(!delayedStream.eof && !delayedStream.complete());
+        delayedStream.setExpected(4);
+        check(write(transferred.fileDescriptor(), "abcd", 4) == 4);
+        delayedStream.drain(delayedReader.value);
+        check(!delayedStream.eof && !delayedStream.complete());
+    }
+    delayedStream.drain(delayedReader.value);
+    check(delayedStream.complete());
     Stream second; second.setExpected(4); check(!second.complete());
     second.eof = true; rejects([&] { second.complete(); });
     rejects([&] { first.setExpected(3); });
