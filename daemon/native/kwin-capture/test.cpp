@@ -13,6 +13,32 @@ void rejects(const std::function<void()> &fn) {
 int main() {
     using namespace capture;
     const int format = QImage::Format_RGB32;
+    const QString support = "Number of Screens: 1\n\nScreen 0:\n---------\nName: WL-0\nEnabled: 1\nGeometry: 0,0,1024x768\nPhysical size: -1x-1mm\nScale: 1\n";
+    const QList<QPair<QRect, qreal>> qt{{QRect(0, 0, 1024, 768), 1.0}};
+    const auto baseline = checkedLayout(support, qt);
+    unchangedLayout(baseline, baseline);
+    rejects([&] { checkedLayout(QString(support).replace("Screens: 1", "Screens: 2"), qt); });
+    rejects([&] { checkedLayout(support, {qt[0], qt[0]}); });
+    rejects([&] { checkedLayout(QString(support).replace("Scale: 1", "Scale: 1.5"), qt); });
+    rejects([&] { checkedLayout(support, {{qt[0].first, 1.5}}); });
+    rejects([&] { checkedLayout(support, {{qt[0].first, std::numeric_limits<qreal>::quiet_NaN()}}); });
+    rejects([&] { checkedLayout(QString(support).replace("0,0,1024", "1,0,1024"), qt); });
+    rejects([&] { checkedLayout(QString(support).replace("Enabled: 1", "Enabled: 0"), qt); });
+    // A quarter-turn with contradictory Qt/compositor dimensions must refuse.
+    rejects([&] { checkedLayout(QString(support).replace("1024x768", "768x1024"), qt); });
+    rejects([&] { checkedLayout(support, {{QRect(0, 0, 768, 1024), 1.0}}); });
+    for (const auto key : {"width", "height", "x", "y", "scale", "outputs"}) {
+        auto changed = baseline; changed[key] = baseline[key].toInt() + 1;
+        rejects([&] { unchangedLayout(baseline, changed); });
+    }
+    auto renamed = baseline; renamed["name"] = "WL-1";
+    rejects([&] { unchangedLayout(baseline, renamed); });
+    auto resized = checkedLayout(QString(support).replace("1024x768", "800x600"), {{QRect(0, 0, 800, 600), 1.0}});
+    rejects([&] { unchangedLayout(baseline, resized); });
+    captureScale({{"scale", 1.0}});
+    rejects([&] { captureScale({}); });
+    for (const QVariant &scale : {QVariant(1), QVariant("1"), QVariant(1.5), QVariant(std::numeric_limits<double>::quiet_NaN())})
+        rejects([&] { captureScale({{"scale", scale}}); });
     rejects([&] { shape(0, 1, 4, format); });
     rejects([&] { shape(std::numeric_limits<quint64>::max(), 1, 4, format); });
     rejects([&] { shape(1, 1, 3, format); });

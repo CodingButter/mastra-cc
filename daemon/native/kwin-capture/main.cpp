@@ -92,7 +92,8 @@ struct Stream {
     }
     bool complete() const {
         if (!metadata || !eof) return false;
-        if (bytes.size() != expected) fail("truncated payload");
+        if (bytes.size() != expected)
+            throw std::runtime_error("truncated payload: received " + std::to_string(bytes.size()) + " expected " + std::to_string(expected));
         return true;
     }
 };
@@ -121,11 +122,7 @@ QDBusMessage await(QDBusPendingCall call, const QElapsedTimer &clock) {
     if (reply.type() == QDBusMessage::ErrorMessage) fail("compositor geometry unavailable");
     return reply;
 }
-QJsonObject layout(const QElapsedTimer &clock) {
-    auto request = QDBusMessage::createMethodCall("org.kde.KWin", "/KWin", "org.kde.KWin", "supportInformation");
-    auto reply = await(QDBusConnection::sessionBus().asyncCall(request, deadlineMs), clock);
-    if (reply.arguments().size() != 1) fail("geometry reply");
-    const QString text = reply.arguments().at(0).toString();
+QJsonObject checkedLayout(const QString &text, const QList<QPair<QRect, qreal>> &screens) {
     if (text.size() > 65536) fail("geometry reply bounds");
     QRegularExpression count("Number of Screens: ([0-9]+)\\n");
     auto number = count.match(text);
@@ -137,11 +134,25 @@ QJsonObject layout(const QElapsedTimer &clock) {
     int width = match.captured(2).toInt(&widthOk), height = match.captured(3).toInt(&heightOk);
     if (!widthOk || !heightOk || width <= 0 || height <= 0) fail("invalid compositor dimensions");
     shape(width, height, quint64(width) * 4, QImage::Format_RGB32);
-    auto screens = QGuiApplication::screens();
-    if (screens.size() != 1 || screens[0]->geometry() != QRect(0, 0, width, height) ||
-        screens[0]->devicePixelRatio() != 1.0) fail("Qt and compositor geometry disagree");
+    if (screens.size() != 1 || screens[0].first != QRect(0, 0, width, height) ||
+        screens[0].second != 1.0) fail("Qt and compositor geometry disagree");
     return {{"name", match.captured(1)}, {"x", 0}, {"y", 0}, {"width", width},
             {"height", height}, {"scale", 1}, {"outputs", 1}};
+}
+QJsonObject layout(const QElapsedTimer &clock) {
+    auto request = QDBusMessage::createMethodCall("org.kde.KWin", "/KWin", "org.kde.KWin", "supportInformation");
+    auto reply = await(QDBusConnection::sessionBus().asyncCall(request, deadlineMs), clock);
+    if (reply.arguments().size() != 1) fail("geometry reply");
+    QList<QPair<QRect, qreal>> screens;
+    for (auto screen : QGuiApplication::screens()) screens.append({screen->geometry(), screen->devicePixelRatio()});
+    return checkedLayout(reply.arguments().at(0).toString(), screens);
+}
+void unchangedLayout(const QJsonObject &before, const QJsonObject &after) {
+    if (before != after) fail("layout changed");
+}
+void captureScale(const QVariantMap &map) {
+    if (!map.contains("scale") || map["scale"].metaType().id() != QMetaType::Double || map["scale"].toDouble() != 1.0)
+        fail("unsupported capture scale");
 }
 int run(const QElapsedTimer &clock) {
     const auto before = layout(clock);
@@ -176,8 +187,7 @@ int run(const QElapsedTimer &clock) {
                 if (it == map.cend() || it->metaType().id() != QMetaType::UInt) fail("invalid image metadata");
                 return it->toUInt();
             };
-            if (!map.contains("scale") || map["scale"].metaType().id() != QMetaType::Double || map["scale"].toDouble() != 1.0)
-                fail("unsupported capture scale");
+            captureScale(map);
             dimensions = shape(integer("width"), integer("height"), integer("stride"), int(integer("format")));
             if (dimensions.width != size_t(before["width"].toInt()) || dimensions.height != size_t(before["height"].toInt()))
                 fail("capture and compositor dimensions disagree");
@@ -187,7 +197,7 @@ int run(const QElapsedTimer &clock) {
         if (!stream.complete()) QThread::msleep(1);
     }
     const auto after = layout(clock);
-    if (before != after) fail("layout changed");
+    unchangedLayout(before, after);
     rgb(stream.bytes, dimensions);
     QJsonObject header{{"version", 1}, {"format", "RGB"}, {"width", int(dimensions.width)},
         {"height", int(dimensions.height)}, {"stride", int(dimensions.width * 3)},

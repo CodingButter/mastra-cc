@@ -24,8 +24,21 @@ if mode == 'cleanup':
         started = time.monotonic()
         proc = subprocess.Popen([helper], stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
         try:
-            assert select.select([proc.stdout], [], [], 5)[0], 'no frame prefix'
-            assert proc.stdout.read(4), 'helper failed before output: ' + proc.stderr.read().decode()
+            ready = bool(select.select([proc.stdout], [], [], 5)[0])
+            prefix = os.read(proc.stdout.fileno(), 4) if ready else b''
+            if len(prefix) != 4:
+                pipe = os.readlink('/proc/self/fd/%d' % proc.stdout.fileno())
+                running = proc.poll() is None
+                if running:
+                    proc.kill()
+                proc.wait(timeout=2)
+                diagnostic = proc.stderr.read(8192).decode(errors='replace')
+                print('PREFIX FAILURE:', json.dumps({'scenario': scenario, 'pid': proc.pid,
+                    'ready': ready, 'prefixBytes': len(prefix), 'pipe': pipe,
+                    'runningBeforeCleanup': running, 'exit': proc.returncode,
+                    'seconds': round(time.monotonic() - started, 3), 'stderr': diagnostic}), flush=True)
+                gone(proc.pid)
+                raise AssertionError('helper failed before complete frame prefix; diagnostics retained')
             if scenario == 'cancel':
                 proc.terminate()
             elif scenario == 'closed-reader':
