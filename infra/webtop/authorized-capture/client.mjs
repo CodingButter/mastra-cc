@@ -11,7 +11,14 @@ try {
   assert(target, "synthetic target must be observable");
   assert(protectedTarget, "protected target must be observable");
   const captured = await client.captureElement({ id: target.id });
-  if (process.argv[2] === "scale-refusal") {
+  if (process.argv[2] === "base") {
+    assert(!captured.image, "base unexpectedly captured pixels; investigate premise");
+    assert.equal(captured.refusal?.class, "world");
+    assert.equal(captured.refusal?.code, "UnperformableElementError");
+    assert.match(captured.refusal.message, /screen grab failed:.*BadMatch/);
+    console.log(`BASE: installed XWD acquisition refusal: ${JSON.stringify(captured.refusal)}`);
+    console.log("PROOF: RED");
+  } else if (process.argv[2] === "scale-refusal") {
     assert(!captured.image, "non-unit compositor scale must not return pixels");
     assert.equal(captured.refusal?.code, "UnperformableElementError");
     console.log(`SCALE: installed daemon refused real non-unit scale: ${JSON.stringify(captured.refusal)}`);

@@ -25,7 +25,11 @@ DOCKER_HOST=unix:///var/run/docker.sock bash infra/webtop/authorized-capture/dem
 ```
 
 This deterministic installed-daemon proof uses only synthetic pixels and AT-SPI
-product requests. Base-pair and geometry scenarios are separate proof gates.
+product requests. Add `--scenario geometry` or `--scenario cleanup` for the live
+boundary cases. The [fresh installed base/branch proof](../../docs/proofs/webtop-authorized-capture/README.md)
+provides the `run-pair.sh` command, measured RED/GREEN results and read-only viewer
+recording instructions. Recording reuses an existing Playwright installation;
+it is not a new project dependency or a substitute acquisition route.
 
 ## Commands
 

@@ -3,7 +3,7 @@ set -euo pipefail
 [[ $# == 0 ]] || exit 2
 export MASTRA_CC_WEBTOP_PROJECT=${MASTRA_CC_WEBTOP_PROJECT:-mcc-authorized-capture}
 export MASTRA_CC_WEBTOP_PORT=${MASTRA_CC_WEBTOP_PORT:-13310}
-[[ "$MASTRA_CC_WEBTOP_PROJECT" == mcc-authorized-capture ]] || { echo 'refusing unrelated project' >&2; exit 2; }
+[[ "$MASTRA_CC_WEBTOP_PROJECT" == mcc-authorized-capture || "$MASTRA_CC_WEBTOP_PROJECT" == mcc-authorized-capture-branch ]] || { echo 'refusing unrelated project' >&2; exit 2; }
 source "$(dirname "$0")/../common.sh"
 [[ "$MASTRA_CC_WEBTOP_CONTAINER" == "$MASTRA_CC_WEBTOP_PROJECT" && -c /dev/dri/renderD128 ]] || exit 2
 COMPOSE+=(-f "$WEBTOP_DIR/authorized-capture/compose.gpu.yml")
