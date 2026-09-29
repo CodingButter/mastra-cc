@@ -1,5 +1,7 @@
 # Proofs
 
+[Authorized Webtop visible-desktop capture](webtop-authorized-capture/README.md) records fresh installed branch GREEN/base XWD RED, explicit operator authorization, geometry/cleanup boundaries, read-only viewer corroboration and reproducible commands. [Sanitized verdicts and artifact hashes](webtop-authorized-capture/results.txt) accompany the proof; pixel recordings remain session-local.
+
 ## Running a native proof
 
 Every proof that loads `@mastra-cc/desktop` runs against an INSTALL of this

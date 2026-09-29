@@ -1,5 +1,37 @@
 [
   {
+    "name": "kwin-capture-trusts-oversized-frame",
+    "file": "daemon/src/backends/atspi/kwin-capture.ts",
+    "find": "bytes <= 0 || bytes > PIXEL_LIMIT",
+    "replace": "bytes <= 0",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-kwin-picture-is-bounded-and-authorized.test.ts"
+  },
+  {
+    "name": "kwin-capture-ignores-layout-change",
+    "file": "daemon/src/backends/atspi/index.ts",
+    "find": "        throw new UnperformableElementError(\"element bounds changed during capture - no image returned\");",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-kwin-picture-is-bounded-and-authorized.test.ts"
+  },
+  {
+    "name": "kwin-capture-leaks-cancelled-helper",
+    "file": "daemon/src/backends/atspi/kwin-capture.ts",
+    "find": "        killGroup(\"SIGKILL\");",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-kwin-picture-is-bounded-and-authorized.test.ts"
+  },
+  {
+    "name": "kwin-capture-falls-back-after-denial",
+    "file": "daemon/src/backends/atspi/capture.ts",
+    "find": "? grabKwinPixels() : grab(rectangle)",
+    "replace": "? grabKwinPixels().catch(() => grab(rectangle)) : grab(rectangle)",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/a-kwin-picture-is-bounded-and-authorized.test.ts"
+  },
+  {
     "name": "subscription-initialization-ignores-connection-close",
     "file": "daemon/src/server/subscriptions.ts",
     "find": "    this.closed = true;\n",

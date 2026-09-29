@@ -9,6 +9,28 @@ This opt-in development harness proves the built daemon and built transport agai
 - `pnpm turbo run build` completed on the current worktree
 - A free loopback port (default `13300`)
 
+## Authorized capture opt-in
+
+The default XWD route is unchanged. Operator-installed KWin capture is selected
+only with `MASTRA_CC_ATSPI_CAPTURE=kwin` on the daemon process; other nonempty
+values fail startup, and KWin failures never silently fall back. See the
+[native helper operator guide](../../daemon/native/kwin-capture/README.md) for
+installation, revocation, limits and the measured single-output scale-one envelope.
+The isolated capture proof additionally requires the opt-in render-node/EGL
+Compose override; it does not change this harness's defaults.
+
+```bash
+DOCKER_HOST=unix:///var/run/docker.sock bash infra/webtop/authorized-capture/demo.sh \
+  --mode branch --artifact-root /absolute/build/root --proof-dir /absolute/proof/dir
+```
+
+This deterministic installed-daemon proof uses only synthetic pixels and AT-SPI
+product requests. Add `--scenario geometry` or `--scenario cleanup` for the live
+boundary cases. The [fresh installed base/branch proof](../../docs/proofs/webtop-authorized-capture/README.md)
+provides the `run-pair.sh` command, measured RED/GREEN results and read-only viewer
+recording instructions. Recording reuses an existing Playwright installation;
+it is not a new project dependency or a substitute acquisition route.
+
 ## Commands
 
 ```bash

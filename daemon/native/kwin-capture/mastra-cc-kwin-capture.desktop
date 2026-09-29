@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Mastra CC authorized capture helper
+Exec=/usr/local/libexec/mastra-cc-kwin-capture
+NoDisplay=true
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2

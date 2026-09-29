@@ -1,0 +1,50 @@
+Installed authorized Webtop capture — September 29, 2026
+BASE b546ab62ec8f14bf9539663e0d4ceb0f00dc65cf
+RUNTIME HEAD 99321bc4341fbcd42985ac33fc0220ce3445bc4f
+Proof orchestration uncommitted at execution; source status/diff/hashes retained.
+Accepted pair-FSIUlvrC and repeatability pair-c7km8byZ: exit 0.
+
+Branch:
+PIXELS: verified solid RGB interior; 160x80; fixture bounds {"x":120,"y":156,"width":160,"height":80}
+GUARDS: protected and unknown targets refused
+PROOF: GREEN
+
+Base:
+BASE: installed XWD acquisition refusal: {"class":"world","code":"UnperformableElementError","message":"screen grab failed: X Error of failed request:  BadMatch (invalid parameter attributes)"}
+PROOF: RED
+PAIR: GREEN (installed branch GREEN; installed base RED)
+
+Repeatability artifacts SHA256:
+62f8df27a87788d942874e1ada071ae3795ccdad139a30e145f0a9135b5271fe  with.txt
+529cb1914b66bb30bc1f042c089629f07fdc6ec11f8c822764d2bf869ede957e  without.txt
+b553bd8afed4213166d668a21990845a96a8ffb9333ce3bc6d9d2f45fbe3eb24  viewer.webm
+
+Frame: origin 0,0; 1024x768; scale 1; RGB bytes 2359296.
+Package, fixture, grant and layout comparisons: equal between fresh containers.
+Manifest verification and full branch WebM decode: exit 0.
+Negative arguments/container/project/port/build controls: exit 2, no resources created.
+Collision control: exit 2, existing resources preserved.
+
+Earlier live boundary evidence (not substituted for the pair):
+HELPER: GREEN — denied, authorized, cancelled, timed out, closed reader, recovered, revoked.
+GEOMETRY: GREEN — real scale 1 to 1.5 refused, scale 1 restored; overlap/clipping and bounds changes checked.
+CLEANUP: GREEN — cancellation, timeout, early exit, malformed output; no remaining owned process group or FDs; recovery succeeded.
+
+Limitations: unresolved earlier fail-closed truncated payload; no same-UID isolation,
+atomic sampling, application-owned pixel guarantee or arbitrary rotation support.
+Pixel recordings remain uncommitted in the session proof directory.
+
+Final ship checks, September 29, 2026:
+Native tests: NATIVE: GREEN, including Qt-owned duplicate-writer lifetime.
+Focused capture tests: 77/77; uncached build/lint/typecheck/test: 20/20, exit 0.
+Targeted mutations: 4/4 caught. Full mutations: 368/368 caught, none survived.
+Fresh installed geometry and cleanup scenarios: GREEN, exit 0.
+Fresh installed pair: branch GREEN, base real XWD BadMatch RED; pair exit 0.
+Docs: 267 files checked; diff check clean.
+The FD lifetime test is local, not an end-to-end D-Bus transfer reproduction.
+Earlier intermittent truncation remains unexplained and fail-closed, not fixed.
+Independent ship reviewers returned no output:
+- anthropic/claude-opus-5-5: Error: Reviewer anthropic/claude-opus-5-5 returned no output
+- openai/gpt-6-astra: Error: Reviewer openai/gpt-6-astra returned no output
+No independent approval obtained; explicit judge fallback review is required.
+Human approval remains required before push/PR.
