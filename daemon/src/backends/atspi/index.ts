@@ -1430,6 +1430,11 @@ export class AtspiBackend implements Backend {
     }
     try {
       const image = await capture(rectangle);
+      const after = await screenRectangle(this.channel, ref);
+      if (!after || after.x !== rectangle.x || after.y !== rectangle.y ||
+          after.width !== rectangle.width || after.height !== rectangle.height) {
+        throw new UnperformableElementError("element bounds changed during capture - no image returned");
+      }
       // Remember what the picture was cropped from, so a press aimed from it
       // can be checked against the desk at press time (ADR-0107). One entry per
       // answered element: a newer picture replaces the older one, which is the

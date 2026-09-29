@@ -88,6 +88,9 @@ export async function grabKwinPixels(): Promise<RawScreen> {
       diagnostic += piece.toString();
     });
     child.on("error", () => stop(new KwinAcquisitionError("KWin helper could not start")));
+    // A leader can exit while descendants retain the capture pipes or run with
+    // closed stdio. Its private group must not outlive acquisition.
+    child.on("exit", () => killGroup("SIGKILL"));
     child.on("close", (code) => {
       closed = true;
       if (!failure && code !== 0) {

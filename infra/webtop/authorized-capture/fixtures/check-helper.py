@@ -25,7 +25,7 @@ if mode == 'cleanup':
         proc = subprocess.Popen([helper], stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
         try:
             assert select.select([proc.stdout], [], [], 5)[0], 'no frame prefix'
-            assert proc.stdout.read(4), 'helper failed before output'
+            assert proc.stdout.read(4), 'helper failed before output: ' + proc.stderr.read().decode()
             if scenario == 'cancel':
                 proc.terminate()
             elif scenario == 'closed-reader':

@@ -11,6 +11,11 @@ try {
   assert(target, "synthetic target must be observable");
   assert(protectedTarget, "protected target must be observable");
   const captured = await client.captureElement({ id: target.id });
+  if (process.argv[2] === "scale-refusal") {
+    assert(!captured.image, "non-unit compositor scale must not return pixels");
+    assert.equal(captured.refusal?.code, "UnperformableElementError");
+    console.log(`SCALE: installed daemon refused real non-unit scale: ${JSON.stringify(captured.refusal)}`);
+  } else {
   assert(captured.image, JSON.stringify(captured.refusal));
   const { image } = captured;
   const expected = JSON.parse(readFileSync("/tmp/authorized-fixture-geometry.json", "utf8"));
@@ -49,6 +54,7 @@ try {
   assert(!unknown.image); assert(unknown.refusal);
   console.log("GUARDS: protected and unknown targets refused");
   console.log("PROOF: GREEN");
+  }
 } finally {
   await client.close();
 }
