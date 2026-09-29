@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { captureRoute } from "./backends/atspi/kwin-capture.js";
 import { CAPABILITY_NAMES, SCHEMA_DIGEST, type CapabilityName } from "@mastra-cc/protocol-types";
 import { openAuditLog, useAuditLog } from "./audit.js";
 import { registry } from "./backends/registry.js";
@@ -61,6 +62,12 @@ function argAll(name: string): string[] {
 
 // --verify-tape <name>: replay a tape against the live bus and report drift.
 // A release-gate check (docs/proofs/README.md), not a CI step - CI has no bus.
+try {
+  captureRoute();
+} catch (error) {
+  console.error(`daemon: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(2);
+}
 const verifyFixture = arg("--verify-tape");
 if (verifyFixture !== null) {
   const { verifyTape } = await import("./backends/replay/verify.js");

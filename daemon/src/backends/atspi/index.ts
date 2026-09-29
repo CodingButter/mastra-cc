@@ -39,6 +39,7 @@ import type { Identity } from "./process-identity.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { capture } from "./capture.js";
+import { KwinFrameError } from "./kwin-capture.js";
 import { emitChord, emitString } from "./rawinput/keys.js";
 import { boundary, CancelledAtBoundaryError } from "../../cancellation.js";
 import { emitClick, isPointerButton, POINTER_BUTTONS, screenRectangle } from "./rawinput/pointer.js";
@@ -1415,6 +1416,11 @@ export class AtspiBackend implements Backend {
     if (ref === undefined) {
       throw new UnperformableElementError(`no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to look at`);
     }
+    const [nativeRole] = await this.channel.call({ destination: ref.busName, path: ref.objectPath, iface: ACCESSIBLE, member: "GetRole" });
+    // Qt can publish role 40 (PASSWORD_TEXT) with the contradictory name "text".
+    if (nativeRole === 40 || await this.nativeRoleOf(ref) === "password text") {
+      throw new UnperformableElementError("this element contains protected content - nothing was photographed");
+    }
     const rectangle = await screenRectangle(this.channel, ref);
     if (rectangle === undefined || rectangle.width <= 0 || rectangle.height <= 0) {
       throw new UnperformableElementError(
@@ -1433,7 +1439,7 @@ export class AtspiBackend implements Backend {
     } catch (failure) {
       // The driver asked to stop and the grab was stopped: not a fact about
       // the desk, and the server logs it as the acknowledgement it is.
-      if (failure instanceof CancelledAtBoundaryError) throw failure;
+      if (failure instanceof CancelledAtBoundaryError || failure instanceof KwinFrameError) throw failure;
       // A grab that failed is a fact about this desk, not about the element:
       // said plainly so a caller stops asking rather than retrying forever.
       throw new UnperformableElementError(failure instanceof Error ? failure.message : String(failure));

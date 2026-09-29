@@ -1,7 +1,10 @@
 # Operator-authorized KWin helper
 
 This dedicated executable requests visible workspace pixels from KWin ScreenShot2.
-It does not change the daemon's default XWD route; daemon integration is separate.
+The daemon defaults to XWD. After explicit operator installation/authorization,
+set `MASTRA_CC_ATSPI_CAPTURE=kwin` in the daemon's environment to select this
+fixed executable. Unset/empty retains XWD; other nonempty values exit 2 before
+listening. An explicitly selected KWin failure never falls back to XWD.
 
 ## Installation and revocation
 
@@ -36,7 +39,8 @@ after capture: exactly one enabled origin-zero, scale-one output is supported.
 It also compares captured dimensions and scale. KWin's human-readable layout
 format is version-sensitive; unrecognized layouts fail closed. This is not
 atomic geometry/pixel sampling or proof of application ownership. Occluders
-remain visible. AT-SPI element-coordinate agreement still needs integration proof.
+remain visible. The installed daemon proof compares a synthetic widget's independent
+Qt bounds and solid interior pixels against its AT-SPI-selected 160×80 crop.
 
 ## Private frame and limits
 
@@ -62,4 +66,24 @@ operates only the reserved `mcc-authorized-capture` project. It installs/builds,
 checks denied/authorized/revoked fresh processes, validates exact frame lengths
 and independent compositor geometry, exercises cancellation/stalled-output/
 closed-reader cleanup and successful recovery, and leaves authorization revoked.
-It does not yet prove an installed daemon's element crop or a fresh base/branch pair.
+`demo.sh --mode branch --artifact-root /absolute/build/root --proof-dir /absolute/proof/dir`
+in the same directory installs the built daemon/transport, runs a synthetic PyQt
+fixture, verifies its crop pixels and protected/unknown-target refusals, and ends
+`PROOF: GREEN`. It revokes authorization and stops its fixture/daemon on exit.
+A fresh paired base/branch proof is a separate gate.
+
+The parent independently enforces 4096-byte header/16 MiB pixel limits, a ten-second
+acquisition deadline and TERM-to-KILL escalation within 500 ms on cancellation.
+It waits for helper exit, retains the existing 4 MiB encoded-image cap, and checks
+protected roles (including numeric AT-SPI PASSWORD_TEXT) before acquisition.
+
+| Condition | Existing wire refusal |
+| --- | --- |
+| Denied authorization, unavailable helper, unsupported layout, acquisition deadline | `world/UnperformableElementError` |
+| Malformed/truncated frame, output overflow, unrecognized helper defect | `daemon/BackendUnreadable` |
+| Protected or unknown target | `world/UnperformableElementError`, before spawning |
+| Request cancellation | Existing cancellation acknowledgement, not an acquisition refusal |
+
+The synthetic fixture's Python executable is granted only AT-SPI observation;
+it receives no KDE screenshot authorization. Direct protected-control captures
+are refused; visible-desktop crops still do not isolate other overlapping content.

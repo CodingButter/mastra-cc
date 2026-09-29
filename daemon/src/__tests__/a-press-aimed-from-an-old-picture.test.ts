@@ -63,6 +63,7 @@ function deskAt(initial: [number, number, number, number]) {
         return [];
       }
       if (exchange.member === "ScrollTo") return [];
+      if (exchange.member === "GetRole") return [61];
       if (exchange.member === "GetExtents") return [published];
       return tape.call(exchange);
     },

@@ -2,6 +2,7 @@
 // Overlapping windows can appear: these pixels are not an application-ownership witness.
 
 import { spawn } from "node:child_process";
+import { captureRoute, grabKwinPixels } from "./kwin-capture.js";
 import { CancelledAtBoundaryError, cancellationSignal } from "../../cancellation.js";
 import { deflateSync } from "node:zlib";
 import { measureAsyncCost, measureCost, recordCost } from "../../costs.js";
@@ -54,7 +55,7 @@ export function cropWithin(requested: CaptureRectangle, got: RawScreen): Capture
 
 export class CaptureFailedError extends Error {}
 
-interface RawScreen {
+export interface RawScreen {
   width: number;
   height: number;
   /** Where on the desk the top left of these pixels is, as the dump reported
@@ -289,10 +290,11 @@ export async function capture(
   now: () => number = Date.now,
 ): Promise<CapturedImage> {
   if (rectangle !== undefined) validateRectangle(rectangle);
-  const pixels = await measureAsyncCost("captureAcquire", () => grab(rectangle));
+  const pixels = await measureAsyncCost<Buffer | RawScreen>("captureAcquire", () =>
+    grab === grabPixels && captureRoute() === "kwin" ? grabKwinPixels() : grab(rectangle));
   const capturedAt = now();
   const wanted = measureCost("captureDecodeCrop", () => {
-    const screen = decodeXwd(pixels);
+    const screen = Buffer.isBuffer(pixels) ? decodeXwd(pixels) : pixels;
     return rectangle === undefined ? screen : cropScreen(screen, rectangle);
   });
   // A clipped picture is answered, not refused, because the answer now says
