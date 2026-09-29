@@ -1,5 +1,7 @@
 # Proofs
 
+[Authorized Webtop capture baseline](webtop-authorized-capture/README.md) records the isolated environment; authorized capture remains unproven.
+
 ## Running a native proof
 
 Every proof that loads `@mastra-cc/desktop` runs against an INSTALL of this
