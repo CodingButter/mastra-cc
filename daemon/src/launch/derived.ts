@@ -179,7 +179,7 @@ function scanDirectory(directory: string): Map<string, LaunchRecipe> {
     if (recipe === undefined) continue;
     // Same first-wins rule as across directories: two files in one directory
     // whose ids differ only by case fold to one key, and the first in sorted
-    // order keeps it. The permission resolver refuses that contested name
+    // order keeps it. Launch-name resolution refuses that contested name
     // anyway (ADR-0068/0069); this only makes which recipe survives predictable.
     const id = applicationName(fileName.slice(0, -".desktop".length));
     if (!found.has(id)) found.set(id, recipe);

@@ -20,8 +20,7 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 // interface to set it - and every case here is a way the admission could widen
 // into the surface that was refused:
 //
-//   - type for a session that was never given the class
-//   - type on a machine with no route, and blame a setting for it
+//   - type on a machine with no key route
 //   - type a newline, a tab, an escape - a chord in a string's clothes
 //   - type a document where a field entry was meant
 //   - reach the keyboard from a setElementValue that was just refused

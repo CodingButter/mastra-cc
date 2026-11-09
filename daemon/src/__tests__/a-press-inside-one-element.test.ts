@@ -27,8 +27,7 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 // This method is the concession, and every case below is a way the concession
 // could rot into the thing it replaced:
 //
-//   - a press for a session that was never given the class
-//   - a press on a machine with no route, blamed on a setting
+//   - a press on a machine with no pointer route
 //   - a coordinate that came from the CALLER rather than from the element
 //   - a fraction outside the element, clamped into a press on its neighbour
 //   - a press at an element with no rectangle, or an empty one, or one that

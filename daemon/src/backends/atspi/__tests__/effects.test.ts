@@ -313,11 +313,11 @@ describe("writing text and placing the caret", () => {
 
     const failure = await insertText(channel, REF, "typed", 0).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(OperationNotExposedError);
-    // The wording must not leave a reader believing something could be
-    // granted, permitted or turned on to change the answer. It may mention a
-    // setting only to deny that one is involved, which is what it does.
-    expect((failure as Error).message).not.toMatch(/refused|denied|not permitted|unauthoriz|authority/i);
-    expect((failure as Error).message).toMatch(/never offered/);
+    // The wording states only the application/platform fact. Consent-era
+    // settings are not part of an agent-owned desktop's explanation.
+    expect((failure as Error).message).toBe(
+      "this element does not expose editing its text - the platform never offered it here",
+    );
   });
 });
 

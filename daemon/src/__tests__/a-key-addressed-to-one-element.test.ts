@@ -16,12 +16,9 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 
 // A KEY, ADDRESSED TO ONE ELEMENT (ADR-0046, ADR-0067).
 //
-// The authority test beside this one proves the switch is off. This file is
-// about what happens after somebody turns it on, and every case here is a way
-// the daemon could lie about a keystroke:
+// This file pins every way the daemon could lie about a keystroke:
 //
-//   - press a key for a session that was never given the class
-//   - press a key on a machine with no route, and blame a setting for it
+//   - press a key on a machine with no delivery route
 //   - press a chord this contract never defined, by guessing at it
 //   - press the key and then claim the focus came back when it did not
 //   - reach a keystroke from a semantic verb that was refused

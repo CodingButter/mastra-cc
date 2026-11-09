@@ -1,7 +1,7 @@
 // WHETHER THIS MACHINE CAN BE HEARD AT ALL.
 //
-// Every other question this daemon answers is about an element, an application
-// or a permission. This one is about the instrument: a machine whose
+// Every other question this daemon answers is about an element or an application.
+// This one is about the instrument: a machine whose
 // accessibility layer is switched off publishes nothing, and a query against
 // it returns an empty result that is indistinguishable from a desktop with
 // nothing on it. That is the false belief protocol/schema.json:236 exists to
@@ -18,16 +18,15 @@
 
 // Three states, not a boolean, for the reason the availability vocabulary uses
 // three: "the layer is off" is a fact about the machine and "I could not find
-// out" is a fact about this daemon's view of it. An operator told the first
-// when the second is true goes and switches on something that was never off.
+// out" is a fact about this daemon's view of it. Conflating them sends recovery
+// toward a layer that may never have been off.
 export type AccessibilityLayerState = "enabled" | "disabled" | "cannot-tell";
 
 export interface AccessibilityReport {
   readonly state: AccessibilityLayerState;
-  // Why the state could not be determined, in words an operator can act on.
-  // Present EXACTLY when the state is cannot-tell - the same discipline the
-  // wire's disabledBy follows: an ignorance with no reason is a shrug, and a
-  // reason attached to a measurement is noise.
+  // Why the state could not be determined. Present EXACTLY when the state is
+  // cannot-tell: ignorance with no reason is a shrug, and a reason attached to
+  // a measurement is noise.
   readonly reason?: string;
 }
 

@@ -4,13 +4,9 @@ import { normalise } from "./backends/atspi/names.js";
 
 // WHAT THIS MACHINE HAS, read from outside every application (ADR-0042).
 //
-// The doctrine this file implements is the reversal M2.6 exists for: an
-// application this session may not touch is PRESENT in the answer with its
-// capabilities off, rather than absent. Withholding its existence does not
-// produce ignorance, it produces a false belief - an assistant told a program
-// is not installed recommends installing what is already installed, and an
-// assistant told a capability does not exist reports a limit that is really a
-// settings toggle.
+// Every installed application is present in the answer. Omitting an entry
+// produces a false belief: an agent told a program is not installed may try to
+// install what is already there. Capability exposure is reported separately.
 //
 // The mechanism is Linux-shaped and the result is not (ADR-0017): a desktop
 // entry directory is a platform fact, and nothing that leaves this module
@@ -20,7 +16,7 @@ import { normalise } from "./backends/atspi/names.js";
 // application, reads no window and asks no accessibility bus. It reads the
 // machine's own catalogue of what is installed - the same files a desktop menu
 // reads - and even that is reported as a name, never as a path or a command
-// line. Existence and permission are readable; content is not.
+// line. Installation metadata is readable; application content is not.
 
 export interface InventoryEntry {
   /**

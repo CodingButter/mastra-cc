@@ -270,19 +270,8 @@ export function typeTextRefusal(text: string): string | undefined {
   return undefined;
 }
 
-// BOTH FACTS, WHEN BOTH ARE TRUE. An unarmed session on a machine with no key
-// route is refused for want of authority first - ADR-0019's ordering, and the
-// gate that runs before a target is even named - but stopping there would hand
-// an operator a flag that fixes nothing, which is the exact false belief the
-// availability vocabulary exists to prevent (protocol/schema.json:236). Saying
-// only the second would be the mirror error: it would tell a session it lacks a
-// route when it also lacks permission, and the permission is real and would
-// still be missing on a machine that could type.
-//
-// So the sentence carries both, in the order they would have to be fixed, and
-// says plainly that the flag alone is not enough here. The capability report
-// answers the same question with `not-exposed` and names no setting
-// (capabilityFor above), because a report has no room for a sequence.
+// A missing key route is a platform fact. The refusal names that fact directly;
+// capability reporting answers the same question with `not-exposed`.
 export function rawInputScopeRefusal(hasRoute: boolean, method: RawInputMethod = "sendKeyChord"): string {
   const sentence = rawInputScopeSentence(method);
   if (hasRoute) return sentence;
@@ -292,57 +281,35 @@ export function rawInputScopeRefusal(hasRoute: boolean, method: RawInputMethod =
   );
 }
 
-// The application listing (schema version 1.4.0, ADR-0042). Observe-class: it
-// reads the fence around an application and never anything behind it. The
-// method is routed; this refusal fires only when the session's backend cannot
+// The application listing (schema version 1.4.0, ADR-0042) reads installed
+// application metadata and never application content. This refusal fires only
+// when the selected backend cannot
 // enumerate what the machine has (InventoryUnsupportedError), and it names the
 // route rather than the application, so it says nothing about what this
 // machine has - which is the property ADR-0042 changes, not one it keeps.
 export const LIST_APPLICATIONS_REFUSAL =
   'refused by the inventory gate: "listApplications" is observe-class and this session\'s backend cannot enumerate what this machine has installed - the answer would have to be an empty list, which would say the machine has nothing rather than that this route cannot look';
 
-// THE ONE SOURCE OF TRUTH FOR WHAT MAY BE DONE WITH AN APPLICATION.
+// THE ONE SOURCE OF TRUTH FOR CAPABILITY EXPOSURE.
 //
-// The listing and the enforcement are the same function, asked at two
-// different moments. This is the requirement the agreement test pins: two
-// hand-maintained lists that happen to match today are a divergence waiting to
-// ship, and the divergence is worse than either error alone - a listing that
-// promises what the gate refuses teaches a caller a capability it does not
-// have, and a listing that withholds what the gate would allow teaches a limit
-// that is not real.
-//
-// The order below is the enforcement order, and it has to be: session
-// authority first (ADR-0019 - what this daemon was started with), the user's
-// configuration second (ADR-0043 clause 4 - what the machine's owner turned
-// off), and the daemon's own reach last. Each answers with a different remedy,
-// which is why the states are not collapsed: a capability withheld by
-// configuration NAMES its setting and a capability this daemon has no path to
-// says so, because the application does not expose it.
-// The optional index is the LISTING's: it holds the enumerated inventory, so
-// observe and launch resolve through the entry's several names (ADR below).
-// A caller without one - a context built without a server, a test asking
-// about one name - gets the exact-name behaviour, the same degradation the
-// launch gate applies when the inventory cannot be read at all.
+// The optional index is the listing's enumerated inventory, so launch exposure
+// resolves through an entry's several names. Without an index, exact catalog
+// lookup is the honest fallback when inventory cannot be read.
 export function capabilityExposureFor(
   launch: LaunchContext,
   capability: CapabilityName,
   application: string,
   index?: InventoryIndex,
 ): Capability {
-  // What this daemon can do AT ALL for this application, before any question
-  // of permission. Launch needs a recipe; the element verbs need an element,
+  // What this daemon can do for this application. Launch needs a recipe; the
+  // element verbs need an element,
   // which is a question about a running application rather than about this
   // one, so they are reported on their own terms below.
   if (capability === "launch" && findRecipe(application, launch.catalog) === undefined) {
     return { capability, availability: "not-exposed" };
   }
-  // Raw input's reach question, asked in the same breath as launch's for the
-  // same reason: this is what the daemon can do AT ALL here, before any
-  // question of permission. A build with no key route on this platform reports
-  // not-exposed, and names no setting, because none would help (ADR-0066
-  // clause 2). Note the ORDER against permission below - reach first means an
-  // unarmed session on an unsupported platform is told the true reason rather
-  // than sent to add a flag that would still deliver nothing.
+  // A build with no key route on this platform reports raw input as
+  // not-exposed (ADR-0066 clause 2).
   if (capability === "rawInput" && launch.keys === undefined) {
     return { capability, availability: "not-exposed" };
   }
@@ -352,24 +319,11 @@ export function capabilityExposureFor(
 // WHETHER ONE APPLICATION IS ANSWERING, decided here and not in the backend
 // (ADR-0063).
 //
-// The grant is checked FIRST and short-circuits the census entirely. That
-// order is the whole point: a session with no observe grant for an application
-// cannot observe, and reporting the census's answer to it would leak
-// the desk through a field that is not gated. Reporting "not-answering"
-// instead would be worse - a false statement about the desktop manufactured
-// out of a fact about permission - so the answer is cannot-tell, naming the
-// grants file, which genuinely is the setting a person would change to be told.
-//
-// isVisible is the same reader the observe capability uses six lines up, on the
-// same deny-by-default fallback, so the field and the capability beside it can
-// never disagree about what this session may see.
-//
-// AND WHETHER THE DESK COULD BE HEARD AT ALL. A machine whose accessibility
+// Whether the desk could be heard at all. A machine whose accessibility
 // layer is switched off did not tell this daemon an application is absent - it
 // told it nothing, about every application at once. Reporting not-answering on
 // that silence is a statement about the desktop manufactured out of a fact
-// about the machine's ears, which is the same error the grant check above
-// exists to prevent, arriving through a different door. Measured on a fresh
+// about the machine's ears. Measured on a fresh
 // demo container: org.a11y.Status/IsEnabled was false and every one of the
 // hundred-odd installed applications was reported absent, several of them open.
 //

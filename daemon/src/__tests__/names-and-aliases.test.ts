@@ -13,10 +13,10 @@ import { AMBIGUOUS_NAME_REFUSAL, handleRequest, indexInventory, resolveLaunchabl
 // ONE NAME, ANY CASE (ADR-0069).
 //
 // Measured 2026-09-02: Chromium registers on the accessibility bus as
-// "Chromium" while its desktop entry, and so the operator's grant, reads
-// "chromium". Under NFKC alone every layer that compares APPLICATION names
-// walked past it. These tests pin the repaired rule at each layer the name
-// crosses - grant, census, permit, ownership, catalog - and pin, just as hard,
+// "Chromium" while its desktop entry reads "chromium". Under NFKC alone every
+// layer that compares APPLICATION names walked past it. These tests pin the
+// repaired rule at the census, ownership, and catalog/launch-name layers - and
+// pin, just as hard,
 // that ELEMENT names did not move: "OK" and "ok" on a screen are two labels.
 
 const REGISTRY = "org.a11y.atspi.Registry";

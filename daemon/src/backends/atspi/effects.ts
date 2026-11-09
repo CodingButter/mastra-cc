@@ -91,12 +91,10 @@ export async function interfacesOf(seam: CallSeam, ref: NativeRef): Promise<stri
 async function requireInterface(seam: CallSeam, ref: NativeRef, iface: string, operation: string): Promise<void> {
   const interfaces = await interfacesOf(seam, ref);
   if (interfaces.includes(iface)) return;
-  // not-exposed. Nothing was withheld and nothing was configured off - the
-  // element does not publish the capability. Saying this in a policy shape
-  // would teach the caller that the answer was configurable, which is
-  // the false belief ADR-0042 exists to kill.
+  // not-exposed: the element does not publish this operation. This is a
+  // platform fact, not a configurable policy result.
   throw new OperationNotExposedError(
-    `this element does not expose ${operation} - the platform never offered it here, and no setting of ours turned it off`,
+    `this element does not expose ${operation} - the platform never offered it here`,
   );
 }
 

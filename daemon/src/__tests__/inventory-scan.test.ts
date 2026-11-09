@@ -122,10 +122,9 @@ describe("the machine's own catalog", () => {
   });
 
   it("an installed name the enumerated machine does not claim refuses at the gate, byte-identically to unlaunchable", async () => {
-    // The inventory WAS read and nothing on it answers to this name: a permit
-    // for a name the desk does not publish authorises nothing, and the
-    // refusal is the same constant an unlaunchable name gets - the gate does
-    // not disclose whether the permit or the machine was the missing half.
+    // The inventory WAS read and nothing on it answers to this name. The
+    // refusal is the same constant an unlaunchable name gets; it discloses no
+    // incidental inventory detail beyond the missing launch recipe.
     const context = launch({});
     const answer = await open("zz-no-such-app", context);
     expect(refusalText(answer)).toBe(NO_LAUNCH_RECIPE_REFUSAL);

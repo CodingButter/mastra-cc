@@ -20,8 +20,7 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 // held-modifier chord to select with, so the only way to empty one is to press
 // a key once per character. Every case here is a way that could become a lie:
 //
-//   - clear for a session that was never given the class
-//   - clear on a machine with no route, and blame a setting for it
+//   - clear on a machine with no key route
 //   - clear an element whose text this daemon cannot read - an unbounded run
 //     of destructive keys aimed at a window it cannot check afterwards
 //   - clear a document, one keystroke at a time, because nothing counted it
