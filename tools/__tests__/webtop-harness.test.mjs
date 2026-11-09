@@ -49,6 +49,10 @@ describe("Webtop semantic desktop harness", () => {
     ]);
     expect(start).toContain("MCC_VISIBLE_CAPTURE_MARKER");
     expect(start).toContain("MASTRA_CC_WS_PORT=9979");
+    expect(client).toContain("client.readElementContent");
+    expect(client).toContain("client.activateElement");
+    expect(client).toContain("client.typeText");
+    expect(client).toContain("client.sendKeyChord");
     expect(client).toContain('createHash("sha256")');
     expect(client).toContain("matched: true");
     expect(client).not.toContain('content.kind === "redacted"');

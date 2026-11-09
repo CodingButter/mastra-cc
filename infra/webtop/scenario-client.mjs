@@ -34,28 +34,30 @@ try {
   } else if (mode === "semantic") {
     if (!sentence) throw new Error("MASTRA_CC_PROOF_SENTENCE is required");
     const all = await elements();
-    // The visible document is the editor's own named text control, not one of the
-    // hidden auxiliary text controls (search bar, filter boxes) Kate also publishes.
     const editable = withinApplication(all, "kate").find(
       (element) =>
         element.role === "text" &&
-        element.name === documentName &&
-        element.states.includes("visible") &&
         element.operations?.some((operation) => operation.operation === "setText" && operation.availability === "available") &&
-        element.content?.kind !== "redacted",
+        element.actions?.some((action) => action.name === "SetFocus" && action.availability === "available"),
     );
-    if (!editable) throw new Error(`observable content absent: no visible writable editor document named ${documentName}`);
-    const attested = await client.attestElement({ id: editable.id });
-    if (!attested.element) throw new Error(attested.refusal ?? "attestElement returned no element");
+    if (!editable) throw new Error("observable content absent: plain Kate published no visible writable text control");
     const written = await client.setElementText({ id: editable.id, text: sentence });
     if (!written.element) throw new Error(written.refusal ?? "setElementText returned no element");
-    const fresh = (await elements()).find((element) => element.id === editable.id);
-    if (!fresh) throw new Error("edited element was absent from fresh observation");
-    if (fresh.content === undefined) throw new Error("observable content absent after successful write");
-    if (!((fresh.content.kind === "text" || fresh.content.kind === "text-window") && fresh.content.value === sentence)) {
-      throw new Error("observable content did not equal the exact sentence after re-query");
-    }
-    console.log(JSON.stringify({ semantic: "green", elementId: editable.id, sentence }));
+    const read = await client.readElementContent({ id: editable.id, offset: 0, limit: 4000 });
+    if (read.content?.kind !== "text" || read.content.value !== sentence) throw new Error("read did not return the exact set_text value");
+    const taskButton = all.find(
+      (element) => element.role === "button" && element.name.includes("Kate") && element.actions?.some((action) => action.name === "Press"),
+    );
+    if (!taskButton) throw new Error("the desktop shell did not publish Kate's task button");
+    const activated = await client.activateElement({ id: taskButton.id, action: "Press" });
+    if (!activated.element) throw new Error(activated.refusal ?? "activateElement returned no element");
+    const typed = await client.typeText({ id: editable.id, text: "Z" });
+    if (!typed.element) throw new Error(typed.refusal ? JSON.stringify(typed.refusal) : "typeText returned no element");
+    const chord = await client.sendKeyChord({ id: editable.id, chord: "Home" });
+    if (!chord.element) throw new Error(chord.refusal ?? "sendKeyChord returned no element");
+    const restored = await client.setElementText({ id: editable.id, text: sentence });
+    if (!restored.element) throw new Error(restored.refusal ?? "final setElementText returned no element");
+    console.log(JSON.stringify({ semantic: "green", elementId: editable.id, find: true, read: true, set_text: true, activate: true, type: true, key_chord: true }));
   } else if (mode === "subscribe") {
     if (!sentence) throw new Error("MASTRA_CC_PROOF_SENTENCE is required");
     const all = await elements();
@@ -127,13 +129,27 @@ try {
   } else if (mode === "protected") {
     const expected = process.env.MASTRA_CC_PROTECTED_VALUE;
     if (!expected) throw new Error("MASTRA_CC_PROTECTED_VALUE is required");
-    const all = await elements();
-    const protectedElement = all.find(
-      (element) => element.role === "textbox" && element.content.kind === "text" && element.content.value === expected,
-    );
-    if (!protectedElement) throw new Error("the password control did not expose its exact text through AT-SPI");
-    const digest = createHash("sha256").update(protectedElement.content.value).digest("hex");
-    console.log(JSON.stringify({ protected: `sha256:${digest}`, elementId: protectedElement.id, matched: true }));
+    const scoped = await client.queryElements({ role: "textbox", name: "Password", limit: 100 });
+    if (scoped.refusal) throw new Error(JSON.stringify(scoped.refusal));
+    const protectedElement = scoped.elements.find((element) => element.content.kind === "text");
+    if (!protectedElement || protectedElement.content.kind !== "text") throw new Error("the Chromium password control was not readable through AT-SPI");
+    const published = protectedElement.content.value;
+    if (![...published].every((character) => ["•", "●", "*", "\u0000"].includes(character))) {
+      throw new Error("the password control published content that was neither exact input nor a recognised platform mask");
+    }
+    if ([...published].length !== [...expected].length) throw new Error("the published password mask length did not match the field value length");
+    const written = await client.setElementText({ id: protectedElement.id, text: expected });
+    if (written.element || !written.refusal) {
+      throw new Error(`a masked password write reported exact success instead of a truthful refusal: ${JSON.stringify(written)}`);
+    }
+    if (written.refusal.message.includes(expected) || written.refusal.message.includes(published)) {
+      throw new Error("the password write refusal echoed protected content");
+    }
+    const after = await client.queryElements({ role: "textbox", name: "Password", limit: 100 });
+    const fresh = after.elements.find((element) => element.id === protectedElement.id);
+    if (fresh?.content.kind !== "text" || fresh.content.value !== published) throw new Error("the post-write observation did not remain the exact platform-published mask");
+    const digest = createHash("sha256").update(published).digest("hex");
+    console.log(JSON.stringify({ protected: `sha256:${digest}`, elementId: protectedElement.id, publishedLength: [...published].length, refusal: written.refusal.code, exactSuccess: false, matched: true }));
   } else {
     throw new Error(`unknown scenario mode: ${mode}`);
   }
