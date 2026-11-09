@@ -13,6 +13,7 @@ import type { LaunchCatalog } from "./launch/recipes.js";
 import { terminateOwned } from "./launch/spawn.js";
 import { OwnershipTable } from "./launch/table.js";
 import { startServer, startWebSocketServer } from "./server.js";
+import { startAfterAccessibility } from './accessibility/startup.js';
 
 // The daemon: one Node process, single-threaded (ADR-0030). --backend selects
 // from the registry; this is a LOCAL OPERATOR FLAG on the daemon's own command
@@ -213,25 +214,38 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   });
 }
 
-server = await startServer({
-  socketPath,
-  backend,
-  launch: { catalog, table, accessibility, keys },
-});
-server.on("close", () => terminateOwned(table));
+try {
+  await startAfterAccessibility({
+    backend: backendName,
+    mode: "serve",
+    accessibility,
+    start: async () => {
+      server = await startServer({
+        socketPath,
+        backend,
+        launch: { catalog, table, accessibility, keys },
+      });
+      server.on("close", () => terminateOwned(table));
 
-if (wsPort !== null) {
-  wsServer = await startWebSocketServer({
-    port: wsPort,
-    host: wsHost,
-    allowedOrigins: wsAllowedOrigins,
-    backend,
-    launch: { catalog, table, accessibility, keys },
+      if (wsPort !== null) {
+        wsServer = await startWebSocketServer({
+          port: wsPort,
+          host: wsHost,
+          allowedOrigins: wsAllowedOrigins,
+          backend,
+          launch: { catalog, table, accessibility, keys },
+        });
+        // Belt and braces for a close that arrives without a signal. The signal path
+        // does NOT rely on this: ws only fires "close" once every client has gone.
+        wsServer.on("close", () => terminateOwned(table));
+        console.log(`daemon: websocket listening on ${wsServer.host}:${wsServer.port}`);
+      }
+    },
   });
-  // Belt and braces for a close that arrives without a signal. The signal path
-  // does NOT rely on this: ws only fires "close" once every client has gone.
-  wsServer.on("close", () => terminateOwned(table));
-  console.log(`daemon: websocket listening on ${wsServer.host}:${wsServer.port}`);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  await backend.close();
+  process.exit(1);
 }
 
 console.log(`daemon: listening on ${socketPath} (backend ${backend.name}, schema ${SCHEMA_DIGEST.slice(0, 12)}...)`);

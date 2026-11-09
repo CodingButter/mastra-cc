@@ -768,21 +768,41 @@ export async function decideRestartApplication(
   causeNames(treeName);
   const owned = launch.table.ownsName(name);
   if (owned === undefined) return { refusal: NOT_OURS_REFUSAL, refusalClass: "RestartNotOurs", auditApplication: treeName };
-  try {
-    process.kill(owned.pid, "SIGTERM");
-  } catch (error) {
-    // Ownership was just established, so "not ours" would be a refusal derived
-    // from a check that did not run (ADR-0008 clause 5). Two different things
-    // land here. ESRCH: it exited in the gap between the check and the signal,
-    // which is the close this caller asked for happening without our help -
-    // fall through and start it again. Anything else: the signal was refused,
-    // and the honest answer is that nothing was confirmed.
-    if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
-      return {
-        refusal: "the signal could not be delivered; the application is still running",
-        refusalClass: "RestartNotConfirmed",
-        auditApplication: treeName,
-      };
+
+  // ownsName proves the recorded pid/start-time pair, then this second check is
+  // deliberately adjacent to the signal. A recycled live pid is foreign and
+  // must never receive SIGTERM. A process that vanished in the gap already did
+  // what the restart requested, so it can fall through to relaunch.
+  let alreadyExited = false;
+  if (launch.table.owns(owned.pid) !== true) {
+    try {
+      process.kill(owned.pid, 0);
+      return { refusal: NOT_OURS_REFUSAL, refusalClass: "RestartNotOurs", auditApplication: treeName };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ESRCH") alreadyExited = true;
+      else {
+        return {
+          refusal: "the process identity could not be rechecked immediately before restart",
+          refusalClass: "RestartNotConfirmed",
+          auditApplication: treeName,
+        };
+      }
+    }
+  }
+
+  if (!alreadyExited) {
+    try {
+      process.kill(owned.pid, "SIGTERM");
+    } catch (error) {
+      // ESRCH means it exited in the gap between the final identity check and
+      // the signal. Anything else means no closure was confirmed.
+      if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
+        return {
+          refusal: "the signal could not be delivered; the application is still running",
+          refusalClass: "RestartNotConfirmed",
+          auditApplication: treeName,
+        };
+      }
     }
   }
   const budget = launch.pollBudgetMs ?? RESTART_BUDGET_MS;

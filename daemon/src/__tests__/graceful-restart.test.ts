@@ -304,6 +304,26 @@ describe("who may close a window", () => {
   });
 
 
+  it("rechecks the recorded pid and start time immediately before signalling", async () => {
+    const pid = 424_242;
+    const racing = {
+      ownsName: () => ({ pid, starttime: "recorded", name: "test-app" }),
+      owns: () => false,
+      entries: () => [],
+      record: () => undefined,
+      remove: () => undefined,
+    } as unknown as OwnershipTable;
+    const kill = vi.spyOn(process, "kill").mockImplementation(() => true);
+    const backend = desk(() => [element(backend, "application", "test-app")]);
+    try {
+      const response = await restart("test-app", backend, { table: racing });
+      expect((response.result as { refusal?: { code?: string } }).refusal?.code).toBe("RestartNotOurs");
+      expect(kill.mock.calls.some(([signalled, signal]) => signalled === pid && signal === "SIGTERM")).toBe(false);
+    } finally {
+      kill.mockRestore();
+    }
+  });
+
   it("an application that exits between the ownership check and the signal is started again, not called foreign", async () => {
     // The gap is real: ownsName said yes, and the process was gone a
     // microsecond later. "This daemon did not open that application" would be

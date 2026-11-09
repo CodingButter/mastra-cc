@@ -3,7 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 : "${TESTED_HEAD:=$(git rev-parse HEAD)}"
-printf 'TESTED_HEAD=%s\n' "$TESTED_HEAD"
+: "${TESTED_TREE:=$(git rev-parse HEAD^{tree})}"
+printf 'TESTED_HEAD=%s\nTESTED_TREE=%s\n' "$TESTED_HEAD" "$TESTED_TREE"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
 corepack enable
 corepack prepare pnpm@10.23.0 --activate
