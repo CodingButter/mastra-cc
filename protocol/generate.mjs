@@ -4,11 +4,11 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Reads protocol/schema.json and emits packages/protocol-types: TypeScript
-// types, constants, and a runtime validator. The emitted package is BUILD
-// OUTPUT and is git-ignored (ADR-0009) - what is committed is this generator
-// and the golden fixtures in protocol/golden/ that its output is diffed
-// against (CI step 1). Emission is deterministic: same schema bytes, same
-// output bytes, no timestamps.
+// types, constants, and a runtime validator. The package manifest and tsconfig
+// are committed so a cold pnpm install can discover and link the workspace;
+// generated source and dist remain ignored build output (ADR-0009). The golden
+// fixtures in protocol/golden/ are the committed protocol record. Emission is
+// deterministic: same schema bytes, same output bytes, no timestamps.
 //
 // Usage: node protocol/generate.mjs [--out <dir>] [--schema <file>]
 
@@ -386,6 +386,7 @@ const packageJson = `${JSON.stringify(
     types: "./dist/index.d.ts",
     description: "GENERATED from protocol/schema.json - do not edit (ADR-0009).",
     scripts: {
+      prebuild: "node ../../protocol/generate.mjs",
       build: "tsc -p tsconfig.json",
     },
     devDependencies: {
