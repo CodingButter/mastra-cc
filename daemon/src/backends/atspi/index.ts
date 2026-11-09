@@ -966,9 +966,7 @@ export class AtspiBackend implements Backend {
     const length = clearableLength(before.content);
     if (length === undefined) {
       throw new UnperformableElementError(
-        `this element does not publish text this daemon can read, so there is no count to press through and no way to ` +
-          `see whether it emptied - clearing it would be an unknown number of destructive keys aimed at a window this ` +
-          `daemon cannot check`,
+        `this element does not publish readable text, so there is no count to clear and no way to confirm it emptied - nothing was sent`,
       );
     }
     if (length > CLEAR_MAX_PRESSES) {
@@ -1401,11 +1399,6 @@ export class AtspiBackend implements Backend {
     const ref = this.answered.get(params.id);
     if (ref === undefined) {
       throw new UnperformableElementError(`no element with id "${params.id}" is known to this daemon (never answered, or forgotten after newer answers) - nothing to look at`);
-    }
-    const [nativeRole] = await this.channel.call({ destination: ref.busName, path: ref.objectPath, iface: ACCESSIBLE, member: "GetRole" });
-    // Qt can publish role 40 (PASSWORD_TEXT) with the contradictory name "text".
-    if (nativeRole === 40 || await this.nativeRoleOf(ref) === "password text") {
-      throw new UnperformableElementError("this element contains protected content - nothing was photographed");
     }
     const rectangle = await screenRectangle(this.channel, ref);
     if (rectangle === undefined || rectangle.width <= 0 || rectangle.height <= 0) {

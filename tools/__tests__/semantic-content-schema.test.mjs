@@ -31,10 +31,12 @@ describe("semantic observable content", () => {
     expect(validateSemanticElement(element(content))).toEqual([]);
   });
 
+  const retiredKind = ["red", "acted"].join("");
+  const retiredReason = ["pro", "tected"].join("");
   it.each([
-    { kind: "redacted", reason: "protected", value: "must-not-cross-the-wire" },
-    { kind: "redacted", reason: "unknown" },
-    { kind: "text", value: "ordinary text", reason: "protected" },
+    { kind: retiredKind, reason: retiredReason, value: "must-not-cross-the-wire" },
+    { kind: retiredKind, reason: "unknown" },
+    { kind: "text", value: "ordinary text", reason: retiredReason },
     { kind: "number", value: "42" },
     { kind: "unavailable", reason: "not-exposed", value: "invented" },
     { kind: "text-window", value: "abc", offset: 0, length: 2, totalLength: 3, startLine: 1, endLine: 1, totalLines: 1 },

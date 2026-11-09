@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Channel, Exchange } from "../channel.js";
 import { readObservableContent } from "../content.js";
+import { FIXTURE_SECRET } from "../../../../fixtures/gtk-dialog/protected-content-fixture.js";
+import { createHash } from "node:crypto";
 
 const REF = { busName: ":1.0", objectPath: "/org/a11y/atspi/accessible/16" };
 const TEXT = "org.a11y.atspi.Text";
@@ -39,11 +41,14 @@ describe("AT-SPI observable content", () => {
   it("reads password text through the published Text interface", async () => {
     const channel = channelWith((exchange) => {
       if (exchange.member === "GetInterfaces") return [[TEXT]];
-      if (exchange.member === "GetText") return ["fixture secret"];
+      if (exchange.member === "GetText") return [FIXTURE_SECRET];
       throw new Error(`unexpected ${exchange.member}`);
     });
 
-    await expect(readObservableContent(channel, REF, "password text")).resolves.toEqual({ kind: "text", value: "fixture secret" });
+    const observed = await readObservableContent(channel, REF, "password text");
+    expect(observed.kind).toBe("text");
+    const digest = (value: string) => createHash("sha256").update(value).digest("hex");
+    expect(observed.kind === "text" ? digest(observed.value) : "not-text").toBe(digest(FIXTURE_SECRET));
     expect(channel.asked.map((exchange) => exchange.member)).toEqual(["GetInterfaces", "GetText"]);
   });
 

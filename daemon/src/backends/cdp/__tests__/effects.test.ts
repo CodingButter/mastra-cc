@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EffectUnsupportedError, UnpublishedActionError, WriteNotObservedError } from "../../../backend.js";
+import { FIXTURE_SECRET } from "../../../../fixtures/gtk-dialog/protected-content-fixture.js";
 import { ISOLATED_WORLD } from "../subtree-stream.js";
 import type { CdpExchange } from "../channel.js";
 import {
@@ -59,18 +60,20 @@ const RESOLVES = { "DOM.resolveNode": { result: { object: { objectId: "OBJ-1" } 
 const returns = (value: unknown) => ({ result: { result: { value } } });
 
 describe("the browser route's write is verified by reading it back", () => {
-  it("reports a write the page clamped rather than the write that was asked for", async () => {
-    // Measured shape, not an invented one: an input with a maxlength silently
-    // keeps what fits and reports success. The desktop platform does the same
-    // thing with an insert past the end, which is why both routes check.
+  it("reports a password write mismatch without echoing either value", async () => {
+    const observed = "••••";
     const channel = scriptedChannel({
       ...RESOLVES,
       [WRITE_KEY]: returns(undefined),
-      "callFunctionOn:function(){ return this.value; }": returns("typed by the"),
+      "callFunctionOn:function(){ return this.value; }": returns(observed),
     });
 
-    await expect(setValueOf(channel, REF, "typed by the daemon")).rejects.toBeInstanceOf(WriteNotObservedError);
-    await expect(setValueOf(channel, REF, "typed by the daemon")).rejects.toThrow(/reading it back found/);
+    const failure = await setValueOf(channel, REF, FIXTURE_SECRET).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(WriteNotObservedError);
+    expect((failure as Error).message).not.toContain(FIXTURE_SECRET);
+    expect((failure as Error).message).not.toContain(observed);
+    expect((failure as Error).message).toContain(`${observed.length} characters`);
+    expect((failure as Error).message).toContain(`${FIXTURE_SECRET.length} were intended`);
   });
 
   it("accepts a write only when the element reads back holding exactly what was intended", async () => {
@@ -105,7 +108,9 @@ describe("the browser route's write is verified by reading it back", () => {
       "callFunctionOn:function(){ return this.value; }": returns("100"),
     });
 
-    await expect(setMagnitudeOf(channel, REF, 250)).rejects.toThrow(/found "100" where "250" was intended/);
+    await expect(setMagnitudeOf(channel, REF, 250)).rejects.toThrow(
+      /found 3 characters where 3 were intended \(contents differ\)/,
+    );
   });
 });
 
@@ -358,16 +363,18 @@ describe("the browser route writes the way a framework hears it, and claims only
     expect(stub.ownSets).toEqual([]);
   });
 
-  it("reads back only after the settle, so a revert inside the window is refused naming what stayed", async () => {
+  it("reads back only after the settle, so a revert is refused without naming what stayed", async () => {
     const stub = controlledInput({ revertAfterMs: 10 });
     const write = setValueOf(page(stub, { raf: true }), REF, "hello");
     await expect(write).rejects.toBeInstanceOf(WriteNotObservedError);
-    await expect(setValueOf(page(controlledInput({ revertAfterMs: 10 }), { raf: true }), REF, "hello")).rejects.toThrow(/found ""/);
+    await expect(setValueOf(page(controlledInput({ revertAfterMs: 10 }), { raf: true }), REF, "hello")).rejects.toThrow(
+      /found 0 characters where 5 were intended \(contents differ\)/,
+    );
   });
 
   it("waits at least 20 ms even when two frames pass at once, so a 10 ms revert is still seen", async () => {
     const write = setValueOf(page(controlledInput({ revertAfterMs: 10 }), { raf: true, frameMs: 0 }), REF, "hello");
-    await expect(write).rejects.toThrow(/found ""/);
+    await expect(write).rejects.toThrow(/found 0 characters where 5 were intended \(contents differ\)/);
   });
 
   it("settles on the 50 ms timer when a background tab never gives an animation frame", async () => {
@@ -377,10 +384,14 @@ describe("the browser route writes the way a framework hears it, and claims only
     expect(Date.now() - started).toBeLessThan(1000);
   });
 
-  it("refuses a number the control canonicalised, naming what it holds", async () => {
+  it("refuses a number the control canonicalised without naming what it holds", async () => {
     const canonical = (v: string) => (v.trim() === "" || Number.isNaN(Number(v)) ? "" : String(Number(v)));
-    await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "01")).rejects.toThrow(/found "1"/);
-    await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "abc")).rejects.toThrow(/found ""/);
+    await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "01")).rejects.toThrow(
+      /found 1 characters where 2 were intended \(contents differ\)/,
+    );
+    await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "abc")).rejects.toThrow(
+      /found 0 characters where 3 were intended \(contents differ\)/,
+    );
     await expect(setMagnitudeOf(page(controlledInput({ canonical }), { raf: true }), REF, 42)).resolves.toBeUndefined();
     await expect(setValueOf(page(controlledInput({ canonical }), { raf: true }), REF, "7")).resolves.toBeUndefined();
   });

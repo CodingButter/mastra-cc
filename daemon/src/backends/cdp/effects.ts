@@ -160,7 +160,7 @@ export async function setValueOf(seam: CallSeam, ref: NodeRef, value: string): P
   const observed = await writeAndObserve(seam, ref, value);
   if (observed !== value) {
     throw new WriteNotObservedError(
-      `writing this element reported success, but reading it back found ${JSON.stringify(observed)} where ${JSON.stringify(value)} was intended - the page performed something other than what was asked`,
+      `writing this element reported success, but reading it back found ${[...observed].length} characters where ${[...value].length} were intended (contents differ) - the page performed something other than what was asked`,
     );
   }
 }
@@ -219,7 +219,7 @@ export async function setMagnitudeOf(seam: CallSeam, ref: NodeRef, value: number
   const observed = await writeAndObserve(seam, ref, requested);
   if (observed !== requested) {
     throw new WriteNotObservedError(
-      `setting this element's value reported success, but reading it back found ${JSON.stringify(observed)} where ${JSON.stringify(requested)} was intended - the page clamped, reformatted or ignored the write`,
+      `setting this element's value reported success, but reading it back found ${[...observed].length} characters where ${[...requested].length} were intended (contents differ) - the page clamped, reformatted or ignored the write`,
     );
   }
 }

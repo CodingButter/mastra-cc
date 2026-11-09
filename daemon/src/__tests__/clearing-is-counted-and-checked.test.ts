@@ -164,7 +164,9 @@ describe("emptying a field one key at a time", () => {
     // has no way to check afterwards.
     const desk = deskCarrying("ignored", { readable: false });
     const id = await anElement(desk.backend);
-    await expect(desk.backend.clearElementText({ id })).rejects.toThrow(/does not publish text this daemon can read/);
+    await expect(desk.backend.clearElementText({ id })).rejects.toThrow(
+      /does not publish readable text.*nothing was sent/,
+    );
     expect(desk.pressed).toEqual([]);
   });
 

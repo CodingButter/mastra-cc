@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Channel, Exchange } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
+import { UnperformableElementError } from "../backend.js";
 
 // A CONTROL MAY PUBLISH NO COMPONENT AND STILL BE FOCUSABLE.
 //
@@ -32,16 +33,18 @@ interface Staged {
   actions: string[];
 }
 
-function stage(overrides: Partial<Staged> = {}): { channel: Channel; performed: string[] } {
+function stage(overrides: Partial<Staged> = {}): { channel: Channel; performed: string[]; calls: Exchange[] } {
   const staged: Staged = {
     interfaces: [TEXT_IFACE, ACTION_IFACE],
     actions: ["SetFocus"],
     ...overrides,
   };
   const performed: string[] = [];
+  const calls: Exchange[] = [];
 
   const channel: Channel = {
     async call(exchange: Exchange): Promise<unknown[]> {
+      calls.push(exchange);
       if (exchange.destination === "org.a11y.atspi.Registry" && exchange.member === "GetChildren") {
         return [[[BUS, APP]]];
       }
@@ -89,7 +92,7 @@ function stage(overrides: Partial<Staged> = {}): { channel: Channel; performed: 
     close: async () => undefined,
   };
 
-  return { channel, performed };
+  return { channel, performed, calls };
 }
 
 async function field(channel: Channel): Promise<{ backend: AtspiBackend; id: string }> {
@@ -123,6 +126,20 @@ describe("an element with no Component is given the focus by the action it publi
 
     expect(performed).toContain("GrabFocus");
     expect(performed, "the action route is the fallback, not the first choice").not.toContain("SetFocus");
+  });
+
+  it("refuses an unreadable clear before sending any write", async () => {
+    const { channel, calls } = stage({ interfaces: [ACTION_IFACE] });
+    const { backend, id } = await field(channel);
+    const before = calls.length;
+
+    const failure = await backend.clearElementText({ id }).catch((error: unknown) => error);
+    await backend.close();
+
+    expect(failure).toBeInstanceOf(UnperformableElementError);
+    expect(calls.slice(before).map((call) => call.member)).not.toContain("GenerateKeyboardEvent");
+    expect(calls.slice(before).map((call) => call.member)).not.toContain("SetTextContents");
+    expect(calls.slice(before).map((call) => call.member)).not.toContain("InsertText");
   });
 
   it("refuses a field that publishes neither route, in the platform's own words", async () => {

@@ -208,8 +208,10 @@ export async function textOf(seam: CallSeam, ref: NativeRef): Promise<string> {
 // looking reading of an element the write may never have touched, which is the
 // same false belief as reporting the platform's own `true` (ADR-0047).
 function observed(what: string, observedValue: unknown, intended: unknown): WriteNotObservedError {
+  const observedLength = [...String(observedValue ?? "")].length;
+  const intendedLength = [...String(intended ?? "")].length;
   return new WriteNotObservedError(
-    `${what} reported success, but reading the element back found ${JSON.stringify(observedValue)} where ${JSON.stringify(intended)} was intended - the platform performed something other than what was asked`,
+    `${what} reported success, but reading the element back found ${observedLength} characters where ${intendedLength} were intended (contents differ) - the platform performed something other than what was asked`,
   );
 }
 

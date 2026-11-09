@@ -43,9 +43,9 @@ bash infra/webtop/cleanup.sh
 
 `demo.sh` ends with `PROOF: GREEN`; `recreate.sh` ends with `PERSISTENCE: GREEN`. Both are bounded and clean up only the Compose project selected by `MASTRA_CC_WEBTOP_PROJECT` (default `mcc-webtop-harness`). Set `MASTRA_CC_WEBTOP_PORT` to change the loopback Webtop port.
 
-The live scenario writes a fixed non-sensitive proof sentence through built `@mastra-cc/transport`, re-queries the same element, and requires exact semantic read-back. It also observes a real password control and requires `{ kind: "redacted", reason: "protected" }` without carrying its value.
+The live scenario writes a fixed non-sensitive proof sentence through built `@mastra-cc/transport`, re-queries the same element, and requires exact semantic read-back. A password control is read and verified only through a SHA-256 digest plus `matched:true`; its plaintext is never copied into proof output.
 
-Diagnostics contain container metadata, process state, socket state, and bounded daemon logs. They must not contain protected content. Proof screenshots and Playwright traces belong under the uncommitted plan proof directory, never in the repository.
+Diagnostics contain container metadata, process state, socket state, and bounded daemon logs. They must not contain fixture-secret bytes. No screenshot, video, frame dump, or capture payload from the password read/write step is retained; visible capture proof uses the separate `MCC_VISIBLE_CAPTURE_MARKER`.
 
 ## Capture qualification
 

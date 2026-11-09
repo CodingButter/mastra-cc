@@ -108,11 +108,11 @@ export class LabelReader {
           const owner = reference(await read(ref, "GetApplication"));
           if (key(owner) !== key(root)) return fail("out-of-scope");
         };
-        const properties = async (ref: NativeRef) => {
+        const properties = async (ref: NativeRef, allowPassword = false) => {
           await ownership(ref);
           const role = await read(ref, "GetRoleName");
           if (typeof role !== "string" || !role) return fail("unreadable");
-          if (role === "password text") return fail("out-of-scope");
+          if (role === "password text" && !allowPassword) return fail("out-of-scope");
           const states = await read(ref, "GetState");
           if (!Array.isArray(states) || states.length !== 2 || !states.every(Number.isInteger)) return fail("unreadable");
           if ((states[0] & ((1 << 6) | (1 << 27))) !== 0) return fail("unreadable");
@@ -120,8 +120,8 @@ export class LabelReader {
           if (!Array.isArray(interfaces) || !interfaces.every(i => typeof i === "string")) return fail("unreadable");
           return { role, editable: interfaces.includes("org.a11y.atspi.EditableText"), text: interfaces.includes("org.a11y.atspi.Text") };
         };
-        const target = await properties(field);
-        if (target.role !== "text" || !target.editable || !target.text) return fail("not-exposed");
+        const target = await properties(field, true);
+        if ((target.role !== "text" && target.role !== "password text") || !target.editable || !target.text) return fail("not-exposed");
         const descendants = await read(field, "GetChildren");
         if (!Array.isArray(descendants)) return fail("unreadable");
         if (descendants.length !== 0) return fail("not-exposed");

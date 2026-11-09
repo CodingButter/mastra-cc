@@ -164,7 +164,8 @@ describe("an operation whose write the platform did not perform is refused, not 
     // The element is readable throughout: a route that only catches unreadable
     // elements answers this call with a clean element holding 0.25.
     expect(failure).toBeInstanceOf(WriteNotObservedError);
-    expect((failure as Error).message).toContain("0.25");
+    expect((failure as Error).message).not.toContain("0.25");
+    expect((failure as Error).message).toContain("4 characters where 4 were intended (contents differ)");
   });
 
   it("refuses a caret the platform reported and did not place", async () => {

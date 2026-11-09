@@ -8,6 +8,7 @@ import { UnperformableElementError } from "../backend.js";
 import { handleRequest } from "../server.js";
 import { underCancellation, CancelledAtBoundaryError } from "../cancellation.js";
 import { captureRoute, decodeKwinFrame, grabKwinPixels, KwinFrameError } from "../backends/atspi/kwin-capture.js";
+import { VISIBLE_CAPTURE_MARKER } from "../../fixtures/gtk-dialog/protected-content-fixture.js";
 
 vi.mock("node:child_process", async (original) => ({ ...await original<typeof processes>(), spawn: vi.fn() }));
 afterEach(() => { vi.unstubAllEnvs(); vi.resetAllMocks(); });
@@ -128,23 +129,27 @@ describe("explicit bounded KWin acquisition", () => {
   it.each([0, 11, 13])("rejects incorrect payload length %s", (length) => {
     expect(() => decodeKwinFrame(frame({}, Buffer.alloc(length)))).toThrow(KwinFrameError);
   });
-  it.each([["", 61], ["kwin", 61], ["kwin", 40]])("never acquires protected controls for route %s and role %s", async (route, numericRole) => {
-    vi.stubEnv("MASTRA_CC_ATSPI_CAPTURE", route);
+  it("captures password-role geometry without retaining the frame or using secret content", async () => {
+    vi.stubEnv("MASTRA_CC_ATSPI_CAPTURE", "kwin");
+    const actual = await vi.importActual<typeof processes>("node:child_process");
+    vi.mocked(processes.spawn).mockImplementationOnce(((_file: string, _args: string[], options: processes.SpawnOptions) =>
+      actual.spawn(process.execPath, ["-e", `process.stdout.write(Buffer.from('${frame().toString("base64")}', 'base64'))`], options)) as typeof processes.spawn);
     const tape = replayChannel("gtk-dialog");
-    let protectedTarget = false;
     const backend = new AtspiBackend({
-      call: (exchange) => exchange.member === "GetRole" ? Promise.resolve([numericRole])
-        : protectedTarget && exchange.member === "GetRoleName"
-          ? Promise.resolve([numericRole === 40 ? "text" : "password text"]) : tape.call(exchange),
+      call: (exchange) => exchange.member === "GetRole" ? Promise.resolve([40])
+        : exchange.member === "GetExtents" ? Promise.resolve([[0, 0, 2, 2]])
+          : tape.call(exchange),
       watch: (request, sink, anchor) => tape.watch(request, sink, anchor),
       close: () => tape.close(),
     }, "all");
     try {
+      expect(VISIBLE_CAPTURE_MARKER).toBe("MCC_VISIBLE_CAPTURE_MARKER");
       const { elements } = await backend.queryElements({ role: "label" });
       expect(elements.length).toBeGreaterThan(0);
-      protectedTarget = true;
-      await expect(backend.captureElement({ id: elements[0]!.id })).rejects.toThrow(UnperformableElementError);
-      expect(processes.spawn).not.toHaveBeenCalled();
+      const { image } = await backend.captureElement({ id: elements[0]!.id });
+      expect(image).toBeDefined();
+      expect({ width: image!.width, height: image!.height }).toEqual({ width: 2, height: 2 });
+      expect(processes.spawn).toHaveBeenCalledTimes(1);
     } finally { await backend.close(); }
   });
   it.each(["x", "y", "width", "height"])("refuses an element whose %s changes during acquisition", async (changed) => {

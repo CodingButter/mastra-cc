@@ -56,7 +56,6 @@ describe("bounded immediate composite observations", () => {
     ["third child", "/parent", "GetChildren", [pair("/field"), pair("/menu"), pair("/other")], "not-exposed"],
     ["two editable children", "/menu", "GetInterfaces", text, "ambiguous"],
     ["unsupported sibling", "/menu", "GetRoleName", "text", "not-exposed"],
-    ["protected target", "/field", "GetRoleName", "password text", "out-of-scope"],
     ["protected label", "/label", "GetRoleName", "password text", "out-of-scope"],
     ["wrong native owner", "/label", "GetApplication", pair("/other-app"), "out-of-scope"],
     ["missing label", "/parent", "GetRelationSet", [], "not-exposed"],
@@ -71,6 +70,14 @@ describe("bounded immediate composite observations", () => {
     expect((await observe(f)).compositeObservation).toEqual(unavailable(String(reason)));
     expect(f.calls.some(x => x.body?.[1] === "Name")).toBe(false);
   });
+  it("uses a non-secret label for a password field without substituting it for content", async () => {
+    const f = fixture(x => x.path === "/field" && x.member === "GetRoleName" ? ["password text"] : undefined);
+    const observed = await observe(f);
+    expect(observed.compositeObservation).toEqual(available);
+    expect(observed.labelObservation).toEqual({ kind: "available", labels: [] });
+    expect(f.calls.filter(x => x.body?.[1] === "Name").map(x => x.path)).toEqual(["/label", "/label"]);
+  });
+
   it("refuses foreign bus without querying it or reading label content", async () => {
     const f = fixture(x => x.path === "/parent" && x.member === "GetRelationSet" ? [[[2, [[":1.9", "/label"]]]]] : undefined);
     expect((await observe(f)).compositeObservation).toEqual(unavailable("out-of-scope"));

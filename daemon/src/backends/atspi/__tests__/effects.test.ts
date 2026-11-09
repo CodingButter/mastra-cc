@@ -14,6 +14,8 @@ import {
   setTextContents,
   setValue,
 } from "../effects.js";
+import { FIXTURE_SECRET } from "../../../../fixtures/gtk-dialog/protected-content-fixture.js";
+import { createHash } from "node:crypto";
 
 // Performing, as distinct from reading. These tests pin the four ways a verb
 // can be wrong in a way that still returns success on the real platform:
@@ -234,26 +236,39 @@ describe("writing text and placing the caret", () => {
     expect(read?.body, "asked the wire for a range the element never published").toEqual([0, 9]);
   });
 
-  it("reports a write the read-back disagrees with, instead of the success the platform returned", async () => {
-    // The measured failure, exactly: an insert beyond the field's length was
-    // CLAMPED to somewhere else, performed, and reported success. The bounds
-    // check refuses that particular call, but nothing stops the platform
-    // landing a write elsewhere - so the read-back is what decides.
+  it("verifies an exact password-field write through readable post-state", async () => {
+    const channel = scriptedChannel({
+      GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
+      "Get:CharacterCount": [FIXTURE_SECRET.length],
+      GetText: [FIXTURE_SECRET],
+      SetTextContents: [true],
+    });
+
+    await setTextContents(channel, REF, FIXTURE_SECRET);
+
+    const write = channel.asked.find((exchange) => exchange.member === "SetTextContents")?.body?.[0];
+    const digest = (value: string) => createHash("sha256").update(value).digest("hex");
+    expect(typeof write === "string" ? digest(write) : "not-text").toBe(digest(FIXTURE_SECRET));
+  });
+
+  it("reports a password write mismatch without echoing either value", async () => {
+    const observed = "••••";
     const channel = scriptedChannel(
       {
         GetInterfaces: [["org.a11y.atspi.Accessible", TEXT, EDITABLE_TEXT]],
-        "Get:CharacterCount": [9],
+        "Get:CharacterCount": [observed.length],
         SetTextContents: [true],
       },
-      // Ninety-nine characters were written; the field reads back the nine it
-      // was already holding. The call returned true either way.
-      { GetText: [["some word"], ["some word"]] },
+      { GetText: [[observed], [observed]] },
     );
 
-    const failure = await setTextContents(channel, REF, "x".repeat(99)).catch((error: unknown) => error);
+    const failure = await setTextContents(channel, REF, FIXTURE_SECRET).catch((error: unknown) => error);
 
-    expect(failure, "a write that did not land was reported as a success").toBeInstanceOf(WriteNotObservedError);
-    expect((failure as Error).message).toContain("some word");
+    expect(failure).toBeInstanceOf(WriteNotObservedError);
+    expect((failure as Error).message).not.toContain(FIXTURE_SECRET);
+    expect((failure as Error).message).not.toContain(observed);
+    expect((failure as Error).message).toContain(`${observed.length} characters`);
+    expect((failure as Error).message).toContain(`${FIXTURE_SECRET.length} were intended`);
   });
 
   it("detects an insert that landed at a different offset than the one it was aimed at", async () => {
@@ -274,7 +289,8 @@ describe("writing text and placing the caret", () => {
     expect(failure, "an insert clamped to the end was accepted as an insert at offset 4").toBeInstanceOf(
       WriteNotObservedError,
     );
-    expect((failure as Error).message).toContain("abcdtypedefghi");
+    expect((failure as Error).message).not.toContain("abcdtypedefghi");
+    expect((failure as Error).message).toContain("14 characters where 14 were intended (contents differ)");
   });
 
   it("places the caret at the end when no offset is given", async () => {
