@@ -115,7 +115,7 @@ const OPERATION_ORDER = ["setValue", "setText", "setCaret", "reveal"] as const;
 // `not-exposed` here is a fact about the application, never a policy shape.
 // Nothing was withheld and no setting turned it off - the element does not
 // publish the interface. Saying it in a policy shape would teach a caller that
-// some setting could change the answer, which is the false belief ADR-0042
+// the answer was configurable, which is the false belief ADR-0042
 // exists to kill.
 export async function readPublishedOperations(seam: CallSeam, ref: NativeRefLike): Promise<PublishedOperations> {
   let interfaces: string[];

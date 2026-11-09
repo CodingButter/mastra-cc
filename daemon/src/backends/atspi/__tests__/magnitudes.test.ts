@@ -59,7 +59,6 @@ describe("an element's magnitude is read from the platform", () => {
       expect(setValue?.range).toBeUndefined();
       // `not-exposed` is a fact about the application. A setting named here
       // would teach a caller that some configuration could lift it (ADR-0042).
-      expect(setValue?.disabledBy).toBeUndefined();
     }
   });
 

@@ -71,7 +71,7 @@ function deskAt(initial: [number, number, number, number]) {
     close: () => tape.close(),
   };
   return {
-    backend: new AtspiBackend(channel, "all"),
+    backend: new AtspiBackend(channel),
     presses,
     moveTo(rectangle: [number, number, number, number]) {
       published = rectangle;

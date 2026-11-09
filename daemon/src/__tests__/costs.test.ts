@@ -4,7 +4,7 @@ describe("content-free process cost counters", () => {
   it("instruments public queued requests separately from capture stages", async () => {
     vi.resetModules();
     const { AtspiBackend, replayChannel, handleRequest, readCostMetrics } = await import("../index.js");
-    const backend = new AtspiBackend(replayChannel("gtk-dialog"), "all");
+    const backend = new AtspiBackend(replayChannel("gtk-dialog"));
     try {
       await Promise.all([1, 2].map((id) => handleRequest({ type: "request", id, method: "queryElements", params: {} }, backend)));
       expect(readCostMetrics().queueWait.count).toBe(2);
@@ -16,7 +16,7 @@ describe("content-free process cost counters", () => {
   it("separates waiting from work while retaining serial execution", async () => {
     vi.resetModules();
     const { AtspiBackend, replayChannel, handleRequest, readCostMetrics } = await import("../index.js");
-    const backend = new AtspiBackend(replayChannel("gtk-dialog"), "all");
+    const backend = new AtspiBackend(replayChannel("gtk-dialog"));
     let now = 0;
     const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
     let release!: () => void;

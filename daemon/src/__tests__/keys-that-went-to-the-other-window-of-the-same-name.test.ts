@@ -23,7 +23,7 @@ function deskWhere(options: { text?: string; result?: string; readable?: boolean
     watch: (subscribedTo, sink, anchor) => tape.watch(subscribedTo, sink, anchor),
     close: () => tape.close(),
   };
-  return { backend: new AtspiBackend(channel, "all"), read: () => buffer, emissions: () => emissions };
+  return { backend: new AtspiBackend(channel), read: () => buffer, emissions: () => emissions };
 }
 
 describe("typing reports attempted delivery, not length-based certainty", () => {

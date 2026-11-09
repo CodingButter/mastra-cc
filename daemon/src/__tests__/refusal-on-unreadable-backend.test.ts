@@ -112,7 +112,6 @@ describe("an unreachable browser is a named refusal, not a crash", () => {
     };
     const table = new OwnershipTable();
     const context: LaunchContext = {
-      permits: new Set(["test-app"]),
       catalog: { "test-app": { argv: ["sleep", "30"], env: {} } },
       table,
       pollBudgetMs: 2000,

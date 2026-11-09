@@ -56,44 +56,6 @@ describe("the action vocabulary is the desktop's, not ours", () => {
   });
 });
 
-describe("the three availability states cannot be collapsed into two", () => {
-  // This is the exit-gate item. "Turned off by a setting" is a door with a key;
-  // "never offered by the platform" is a wall. An agent told the wrong one
-  // either badgers a user about a setting that does not exist, or gives up on
-  // something one toggle away. The three states are distinguishable ON THE
-  // WIRE, and each of the assertions below breaks if two of them merge.
-
-  it("distinguishes all three, and each carries a different obligation", () => {
-    expect(validateSemanticElement(element({ actions: [{ name: "click", availability: "available" }] }))).toEqual([]);
-    expect(
-      validateSemanticElement(element({ actions: [{ name: "click", availability: "disabled-by-configuration", disabledBy: "capabilities.activate" }] })),
-    ).toEqual([]);
-    expect(validateSemanticElement(element({ actions: [{ name: "click", availability: "not-exposed" }] }))).toEqual([]);
-  });
-
-  it("refuses a configuration-withheld action that names no setting", () => {
-    // Withheld-without-a-remedy is an unanswerable refusal: it tells a reader
-    // a setting exists and never says which. Collapsing this state into
-    // not-exposed would make this pass.
-    const problems = validateSemanticElement(element({ actions: [{ name: "click", availability: "disabled-by-configuration" }] }));
-    expect(problems).toContain("action.disabledBy: an availability withheld by configuration must name the setting that withholds it");
-  });
-
-  it("refuses a not-exposed action that names a setting", () => {
-    // The mirror image, and the reason this is enforced in BOTH directions:
-    // naming a setting where none applies invents a remedy that does not
-    // exist. Collapsing not-exposed into disabled-by-configuration makes this
-    // pass.
-    const problems = validateSemanticElement(element({ actions: [{ name: "click", availability: "not-exposed", disabledBy: "capabilities.activate" }] }));
-    expect(problems).toContain('action.disabledBy: present on an availability of "not-exposed" - only a configuration-withheld one names a setting');
-  });
-
-  it("refuses an available action that names a setting", () => {
-    const problems = validateSemanticElement(element({ actions: [{ name: "click", availability: "available", disabledBy: "capabilities.activate" }] }));
-    expect(problems).toContain('action.disabledBy: present on an availability of "available" - only a configuration-withheld one names a setting');
-  });
-});
-
 describe("a magnitude is expressed in the range the element published", () => {
   it("accepts an operation carrying the bounds the element declared", () => {
     // The live level bar that motivated this: minimum 0, maximum 1, current
@@ -146,28 +108,6 @@ describe("the listing describes the fence, never what is behind it", () => {
   // Segment 3 implements this method; the contract it implements against is
   // proven here, so that work starts against something already checked.
 
-  it("accepts an application present with every capability off and each setting named", () => {
-    // The exact inverse of the invisibility the M2.5 proof recorded: an
-    // unpermitted application is PRESENT and honest about why (ADR-0042).
-    expect(
-      validateInstalledApplication({
-        name: "OBS Studio",
-        launchable: false,
-        // Withheld observation withholds the running state with it, and says
-        // so: cannot-tell naming the file, never a claim that it is closed.
-        running: "cannot-tell",
-        runningUnknownBy: "the grants file (--grants)",
-        capabilities: [
-          { capability: "observe", availability: "disabled-by-configuration", disabledBy: "capabilities.observe" },
-          { capability: "launch", availability: "disabled-by-configuration", disabledBy: "capabilities.launch" },
-          { capability: "edit", availability: "disabled-by-configuration", disabledBy: "capabilities.edit" },
-          { capability: "activate", availability: "disabled-by-configuration", disabledBy: "capabilities.activate" },
-          { capability: "submit", availability: "disabled-by-configuration", disabledBy: "capabilities.submit" },
-        ],
-      }),
-    ).toEqual([]);
-  });
-
   it("accepts an application that is installed and honestly not launchable", () => {
     // Installed-but-no-recipe is a statement about the daemon's own recipes,
     // never about permission - the inventory is not the launch catalog.
@@ -181,15 +121,14 @@ describe("the listing describes the fence, never what is behind it", () => {
     ).toEqual([]);
   });
 
-  it("refuses a capability withheld without naming the setting a person would change", () => {
-    // A refusal that cannot be acted on is a wall, not an answer.
+  it("refuses the retired configuration-withheld availability", () => {
     const problems = validateInstalledApplication({
       name: "OBS Studio",
       launchable: true,
       running: "answering",
       capabilities: [{ capability: "observe", availability: "disabled-by-configuration" }],
     });
-    expect(problems).toContain("capability.disabledBy: an availability withheld by configuration must name the setting that withholds it");
+    expect(problems).toContain('capability.availability: "disabled-by-configuration" is not one of the availabilityState values');
   });
 
   it("refuses a listing that says nothing about what is open", () => {

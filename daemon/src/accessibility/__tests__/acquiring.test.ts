@@ -71,7 +71,7 @@ describe("acquiring this machine's accessibility layer", () => {
     const layer = unsupportedPlatform("darwin");
     expect(layer.acquirable).toBe(false);
     // The flag is what the server reads to choose not-exposed over
-    // disabled-by-configuration: no setting on this machine would help.
+    // configuration-disabled: no setting on this machine would help.
     await expect(layer.acquire()).rejects.toThrow();
   });
 

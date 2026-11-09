@@ -5,7 +5,6 @@ import type { SubscribeElementResult, UnsubscribeElementResult } from "../result
 import { type Backend, type BackendChange, type BackendSubscription, DeafWatchError, UnknownSubscriptionError, UnwatchableElementError, WatchUnsupportedError } from "../backend.js";
 import { refused, type Classified } from "../audit.js";
 import { applicationName } from "../backends/atspi/names.js";
-import { isVisible, type Visibility } from "../grants.js";
 import { Request } from "./dispatch.js";
 import { openApplication } from "./launch-focus.js";
 
@@ -151,11 +150,6 @@ export class SubscriptionBook {
   private closed = false;
   constructor(
     private readonly emit: (event: ChangeEvent) => void,
-    // Visibility is re-checked where events are STAMPED, not only where
-    // subscriptions are created: a grant is a statement about now, and an
-    // application that has left the visible set must stop being narrated
-    // mid-watch (ADR-0036).
-    private readonly visibility: Visibility = "all",
     // How full the pipe is. Absent for a book whose emit is not a pipe (tests,
     // in-process consumers): nothing is ever held back.
     private readonly pressure?: PipePressure,
@@ -200,10 +194,6 @@ export class SubscriptionBook {
   private deliver(subscriptionId: string, change: BackendChange): void {
     const entry = this.open.get(subscriptionId);
     if (entry === undefined || !entry.alive) return;
-    // An application outside the visible set is ABSENT, not filtered-with-a-
-    // notice: nothing is emitted at all, which is byte-identical to the quiet
-    // desktop an ungranted application is supposed to look like.
-    if (!isVisible(this.visibility, entry.application)) return;
     // A consumer that has stopped reading is not written to (ADR-0106). The
     // change is HELD - newest per element, bounded - and delivered when the
     // pipe drains. The one exception is the watch's own end, which is one

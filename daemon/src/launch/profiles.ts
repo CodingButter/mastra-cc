@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
 import { applicationName } from "../backends/atspi/names.js";
-import { effectiveVisibility, type Visibility } from "../grants.js";
 import { CATALOG, DEFAULT_CHROME_PROFILE_DIR, GMAIL_PROFILE_DIR } from "./recipes.js";
 import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
 import { findRecipe } from "./spawn.js";
@@ -134,67 +133,4 @@ export function composeCatalog(base: LaunchCatalog, profiles: readonly BrowserPr
     };
   }
   return composed;
-}
-
-/**
- * The OBSERVE-side expansion: every name, plus the tree name its recipe
- * declares through appearsAs. A composed profile launches a browser that still
- * calls itself "chrome" in the semantic tree, so permitting chrome-work has to
- * imply observing what actually answers, or a permitted launch is unreadable
- * forever.
- *
- * It is never applied to the launch-authority permit set: expanding authority
- * would turn a permit for chrome-work into a permit to launch the built-in
- * chrome on its own profile, which is a different identity (ADR-0038).
- */
-export function expandThroughAppearsAs(
-  names: ReadonlySet<string>,
-  catalog: LaunchCatalog,
-): ReadonlySet<string> {
-  const expanded = new Set<string>();
-  for (const name of names) {
-    expanded.add(applicationName(name));
-    const appearsAs = findRecipe(name, catalog)?.appearsAs;
-    if (appearsAs !== undefined) expanded.add(applicationName(appearsAs));
-  }
-  return expanded;
-}
-
-export interface BootNameSources {
-  /** --permit names: launch authority for this session */
-  readonly permits: ReadonlySet<string>;
-  /** names read from the grants file */
-  readonly grants: Visibility;
-  /** --grant flag names */
-  readonly flags: Visibility;
-  readonly catalog: LaunchCatalog;
-}
-
-export interface BootNames {
-  readonly launchPermits: ReadonlySet<string>;
-  readonly visibility: Visibility;
-}
-
-/**
- * The boot-time split, in one testable place. Two sets leave here and they are
- * not the same set: what this session may LAUNCH, and what it may SEE.
- *
- * main.ts is the daemon's entry script and no test can import it, so composing
- * this inline there would leave the milestone's sharpest hazard defended by a
- * human reading a diff.
- */
-export function composeBootNames({ permits, grants, flags, catalog }: BootNameSources): BootNames {
-  // Launch authority is returned EXACTLY as given (ADR-0038). Expanding it
-  // through appearsAs would turn --permit chrome-work into permission to
-  // launch the built-in chrome on its own profile - a different identity, and
-  // a silent authority leak.
-  const launchPermits: ReadonlySet<string> = new Set([...permits].map(applicationName));
-  // Observe is the opposite: the union law stays in grants.ts (ADR-0036,
-  // including "all" winning outright), and every name a session may see is
-  // then expanded to what actually answers in the tree - or a permitted launch
-  // is unreadable forever and a durable chrome-work grant in the permissions
-  // file is inert.
-  const union = effectiveVisibility({ file: grants, flags, permits });
-  const visibility = union === "all" ? "all" : expandThroughAppearsAs(union, catalog);
-  return { launchPermits, visibility };
 }

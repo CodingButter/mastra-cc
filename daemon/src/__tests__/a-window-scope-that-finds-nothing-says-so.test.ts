@@ -42,10 +42,8 @@ function backendThatThrows(error: Error): Backend {
 
 function ask(method: "queryElements" | "discoverElements", backend: Backend, window = "Open Image") {
   return handleRequest({ type: "request", id: 1, method, params: { application: "app", window } }, backend, {
-    permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
-    visibility: "all",
   } as unknown as LaunchContext);
 }
 

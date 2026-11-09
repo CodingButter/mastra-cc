@@ -1,6 +1,6 @@
 {
   "name": "@mastra-cc/protocol-types",
-  "version": "1.29.0",
+  "version": "1.30.0",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
@@ -14,6 +14,7 @@
   "types": "./dist/index.d.ts",
   "description": "GENERATED from protocol/schema.json - do not edit (ADR-0009).",
   "scripts": {
+    "prebuild": "node ../../protocol/generate.mjs",
     "build": "tsc -p tsconfig.json"
   },
   "devDependencies": {

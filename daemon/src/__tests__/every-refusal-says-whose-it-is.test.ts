@@ -1,7 +1,6 @@
 import { REFUSAL_CODES, REFUSAL_OWNERS } from "@mastra-cc/protocol-types";
 import { describe, expect, it } from "vitest";
 import { REFUSAL_OWNER, withoutInternals } from "../audit.js";
-import { restartRefusal } from "../server.js";
 
 // ADR-0113: every refusal on the wire carries whose it is. These pin the
 // boundary where an internal string refusal becomes the wire object.
@@ -36,8 +35,6 @@ describe("every refusal says whose it is", () => {
   });
 
   it("charges an ownership refusal to the agent that asked", () => {
-    const refused = restartRefusal("off" as never, "restart");
-    expect(withoutInternals(refused).refusal).toMatchObject({ class: REFUSAL_OWNER[refused.refusalClass] });
     expect(withoutInternals({ refusal: "not ours", refusalClass: "RestartNotOurs" }).refusal).toMatchObject({ class: "agent" });
   });
 });

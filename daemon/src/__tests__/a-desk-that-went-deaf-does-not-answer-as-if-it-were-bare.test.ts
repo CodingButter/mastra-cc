@@ -46,7 +46,7 @@ async function ask(back: Backend, accessibility: AccessibilityLayer, mayAcquire:
   return (await handleRequest(
     { id: "1", method, params: method === "discoverElements" ? { application: "kate" } : {} } as never,
     back,
-    { accessibility, mayAcquireAccessibility: mayAcquire } as never,
+    { accessibility } as never,
   )) as { result?: Record<string, unknown>; refusal?: string };
 }
 
@@ -65,12 +65,6 @@ describe("an empty answer from a desk whose layer went off", () => {
     expect(refusalText(answer.result)).toContain("ask the same question again");
   });
 
-  it("does not switch anything on for a session that was never granted that act", async () => {
-    const acquired = { count: 0 };
-    const answer = (await ask(backend([]), layer("disabled", acquired), false)) as { result?: { refusal?: string } };
-    expect(acquired.count).toBe(0);
-    expect(refusalText(answer.result)).toContain("its accessibility layer is switched off");
-  });
 
   it("leaves an empty answer alone when the layer is on - that emptiness is an answer", async () => {
     const acquired = { count: 0 };

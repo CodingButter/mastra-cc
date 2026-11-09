@@ -1,14 +1,14 @@
 // GENERATED from protocol/schema.json - do not edit (ADR-0009).
-// Mastra CC protocol v1.29.0
+// Mastra CC protocol v1.30.0
 
-export const PROTOCOL_VERSION = "1.29.0";
-export const SCHEMA_DIGEST = "7123f4e95a1d0f5c4226940e344fcce37f87e87538733b8d954b136958ee6b0f";
+export const PROTOCOL_VERSION = "1.30.0";
+export const SCHEMA_DIGEST = "e6b619d6f5c04696582fb5728c180918a5e8caa3efd095df77e808f173ee60c8";
 export const ID_PATTERN = new RegExp("^(el|win|app)-[0-9a-f]{12}$");
 export const ROLES = ["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"] as const;
 export type Role = (typeof ROLES)[number];
 export const STATES = ["enabled","visible","focused","selected","checked","expanded","offscreen"] as const;
 export type State = (typeof STATES)[number];
-export const AVAILABILITY_STATES = ["available","disabled-by-configuration","not-exposed"] as const;
+export const AVAILABILITY_STATES = ["available","not-exposed"] as const;
 export type AvailabilityState = (typeof AVAILABILITY_STATES)[number];
 export const RUNNING_STATES = ["answering","not-answering","cannot-tell"] as const;
 export type RunningState = (typeof RUNNING_STATES)[number];
@@ -28,18 +28,18 @@ export const ATTRIBUTIONS = ["self","external","unattributed"] as const;
 export type Attribution = (typeof ATTRIBUTIONS)[number];
 export const REFUSAL_OWNERS = ["agent","world","daemon"] as const;
 export type RefusalOwner = (typeof REFUSAL_OWNERS)[number];
-export const REFUSAL_CODES = ["AttestationFailedError","EffectUnsupportedError","KeyboardHeldElsewhereError","MagnitudeOutOfRangeError","OperationNotExposedError","PointerBlockedError","RecordingNotPerformableError","TextOffsetOutOfRangeError","UnperformableElementError","UnpublishedActionError","WriteNotObservedError","AccessibilityNotAcquirable","AccessibilityNotAcquired","AccessibilityLostMidSession","AlreadyRunning","BackendUnreadable","CouldNotStart","DeadlineExceeded","BlockedByDialog","DisabledByConfiguration","EffectClassGate","ElementGone","EnforcementUnrepresentable","InventoryUnsupported","LaunchUnavailable","MalformedParameter","NoConnection","NoMatch","RestartNotConfirmed","RestartNotOurs","RestartRefusedByApplication","NoRecipe","NotReadableInTime","OneBrowserIdentity","UnknownElement","UnknownMethod","UnknownSubscription","WatchDeaf","WatchUnknownElement","WatchUnsupported","ApplicationGone","DriverBusy","DriverClosed","WindowScopeUnmatched","WindowScopeAmbiguous","ApplicationScopeUnmatched","ApplicationScopeAmbiguous","ApplicationIdentityMismatch","AuditUnwritable","Unclassified"] as const;
+export const REFUSAL_CODES = ["AttestationFailedError","EffectUnsupportedError","KeyboardHeldElsewhereError","MagnitudeOutOfRangeError","OperationNotExposedError","PointerBlockedError","RecordingNotPerformableError","TextOffsetOutOfRangeError","UnperformableElementError","UnpublishedActionError","WriteNotObservedError","AccessibilityNotAcquirable","AccessibilityNotAcquired","AccessibilityLostMidSession","AlreadyRunning","BackendUnreadable","CouldNotStart","DeadlineExceeded","BlockedByDialog","ElementGone","EnforcementUnrepresentable","InventoryUnsupported","LaunchUnavailable","MalformedParameter","NoConnection","NoMatch","RestartNotOurs","RestartRefusedByApplication","NoRecipe","NotReadableInTime","OneBrowserIdentity","UnknownElement","UnknownMethod","UnknownSubscription","WatchDeaf","WatchUnknownElement","WatchUnsupported","ApplicationGone","DriverBusy","DriverClosed","WindowScopeUnmatched","WindowScopeAmbiguous","ApplicationScopeUnmatched","ApplicationScopeAmbiguous","AuditUnwritable","Unclassified","RestartNotConfirmed"] as const;
 export type RefusalCode = (typeof REFUSAL_CODES)[number];
 export const METHOD_NAMES = ["queryElements","discoverElements","attestElement","readElementContent","subscribeElement","unsubscribeElement","openApplication","editElement","activateElement","submitElement","setElementValue","setElementText","setElementCaret","revealElement","listApplications","describeAccessibility","acquireAccessibility","restartApplication","sendKeyChord","typeText","clearElementText","clickElement","describeDesktop","captureElement"] as const;
 export type MethodName = (typeof METHOD_NAMES)[number];
 
-/** Why the daemon did not do what was asked (ADR-0113). Every refusal says whose it is: agent (the request was malformed, stale, unknown, or beyond what the operator allowed; asking differently can succeed), world (the desktop or application said no, went away, froze, or changed under the call; the daemon reported it faithfully), or daemon (this daemon failed its own contract). A refusal always travels inside a response's result, never beside it. */
+/** Why the daemon did not do what was asked (ADR-0113). Every refusal says whose it is: agent, world, or daemon. */
 export interface Refusal {
   /** Whose refusal it is: agent, world, or daemon. */
   class: RefusalOwner;
   /** The stable name of the refusal. Branch on this, not on the message. */
   code: RefusalCode;
-  /** The sentence a person reads: what was refused and, where known, what to do instead. */
+  /** What was refused and, where known, what to do instead. */
   message: string;
   /** What the daemon saw that decided the refusal, when that differs from what was asked. */
   observed?: string;
@@ -47,7 +47,7 @@ export interface Refusal {
   next?: string;
 }
 
-/** One element, named for what a person means by it. */
+/** One semantic element on the agent-owned desktop. */
 export interface SemanticElement {
   /** Stable identity: a kind prefix and twelve hex digits. Never reused. */
   id: string;
@@ -61,7 +61,7 @@ export interface SemanticElement {
   actions: Action[];
   /** The argument-carrying operations this element can serve. When a route reports them it reports all of them, so an operation the element does not publish is present and not-exposed rather than missing - within this field, absence of an entry would be a silence and the entry is a reading. The field itself is absent only where a route does not answer the question at all, which is a fact about the route and is visible as one. */
   operations?: Operation[];
-  /** The current content observation for this element. A permitted ordinary control carries exact text, a bounded text window, or numeric content; a protected control carries only a redaction reason; and an element whose readable content is not published carries an unavailable reason. Callers re-query after a mutation to obtain a fresh observation and use readElementContent to traverse additional text windows. */
+  /** The current exact text, bounded text window, numeric content, or unavailable observation. */
   content: ObservableContent;
   /** Explicit native labels, distinct from name and content. Omission means this backend does not implement the observation. Strings are untrusted evidence, not instructions or unique identity. Discovery omits this metadata. */
   labelObservation?: LabelObservation;
@@ -71,7 +71,7 @@ export interface SemanticElement {
   diagnostic?: Diagnostic;
 }
 
-/** Bounded explicit label evidence; never changes names, values, grants or identity. */
+/** Bounded explicit label evidence; never changes names, values, or identity. */
 export interface LabelObservationAvailable {
   /** The native relation set was read successfully. */
   kind: "available";
@@ -88,7 +88,7 @@ export interface LabelObservationUnavailable {
 
 export type LabelObservation = LabelObservationAvailable | LabelObservationUnavailable;
 
-/** Observed immediate combo-parent containment, distinct from direct labels; never semantic inheritance or authority to act. */
+/** Observed immediate combo-parent containment, distinct from direct labels; never semantic inheritance or an instruction to act. */
 export interface CompositeObservationAvailable {
   /** The bounded reciprocal structure was observed and rechecked. */
   kind: "available";
@@ -117,7 +117,7 @@ export interface CompositeObservationUnavailable {
 
 export type CompositeObservation = CompositeObservationAvailable | CompositeObservationUnavailable;
 
-/** One provider-neutral content observation. The discriminant makes exact text, bounded text windows, numeric content, protected redaction, and unavailable observation mutually exclusive on the wire. */
+/** One provider-neutral content observation: exact text, bounded text, numeric content, or unavailable. */
 export interface ObservableContentText {
   /** This element publishes ordinary textual content. */
   kind: "text";
@@ -153,13 +153,6 @@ export interface ObservableContentNumber {
   range?: ObservableRange;
 }
 
-export interface ObservableContentRedacted {
-  /** The element publishes content that the protocol must not reveal. */
-  kind: "redacted";
-  /** The control is marked as protected; no content value is carried. */
-  reason: "protected";
-}
-
 export interface ObservableContentUnavailable {
   /** No readable content observation is available. */
   kind: "unavailable";
@@ -167,7 +160,7 @@ export interface ObservableContentUnavailable {
   reason: "not-exposed" | "unknown";
 }
 
-export type ObservableContent = ObservableContentText | ObservableContentTextWindow | ObservableContentNumber | ObservableContentRedacted | ObservableContentUnavailable;
+export type ObservableContent = ObservableContentText | ObservableContentTextWindow | ObservableContentNumber | ObservableContentUnavailable;
 
 /** Bounds published with an observed numeric magnitude, in the element's own units. */
 export interface ObservableRange {
@@ -187,10 +180,8 @@ export interface Action {
   description?: string;
   /** The element's display wording for this verb, when it differs from the name. Present for a human reading a log; the name is what a call names. */
   localizedName?: string;
-  /** available: it can be performed now. disabled-by-configuration: this machine's owner turned it off, and disabledBy names which setting. not-exposed: the element never offered it, and no setting would change that. The middle case is a fact about configuration and the last is a fact about the application, so an agent told the wrong one forms a false belief about what is possible. */
+  /** available: it can be performed now. not-exposed: the element does not offer it. Both states are facts reported by the application. */
   availability: AvailabilityState;
-  /** Present exactly when the availability is disabled-by-configuration: the setting a person would change to allow it. Absent everywhere else, because naming a setting where none applies invents a remedy that does not exist. */
-  disabledBy?: string;
 }
 
 /** The bounds an element publishes for its own magnitude, in the element's own units. A percentage is a reading of this range and never a unit the daemon imposes; where an element publishes no range, no percentage is computed anywhere. */
@@ -209,10 +200,8 @@ export interface Range {
 export interface Operation {
   /** Which operation this entry reports on: setValue moves a magnitude within a published range, setText replaces or inserts content at an offset, setCaret places the insertion point, reveal brings the element into view. */
   operation: OperationName;
-  /** Read the same three ways as an action's: performable now, turned off by a named setting, or never offered by this element. An element whose role suggests an operation it does not back is not-exposed, which is a fact about the application rather than a refusal a setting could lift. */
+  /** Read the same two ways as an action's: available when the element offers the operation now, or not-exposed when it does not. The state is a fact reported by the application. */
   availability: AvailabilityState;
-  /** Present exactly when the availability is disabled-by-configuration: the setting a person would change to allow it. */
-  disabledBy?: string;
   /** Present only where the element publishes bounds for this operation - a magnitude operation on an element that declares one. Its absence is the element's own silence, and nothing downstream may substitute a range of its own. */
   range?: Range;
 }
@@ -221,13 +210,13 @@ export interface Operation {
 export interface InstalledApplication {
   /** The human-facing application name, the same name a call would use to ask for it. Comparisons normalise to NFKC first. */
   name: string;
-  /** One entry per capability the contract defines, always all of them. A capability that is off is present and off with its setting named, because an application reported as absent invites a person to install what they already have. */
+  /** One entry per protocol capability, reporting whether this daemon and application expose it. */
   capabilities: Capability[];
   /** Whether this daemon knows how to start it. An application can be installed and honestly not launchable; that is a statement about the daemon's own recipes, never about permission. */
   launchable: boolean;
-  /** Whether this application is answering the machine's accessibility layer right now: answering means it is open and reachable, not-answering means it is not open (or is open and publishes nothing, which for a caller is the same wall), and cannot-tell means the daemon is not in a position to say - which is never a way of saying no. Deliberately not an availabilityState: availability answers whether this session MAY do something, while this answers what the desktop IS doing, which no permission grants and no setting starts. Always present, because a silently absent field would be read as a no. */
+  /** Whether this application is answering the machine's accessibility layer right now: answering means it is open and reachable, not-answering means it is not open (or is open and publishes nothing, which for a caller is the same wall), and cannot-tell means the daemon is not in a position to say - which is never a way of saying no. Deliberately not an availabilityState: availability describes an operation exposed by an application, while this describes what the desktop is doing, which no permission grants and no setting starts. Always present, because a silently absent field would be read as a no. */
   running: RunningState;
-  /** Present when running is cannot-tell AND a setting would change that: the setting a person would change to be told. An application this session may not observe is not reported as not running - that would be a false statement about the desktop made out of a fact about permission. Its absence beside a cannot-tell is itself an answer: the route that replied has no view of this application and no setting would give it one, so a caller waits for a different route rather than editing a file that will not help. */
+  /** Present when running is cannot-tell and the daemon can name the missing route or machine condition. */
   runningUnknownBy?: string;
   /** Debug-only carrier for the backend's own identifiers, on the same terms as an element's: never load-bearing. */
   diagnostic?: Diagnostic;
@@ -237,10 +226,8 @@ export interface InstalledApplication {
 export interface Capability {
   /** Which capability this entry answers for. */
   capability: CapabilityName;
-  /** available: this session may do it. disabled-by-configuration: a setting withholds it, and disabledBy names which. not-exposed: this daemon has no path to it at all, so no setting would grant it. */
+  /** available: the daemon has a path to perform it. not-exposed: the daemon has no such path. */
   availability: AvailabilityState;
-  /** Present exactly when the availability is disabled-by-configuration: the setting a person would change. Naming the setting is the whole point - a refusal that cannot be acted on is a wall, not an answer. */
-  disabledBy?: string;
 }
 
 /** A live watch on one element and descendants whose membership the route can establish. A live stream does not prove complete subtree coverage. Native membership is checked afresh with at most 24 parent reads per signal; unreadable, cyclic or deeper ancestry is unknown and emits no pointer. Reobserve to establish current state rather than treating silence as proof that nothing changed. Watches end when closed by the client or connection; route-specific element removal handling may also end them. */
@@ -273,7 +260,7 @@ export interface ChangeEvent {
   at: number;
 }
 
-/** One aggregated role and name hint observed inside an authorised application scope. It is vocabulary for a fresh query, never an element handle or authority to act. */
+/** One aggregated role and name hint observed inside one application. It is vocabulary for a fresh query, not an element handle or instruction to act. */
 export interface ElementDiscoveryEntry {
   /** The neutral role shared by the observed occurrences. */
   role: Role;
@@ -299,7 +286,7 @@ export interface Diagnostic {
 export interface AccessibilityLayer {
   /** Whether this machine's accessibility layer is switched on. cannot-tell is never a way of saying no. */
   state: AccessibilityState;
-  /** Why the state could not be determined, in words an operator can act on. Present exactly when state is cannot-tell: an ignorance with no reason is a shrug, and a reason attached to a measurement is noise. */
+  /** Why the accessibility state could not be determined. Present exactly when state is cannot-tell. */
   reason?: string;
 }
 
@@ -349,7 +336,7 @@ export interface QueryElementsParams {
   role?: Role;
   /** Restrict the answer to elements whose normalised name matches. */
   name?: string;
-  /** Restrict the answer to one visible, authorised application whose normalised exact name matches. This selector only narrows observation and never grants authority. */
+  /** Restrict the answer to one visible application whose normalised exact name matches. This selector only narrows observation. */
   application?: string;
   /** Restrict the answer to one visible window whose normalised exact name matches inside application. A window can only be named when application is also present. */
   window?: string;
@@ -362,9 +349,9 @@ export interface QueryElementsResult {
   elements: SemanticElement[];
 }
 
-/** Discover bounded semantic role and name vocabulary inside one authorised application scope. Observation only. The returned entries are hints, never element authority; use a fresh queryElements call before acting. */
+/** Discover bounded semantic role and name vocabulary inside one application. Observation only. The returned entries are hints, not element handles; use a fresh queryElements call before acting. */
 export interface DiscoverElementsParams {
-  /** Select one visible, authorised application whose normalised exact name matches. This scope only narrows observation and never grants authority. */
+  /** Select one visible application whose normalised exact name matches. This scope only narrows observation. */
   application: string;
   /** Optionally select one visible window whose normalised exact name matches inside application. */
   window?: string;
@@ -394,7 +381,7 @@ export interface AttestElementResult {
   refusal?: Refusal;
 }
 
-/** Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value. */
+/** Read one bounded window of element text. Unavailable content is reported explicitly. */
 export interface ReadElementContentParams {
   /** The element whose current textual content is being read. */
   id: string;
@@ -405,7 +392,7 @@ export interface ReadElementContentParams {
 }
 
 export interface ReadElementContentResult {
-  /** Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value. */
+  /** Present when the element resolves: exact text, a bounded text window, numeric content, or unavailable. */
   content?: ObservableContent;
   /** Present when scope, identity, or request bounds refuse the observation. */
   refusal?: Refusal;
@@ -439,7 +426,7 @@ export interface UnsubscribeElementResult {
   refusal?: Refusal;
 }
 
-/** Open an application by name, with its readability applied at the moment it starts. The first effect-class method: visible to the person, trivially reversible. Authority is checked before anything else, and a refusal never reveals whether an application exists on this machine. */
+/** Open any unambiguous application in the launch catalog and return its semantic application element once readable. */
 export interface OpenApplicationParams {
   /** The human-facing application name. Neutral vocabulary; no platform identifiers. Comparisons normalise to NFKC first. */
   name: string;
@@ -452,7 +439,7 @@ export interface OpenApplicationResult {
   refusal?: Refusal;
 }
 
-/** Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
+/** Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply. */
 export interface EditElementParams {
   /** The element whose content would be replaced. */
   id: string;
@@ -467,7 +454,7 @@ export interface EditElementResult {
   refusal?: Refusal;
 }
 
-/** Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
+/** Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply. */
 export interface ActivateElementParams {
   /** The element the action would be performed on. */
   id: string;
@@ -482,7 +469,7 @@ export interface ActivateElementResult {
   refusal?: Refusal;
 }
 
-/** Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
+/** Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply. */
 export interface SubmitElementParams {
   /** The element that would commit. */
   id: string;
@@ -497,7 +484,7 @@ export interface SubmitElementResult {
   refusal?: Refusal;
 }
 
-/** Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
+/** Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply. */
 export interface SetElementValueParams {
   /** The element whose magnitude would move. */
   id: string;
@@ -512,7 +499,7 @@ export interface SetElementValueResult {
   refusal?: Refusal;
 }
 
-/** Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
+/** Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply. */
 export interface SetElementTextParams {
   /** The element whose text would change. */
   id: string;
@@ -529,7 +516,7 @@ export interface SetElementTextResult {
   refusal?: Refusal;
 }
 
-/** Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
+/** Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply. */
 export interface SetElementCaretParams {
   /** The element whose insertion point would move. */
   id: string;
@@ -544,7 +531,7 @@ export interface SetElementCaretResult {
   refusal?: Refusal;
 }
 
-/** Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting. */
+/** Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply. */
 export interface RevealElementParams {
   /** The element to bring into view. */
   id: string;
@@ -557,12 +544,12 @@ export interface RevealElementResult {
   refusal?: Refusal;
 }
 
-/** List the applications this machine has, each with what may be done with it and the setting behind every refusal. Observation only, and observation of the fence rather than of anything behind it: an application this session may not touch is present here with its capabilities off and their settings named. Withholding its existence would teach a reader it is absent, and a reader who believes that recommends installing what is already installed. Each entry also says whether the application is answering the machine's accessibility layer RIGHT NOW, so a caller can tell an application that is merely installed from one that is already open in front of the user - the difference between opening a second copy and walking up to the one that is there. How the inventory is discovered belongs to the platform underneath, which is why nothing in this result names a mechanism. */
+/** List every application discovered from installed desktop entries and configured profiles, including current capability exposure and running state. Observation only. Inventory discovery remains platform-specific. */
 export interface ListApplicationsParams {
 }
 
 export interface ListApplicationsResult {
-  /** Present when the inventory could be read; every application found, permitted or not. */
+  /** Present when the inventory could be read; contains every application found. */
   applications?: InstalledApplication[];
   /** Present otherwise; names the check that ran and what would change the answer. */
   refusal?: Refusal;
@@ -577,18 +564,18 @@ export interface DescribeAccessibilityResult {
   accessibility: AccessibilityLayer;
 }
 
-/** Ask the daemon to switch this machine's accessibility layer on. This changes the operator's machine rather than an application's contents, so it is off unless the operator started the daemon with the flag that permits it, and no request can turn that flag on - a session cannot grant itself the authority to reconfigure the machine it is running on. A daemon without the flag refuses and names it. A platform this build has no adapter for refuses differently, because no setting would change that answer. */
+/** Idempotently ensure the agent-owned session accessibility layer is enabled, then report its state. */
 export interface AcquireAccessibilityParams {
 }
 
 export interface AcquireAccessibilityResult {
   /** Present when the attempt ran; the layer's state as read back AFTER the attempt, never the state that was asked for. An acquire that reports success without re-reading is reporting its own intention. */
   accessibility?: AccessibilityLayer;
-  /** Present otherwise; names the check that ran and what would change the answer - the flag when the operator withheld it, and the missing adapter when no setting would help. */
+  /** Present when the platform has no adapter or the accessibility layer cannot be enabled. */
   refusal?: Refusal;
 }
 
-/** Close a running application and start it again. This ends a program the person may be using, so it is refused unless the operator configured a level that acts, and the refusal names the setting. At the graceful level the application is asked to close and is allowed to say no: an unsaved-work dialog outranks the caller, is reported as an element to read, and leaves the application running. Nothing here dismisses such a dialog. The outcome is read back from the desktop rather than taken from an exit status. */
+/** Gracefully restart an application opened by this daemon. Ownership is rechecked immediately before SIGTERM; the daemon never escalates to SIGKILL and reopens only after confirmed exit. */
 export interface RestartApplicationParams {
   /** The human-facing application name, as listApplications reports it. Comparisons normalise to NFKC first. */
   name: string;
@@ -597,13 +584,13 @@ export interface RestartApplicationParams {
 export interface RestartApplicationResult {
   /** Present when the application was closed and started again, and became readable; the application as it reads afterwards. */
   application?: SemanticElement;
-  /** Present when the application refused to close and put something up instead - typically an unsaved-work dialog. The element is reported so a person can be shown it or an agent can read it; the application is still running, and this daemon did not touch the dialog. */
+  /** Present when the application refused graceful closure by showing a dialog. The application remains running and the daemon does not interact with that dialog. */
   blockedBy?: SemanticElement;
-  /** Present otherwise; names the check that ran and what would change the answer - the restart setting when configuration withheld it, the level that would act when the operator chose to be asked each time, and what was observed when the application neither closed nor put anything up. */
+  /** Present when the name is unknown or ambiguous, the process is not daemon-owned, the application refuses graceful closure, or restart cannot complete. */
   refusal?: Refusal;
 }
 
-/** Deliver one named key chord to one element. This is RAW INPUT, not an operation: the four operations describe what an element is for and are answered by the element itself, while a key is delivered to whatever the machine is pointing at and the element is only how it is aimed. It is therefore its own capability, off unless a person switched it on, and it is never reached by a failed operation retrying - nothing in this daemon falls back to a keystroke. The chord must be one of the names this contract lists; anything else is refused by name rather than attempted. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed. */
+/** Deliver one listed key chord to one element through the selected key route. The target is rechecked and the outcome is read back from the desktop. */
 export interface SendKeyChordParams {
   /** The element the chord is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
   id: string;
@@ -618,7 +605,7 @@ export interface SendKeyChordResult {
   refusal?: Refusal;
 }
 
-/** Deliver a run of printable text to one element by typing it, one keystroke at a time, into whatever the machine is pointing at. This is RAW INPUT in the same class as sendKeyChord, and it exists for one reason: some fields publish a value to read but no interface to set it, so the only way through the machine's own accessibility layer is the keyboard. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying - nothing in this daemon falls back to typing - and a caller is expected to have been REFUSED by the element's own operation first, then to type, then to read the element back and compare. The text is printable only: a newline, a tab or an escape is refused by name, because those are chords (sendKeyChord) and a string that could carry them would be a chord vocabulary with no list. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed. */
+/** Type printable text into one element through the selected key route. Newline, tab, and escape remain named chords rather than text. The outcome is read back from the desktop. */
 export interface TypeTextParams {
   /** The element the text is aimed at. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
   id: string;
@@ -633,7 +620,7 @@ export interface TypeTextResult {
   refusal?: Refusal;
 }
 
-/** Empty one element's text by keystroke, so that a subsequent typeText writes a field instead of extending it. This is RAW INPUT in the same class as sendKeyChord and typeText, and it exists because typing is an APPEND: a field that publishes a value to read but no interface to set it can be typed into and cannot be replaced, and pressing a named chord once per character is the only vocabulary this contract has. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying, and it presses nothing it cannot count: the element's own published text says how many characters are there, the presses are bounded by that reading, and an element whose text this daemon cannot read is refused rather than cleared blind. The outcome is read back from the desktop and COMPARED - an element that is not empty afterwards is a refusal, never a success with a disappointing element attached. */
+/** Clear readable element text with bounded key delivery, then read back and require an empty result. Unreadable text is refused rather than cleared blind. */
 export interface ClearElementTextParams {
   /** The element to empty. It is focused first, and the focus that was there before is put back afterwards; a focus that could not be put back is reported rather than passed over. */
   id: string;
@@ -665,11 +652,11 @@ export interface ClickElementParams {
 export interface ClickElementResult {
   /** Present when the press was delivered; the element as it reads AFTERWARDS, read back from the desktop. A pointer press is not aimed at an element the way a semantic action is - it is aimed at a point that was inside the element when the bounds were read - so this element is evidence to compare against what was expected, not a claim that the click did what the caller wanted. */
   element?: SemanticElement;
-  /** Present otherwise; names the check that ran and what would change the answer - the effect class this session was not granted, the missing pointer route on a build that has none, the button or count or fraction that was not in this contract's vocabulary, and the reason the element could not be aimed at: no bounds published, an empty rectangle, or a rectangle that is off the screen. */
+  /** Present otherwise; names the check that ran and what would change the answer - a missing route on a build that has none, a button or count or fraction outside this contract's vocabulary, or an element that could not be aimed at because it published no bounds, an empty rectangle, or a rectangle off the screen. */
   refusal?: Refusal;
 }
 
-/** Ask this desktop where its own files live. Observation only, and of the machine rather than of anything an application published: no file is read, listed or opened, and nothing here is per-application, so there is no capability it could belong to. It exists because every other verb in this contract is about what is ON the screen, and a caller that must name a path has nowhere else to learn one - so it uses the home directory of whatever machine it was trained on, and a desk whose home is somewhere else answers with a not-found page that a caller reads as a failed save. Answering carries no risk: these paths are already visible in any file dialog the caller is permitted to open. */
+/** Ask this desktop where its own files live. Observation only, and of the machine rather than of anything an application published: no file is read, listed or opened, and nothing here is per-application, so there is no capability it could belong to. It exists because every other verb in this contract is about what is ON the screen, and a caller that must name a path has nowhere else to learn one - so it uses the home directory of whatever machine it was trained on, and a desk whose home is somewhere else answers with a not-found page that a caller reads as a failed save. Answering carries no risk: these paths are the same locations the desktop publishes in its file dialogs. */
 export interface DescribeDesktopParams {
 }
 
@@ -678,7 +665,7 @@ export interface DescribeDesktopResult {
   places: DesktopPlaces;
 }
 
-/** Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. The image contains currently visible pixels in the intersection of the element rectangle and the captured display, so it may be clipped. Overlapping windows may appear; capture does not prove application ownership of those pixels. Capture does not raise, focus, scroll or click. If foreground preparation is necessary, use an observed and permitted window-navigation action, then reobserve the target and its geometry before capturing again. Foreground preparation is best effort, not proof of non-occlusion or an atomic focus-and-capture operation. A clipped picture is answered, not refused, and says so: clipped is true and crop names where in the element the picture lies, as fractions (ADR-0105). Never infer a crop offset from PNG dimensions; carry a picture location (u, v) through the crop - element fraction x + u * width, y + v * height - and those are the fractions clickElement takes. A complete image is still not a freshness or non-occlusion guarantee: resolve the element again before acting on it. */
+/** Capture the currently visible pixels intersecting one semantic element. Capture never raises, focuses, scrolls, or clicks; it reports clipping and geometry, and later pointer actions must use a fresh capture. */
 export interface CaptureElementParams {
   /** The element to look at. Its rectangle is read from the platform at the moment of the call, never remembered from an earlier answer, because a remembered rectangle is a picture of where something used to be. */
   id: string;
@@ -727,7 +714,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
           "type": "string"
         },
         "application": {
-          "description": "Restrict the answer to one visible, authorised application whose normalised exact name matches. This selector only narrows observation and never grants authority.",
+          "description": "Restrict the answer to one visible application whose normalised exact name matches. This selector only narrows observation.",
           "type": "string"
         },
         "window": {
@@ -744,12 +731,12 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "discoverElements": {
-    "description": "Discover bounded semantic role and name vocabulary inside one authorised application scope. Observation only. The returned entries are hints, never element authority; use a fresh queryElements call before acting.",
+    "description": "Discover bounded semantic role and name vocabulary inside one application. Observation only. The returned entries are hints, not element handles; use a fresh queryElements call before acting.",
     "params": {
       "type": "object",
       "properties": {
         "application": {
-          "description": "Select one visible, authorised application whose normalised exact name matches. This scope only narrows observation and never grants authority.",
+          "description": "Select one visible application whose normalised exact name matches. This scope only narrows observation.",
           "type": "string"
         },
         "window": {
@@ -809,7 +796,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "readElementContent": {
-    "description": "Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.",
+    "description": "Read one bounded window of element text. Unavailable content is reported explicitly.",
     "params": {
       "type": "object",
       "properties": {
@@ -879,7 +866,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "openApplication": {
-    "description": "Open an application by name, with its readability applied at the moment it starts. The first effect-class method: visible to the person, trivially reversible. Authority is checked before anything else, and a refusal never reveals whether an application exists on this machine.",
+    "description": "Open any unambiguous application in the launch catalog and return its semantic application element once readable.",
     "params": {
       "type": "object",
       "properties": {
@@ -895,7 +882,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "editElement": {
-    "description": "Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "description": "Replace a text field's content. Edit-class: changes what an element holds without committing anything beyond it. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply.",
     "params": {
       "type": "object",
       "properties": {
@@ -917,7 +904,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "activateElement": {
-    "description": "Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "description": "Perform one advertised action on an element. Activate-class: causes the element to do the thing it exists to do. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply.",
     "params": {
       "type": "object",
       "properties": {
@@ -939,7 +926,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "submitElement": {
-    "description": "Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "description": "Commit something beyond the machine's ability to take back. Submit-class: the attestation is the machine's own restatement of what is being committed, and it is required in every call - the contract makes waiving it inexpressible. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply.",
     "params": {
       "type": "object",
       "properties": {
@@ -961,7 +948,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "setElementValue": {
-    "description": "Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "description": "Move an element's magnitude to a value inside the range that element published. Edit-class. The value is expressed in the element's own units, because the only units that mean anything are the ones the element declared; a magnitude outside the published range is refused before the call rather than clamped into a lie. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply.",
     "params": {
       "type": "object",
       "properties": {
@@ -983,7 +970,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "setElementText": {
-    "description": "Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "description": "Replace an element's text, or insert text at an offset within it. Edit-class, and distinct from replacing a whole field: an offset is a position in the element's own text, counted the way the element counts it. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply.",
     "params": {
       "type": "object",
       "properties": {
@@ -1009,7 +996,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "setElementCaret": {
-    "description": "Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "description": "Place the insertion point within an element's text. Edit-class: it changes where the next write would land and commits nothing. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply.",
     "params": {
       "type": "object",
       "properties": {
@@ -1030,7 +1017,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "revealElement": {
-    "description": "Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Served on the wire: the effect-class gate is enforced before the call, and a daemon not granted this capability for the application refuses by name rather than acting.",
+    "description": "Bring an element into view. Activate-class: the neutral form is make this visible, and it is deliberately not a distance, a direction, or a coordinate - a scroll expressed in pixels is a promise about one machine's geometry that no other machine can keep. Whether the surface scrolls, pages, or expands to satisfy it belongs to the platform underneath. Served on the wire as an effect on the agent-owned desktop; target and outcome checks still apply.",
     "params": {
       "type": "object",
       "properties": {
@@ -1047,7 +1034,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "listApplications": {
-    "description": "List the applications this machine has, each with what may be done with it and the setting behind every refusal. Observation only, and observation of the fence rather than of anything behind it: an application this session may not touch is present here with its capabilities off and their settings named. Withholding its existence would teach a reader it is absent, and a reader who believes that recommends installing what is already installed. Each entry also says whether the application is answering the machine's accessibility layer RIGHT NOW, so a caller can tell an application that is merely installed from one that is already open in front of the user - the difference between opening a second copy and walking up to the one that is there. How the inventory is discovered belongs to the platform underneath, which is why nothing in this result names a mechanism.",
+    "description": "List every application discovered from installed desktop entries and configured profiles, including current capability exposure and running state. Observation only. Inventory discovery remains platform-specific.",
     "params": {
       "type": "object",
       "properties": {},
@@ -1065,7 +1052,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "acquireAccessibility": {
-    "description": "Ask the daemon to switch this machine's accessibility layer on. This changes the operator's machine rather than an application's contents, so it is off unless the operator started the daemon with the flag that permits it, and no request can turn that flag on - a session cannot grant itself the authority to reconfigure the machine it is running on. A daemon without the flag refuses and names it. A platform this build has no adapter for refuses differently, because no setting would change that answer.",
+    "description": "Idempotently ensure the agent-owned session accessibility layer is enabled, then report its state.",
     "params": {
       "type": "object",
       "properties": {},
@@ -1074,7 +1061,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "restartApplication": {
-    "description": "Close a running application and start it again. This ends a program the person may be using, so it is refused unless the operator configured a level that acts, and the refusal names the setting. At the graceful level the application is asked to close and is allowed to say no: an unsaved-work dialog outranks the caller, is reported as an element to read, and leaves the application running. Nothing here dismisses such a dialog. The outcome is read back from the desktop rather than taken from an exit status.",
+    "description": "Gracefully restart an application opened by this daemon. Ownership is rechecked immediately before SIGTERM; the daemon never escalates to SIGKILL and reopens only after confirmed exit.",
     "params": {
       "type": "object",
       "properties": {
@@ -1090,7 +1077,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "sendKeyChord": {
-    "description": "Deliver one named key chord to one element. This is RAW INPUT, not an operation: the four operations describe what an element is for and are answered by the element itself, while a key is delivered to whatever the machine is pointing at and the element is only how it is aimed. It is therefore its own capability, off unless a person switched it on, and it is never reached by a failed operation retrying - nothing in this daemon falls back to a keystroke. The chord must be one of the names this contract lists; anything else is refused by name rather than attempted. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed.",
+    "description": "Deliver one listed key chord to one element through the selected key route. The target is rechecked and the outcome is read back from the desktop.",
     "params": {
       "type": "object",
       "properties": {
@@ -1128,7 +1115,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "typeText": {
-    "description": "Deliver a run of printable text to one element by typing it, one keystroke at a time, into whatever the machine is pointing at. This is RAW INPUT in the same class as sendKeyChord, and it exists for one reason: some fields publish a value to read but no interface to set it, so the only way through the machine's own accessibility layer is the keyboard. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying - nothing in this daemon falls back to typing - and a caller is expected to have been REFUSED by the element's own operation first, then to type, then to read the element back and compare. The text is printable only: a newline, a tab or an escape is refused by name, because those are chords (sendKeyChord) and a string that could carry them would be a chord vocabulary with no list. The outcome is read back from the desktop, because a key emission's return code says only that something was sent, never where it landed.",
+    "description": "Type printable text into one element through the selected key route. Newline, tab, and escape remain named chords rather than text. The outcome is read back from the desktop.",
     "params": {
       "type": "object",
       "properties": {
@@ -1150,7 +1137,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "clearElementText": {
-    "description": "Empty one element's text by keystroke, so that a subsequent typeText writes a field instead of extending it. This is RAW INPUT in the same class as sendKeyChord and typeText, and it exists because typing is an APPEND: a field that publishes a value to read but no interface to set it can be typed into and cannot be replaced, and pressing a named chord once per character is the only vocabulary this contract has. It is off unless a person switched it on, it is never reached by a failed setElementValue or setElementText retrying, and it presses nothing it cannot count: the element's own published text says how many characters are there, the presses are bounded by that reading, and an element whose text this daemon cannot read is refused rather than cleared blind. The outcome is read back from the desktop and COMPARED - an element that is not empty afterwards is a refusal, never a success with a disappointing element attached.",
+    "description": "Clear readable element text with bounded key delivery, then read back and require an empty result. Unreadable text is refused rather than cleared blind.",
     "params": {
       "type": "object",
       "properties": {
@@ -1204,7 +1191,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "describeDesktop": {
-    "description": "Ask this desktop where its own files live. Observation only, and of the machine rather than of anything an application published: no file is read, listed or opened, and nothing here is per-application, so there is no capability it could belong to. It exists because every other verb in this contract is about what is ON the screen, and a caller that must name a path has nowhere else to learn one - so it uses the home directory of whatever machine it was trained on, and a desk whose home is somewhere else answers with a not-found page that a caller reads as a failed save. Answering carries no risk: these paths are already visible in any file dialog the caller is permitted to open.",
+    "description": "Ask this desktop where its own files live. Observation only, and of the machine rather than of anything an application published: no file is read, listed or opened, and nothing here is per-application, so there is no capability it could belong to. It exists because every other verb in this contract is about what is ON the screen, and a caller that must name a path has nowhere else to learn one - so it uses the home directory of whatever machine it was trained on, and a desk whose home is somewhere else answers with a not-found page that a caller reads as a failed save. Answering carries no risk: these paths are the same locations the desktop publishes in its file dialogs.",
     "params": {
       "type": "object",
       "properties": {},
@@ -1213,7 +1200,7 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
     }
   },
   "captureElement": {
-    "description": "Look at what one element LOOKS like: a picture of its rectangle, cropped from the pixels the desktop is showing. Observation, and the narrowest kind - no coordinate crosses the wire in either direction, exactly as with the pointer (ADR-0079): the caller names an ELEMENT it has already been answered for, and the rectangle is read from the platform at the moment of the grab. It exists because the semantic answers this contract is built on can run out while the thing is plainly there to a person: a logo, a chart, a map, a canvas, a rendered document and a grid of thumbnails can all be named, bounded and pressed while publishing neither name nor content, and a caller that can only read labels then invents what it cannot see. A window is an element too, so this reaches from one button up to a whole application's window. The image contains currently visible pixels in the intersection of the element rectangle and the captured display, so it may be clipped. Overlapping windows may appear; capture does not prove application ownership of those pixels. Capture does not raise, focus, scroll or click. If foreground preparation is necessary, use an observed and permitted window-navigation action, then reobserve the target and its geometry before capturing again. Foreground preparation is best effort, not proof of non-occlusion or an atomic focus-and-capture operation. A clipped picture is answered, not refused, and says so: clipped is true and crop names where in the element the picture lies, as fractions (ADR-0105). Never infer a crop offset from PNG dimensions; carry a picture location (u, v) through the crop - element fraction x + u * width, y + v * height - and those are the fractions clickElement takes. A complete image is still not a freshness or non-occlusion guarantee: resolve the element again before acting on it.",
+    "description": "Capture the currently visible pixels intersecting one semantic element. Capture never raises, focuses, scrolls, or clicks; it reports clipping and geometry, and later pointer actions must use a fresh capture.",
     "params": {
       "type": "object",
       "properties": {
@@ -1231,8 +1218,8 @@ export const METHOD_DESCRIPTORS: Record<MethodName, { description: string; param
   }
 };
 
-const TYPE_SPECS = {"refusal":{"fields":{"class":{"type":"refusalOwner","literal":null,"literals":null,"required":true,"pattern":null},"code":{"type":"refusalCode","literal":null,"literals":null,"required":true,"pattern":null},"message":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"observed":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"next":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"labelObservation":{"type":"labelObservation","literal":null,"literals":null,"required":false,"pattern":null},"compositeObservation":{"type":"compositeObservation","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"labelObservation":{"fields":null,"variants":[{"name":"available","fields":{"kind":{"type":null,"literal":"available","literals":null,"required":true,"pattern":null},"labels":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unreadable","out-of-scope","limit-exceeded"],"required":true,"pattern":null}}}]},"compositeObservation":{"fields":null,"variants":[{"name":"available","fields":{"kind":{"type":null,"literal":"available","literals":null,"required":true,"pattern":null},"provenance":{"type":null,"literal":"immediate-combo-parent","literals":null,"required":true,"pattern":null},"parentRole":{"type":null,"literal":"combo box","literals":null,"required":true,"pattern":null},"relation":{"type":null,"literal":"labelled-by","literals":null,"required":true,"pattern":null},"label":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"immediateChildCount":{"type":null,"literal":2,"literals":null,"required":true,"pattern":null},"editableChildCount":{"type":null,"literal":1,"literals":null,"required":true,"pattern":null},"siblingRole":{"type":null,"literal":"menu","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","ambiguous","out-of-scope","unreadable","limit-exceeded"],"required":true,"pattern":null}}}]},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"redacted","fields":{"kind":{"type":null,"literal":"redacted","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":"protected","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"running":{"type":"runningState","literal":null,"literals":null,"required":true,"pattern":null},"runningUnknownBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"disabledBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"elementDiscoveryEntry":{"fields":{"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"count":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"accessibilityLayer":{"fields":{"state":{"type":"accessibilityState","literal":null,"literals":null,"required":true,"pattern":null},"reason":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"desktopPlaces":{"fields":{"home":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"downloads":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capturedImage":{"fields":{"format":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"width":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"height":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"data":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"source":{"type":null,"literal":"visible-desktop","literals":null,"required":true,"pattern":null},"clipped":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"crop":{"type":"captureCrop","literal":null,"literals":null,"required":true,"pattern":null},"capturedAt":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"captureCrop":{"fields":{"x":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"y":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"width":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"height":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null}} as const;
-const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","disabled-by-configuration","not-exposed"],"runningState":["answering","not-answering","cannot-tell"],"accessibilityState":["enabled","disabled","cannot-tell"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit","rawInput"],"keyChordName":["Enter","Escape","Tab","Backspace","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown","F2"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"],"refusalOwner":["agent","world","daemon"],"refusalCode":["AttestationFailedError","EffectUnsupportedError","KeyboardHeldElsewhereError","MagnitudeOutOfRangeError","OperationNotExposedError","PointerBlockedError","RecordingNotPerformableError","TextOffsetOutOfRangeError","UnperformableElementError","UnpublishedActionError","WriteNotObservedError","AccessibilityNotAcquirable","AccessibilityNotAcquired","AccessibilityLostMidSession","AlreadyRunning","BackendUnreadable","CouldNotStart","DeadlineExceeded","BlockedByDialog","DisabledByConfiguration","EffectClassGate","ElementGone","EnforcementUnrepresentable","InventoryUnsupported","LaunchUnavailable","MalformedParameter","NoConnection","NoMatch","RestartNotConfirmed","RestartNotOurs","RestartRefusedByApplication","NoRecipe","NotReadableInTime","OneBrowserIdentity","UnknownElement","UnknownMethod","UnknownSubscription","WatchDeaf","WatchUnknownElement","WatchUnsupported","ApplicationGone","DriverBusy","DriverClosed","WindowScopeUnmatched","WindowScopeAmbiguous","ApplicationScopeUnmatched","ApplicationScopeAmbiguous","ApplicationIdentityMismatch","AuditUnwritable","Unclassified"]};
+const TYPE_SPECS = {"refusal":{"fields":{"class":{"type":"refusalOwner","literal":null,"literals":null,"required":true,"pattern":null},"code":{"type":"refusalCode","literal":null,"literals":null,"required":true,"pattern":null},"message":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"observed":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"next":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"semanticElement":{"fields":{"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"states":{"type":"state[]","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"action[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"operation[]","literal":null,"literals":null,"required":false,"pattern":null},"content":{"type":"observableContent","literal":null,"literals":null,"required":true,"pattern":null},"labelObservation":{"type":"labelObservation","literal":null,"literals":null,"required":false,"pattern":null},"compositeObservation":{"type":"compositeObservation","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"labelObservation":{"fields":null,"variants":[{"name":"available","fields":{"kind":{"type":null,"literal":"available","literals":null,"required":true,"pattern":null},"labels":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unreadable","out-of-scope","limit-exceeded"],"required":true,"pattern":null}}}]},"compositeObservation":{"fields":null,"variants":[{"name":"available","fields":{"kind":{"type":null,"literal":"available","literals":null,"required":true,"pattern":null},"provenance":{"type":null,"literal":"immediate-combo-parent","literals":null,"required":true,"pattern":null},"parentRole":{"type":null,"literal":"combo box","literals":null,"required":true,"pattern":null},"relation":{"type":null,"literal":"labelled-by","literals":null,"required":true,"pattern":null},"label":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"immediateChildCount":{"type":null,"literal":2,"literals":null,"required":true,"pattern":null},"editableChildCount":{"type":null,"literal":1,"literals":null,"required":true,"pattern":null},"siblingRole":{"type":null,"literal":"menu","literals":null,"required":true,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","ambiguous","out-of-scope","unreadable","limit-exceeded"],"required":true,"pattern":null}}}]},"observableContent":{"fields":null,"variants":[{"name":"text","fields":{"kind":{"type":null,"literal":"text","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"text-window","fields":{"kind":{"type":null,"literal":"text-window","literals":null,"required":true,"pattern":null},"value":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"offset":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"length":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLength":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"startLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"endLine":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"totalLines":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}}},{"name":"number","fields":{"kind":{"type":null,"literal":"number","literals":null,"required":true,"pattern":null},"value":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"observableRange","literal":null,"literals":null,"required":false,"pattern":null}}},{"name":"unavailable","fields":{"kind":{"type":null,"literal":"unavailable","literals":null,"required":true,"pattern":null},"reason":{"type":null,"literal":null,"literals":["not-exposed","unknown"],"required":true,"pattern":null}}}]},"observableRange":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"action":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"description":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"localizedName":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"range":{"fields":{"minimum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"maximum":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"current":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"step":{"type":"number","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"operation":{"fields":{"operation":{"type":"operationName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null},"range":{"type":"range","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"installedApplication":{"fields":{"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"capabilities":{"type":"capability[]","literal":null,"literals":null,"required":true,"pattern":null},"launchable":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"running":{"type":"runningState","literal":null,"literals":null,"required":true,"pattern":null},"runningUnknownBy":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"diagnostic":{"type":"diagnostic","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capability":{"fields":{"capability":{"type":"capabilityName","literal":null,"literals":null,"required":true,"pattern":null},"availability":{"type":"availabilityState","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"subscription":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"changeEvent":{"fields":{"subscriptionId":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"id":{"type":"string","literal":null,"literals":null,"required":true,"pattern":"idPattern"},"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"kind":{"type":"changeKind","literal":null,"literals":null,"required":true,"pattern":null},"attribution":{"type":"attribution","literal":null,"literals":null,"required":true,"pattern":null},"causeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"priority":{"type":"priority","literal":null,"literals":null,"required":true,"pattern":null},"at":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"elementDiscoveryEntry":{"fields":{"role":{"type":"role","literal":null,"literals":null,"required":true,"pattern":null},"name":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"count":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"actions":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null},"operations":{"type":"string[]","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"diagnostic":{"fields":{"nativeRole":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"nativeId":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"accessibilityLayer":{"fields":{"state":{"type":"accessibilityState","literal":null,"literals":null,"required":true,"pattern":null},"reason":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"desktopPlaces":{"fields":{"home":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null},"downloads":{"type":"string","literal":null,"literals":null,"required":false,"pattern":null}},"variants":null},"capturedImage":{"fields":{"format":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"width":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"height":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"data":{"type":"string","literal":null,"literals":null,"required":true,"pattern":null},"source":{"type":null,"literal":"visible-desktop","literals":null,"required":true,"pattern":null},"clipped":{"type":"boolean","literal":null,"literals":null,"required":true,"pattern":null},"crop":{"type":"captureCrop","literal":null,"literals":null,"required":true,"pattern":null},"capturedAt":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null},"captureCrop":{"fields":{"x":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"y":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"width":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null},"height":{"type":"number","literal":null,"literals":null,"required":true,"pattern":null}},"variants":null}} as const;
+const VOCABULARY_VALUES: Record<string, readonly string[]> = {"role":["application","window","dialog","button","checkbox","label","link","list","listitem","grid","row","gridcell","menu","menuitem","text","textbox","image","generic"],"state":["enabled","visible","focused","selected","checked","expanded","offscreen"],"availabilityState":["available","not-exposed"],"runningState":["answering","not-answering","cannot-tell"],"accessibilityState":["enabled","disabled","cannot-tell"],"operationName":["setValue","setText","setCaret","reveal"],"capabilityName":["observe","launch","edit","activate","submit","rawInput"],"keyChordName":["Enter","Escape","Tab","Backspace","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown","F2"],"priority":["low","medium","high"],"changeKind":["appeared","disappeared","changed","watchEnded"],"attribution":["self","external","unattributed"],"refusalOwner":["agent","world","daemon"],"refusalCode":["AttestationFailedError","EffectUnsupportedError","KeyboardHeldElsewhereError","MagnitudeOutOfRangeError","OperationNotExposedError","PointerBlockedError","RecordingNotPerformableError","TextOffsetOutOfRangeError","UnperformableElementError","UnpublishedActionError","WriteNotObservedError","AccessibilityNotAcquirable","AccessibilityNotAcquired","AccessibilityLostMidSession","AlreadyRunning","BackendUnreadable","CouldNotStart","DeadlineExceeded","BlockedByDialog","ElementGone","EnforcementUnrepresentable","InventoryUnsupported","LaunchUnavailable","MalformedParameter","NoConnection","NoMatch","RestartNotOurs","RestartRefusedByApplication","NoRecipe","NotReadableInTime","OneBrowserIdentity","UnknownElement","UnknownMethod","UnknownSubscription","WatchDeaf","WatchUnknownElement","WatchUnsupported","ApplicationGone","DriverBusy","DriverClosed","WindowScopeUnmatched","WindowScopeAmbiguous","ApplicationScopeUnmatched","ApplicationScopeAmbiguous","AuditUnwritable","Unclassified","RestartNotConfirmed"]};
 
 type FieldSpec = {
   type: string | null;
@@ -1337,25 +1324,12 @@ function fieldProblems(typeName: string, specs: Record<string, FieldSpec>, recor
   return problems;
 }
 
-/**
- * The rule the field specs cannot express, enforced wherever an availability
- * appears: a thing withheld by configuration names the setting that withheld
- * it, and nothing else names a setting at all. This is what keeps the three
- * availability states from collapsing into each other. "Turned off by a
- * setting" and "never offered by the platform" look alike to a caller and are
- * opposites to anyone deciding what to do next: the first is a door with a
- * key, the second is a wall. A withheld thing with no setting named is an
- * unanswerable refusal, and an unexposed thing that names one invents a remedy
- * that does not exist.
+/** Availability is a closed two-state vocabulary in protocol 1.30.0. The
+ * field validator checks the vocabulary and rejects undeclared fields, so
+ * there is no cross-field consent configuration to validate here.
  */
-function availabilityProblems(typeName: string, specs: Record<string, FieldSpec>, record: Record<string, unknown>): string[] {
-  if (!("availability" in specs)) return [];
-  const problems: string[] = [];
-  const withheld = record.availability === "disabled-by-configuration";
-  const names = typeof record.disabledBy === "string" && record.disabledBy.length > 0;
-  if (withheld && !names) problems.push(`${typeName}.disabledBy: an availability withheld by configuration must name the setting that withholds it`);
-  if (!withheld && record.disabledBy !== undefined) problems.push(`${typeName}.disabledBy: present on an availability of ${JSON.stringify(record.availability)} - only a configuration-withheld one names a setting`);
-  return problems;
+function availabilityProblems(_typeName: string, _specs: Record<string, FieldSpec>, _record: Record<string, unknown>): string[] {
+  return [];
 }
 
 /** Validate a semanticElement; returns an empty array when it conforms. */

@@ -52,7 +52,7 @@ afterEach(() => vi.unstubAllEnvs());
 afterAll(() => rmSync(displayTools, { recursive: true, force: true }));
 
 const A_ROUTE = { route: "test-route" };
-const ARMED = { allows: new Set(["rawInput"]) };
+const ARMED = { };
 
 interface Press {
   x: number;
@@ -118,7 +118,7 @@ function deskAt(
     close: () => tape.close(),
   };
   return {
-    backend: new AtspiBackend(channel, "all"),
+    backend: new AtspiBackend(channel),
     presses,
     events,
     disappears() { stale = true; },
@@ -162,10 +162,8 @@ function backendThat(options: { clicked: unknown[] }): Backend {
 
 async function click(params: Record<string, unknown>, launch: Partial<LaunchContext>, backend: Backend) {
   return handleRequest({ type: "request", id: 1, method: "clickElement", params }, backend, {
-    permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
-    visibility: "all",
     keys: A_ROUTE,
     ...launch,
   } as LaunchContext);
@@ -465,14 +463,6 @@ describe("aiming a press from an element's own rectangle", () => {
 });
 
 describe("the gates in front of the pointer", () => {
-  it("refuses a session that was never given the class, without touching the desk", async () => {
-    const clicked: unknown[] = [];
-    const answer = await click({ id: "el-1" }, { allows: new Set() }, backendThat({ clicked }));
-    expect(refusalIn(answer)).toContain('"clickElement" is rawInput-class');
-    expect(refusalIn(answer)).toContain("--allow rawInput");
-    expect(clicked).toEqual([]);
-  });
-
   it("refuses on a machine with no pointer route, and names no setting for it", async () => {
     const clicked: unknown[] = [];
     const answer = await click({ id: "el-1" }, { ...ARMED, keys: undefined }, backendThat({ clicked }));

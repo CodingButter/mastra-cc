@@ -74,11 +74,11 @@ function publishedValue(properties: ReadonlyArray<AxProperty>, name: string): un
   return undefined;
 }
 
-// An element the page has turned off. Measured: an aria-disabled button
+// An element the page has unavailable. Measured: an aria-disabled button
 // publishes disabled=true and focusable=true together, so this check is the
 // only thing standing between a disabled control and an advertised verb.
 //
-// It is NOT reported as "disabled-by-configuration" - that state names a
+// It is NOT reported as "configuration-disabled" - that state names a
 // setting on THIS machine that a user could change, and reporting a page's own
 // greyed-out button that way would tell an agent a setting exists which does
 // not (ADR-0047 clause 4). Nor is it "not-exposed", which is a fact about the

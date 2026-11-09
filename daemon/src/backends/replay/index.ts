@@ -13,7 +13,6 @@ import {
   type RunningCensus,
 } from "../../backend.js";
 import type { InventoryEntry } from "../../inventory.js";
-import type { Visibility } from "../../grants.js";
 import { AtspiBackend } from "../atspi/index.js";
 import { asTape, type Channel, exchangeKey, fixturesDir, type Tape, UnrecordedExchangeError } from "../atspi/channel.js";
 
@@ -68,10 +67,8 @@ export class ReplayBackend implements Backend {
   readonly name = "replay";
   private readonly inner: AtspiBackend;
 
-  // Visibility threads through to the same reader: the replay lane enforces
-  // deny-by-default exactly as the live lane does (same guard, same code).
-  constructor(fixture: string, visibility?: Visibility) {
-    this.inner = new AtspiBackend(replayChannel(fixture), visibility);
+  constructor(fixture: string, _removedScope?: unknown) {
+    this.inner = new AtspiBackend(replayChannel(fixture));
   }
 
   queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {

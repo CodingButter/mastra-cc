@@ -1,12 +1,11 @@
 import { refusalText } from "./refusal-text.js";
 import { spawn } from "node:child_process";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { SemanticElement } from "@mastra-cc/protocol-types";
 import type { Backend } from "../backend.js";
-import { WITHHOLDS_NOTHING, type CapabilityConfiguration } from "../capabilities.js";
 import type { LaunchCatalog } from "../launch/recipes.js";
 import { OwnershipTable } from "../launch/table.js";
-import { UNAVAILABLE_REFUSAL, handleRequest, type LaunchContext } from "../server.js";
+import { handleRequest, type LaunchContext } from "../server.js";
 import { observeOnlyEffects } from "./support/observe-only.js";
 
 // RESTART ON THE WIRE (ADR-0065). Segment 03 phase 1 pinned what the daemon
@@ -63,10 +62,6 @@ async function child(refusesToClose: boolean): Promise<Child> {
   };
 }
 
-function configured(level: string): CapabilityConfiguration {
-  return { ...WITHHOLDS_NOTHING, restart: { fallback: level as never, applications: new Map() } };
-}
-
 const TEST_CATALOG: LaunchCatalog = { "test-app": { argv: ["sleep", "30"], env: {} } };
 
 // A desk that answers whatever the test says is on it right now. `showing` is
@@ -101,7 +96,6 @@ function element(backend: Backend, role: string, name: string, application?: str
 
 function restart(name: string, backend: Backend, context: Partial<LaunchContext>) {
   return handleRequest({ type: "request", id: 1, method: "restartApplication", params: { name } }, backend, {
-    permits: new Set(["test-app"]),
     catalog: TEST_CATALOG,
     table: new OwnershipTable(),
     ...FAST,
@@ -124,31 +118,6 @@ function resultOf(response: { result?: unknown }) {
 }
 
 describe("who may close a window", () => {
-  it("a session that may not launch the application may not restart it either", async () => {
-    const backend = desk(() => []);
-    const answer = resultOf(await restart("test-app", backend, { permits: new Set(), capabilities: configured("force") }));
-
-    // Byte-identical to the launch refusal: restarting starts an application,
-    // so it is refused by the same authority and says the same thing.
-    expect(refusalText(answer)).toBe(UNAVAILABLE_REFUSAL);
-    expect(answer.application).toBeUndefined();
-  });
-
-  it("an unconfigured daemon refuses and names the setting - nothing is signalled", async () => {
-    const spared = await child(false);
-    const table = new OwnershipTable();
-    table.record(spared.pid, "test-app");
-    const backend = desk(() => []);
-    try {
-      const answer = resultOf(await restart("test-app", backend, { table }));
-
-      expect(refusalText(answer)).toContain("restart.default");
-      expect(spared.alive()).toBe(true);
-    } finally {
-      spared.stop();
-    }
-  });
-
   it("refuses to signal a process it did not open", async () => {
     const foreign = await child(false);
     const backend = desk(() => []);
@@ -158,12 +127,39 @@ describe("who may close a window", () => {
     const table = new OwnershipTable();
     table.record(foreign.pid, "other-app");
     try {
-      const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("force") }));
+      const answer = resultOf(await restart("test-app", backend, { table, }));
 
       expect(refusalText(answer)).toContain("does not signal processes it does not own");
       expect(foreign.alive()).toBe(true);
     } finally {
       foreign.stop();
+    }
+  });
+
+  it("reports an operating-system signal refusal as unconfirmed, not an application refusal", async () => {
+    const owned = await child(true);
+    const table = new OwnershipTable();
+    table.record(owned.pid, "test-app");
+    const backend = desk(() => [element(backend, "application", "test-app")]);
+    const realKill = process.kill;
+    const kill = vi.spyOn(process, "kill").mockImplementation((pid, signal) => {
+      if (pid === owned.pid && signal === "SIGTERM") {
+        const error = new Error("operation not permitted") as NodeJS.ErrnoException;
+        error.code = "EPERM";
+        throw error;
+      }
+      return realKill(pid, signal);
+    });
+    try {
+      const response = await restart("test-app", backend, { table });
+      expect((response.result as { refusal?: { code?: string; message?: string } }).refusal).toMatchObject({
+        code: "RestartNotConfirmed",
+        message: "the signal could not be delivered; the application is still running",
+      });
+      expect(owned.alive()).toBe(true);
+    } finally {
+      kill.mockRestore();
+      owned.stop();
     }
   });
 
@@ -175,7 +171,7 @@ describe("who may close a window", () => {
     const dialog = element(backend, "dialog", "Close Document", "test-app");
     const showing: SemanticElement[] = [element(backend, "application", "test-app"), dialog];
     try {
-      const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
+      const answer = resultOf(await restart("test-app", backend, { table, }));
 
       // THE case this feature is shaped around (ADR-0065 clause 4). The
       // application said no; the person with unsaved work is the one whose
@@ -198,7 +194,7 @@ describe("who may close a window", () => {
     const backend = desk(() => showing);
     const showing: SemanticElement[] = [element(backend, "application", "test-app")];
     try {
-      const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
+      const answer = resultOf(await restart("test-app", backend, { table, }));
 
       expect(refusalText(answer)).toContain("neither closed nor put anything up");
       expect(refusalText(answer)).toContain("does not escalate because a timer expired");
@@ -223,7 +219,7 @@ describe("who may close a window", () => {
       showing = obliging.alive() ? [element(backend, "application", "test-app")] : [];
     }, 5);
     try {
-      const pending = restart("test-app", backend, { table, capabilities: configured("graceful") });
+      const pending = restart("test-app", backend, { table, });
       // once it is gone, the relaunch happens; the poll then wants to SEE it
       const appear = setTimeout(() => {
         clearInterval(desktop);
@@ -276,7 +272,7 @@ describe("who may close a window", () => {
         : [element(backend, "application", "test-app")],
     );
     try {
-      const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
+      const answer = resultOf(await restart("test-app", backend, { table, }));
 
       expect(answer.blockedBy).toBeUndefined();
       expect(answer.application?.name).toBe("test-app");
@@ -296,7 +292,7 @@ describe("who may close a window", () => {
     table.record(stubborn.pid, "test-app");
     const backend = desk(() => []); // nothing readable at all
     try {
-      const answer = resultOf(await restart("test-app", backend, { table, capabilities: configured("graceful") }));
+      const answer = resultOf(await restart("test-app", backend, { table, }));
 
       expect(refusalText(answer)).toContain("neither closed nor put anything up");
       expect(answer.application).toBeUndefined();
@@ -307,29 +303,6 @@ describe("who may close a window", () => {
     }
   });
 
-  it("force: a dialog on the desk does not become a refusal - force asked nothing, so nothing refused it", async () => {
-    const stubborn = await child(true);
-    const table = new OwnershipTable();
-    table.record(stubborn.pid, "test-app");
-    let showing: SemanticElement[] = [];
-    const backend = desk(() => showing);
-    showing = [element(backend, "application", "test-app"), element(backend, "dialog", "Close Document", "test-app")];
-    try {
-      const pending = restart("test-app", backend, { table, capabilities: configured("force") });
-      const appear = setTimeout(() => {
-        showing = [element(backend, "application", "test-app")];
-      }, 120);
-      const answer = resultOf(await pending);
-      clearTimeout(appear);
-
-      expect(answer.blockedBy).toBeUndefined();
-      expect(answer.application?.name).toBe("test-app");
-      expect(stubborn.alive()).toBe(false);
-    } finally {
-      stubborn.stop();
-      killEverything(table);
-    }
-  });
 
   it("an application that exits between the ownership check and the signal is started again, not called foreign", async () => {
     // The gap is real: ownsName said yes, and the process was gone a
@@ -351,46 +324,46 @@ describe("who may close a window", () => {
     const backend = desk(() => showing);
     const showing: SemanticElement[] = [element(backend, "application", "test-app")];
 
-    const answer = resultOf(await restart("test-app", backend, { table: racing, capabilities: configured("graceful") }));
+    const answer = resultOf(await restart("test-app", backend, { table: racing, }));
 
     expect(refusalText(answer)).toBeUndefined();
     expect(answer.application?.name).toBe("test-app");
     killEverything(racing);
   });
 
-  it("force: an application that refuses SIGTERM is taken down, because the operator wrote that down", async () => {
-    const stubborn = await child(true);
+
+  it("restarts by short name an application originally owned under its full id", async () => {
+    const obliging = await child(false);
     const table = new OwnershipTable();
-    table.record(stubborn.pid, "test-app");
+    table.record(obliging.pid, "org.example.test-app");
     let showing: SemanticElement[] = [];
-    const backend = desk(() => showing);
+    const backend = desk(() => showing) as Backend & { installedApplications: () => Promise<Array<{ name: string; diagnostic: {} }>> };
+    backend.installedApplications = async () => [{ name: "org.example.test-app", diagnostic: {} }];
+    showing = [element(backend, "application", "org.example.test-app")];
     const desktop = setInterval(() => {
-      showing = stubborn.alive() ? [element(backend, "application", "test-app")] : [];
+      showing = obliging.alive() ? [element(backend, "application", "org.example.test-app")] : [];
     }, 5);
+    const catalog: LaunchCatalog = { "org.example.test-app": { argv: ["sleep", "30"], env: {} } };
     try {
-      const pending = restart("test-app", backend, { table, capabilities: configured("force") });
+      const pending = handleRequest(
+        { type: "request", id: 1, method: "restartApplication", params: { name: "test-app" } },
+        backend,
+        { catalog, table, ...FAST },
+      );
       const appear = setTimeout(() => {
         clearInterval(desktop);
-        showing = [element(backend, "application", "test-app")];
+        showing = [element(backend, "application", "org.example.test-app")];
       }, 120);
       const answer = resultOf(await pending);
       clearTimeout(appear);
-
       expect(refusalText(answer)).toBeUndefined();
-      expect(answer.application?.name).toBe("test-app");
-      // The SIGTERM-proof process is gone: only SIGKILL does that, and only
-      // "force" sends it.
-      expect(stubborn.alive()).toBe(false);
+      expect(answer.application?.name).toBe("org.example.test-app");
+      expect(table.ownsName("org.example.test-app")).toBeDefined();
     } finally {
       clearInterval(desktop);
-      stubborn.stop();
-      for (const entry of table.entries()) {
-        try {
-          process.kill(entry.pid, "SIGKILL");
-        } catch {
-          // already gone
-        }
-      }
+      obliging.stop();
+      killEverything(table);
     }
   });
+
 });

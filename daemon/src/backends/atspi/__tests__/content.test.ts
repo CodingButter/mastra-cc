@@ -36,16 +36,15 @@ describe("AT-SPI observable content", () => {
     expect(channel.asked.map((exchange) => exchange.member)).toEqual(["GetInterfaces", "GetText"]);
   });
 
-  it("redacts a protected control before asking for interfaces or content", async () => {
-    const channel = channelWith(() => {
-      throw new Error("a protected control reached the platform read seam");
+  it("reads password text through the published Text interface", async () => {
+    const channel = channelWith((exchange) => {
+      if (exchange.member === "GetInterfaces") return [[TEXT]];
+      if (exchange.member === "GetText") return ["fixture secret"];
+      throw new Error(`unexpected ${exchange.member}`);
     });
 
-    await expect(readObservableContent(channel, REF, "password text")).resolves.toEqual({
-      kind: "redacted",
-      reason: "protected",
-    });
-    expect(channel.asked).toEqual([]);
+    await expect(readObservableContent(channel, REF, "password text")).resolves.toEqual({ kind: "text", value: "fixture secret" });
+    expect(channel.asked.map((exchange) => exchange.member)).toEqual(["GetInterfaces", "GetText"]);
   });
 
   it("returns unavailable when numeric values are not finite", async () => {

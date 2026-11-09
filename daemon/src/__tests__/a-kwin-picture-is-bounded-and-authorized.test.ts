@@ -24,7 +24,7 @@ function frame(change: Record<string, unknown> = {}, payload = Buffer.alloc(12))
 describe("explicit bounded KWin acquisition", () => {
   it.each([[new KwinFrameError("bad frame"), "daemon", "BackendUnreadable"],
     [new UnperformableElementError("NoAuthorized"), "world", "UnperformableElementError"]] as const)("preserves refusal ownership for %s", async (failure, owner, code) => {
-    const backend = new AtspiBackend(replayChannel("gtk-dialog"), "all");
+    const backend = new AtspiBackend(replayChannel("gtk-dialog"));
     vi.spyOn(backend, "captureElement").mockRejectedValueOnce(failure);
     try {
       const reply = await handleRequest({ type: "request", id: 1, method: "captureElement", params: { id: "target" } }, backend);
@@ -172,15 +172,6 @@ describe("explicit bounded KWin acquisition", () => {
       reads = 0;
       await expect(backend.captureElement({ id: elements[0]!.id })).rejects.toThrow("element bounds changed");
       expect(processes.spawn).toHaveBeenCalledTimes(1);
-    } finally { await backend.close(); }
-  });
-  it("does not acquire an element never exposed by the visibility grant", async () => {
-    vi.stubEnv("MASTRA_CC_ATSPI_CAPTURE", "kwin");
-    const backend = new AtspiBackend(replayChannel("gtk-dialog"));
-    try {
-      expect((await backend.queryElements({ role: "label" })).elements).toEqual([]);
-      await expect(backend.captureElement({ id: "ungranted" })).rejects.toThrow(UnperformableElementError);
-      expect(processes.spawn).not.toHaveBeenCalled();
     } finally { await backend.close(); }
   });
 });

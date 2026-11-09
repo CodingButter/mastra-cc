@@ -55,7 +55,8 @@ function writableTape(onWrite: (member: string) => void): Channel {
 // list forbids an offline test pairing the real CATALOG with a path that can
 // reach spawn, and nothing below launches anything.
 function allowing(classes: string[]): LaunchContext {
-  return { permits: new Set(), catalog: {}, table: new OwnershipTable(), allows: new Set(classes) };
+  void classes;
+  return { catalog: {}, table: new OwnershipTable() };
 }
 
 function socketIn(label: string): string {
@@ -119,31 +120,19 @@ describe("a client outside the daemon acts on the desktop and reads back what ch
     client.close();
   });
 
-  it("carries the scope gate's refusal to the client instead of an element", async () => {
+  it("performs through the same client when no consent gate was configured", async () => {
     const client = await connect({ socketPath: quietPath });
     const { elements } = await client.queryElements({});
     const target = await clickableIn(elements);
 
     const result = await client.activateElement({ id: target.id, action: "click" });
 
-    // A refusal an effect method decides is a FIELD OF THE RESULT, not a failed
-    // call: the schema declares element and refusal side by side, and the
-    // envelope-level refusal is reserved for a request the daemon could not
-    // route at all. The client must not flatten the two - "it was refused, and
-    // here is which check ran" is a different thing from "the call broke".
-    expect(result.element).toBeUndefined();
-    expect(result.refusal?.message).toMatch(/holds no activate authority/);
-    expect(result.refusal?.class).toBe("agent");
-    // The gate runs BEFORE the call, so the platform was never asked. This is
-    // the assertion that makes the refusal mean something: a daemon that acted
-    // and then reported a refusal would pass every other line above.
-    expect(writtenWithoutAuthority, "a refused effect reached the platform anyway").toHaveLength(0);
+    expect(result.refusal).toBeUndefined();
+    expect(result.element?.id).toBe(target.id);
+    expect(writtenWithoutAuthority, "the agent-owned session did not reach the platform").toContain("DoAction");
 
     client.close();
   });
-
-
-
   it("refuses an id it never answered without inventing an element", async () => {
     const client = await connect({ socketPath: performingPath });
     // A refusal must not become an existence oracle (ADR-0008 rule 6).

@@ -122,10 +122,8 @@ function stage(overrides: Partial<Staged> = {}): Channel {
 // a receipt is the one the test provoked and never the scope gate by accident.
 function context(overrides: Partial<LaunchContext> = {}): LaunchContext {
   return {
-    permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
-    allows: new Set(["edit", "activate", "submit"]),
     ...overrides,
   };
 }
@@ -200,7 +198,7 @@ async function watch(method: string, params: unknown, backend: Backend, book: Su
 }
 
 async function stagedSubject(channel: Channel): Promise<{ backend: AtspiBackend; id: string }> {
-  const backend = new AtspiBackend(channel, "all");
+  const backend = new AtspiBackend(channel);
   const { elements } = await backend.queryElements({});
   const found = elements.find((element) => element.role === "button");
   expect(found, "the staged tree published no subject element").toBeDefined();
@@ -272,7 +270,7 @@ describe("an effect writes exactly one receipt, and it names the element by iden
         return channel.call(exchange);
       },
     };
-    const failing = new AtspiBackend(broken, "all");
+    const failing = new AtspiBackend(broken);
     await failing.queryElements({});
 
     const answer = await call("activateElement", { id, action: ACTION_NAME }, failing);
@@ -362,7 +360,7 @@ describe("an effect writes exactly one receipt, and it names the element by iden
 
   it("4: an effect that could name no application is recorded as unattributed, not guessed at", async () => {
     const path = auditing();
-    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    const backend = registry.replay({ });
 
     // An id this daemon never answered: the backend can name no application for
     // it, so the verb names nothing and the attribution machinery's honest
@@ -442,17 +440,17 @@ describe("the receipt is kept only when one was asked for, and never at the cost
 describe("the launch and the read keep receipts of their own", () => {
   it("7: a launch writes a receipt - the one effect no element verb passes through", async () => {
     const path = auditing();
-    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    const backend = registry.replay({ });
 
-    const answer = await call("openApplication", { name: "yad" }, backend, context({ permits: new Set() }));
+    const answer = await call("openApplication", { name: "yad" }, backend, context({ }));
     await backend.close();
 
-    expect(answer.result?.refusal, "no permit, so the launch gate refuses").toBeDefined();
+    expect(answer.result?.refusal, "the replay desk already contains yad, so duplicate launch refuses").toBeDefined();
     const written = entries(path);
     expect(written).toHaveLength(1);
     expect(written[0]!.scope).toBe("launch");
     expect(written[0]!.application).toBe("yad");
-    expect(written[0]!.outcome).toBe("refused:LaunchUnavailable");
+    expect(written[0]!.outcome).toBe("refused:AlreadyRunning");
     expect(written[0]!.element).toEqual([]);
   });
 
@@ -462,7 +460,7 @@ describe("the launch and the read keep receipts of their own", () => {
   // record silent about the attempt entirely.
   it("7b: a launch that throws unclassified is recorded as an attempt", async () => {
     const path = auditing();
-    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    const backend = registry.replay({ });
     const table = new OwnershipTable();
     // The table is what openApplication consults past the permit gate; a table
     // that throws stands in for any internal failure the route does not catch.
@@ -470,7 +468,7 @@ describe("the launch and the read keep receipts of their own", () => {
       throw new Error("the ownership table went away mid-launch");
     });
 
-    const answer = await call("openApplication", { name: "yad" }, backend, context({ permits: new Set(["yad"]), table }));
+    const answer = await call("openApplication", { name: "yad" }, backend, context({ table }));
     await backend.close();
 
     // The caller gets the opaque backstop, as it always has - the throw stays
@@ -491,7 +489,7 @@ describe("the launch and the read keep receipts of their own", () => {
 
   it("8: a read writes exactly one entry naming every element it answered", async () => {
     const path = auditing();
-    const backend = registry.replay({ visibility: new Set(["yad"]) });
+    const backend = registry.replay({ });
 
     const answer = await call("queryElements", { name: "OK" }, backend);
     await backend.close();
@@ -601,8 +599,6 @@ describe("the refusal vocabulary is closed", () => {
         "CouldNotStart",
         "DeadlineExceeded",
       "BlockedByDialog",
-        "DisabledByConfiguration",
-        "EffectClassGate",
         "EffectUnsupportedError",
         "ElementGone",
         "EnforcementUnrepresentable",
@@ -625,8 +621,8 @@ describe("the refusal vocabulary is closed", () => {
         // remedies are three different things: nothing this daemon opened,
         // the application itself said no and put up a dialog, and it neither
         // closed nor said anything within the wait.
-        "RestartNotConfirmed",
         "RestartNotOurs",
+        "RestartNotConfirmed",
         "RestartRefusedByApplication",
         "TextOffsetOutOfRangeError",
         "UnknownElement",
@@ -648,7 +644,6 @@ describe("the refusal vocabulary is closed", () => {
         "WindowScopeAmbiguous",
         "ApplicationScopeUnmatched",
         "ApplicationScopeAmbiguous",
-        "ApplicationIdentityMismatch",
         "AuditUnwritable",
         "Unclassified",
       ].sort(),

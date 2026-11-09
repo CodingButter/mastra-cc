@@ -24,7 +24,7 @@ function hello(socketPath: string): Promise<string> {
 }
 
 const tempSocket = () => join(mkdtempSync(join(tmpdir(), "mastra-cc-own-")), "daemon.sock");
-const backend = () => registry.replay({ visibility: "all" });
+const backend = () => registry.replay({ });
 
 describe("a socket belongs to the daemon listening on it", () => {
   it("refuses a second daemon on a live path, and the first keeps serving", async () => {

@@ -84,7 +84,7 @@ it("the native clear loop stops between two emitted keys once its driver has ask
     watch: (subscribedTo, sink, anchor) => tape.watch(subscribedTo, sink, anchor),
     close: () => tape.close(),
   };
-  const backend = new AtspiBackend(channel, "all");
+  const backend = new AtspiBackend(channel);
   const { elements } = await backend.queryElements({ role: "label" });
   const id = elements[0]?.id as string;
   const attempt = underCancellation(controller.signal, () => backend.clearElementText({ id }));
@@ -141,7 +141,7 @@ it("stops a running effect at its next boundary when the driver closes, and admi
   };
   const directory = mkdtempSync(join(tmpdir(), "cc-cancel-")); cleanup.push(() => rmSync(directory, { recursive: true, force: true }));
   const socketPath = join(directory, "daemon.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["rawInput"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), };
   const server = await startServer({ socketPath, backend, launch }); cleanup.push(() => server.close());
   const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
   try {
@@ -218,7 +218,7 @@ it("answers another request on the same connection mid-effect, and still stops o
   };
   const directory = mkdtempSync(join(tmpdir(), "cc-cancel-verb-")); cleanup.push(() => rmSync(directory, { recursive: true, force: true }));
   const socketPath = join(directory, "daemon.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["rawInput"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), };
   const server = await startServer({ socketPath, backend, launch }); cleanup.push(() => server.close());
   const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
   try {
@@ -270,7 +270,7 @@ function aTypedDesk(controller: AbortController, abortOn: string | undefined) {
     watch: (a, b, c) => tape.watch(a, b, c),
     close: () => tape.close(),
   };
-  return { backend: new AtspiBackend(channel, "all"), sent };
+  return { backend: new AtspiBackend(channel), sent };
 }
 
 it("a single-call effect whose driver asked to stop before it began sends nothing", async () => {

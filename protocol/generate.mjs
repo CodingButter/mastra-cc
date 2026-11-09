@@ -310,25 +310,12 @@ function fieldProblems(typeName: string, specs: Record<string, FieldSpec>, recor
   return problems;
 }
 
-/**
- * The rule the field specs cannot express, enforced wherever an availability
- * appears: a thing withheld by configuration names the setting that withheld
- * it, and nothing else names a setting at all. This is what keeps the three
- * availability states from collapsing into each other. "Turned off by a
- * setting" and "never offered by the platform" look alike to a caller and are
- * opposites to anyone deciding what to do next: the first is a door with a
- * key, the second is a wall. A withheld thing with no setting named is an
- * unanswerable refusal, and an unexposed thing that names one invents a remedy
- * that does not exist.
+/** Availability is a closed two-state vocabulary in protocol 1.30.0. The
+ * field validator checks the vocabulary and rejects undeclared fields, so
+ * there is no cross-field consent configuration to validate here.
  */
-function availabilityProblems(typeName: string, specs: Record<string, FieldSpec>, record: Record<string, unknown>): string[] {
-  if (!("availability" in specs)) return [];
-  const problems: string[] = [];
-  const withheld = record.availability === "disabled-by-configuration";
-  const names = typeof record.disabledBy === "string" && record.disabledBy.length > 0;
-  if (withheld && !names) problems.push(\`\${typeName}.disabledBy: an availability withheld by configuration must name the setting that withholds it\`);
-  if (!withheld && record.disabledBy !== undefined) problems.push(\`\${typeName}.disabledBy: present on an availability of \${JSON.stringify(record.availability)} - only a configuration-withheld one names a setting\`);
-  return problems;
+function availabilityProblems(_typeName: string, _specs: Record<string, FieldSpec>, _record: Record<string, unknown>): string[] {
+  return [];
 }
 
 /** Validate a semanticElement; returns an empty array when it conforms. */

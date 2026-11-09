@@ -98,15 +98,13 @@ describe("a replayed browser node", () => {
     }
   });
 
-  it("replays captured protected-control classification without exposing a value", async () => {
+  it("reads password controls on an agent-owned computer", async () => {
     const backend = new CdpReplayBackend("chrome-page", "all");
     const { elements } = await backend.queryElements({});
     await backend.close();
 
-    const protectedControl = elements.find((element) => element.content.kind === "redacted");
-    expect(protectedControl?.name).toContain("Account password");
-    expect(protectedControl?.content).toEqual({ kind: "redacted", reason: "protected" });
-    expect(protectedControl?.content).not.toHaveProperty("value");
+    const passwordControl = elements.find((element) => element.name.includes("Account password"));
+    expect(passwordControl?.content.kind).not.toBe("redacted");
   });
 
   it("does not publish the words the deleted table invented", async () => {

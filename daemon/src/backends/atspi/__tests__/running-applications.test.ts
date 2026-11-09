@@ -44,7 +44,7 @@ function busHolding(names: string[], options: { unrecorded?: string } = {}): Cha
 
 describe("the census of what is answering on the bus", () => {
   it("reports an application on the bus as observable", async () => {
-    const backend = new AtspiBackend(busHolding(["kate"]), "all");
+    const backend = new AtspiBackend(busHolding(["kate"]));
 
     const census = await backend.runningApplications();
 
@@ -52,7 +52,7 @@ describe("the census of what is answering on the bus", () => {
   });
 
   it("reports an application absent from a fully enumerated bus as not-answering", async () => {
-    const backend = new AtspiBackend(busHolding(["kate"]), "all");
+    const backend = new AtspiBackend(busHolding(["kate"]));
 
     const census = await backend.runningApplications();
 
@@ -77,7 +77,7 @@ describe("the census of what is answering on the bus", () => {
     // or case folding would answer not-answering
     // for the same application the grants file just permitted by its plain
     // name - two normalisation rules disagreeing inside one daemon.
-    const backend = new AtspiBackend(busHolding(["\u{1D40A}\u{1D400}\u{1D413}\u{1D404}"]), "all");
+    const backend = new AtspiBackend(busHolding(["\u{1D40A}\u{1D400}\u{1D413}\u{1D404}"]));
 
     const census = await backend.runningApplications();
 

@@ -14,13 +14,13 @@ Every file here exists to make one case non-vacuous:
 | `system/applications/withdrawn.desktop` | `Hidden=true`, same rule |
 | `system/applications/not-an-application.desktop` | `Type=Link` is not an application and is not reported as one |
 | `system/applications/collide-one.desktop` + `collide-two.desktop` | two different ids sharing one display `Name` - both surface, distinguishably |
-| `system/applications/yad.desktop` | an installed application the daemon HAS a recipe for - the only entry here whose launch capability can be permitted rather than absent |
+| `system/applications/yad.desktop` | an installed application the daemon HAS a recipe for - the only entry here whose launch capability is launchable rather than absent |
 | `system/applications/malformed.desktop` | no `[Desktop Entry]` group at all - skipped, and its neighbours survive |
 | `home/applications/ordinary.desktop` | the SAME id as the system one, with a different display name: precedence is observable, the home copy wins |
 | `home/applications/user-only.desktop` | an entry only the user has |
 | `second/applications/ordinary.desktop` | a third copy, later in `XDG_DATA_DIRS`, that must lose to both |
 
 The counts these files produce are asserted in
-`daemon/src/__tests__/installed-inventory.test.ts`. Adding a file here changes
+`daemon/src/__tests__/inventory-scan.test.ts`. Adding a file here changes
 those numbers on purpose; changing them to make a test pass is the failure the
 fixture exists to catch.

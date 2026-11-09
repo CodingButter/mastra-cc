@@ -65,10 +65,8 @@ async function press(chord: string, launch: Partial<LaunchContext>, backend: Bac
     { type: "request", id: 1, method: "sendKeyChord", params: { id: "el-1", chord } },
     backend,
     {
-      permits: new Set(),
       catalog: DEFANGED_CATALOG,
       table: new OwnershipTable(),
-      visibility: "all",
       keys: A_ROUTE,
       ...launch,
     } as LaunchContext,
@@ -82,50 +80,15 @@ function refusalIn(answer: { refusal?: string; result?: unknown }): string {
 }
 
 describe("a key, addressed to one element", () => {
-  it("refuses a session that was never given the class, without touching the desk", async () => {
-    // The gate that matters most, and it is checked BEFORE the backend: a
-    // daemon that reached the key route and then declined would have already
-    // grabbed somebody's focus for a keystroke it was not allowed to send.
-    const pressed: Pressed[] = [];
-    const answer = await press("Enter", { allows: new Set() }, backendThat({ pressed }));
-    expect(refusalIn(answer)).toContain("rawInput-class");
-    expect(refusalIn(answer)).toContain("--allow rawInput");
-    expect(pressed).toEqual([]);
-  });
-
   it("refuses on a machine with no key route, and names no setting for it", async () => {
-    // not-exposed, not disabled-by-configuration. An operator told to add a
+    // not-exposed, not configuration-disabled. An operator told to add a
     // flag here would spend the afternoon on a machine that still cannot
     // deliver a key (protocol/schema.json:236).
     const pressed: Pressed[] = [];
-    const answer = await press("Enter", { allows: new Set(["rawInput"]), keys: undefined }, backendThat({ pressed }));
+    const answer = await press("Enter", { keys: undefined }, backendThat({ pressed }));
     expect(refusalIn(answer)).toContain("no way to deliver a key here");
     expect(refusalIn(answer)).toContain("no setting on this daemon would change that");
     expect(pressed).toEqual([]);
-  });
-
-  it("tells an unarmed session on a routeless machine BOTH things, not the flattering one", async () => {
-    // The shipped configuration, and the combination the two tests above miss
-    // between them. Authority is answered first (ADR-0019), so the sentence
-    // would otherwise stop at "add --allow rawInput" on a machine where that
-    // flag delivers nothing - sending an operator to spend an afternoon on a
-    // file that was never the problem. Both facts, in the order they would have
-    // to be fixed, and the second one says the first is not enough here.
-    const pressed: Pressed[] = [];
-    const answer = await press("Enter", { allows: new Set(), keys: undefined }, backendThat({ pressed }));
-    expect(refusalIn(answer)).toContain("--allow rawInput");
-    expect(refusalIn(answer)).toContain("the flag alone would not be enough");
-    expect(refusalIn(answer)).toContain("no setting on this daemon would change that");
-    expect(pressed).toEqual([]);
-  });
-
-  it("does not add the routeless caveat on a machine that has a route", async () => {
-    // The mirror error: a session that lacks only permission must not be told
-    // the machine cannot type, because the machine can, and the flag is the
-    // whole of what is missing.
-    const answer = await press("Enter", { allows: new Set() }, backendThat({ pressed: [] }));
-    expect(refusalIn(answer)).toContain("--allow rawInput");
-    expect(refusalIn(answer)).not.toContain("the flag alone would not be enough");
   });
 
   it("refuses a chord this contract never defined, and says which ones it does", async () => {
@@ -133,7 +96,7 @@ describe("a key, addressed to one element", () => {
     // again, because relying on the client having been generated from a schema
     // the daemon cannot see is how a closed vocabulary quietly opens.
     const pressed: Pressed[] = [];
-    const answer = await press("Control+Alt+Delete", { allows: new Set(["rawInput"]) }, backendThat({ pressed }));
+    const answer = await press("Control+Alt+Delete", { }, backendThat({ pressed }));
     expect(refusalIn(answer)).toContain("does not define");
     expect(refusalIn(answer)).toContain("Enter");
     expect(pressed).toEqual([]);
@@ -141,7 +104,7 @@ describe("a key, addressed to one element", () => {
 
   it("delivers the chord it was asked for, to the element it was addressed to", async () => {
     const pressed: Pressed[] = [];
-    const answer = await press("Enter", { allows: new Set(["rawInput"]) }, backendThat({ pressed }));
+    const answer = await press("Enter", { }, backendThat({ pressed }));
     expect(refusalIn(answer)).toBe("");
     expect(pressed).toEqual([{ id: "el-1", chord: "Enter" }]);
     // The element as it reads AFTERWARDS. The emission's own reply says only
@@ -159,7 +122,7 @@ describe("a key, addressed to one element", () => {
       focus: [[{ name: "the address bar", id: "other" }], [{ name: "the target", id: "el-1" }]],
       refuseFocus: true,
     });
-    const answer = await press("Enter", { allows: new Set(["rawInput"]) }, backend);
+    const answer = await press("Enter", { }, backend);
     const note = (answer.result as { element?: { diagnostic?: Record<string, string> } }).element?.diagnostic?.[
       "mastra-cc/focus-preservation"
     ];

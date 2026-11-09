@@ -17,8 +17,7 @@ afterEach(() => {
 async function listen(allowedOrigins?: ReadonlySet<string>) {
   listener = await startWebSocketServer({
     port: 0,
-    backend: registry.replay({ visibility: "all" }),
-    visibility: "all",
+    backend: registry.replay({ }),
     ...(allowedOrigins === undefined ? {} : { allowedOrigins }),
   });
   return listener.port;

@@ -1,26 +1,13 @@
 import { join } from "node:path";
 import { captureRoute } from "./backends/atspi/kwin-capture.js";
-import { CAPABILITY_NAMES, SCHEMA_DIGEST, type CapabilityName } from "@mastra-cc/protocol-types";
+import { SCHEMA_DIGEST } from "@mastra-cc/protocol-types";
 import { openAuditLog, useAuditLog } from "./audit.js";
 import { registry } from "./backends/registry.js";
 import { desktopEntryDirectories } from "./inventory.js";
-import {
-  loadCapabilitiesFile,
-  MalformedCapabilitiesFileError,
-  WITHHOLDS_NOTHING,
-} from "./capabilities.js";
-import { applicationName } from "./backends/atspi/names.js";
 import { resolveOne } from "./backends/atspi/resolve.js";
 import { selectAccessibilityLayer } from "./accessibility/select.js";
 import { selectKeyDelivery } from "./rawinput/select.js";
-import { loadGrantedExecutables, loadGrantsFile, MalformedGrantsFileError } from "./grants.js";
-import { grantedExecutables } from "./backends/atspi/process-identity.js";
-import {
-  composeBootNames,
-  composeCatalog,
-  loadProfilesFile,
-  MalformedProfilesFileError,
-} from "./launch/profiles.js";
+import { composeCatalog, loadProfilesFile, MalformedProfilesFileError } from "./launch/profiles.js";
 import { baseLaunchCatalog } from "./launch/derived.js";
 import type { LaunchCatalog } from "./launch/recipes.js";
 import { terminateOwned } from "./launch/spawn.js";
@@ -34,15 +21,6 @@ import { startServer, startWebSocketServer } from "./server.js";
 // performs to daemon/fixtures/<name>/tape.json; --fixture <name> selects the
 // tape the replay backend answers from. --query / --resolve are one-shot
 // operator modes: ask the backend directly, print, exit - no socket.
-// --permit <name> (repeatable) is the SESSION-SCOPED authority for
-// openApplication (ADR-0034): the permit set dies with this process.
-// --grants <file> names the daemon-local permissions file (ADR-0036) whose
-// "applications" entries are durable observe grants; --grant <name>
-// (repeatable) is the session-scoped observe analog of --permit, for reading
-// applications this daemon did not launch. The effective observe set is the
-// union grants-file ∪ --grant ∪ --permit (a launch permit implies an observe
-// grant for the launched name, or a permitted launch would be unreadable
-// forever), composed ONCE here at boot and nowhere else.
 // --profiles <file> names the daemon-local browser-profiles file (ADR-0038)
 // whose entries become launch identities: one catalog recipe per named
 // profile, each launching the browser against its own profile directory.
@@ -97,7 +75,7 @@ const fixture = arg("--fixture") ?? undefined;
 //     entries, so a google-chrome
 //     desktop entry can never displace the hand-written chrome/gmail recipes
 //     and their profile directories (ADR-0038).
-//   - composeCatalog runs after that, so operator profiles still clone the
+//   - composeCatalog runs after that, so browser profiles still clone the
 //     built-in browser recipe exactly as they do today.
 //   - the whole expression stays BEFORE the name composition below, which
 //     needs the composed catalog to expand derived appearsAs names.
@@ -116,86 +94,20 @@ const catalog = (() => {
   }
 })();
 
-// The two name sets, composed once at boot and never recomputed (ADR-0036,
-// ADR-0038): what may be LAUNCHED and what may be SEEN are different sets,
-// and the composer - not this entry script - is where that split is tested.
-// A malformed grants file fails startup loudly: the operator meant something,
-// and the daemon must not silently run with "no grants" in its place.
-const { launchPermits, visibility } = (() => {
-  try {
-    const file = arg("--grants") !== null ? loadGrantsFile(arg("--grants") as string) : new Set<string>();
-    return composeBootNames({
-      permits: new Set(argAll("--permit").map(applicationName)),
-      grants: file,
-      flags: new Set(argAll("--grant").map(applicationName)),
-      catalog,
-    });
-  } catch (error) {
-    if (error instanceof MalformedGrantsFileError) {
-      console.error(`daemon: ${error.message}`);
-      process.exit(2);
-    }
-    throw error;
-  }
-})();
-// --allow <class>: session-scoped authority to PERFORM a class of effect on an
-// element, the effect-side analog of --permit (ADR-0034 - it dies with this
-// process). Composed once here, like every other name set. The class must be
-// one the schema defines: an unknown one is an operator's typo, and a typo that
-// silently grants nothing looks exactly like a daemon that is broken.
-// The per-application capability configuration (ADR-0043 clause 4, ADR-0042)
-// attaches inside holdsEffectAuthority; this flag stays the session-wide answer.
-// --capabilities <file>: the USER's durable, per-application capability
-// configuration (ADR-0043 clause 4, ADR-0042). Loaded once here, beside the
-// grants and profiles files and for the same reasons: a malformed permissions
-// file fails startup loudly rather than becoming a silent "everything is
-// allowed", and the absent file is a stated default rather than an accident.
-// The daemon enforces what this file says and has no switch that turns the
-// enforcing off.
-const capabilities = (() => {
-  try {
-    return arg("--capabilities") !== null ? loadCapabilitiesFile(arg("--capabilities") as string) : WITHHOLDS_NOTHING;
-  } catch (error) {
-    if (error instanceof MalformedCapabilitiesFileError) {
-      console.error(`daemon: ${error.message}`);
-      process.exit(2);
-    }
-    throw error;
-  }
-})();
-
-const allows = new Set(argAll("--allow")) as Set<CapabilityName>;
-for (const cls of allows) {
-  if (!CAPABILITY_NAMES.includes(cls) || cls === "observe" || cls === "launch") {
-    console.error(
-      `daemon: --allow must name one of the effect classes: edit, activate, submit, rawInput (got ${JSON.stringify(cls)})`,
-    );
+// Consent-era authority flags are removed, not ignored. This is deliberately a
+// denylist: all other existing operator flags retain their established parsing.
+const removedFlags = ["--grants", "--grant", "--permit", "--allow", "--capabilities", "--acquire-accessibility"];
+for (const flag of removedFlags) {
+  if (process.argv.includes(flag)) {
+    console.error(`daemon: ${flag} was removed in protocol 1.30.0; the agent-owned session has full desktop authority`);
     process.exit(2);
   }
 }
 
-// --acquire-accessibility: the OPERATOR's permission for the daemon to switch
-// this machine's accessibility layer on (ADR-0064). Off unless it is present,
-// and present only in the argv this process started with - nothing a client
-// sends reaches here, which is the point: a session cannot grant itself
-// authority to reconfigure the machine it is running on. It is a flag rather
-// than a capability because the layer is machine-scoped and the capability list
-// is per-application and exhaustive; the flag IS the setting, and refusals name
-// it (ACQUIRE_SETTING).
-const mayAcquireAccessibility = process.argv.includes("--acquire-accessibility");
 const accessibility = selectAccessibilityLayer();
-// Whether this build has ANY route to deliver a key here, decided from the
-// platform and nothing else. It is not authority and does not grant anything:
-// a machine with a route and no --allow rawInput still presses no keys
-// (ADR-0066 clause 2).
 const keys = selectKeyDelivery();
 
-// Grants bind to executables, not to names (ADR-0120): resolved once, here.
-const executables =
-  visibility === "all"
-    ? undefined
-    : grantedExecutables(visibility, arg("--grants") !== null ? loadGrantedExecutables(arg("--grants") as string) : new Map());
-const backend = registry[backendName]({ capture, fixture, visibility, executables });
+const backend = registry[backendName]({ capture, fixture });
 
 const query = arg("--query");
 const resolve = arg("--resolve");
@@ -304,8 +216,7 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
 server = await startServer({
   socketPath,
   backend,
-  launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility, keys },
-  visibility,
+  launch: { catalog, table, accessibility, keys },
 });
 server.on("close", () => terminateOwned(table));
 
@@ -315,8 +226,7 @@ if (wsPort !== null) {
     host: wsHost,
     allowedOrigins: wsAllowedOrigins,
     backend,
-    launch: { permits: launchPermits, allows, capabilities, catalog, table, accessibility, mayAcquireAccessibility, keys },
-    visibility,
+    launch: { catalog, table, accessibility, keys },
   });
   // Belt and braces for a close that arrives without a signal. The signal path
   // does NOT rely on this: ws only fires "close" once every client has gone.

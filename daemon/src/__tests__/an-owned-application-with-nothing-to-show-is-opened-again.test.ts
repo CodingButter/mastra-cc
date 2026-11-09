@@ -56,7 +56,7 @@ async function open(backend: Backend, context: LaunchContext) {
 }
 
 function context(catalog: LaunchCatalog, table: OwnershipTable): LaunchContext {
-  return { permits: new Set(["chromium"]), catalog, table, pollBudgetMs: 40, pollIntervalMs: 10 };
+  return { catalog, table, pollBudgetMs: 40, pollIntervalMs: 10 };
 }
 
 describe("opening an application this daemon already owns", () => {

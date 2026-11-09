@@ -112,7 +112,6 @@ function launchable(world: Desktop): Backend {
 
 function launch(overrides: Partial<LaunchContext>): LaunchContext {
   return {
-    permits: new Set(["test-app"]),
     catalog: CATALOGUED,
     table: new OwnershipTable(),
     pollBudgetMs: 200,

@@ -14,9 +14,9 @@
 //
 // Why the reach question is separate from the permission question at all: the
 // wire distinguishes "this machine's owner turned it off" from "the element
-// never offered it, and no setting would change that"
+// never offered it, and the reported state is definitive"
 // (protocol/schema.json:236). A build with no key route on this platform is
-// the second kind. Reporting it as disabled-by-configuration would send an
+// the second kind. Reporting it as configuration-disabled would send an
 // operator to add a flag that would not help, which is precisely the false
 // belief that vocabulary exists to prevent.
 

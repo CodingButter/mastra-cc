@@ -64,10 +64,8 @@ function backendThat(options: { typed: Typed[]; focus?: (readonly { name: string
 
 async function call(method: string, params: Record<string, unknown>, launch: Partial<LaunchContext>, backend: Backend) {
   return handleRequest({ type: "request", id: 1, method, params }, backend, {
-    permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
-    visibility: "all",
     keys: A_ROUTE,
     ...launch,
   } as LaunchContext);
@@ -79,7 +77,7 @@ function refusalIn(answer: { refusal?: string; result?: unknown }): string {
   return refusalText(answer) ?? "";
 }
 
-const ARMED = { allows: new Set(["rawInput"]) };
+const ARMED = {};
 
 describe("text, typed blind at one element", () => {
   it("preserves unverified evidence through server wrapping without a retry", async () => {
@@ -110,14 +108,6 @@ describe("text, typed blind at one element", () => {
     expect(typed[0]?.text).toBe(text);
     expect(refusalIn(await type(text + "x", ARMED, backend))).toContain("UTF-16 code units");
     expect(typed).toHaveLength(1);
-  });
-
-  it("refuses a session that was never given the class, without touching the desk", async () => {
-    const typed: Typed[] = [];
-    const answer = await type("example.com", { allows: new Set() }, backendThat({ typed }));
-    expect(refusalIn(answer)).toContain('"typeText" is rawInput-class');
-    expect(refusalIn(answer)).toContain("--allow rawInput");
-    expect(typed).toEqual([]);
   });
 
   it("refuses on a machine with no key route, and names no setting for it", async () => {
@@ -220,7 +210,7 @@ describe("text, typed blind at one element", () => {
     // with that. An armed session makes the temptation real: the daemon
     // HOLDS the authority to type here, and still must not.
     const typed: Typed[] = [];
-    const answer = await call("setElementValue", { id: "el-1", value: "example.com" }, { ...ARMED, allows: new Set(["rawInput", "edit"]) }, backendThat({ typed }));
+    const answer = await call("setElementValue", { id: "el-1", value: "example.com" }, { ...ARMED }, backendThat({ typed }));
     expect(refusalIn(answer)).not.toBe("");
     expect(typed, "a refused set reached the keyboard").toEqual([]);
   });

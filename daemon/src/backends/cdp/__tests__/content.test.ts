@@ -14,14 +14,14 @@ describe("browser accessibility observable content", () => {
     ).toEqual({ kind: "text", value: "ordinary content" });
   });
 
-  it("redacts a protected value before mapping the published value", () => {
+  it("reads a protected value owned by the agent", () => {
     expect(
       readObservableContent({
         role: { value: "textField" },
         value: { value: "must-not-cross" },
         properties: [property("protected", true), property("editable", true)],
       }),
-    ).toEqual({ kind: "redacted", reason: "protected" });
+    ).toEqual({ kind: "text", value: "must-not-cross" });
   });
 
   it("classifies every editable text field through its backing node", () => {
@@ -37,13 +37,13 @@ describe("browser accessibility observable content", () => {
     expect(needsProtectedClassification({ role: { value: "button" } })).toBe(false);
   });
 
-  it("redacts a masked field confirmed protected by its backing node", () => {
+  it("reports the published masked value regardless of backing classification", () => {
     const node = {
       role: { value: "textField" },
       value: { value: "••••••" },
       properties: [property("editable", "plaintext")],
     };
-    expect(readObservableContent(node, 0, 4096, true)).toEqual({ kind: "redacted", reason: "protected" });
+    expect(readObservableContent(node, 0, 4096, true)).toEqual({ kind: "text", value: "••••••" });
     expect(readObservableContent(node, 0, 4096, false)).toEqual({ kind: "text", value: "••••••" });
   });
 

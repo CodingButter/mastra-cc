@@ -9,7 +9,7 @@ it("uses a granted runtime listing name as a native scope without granting launc
   const visibility = new Set(["yad"]);
   const backend = new AtspiBackend(replayChannel("gtk-dialog"), visibility);
   backend.installedApplications = async () => [{ name: "org.example.Dialog" }];
-  const launch = { visibility, permits: new Set<string>(), catalog: {}, table: new OwnershipTable() };
+  const launch = { visibility, catalog: {}, table: new OwnershipTable() };
   try {
     const listing = await handleRequest({ type: "request", id: 1, method: "listApplications", params: {} }, backend, launch);
     const applications = (listing.result as ListApplicationsResult).applications ?? [];

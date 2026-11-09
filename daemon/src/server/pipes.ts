@@ -6,7 +6,6 @@ import type { WebSocket } from "ws";
 import { SCHEMA_DIGEST, PROTOCOL_VERSION } from "@mastra-cc/protocol-types";
 import { type Backend } from "../backend.js";
 import { refused } from "../audit.js";
-import { type Visibility } from "../grants.js";
 import { driverAuthority } from "../driver.js";
 import { MAX_REQUEST_LINE_CHARS } from "../server.js";
 import { Request, handleRequest } from "./dispatch.js";
@@ -80,9 +79,9 @@ export function socketPipe(socket: Socket): Pipe {
  */
 export function serveConnection(
   pipe: Pipe,
-  options: { backend: Backend; launch?: LaunchContext; visibility: Visibility },
+  options: { backend: Backend; launch?: LaunchContext },
 ): void {
-  const { backend, launch, visibility } = options;
+  const { backend, launch } = options;
   const authority = driverAuthority(backend);
   const driver = { authority, connection: authority.connect() };
   let buffer = "";
@@ -92,7 +91,7 @@ export function serveConnection(
   // client that is gets it without having asked twice.
   const book = new SubscriptionBook((event) => {
     if (!pipe.closed) pipe.write(`${JSON.stringify({ type: "event", event })}\n`);
-  }, visibility, pipe);
+  }, pipe);
   // A watch belongs to the connection that asked for it. When the connection
   // goes, the watches go with it - closed at the BACKEND, not merely
   // forgotten here: a forgotten watch is still being fed.
@@ -215,14 +214,12 @@ export function startServer(options: {
   socketPath: string;
   backend: Backend;
   launch?: LaunchContext;
-  /** the observe set composed at boot; events are filtered against it at emission */
-  visibility?: Visibility;
 }): Promise<Server> {
-  const { socketPath, backend, visibility = "all" } = options;
+  const { socketPath, backend } = options;
   // ONE composed observe set, carried into the launch context rather than
   // passed twice: the listing reports the observe capability from the same set
   // that filters events and hides subtrees, so the two can never disagree.
-  const launch = options.launch === undefined ? undefined : { ...options.launch, visibility };
+  const launch = options.launch;
   mkdirSync(dirname(socketPath), { recursive: true });
 
   const server = createServer((socket) => {
@@ -231,7 +228,7 @@ export function startServer(options: {
     // pipe, not of the protocol. The WebSocket adapter makes the same choice
     // with the vocabulary its own transport has.
     socket.on("error", () => socket.destroy());
-    serveConnection(socketPipe(socket), { backend, launch, visibility });
+    serveConnection(socketPipe(socket), { backend, launch });
   });
 
   return claimSocketPath(socketPath).then(
@@ -340,15 +337,14 @@ export async function startWebSocketServer(options: {
   host?: string;
   backend: Backend;
   launch?: LaunchContext;
-  visibility?: Visibility;
   // Browser origins allowed to open a connection (audit M6). A web page on any
   // site can open a WebSocket to a loopback port, and the browser sends that
   // page's Origin with it. With none listed, every browser page is refused.
   // A handshake with no Origin at all is not a browser page and is unaffected.
   allowedOrigins?: ReadonlySet<string>;
 }): Promise<WebSocketListener> {
-  const { port, host = "127.0.0.1", backend, visibility = "all", allowedOrigins = new Set<string>() } = options;
-  const launch = options.launch === undefined ? undefined : { ...options.launch, visibility };
+  const { port, host = "127.0.0.1", backend, allowedOrigins = new Set<string>() } = options;
+  const launch = options.launch;
 
   const { WebSocketServer } = await import("ws");
   const wss = new WebSocketServer({
@@ -364,7 +360,7 @@ export async function startWebSocketServer(options: {
     // Same choice the socket adapter makes: a transport-level error means drop
     // this connection, and that is a property of the pipe, not the protocol.
     socket.on("error", () => socket.terminate());
-    serveConnection(webSocketPipe(socket), { backend, launch, visibility });
+    serveConnection(webSocketPipe(socket), { backend, launch });
   });
 
   return new Promise((resolve, reject) => {

@@ -93,7 +93,7 @@ async function requireInterface(seam: CallSeam, ref: NativeRef, iface: string, o
   if (interfaces.includes(iface)) return;
   // not-exposed. Nothing was withheld and nothing was configured off - the
   // element does not publish the capability. Saying this in a policy shape
-  // would teach the caller that some setting could change the answer, which is
+  // would teach the caller that the answer was configurable, which is
   // the false belief ADR-0042 exists to kill.
   throw new OperationNotExposedError(
     `this element does not expose ${operation} - the platform never offered it here, and no setting of ours turned it off`,

@@ -53,7 +53,7 @@ async function desktop() {
   };
   const directory = mkdtempSync(join(tmpdir(), "cc-driver-")); cleanup.push(() => rmSync(directory, { recursive: true, force: true }));
   const socketPath = join(directory, "daemon.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["rawInput"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), };
   const unix = await startServer({ socketPath, backend, launch }); cleanup.push(() => unix.close());
   const websocket = await startWebSocketServer({ port: 0, backend, launch }); cleanup.push(() => websocket.close());
   return { effects, backend, addresses: { unix: socketPath, websocket: `ws://127.0.0.1:${websocket.port}` } };

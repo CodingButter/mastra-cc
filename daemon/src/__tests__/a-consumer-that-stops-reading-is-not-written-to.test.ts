@@ -58,7 +58,7 @@ describe("the book with a scripted gauge", () => {
     const world = scripted();
     const g = gauge();
     const events: ChangeEvent[] = [];
-    const book = new SubscriptionBook((e) => events.push(e), "all", g.pressure);
+    const book = new SubscriptionBook((e) => events.push(e), g.pressure);
     await book.subscribe(world.backend, root, "high");
     world.emit({ id: root, role: "textbox", kind: "changed" });
     expect(events).toHaveLength(1);
@@ -81,7 +81,7 @@ describe("the book with a scripted gauge", () => {
     const world = scripted();
     const g = gauge();
     const events: ChangeEvent[] = [];
-    const book = new SubscriptionBook((e) => events.push(e), "all", g.pressure);
+    const book = new SubscriptionBook((e) => events.push(e), g.pressure);
     await book.subscribe(world.backend, root, "high");
     g.fill();
     const ids = Array.from({ length: STALLED_CONSUMER_POINTERS + 3 }, (_, i) => `el-${i.toString(16).padStart(12, "0")}`);
@@ -95,7 +95,7 @@ describe("the book with a scripted gauge", () => {
     const world = scripted();
     const g = gauge();
     const events: ChangeEvent[] = [];
-    const book = new SubscriptionBook((e) => events.push(e), "all", g.pressure);
+    const book = new SubscriptionBook((e) => events.push(e), g.pressure);
     await book.subscribe(world.backend, root, "high");
     g.fill();
     world.emit({ id: other, role: "button", kind: "changed" });
@@ -133,7 +133,7 @@ describe("over a real Unix socket", () => {
     dirs.push(dir);
     const socketPath = join(dir, "d.sock");
     const world = scripted();
-    const launch: LaunchContext = { permits: new Set(), allows: new Set(["observe"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+    const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), };
     const server = await startServer({ socketPath, backend: world.backend, launch });
     try {
       const servedSocket = new Promise<Socket>((r) => server.once("connection", r));

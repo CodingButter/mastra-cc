@@ -40,7 +40,7 @@ function channelWith(targets: unknown[]) {
 describe("scoped browser queries", () => {
   it("discovers vocabulary without minting actionable browser IDs", async () => {
     const { channel } = channelWith([{ id: "inbox", type: "page", title: "Inbox" }]);
-    const backend = new CdpBackend(channel, "all");
+    const backend = new CdpBackend(channel);
 
     await expect(backend.discoverElements({ application: "chrome", window: "Inbox" })).resolves.toEqual({
       entries: [{ role: "button", name: "inbox", count: 1, actions: [], operations: ["reveal", "setCaret", "setText", "setValue"] }],
@@ -53,20 +53,13 @@ describe("scoped browser queries", () => {
     expect((backend as unknown as { applicationOf: Map<string, unknown> }).applicationOf.size).toBe(0);
   });
 
-  it("discovers nothing in a browser this session was never granted, and reads no page for it", async () => {
-    const { channel, exchanges } = channelWith([{ id: "inbox", type: "page", title: "Inbox" }]);
-    const backend = new CdpBackend(channel, new Set(["kate"]));
-
-    await expect(backend.discoverElements({ application: "chrome" })).resolves.toEqual({ entries: [], truncated: false });
-    expect(exchanges.some((exchange) => exchange.kind === "call")).toBe(false);
-  });
 
   it("discovers nothing when two pages answer to the same window name", async () => {
     const { channel, exchanges } = channelWith([
       { id: "inbox", type: "page", title: "Inbox" },
       { id: "other", type: "page", title: "Inbox" },
     ]);
-    const backend = new CdpBackend(channel, "all");
+    const backend = new CdpBackend(channel);
 
     await expect(backend.discoverElements({ application: "chrome", window: "Inbox" })).resolves.toEqual({
       entries: [],
@@ -77,7 +70,7 @@ describe("scoped browser queries", () => {
 
   it("returns nothing for an application selector outside the granted browser identity", async () => {
     const { channel, exchanges } = channelWith([{ id: "inbox", type: "page", title: "Inbox" }]);
-    const backend = new CdpBackend(channel, "all");
+    const backend = new CdpBackend(channel);
 
     await expect(backend.queryElements({ application: "Firefox" })).resolves.toEqual({ elements: [] });
     expect(exchanges).toEqual([{ kind: "version" }]);
@@ -90,7 +83,7 @@ describe("scoped browser queries", () => {
       { id: "frame", type: "iframe", title: "Inbox" },
       { id: "worker", type: "service_worker", title: "Inbox" },
     ]);
-    const backend = new CdpBackend(channel, "all");
+    const backend = new CdpBackend(channel);
 
     const { elements } = await backend.queryElements({ application: "chrome", window: "Inbox", role: "button" });
 
@@ -103,7 +96,7 @@ describe("scoped browser queries", () => {
       { id: "one", type: "page", title: "Inbox" },
       { id: "two", type: "page", title: "Inbox" },
     ]);
-    const backend = new CdpBackend(channel, "all");
+    const backend = new CdpBackend(channel);
 
     await expect(backend.queryElements({ application: "Chrome", window: "Inbox" })).resolves.toEqual({ elements: [] });
     expect(exchanges.filter((exchange) => exchange.kind === "call")).toEqual([]);

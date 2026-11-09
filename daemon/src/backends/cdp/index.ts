@@ -21,7 +21,6 @@ import {
   WriteNotObservedError,
 } from "../../backend.js";
 import type { InventoryEntry } from "../../inventory.js";
-import { isVisible, type Visibility } from "../../grants.js";
 import { deriveId } from "../atspi/identity.js";
 import { applicationName, nameMatches, normalise } from "../atspi/names.js";
 import { aggregateDiscovery, type DiscoveryMetadata } from "../../discovery.js";
@@ -93,9 +92,6 @@ function productName(version: VersionReply): string {
 export class CdpBackend implements Backend {
   readonly name: string = "cdp";
   protected readonly channel: CdpChannel;
-  // The observe-visibility set (M2.3, ADR-0036). Deny-by-default is this
-  // backend's own posture: when no visibility is given, nothing is.
-  private readonly visibility: Visibility;
   // id -> native ref for the elements this backend has answered, bounded and
   // least-recently-used first (ADR-0116); attestation re-reads the element
   // live rather than replaying a cached snapshot. Forgetting an id forgets
@@ -116,7 +112,8 @@ export class CdpBackend implements Backend {
   // the backend closes.
   private readonly watches = new Map<string, ChannelWatch>();
 
-  constructor(channel: CdpChannel, visibility: Visibility = new Set(), elementCap = ELEMENT_MEMORY_CAP) {
+  constructor(channel: CdpChannel, elementCapOrRemovedScope: number | unknown = ELEMENT_MEMORY_CAP) {
+    const elementCap = typeof elementCapOrRemovedScope === "number" ? elementCapOrRemovedScope : ELEMENT_MEMORY_CAP;
     this.channel = channel;
     this.answered = new ElementMemory<NativeRef>(elementCap, (id, ref) => {
       this.roleOf.delete(id);
@@ -126,7 +123,6 @@ export class CdpBackend implements Backend {
         if (this.mintedByNode.get(node)?.id === id) this.mintedByNode.delete(node);
       }
     });
-    this.visibility = visibility;
   }
 
   // The product name most recently answered by the version exchange. Every
@@ -194,7 +190,7 @@ export class CdpBackend implements Backend {
   // property here (cdp/roles.ts maps it), so the question is answered from the
   // page's own reading rather than from a second instrument. Like the desktop
   // route it obeys the visibility gate, because it goes through queryElements
-  // and inherits the one permitted read.
+  // and inherits the one bounded read.
   async focusedElement(): Promise<SemanticElement | undefined> {
     const { elements } = await this.queryElements({});
     return elements.find((element) => element.states.includes("focused"));
@@ -349,14 +345,13 @@ export class CdpBackend implements Backend {
       (params.name === undefined || nameMatches(element.name, params.name));
 
     // The visibility gate (ADR-0036), the symmetric analog of the atspi name
-    // read: the version exchange is the ONE permitted read - the application's
+    // read: the version exchange is the ONE bounded read - the application's
     // name derives from it - and an ungranted browser answers empty having
     // issued only that exchange: never list, never a target dial, never
     // Accessibility.*. Nothing was registered as answered, so attestation
     // naturally refuses too.
     const version = await this.version();
     const product = productName(version);
-    if (!isVisible(this.visibility, product)) return { elements: [] };
     if (params.application !== undefined && applicationName(product) !== applicationName(params.application)) return { elements: [] };
 
     const application = this.applicationElement(version);
@@ -393,7 +388,7 @@ export class CdpBackend implements Backend {
   async discoverElements(params: DiscoverElementsParams): Promise<Classified<DiscoverElementsResult>> {
     const version = await this.version();
     const product = productName(version);
-    if (!isVisible(this.visibility, product) || applicationName(product) !== applicationName(params.application)) {
+    if (applicationName(product) !== applicationName(params.application)) {
       return { entries: [], truncated: false };
     }
 
@@ -631,7 +626,7 @@ export class CdpBackend implements Backend {
       // No range published means no bounds to check against, and inventing one
       // here is exactly what clause 4 forbids. The operation is not offered.
       throw new OperationNotExposedError(
-        `this element publishes no range for its own magnitude, so there is nothing to set a value against - never offered, rather than turned off`,
+        `this element publishes no range for its own magnitude, so there is nothing to set a value against - never offered, rather than unavailable`,
       );
     }
     await setMagnitudeOf(this.channel, ref, params.value);
@@ -761,8 +756,8 @@ export class CdpBackend implements Backend {
 export class CdpReplayBackend extends CdpBackend {
   override readonly name: string = "cdp-replay";
 
-  constructor(fixture: string, visibility?: Visibility) {
-    super(replayCdpChannel(fixture), visibility);
+  constructor(fixture: string, _removedScope?: unknown) {
+    super(replayCdpChannel(fixture));
   }
 
   // The live browser route performs for real now, so a tape's refusal is the

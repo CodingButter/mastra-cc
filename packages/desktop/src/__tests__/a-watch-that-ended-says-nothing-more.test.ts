@@ -68,7 +68,7 @@ function scriptedBackend() {
 
 async function daemonWith(desk: ReturnType<typeof scriptedBackend>) {
   const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-cc04-")), "daemon.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["observe"]), keys: { route: "test" }, catalog: {}, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: {}, table: new OwnershipTable() };
   started.push(await startServer({ socketPath, backend: desk.backend, launch }));
   const instance = new MastraCC({ socketPath });
   open.push(instance);

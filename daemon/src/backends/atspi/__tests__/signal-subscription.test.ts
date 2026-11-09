@@ -525,7 +525,7 @@ describe("the accessibility stream", () => {
         throw new DeafWatchError("deaf for this test");
       },
     };
-    const backend = new AtspiBackend(deafChannel, "all");
+    const backend = new AtspiBackend(deafChannel);
     const { elements } = await backend.queryElements({});
     expect(elements.length).toBeGreaterThan(0);
     await expect(backend.subscribeElement(elements[0].id, () => undefined)).rejects.toBeInstanceOf(DeafWatchError);

@@ -68,7 +68,7 @@ for (const [name, factory] of Object.entries(registry)) {
   suite(`backend "${name}" conforms to the backend interface${lane}`, { timeout: 120_000 }, () => {
     // visibility "all": this suite's job is reader conformance, not grant
     // policy - deny-by-default (ADR-0036) is witnessed by invisibility.test.ts
-    const backend = factory({ visibility: "all" });
+    const backend = factory({ });
 
     it("implements every method the interface names", () => {
       for (const method of BACKEND_METHODS) {
@@ -261,7 +261,7 @@ for (const [name, factory] of Object.entries(registry)) {
 describe("a recording refuses to be acted upon", () => {
   for (const name of ["replay", "cdp-replay"] as const) {
     it(`backend "${name}" refuses every effect verb by name`, async () => {
-      const backend = registry[name]({ visibility: "all" });
+      const backend = registry[name]({ });
       const { elements } = await backend.queryElements({});
       expect(elements.length).toBeGreaterThan(0);
       const id = elements[0].id;
@@ -302,8 +302,8 @@ describe("a recording refuses to be acted upon", () => {
 // nearest-match on both routes and watching it stay green.
 describe("neither route performs an action the element never published", () => {
   const performingOverARecording: Record<string, () => Backend> = {
-    "the accessibility bus": () => new AtspiBackend(replayChannel("gtk-dialog"), "all"),
-    "the browser protocol": () => new CdpBackend(replayCdpChannel("chrome-page"), "all"),
+    "the accessibility bus": () => new AtspiBackend(replayChannel("gtk-dialog")),
+    "the browser protocol": () => new CdpBackend(replayCdpChannel("chrome-page")),
   };
 
   for (const [route, open] of Object.entries(performingOverARecording)) {
@@ -352,7 +352,7 @@ const THE_INVENTED_FOUR = ["press", "focus", "select", "expand"];
 describe("each replayed world publishes a verb the deleted tables never held", () => {
   for (const name of ["replay", "cdp-replay"] as const) {
     it(`backend "${name}" replays at least one action named outside the invented four`, async () => {
-      const backend = registry[name]({ visibility: "all" });
+      const backend = registry[name]({ });
       const { elements } = await backend.queryElements({});
       expect(elements.length).toBeGreaterThan(0);
 

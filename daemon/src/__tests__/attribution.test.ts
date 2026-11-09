@@ -124,7 +124,6 @@ describe("a change inside the application our launch is opening is attributed to
     const book = new SubscriptionBook((event) => events.push(event));
     const table = new OwnershipTable();
     const launch: LaunchContext = {
-      permits: new Set(["test-app"]),
       catalog: { "test-app": { argv: ["sleep", "30"], env: {} } },
       table,
       pollBudgetMs: 2000,
@@ -204,10 +203,8 @@ describe("a change caused by an element verb is attributed to that verb", () => 
     const events: ChangeEvent[] = [];
     const book = new SubscriptionBook((event) => events.push(event));
     const launch: LaunchContext = {
-      permits: new Set(),
       catalog: {},
       table: new OwnershipTable(),
-      allows: new Set(["edit"]),
     };
     await handleRequest(
       { type: "request", id: 1, method: "subscribeElement", params: { id: WATCHED, priority: "high" } },

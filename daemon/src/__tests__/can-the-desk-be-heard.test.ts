@@ -37,7 +37,7 @@ const backend: Backend = {
 };
 
 function context(over: Partial<LaunchContext> = {}): LaunchContext {
-  return { permits: new Set(), catalog: DEFANGED_CATALOG, table: new OwnershipTable(), ...over };
+  return { catalog: DEFANGED_CATALOG, table: new OwnershipTable(), ...over };
 }
 
 function layerThat(report: () => Promise<{ state: string; reason?: string }>, acquire?: () => Promise<void>): AccessibilityLayer {
@@ -73,43 +73,6 @@ describe("describing whether this machine can be heard", () => {
 });
 
 describe("acquiring is the operator's to permit", () => {
-  it("refuses a daemon started without the flag, and names it", async () => {
-    let acquired = false;
-    const response = await call(
-      "acquireAccessibility",
-      context({
-        accessibility: layerThat(async () => ({ state: "disabled" }), async () => {
-          acquired = true;
-        }),
-      }),
-    );
-    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining("disabled-by-configuration") } });
-    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining(ACQUIRE_SETTING) } });
-    // THE ASSERTION THAT MATTERS: the gate ran before the adapter did.
-    expect(acquired).toBe(false);
-  });
-
-  it("cannot be armed by anything in the request", async () => {
-    // A session cannot grant itself authority to reconfigure the machine it is
-    // running on. The flag lives in the process's argv and nowhere a caller
-    // can reach; sending its name as a parameter changes nothing.
-    let acquired = false;
-    const response = await handleRequest(
-      { type: "request", id: 2, method: "acquireAccessibility", params: { mayAcquireAccessibility: true, "acquire-accessibility": true } },
-      backend,
-      context({
-        accessibility: layerThat(async () => ({ state: "disabled" }), async () => {
-          acquired = true;
-        }),
-      }),
-    );
-    expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining(ACQUIRE_SETTING) } });
-    // And the adapter was never reached, so the parameter did not arm anything
-    // downstream either - the assertion that keeps this from restating the
-    // test above.
-    expect(acquired).toBe(false);
-  });
-
   it("acquires when the operator armed it, and reports what it re-read", async () => {
     let enabled = false;
     const layer = layerThat(
@@ -118,7 +81,7 @@ describe("acquiring is the operator's to permit", () => {
         enabled = true;
       },
     );
-    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    const response = await call("acquireAccessibility", context({ accessibility: layer }));
     expect(response.result).toEqual({ accessibility: { state: "enabled" } });
   });
 
@@ -126,17 +89,17 @@ describe("acquiring is the operator's to permit", () => {
     // A write the platform accepted and ignored. The re-read is what makes
     // this visible rather than a success sentence over an unchanged desk.
     const layer = layerThat(async () => ({ state: "disabled" }), async () => undefined);
-    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    const response = await call("acquireAccessibility", context({ accessibility: layer }));
     expect(response.result).toEqual({ accessibility: { state: "disabled" } });
   });
 
-  it("refuses not-exposed, not disabled-by-configuration, where no adapter could act", async () => {
+  it("refuses not-exposed, not configuration-disabled, where no adapter could act", async () => {
     // The distinction protocol/schema.json:236 is built on: an operator told
     // "a setting withholds this" goes looking for a setting that does not
     // exist. Armed, and still refused - because arming is not the obstacle.
     const response = await call(
       "acquireAccessibility",
-      context({ accessibility: unsupportedPlatform("darwin"), mayAcquireAccessibility: true }),
+      context({ accessibility: unsupportedPlatform("darwin") }),
     );
     const refusal = refusalText(response);
     expect(refusal).toContain("not-exposed");
@@ -147,7 +110,7 @@ describe("acquiring is the operator's to permit", () => {
     const layer = layerThat(async () => ({ state: "disabled" }), async () => {
       throw new Error("read-only status object");
     });
-    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    const response = await call("acquireAccessibility", context({ accessibility: layer }));
     expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining("did not accept") } });
   });
 
@@ -158,7 +121,7 @@ describe("acquiring is the operator's to permit", () => {
     const layer = layerThat(async () => ({ state: "enabled" }), async () => {
       throw new Error("status object accepted one property and refused the next");
     });
-    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    const response = await call("acquireAccessibility", context({ accessibility: layer }));
     expect(response.result).toMatchObject({
       refusal: expect.objectContaining({ message: expect.stringContaining("did not accept every property") }),
       accessibility: { state: "enabled" },
@@ -176,58 +139,43 @@ describe("acquiring is the operator's to permit", () => {
         throw new Error("status object accepted one property and refused the next");
       },
     );
-    const response = await call("acquireAccessibility", context({ accessibility: layer, mayAcquireAccessibility: true }));
+    const response = await call("acquireAccessibility", context({ accessibility: layer }));
     expect(response.result).toMatchObject({ refusal: { message: expect.stringContaining("could not be read afterwards") } });
     expect((response.result as { accessibility?: unknown }).accessibility).toBeUndefined();
   });
 });
 
 describe("every acquire attempt is written down", () => {
-  it("records the performed one and every refused one under the acquire scope", async () => {
-    // A change to the OPERATOR'S machine is the least deniable thing this
-    // daemon does, so it is attributable whether it worked, was withheld, or
-    // failed - a record that keeps only the tidy cases is a record of the tidy
-    // cases (ADR-0026).
+  it("records performed and machine-refused attempts under the acquire scope", async () => {
     const directory = mkdtempSync(join(tmpdir(), "mastra-cc-acquire-audit-"));
     const path = join(directory, "audit.jsonl");
     useAuditLog(openAuditLog(path));
     try {
-      await call("acquireAccessibility", context({ accessibility: layerThat(async () => ({ state: "disabled" })) }));
       await call(
         "acquireAccessibility",
-        context({ accessibility: layerThat(async () => ({ state: "enabled" }), async () => undefined), mayAcquireAccessibility: true }),
+        context({ accessibility: layerThat(async () => ({ state: "enabled" }), async () => undefined) }),
       );
-      // The two refusals that come from the MACHINE rather than from the
-      // configuration: a platform with no adapter, and a status object that
-      // refused the write. Both changed nothing, and both are attempts.
-      await call("acquireAccessibility", context({ accessibility: unsupportedPlatform("darwin"), mayAcquireAccessibility: true }));
+      await call("acquireAccessibility", context({ accessibility: unsupportedPlatform("darwin") }));
       await call(
         "acquireAccessibility",
         context({
           accessibility: layerThat(async () => ({ state: "disabled" }), async () => {
             throw new Error("read-only status object");
           }),
-          mayAcquireAccessibility: true,
         }),
       );
     } finally {
       useAuditLog(undefined);
     }
     const lines: AuditEntry[] = existsSync(path)
-      ? readFileSync(path, "utf8")
-          .split("\n")
-          .filter((line) => line.trim() !== "")
-          .map((line) => JSON.parse(line) as AuditEntry)
+      ? readFileSync(path, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line) as AuditEntry)
       : [];
     rmSync(directory, { recursive: true, force: true });
     expect(lines.map((entry) => [entry.scope, entry.outcome])).toEqual([
-      ["acquire", "refused:DisabledByConfiguration"],
       ["acquire", "performed"],
       ["acquire", "refused:AccessibilityNotAcquirable"],
       ["acquire", "refused:AccessibilityNotAcquired"],
     ]);
-    // No application and no element, because there is neither: this is the
-    // case `application: null` was defined for.
     expect(lines.every((entry) => entry.application === null && entry.element.length === 0)).toBe(true);
   });
 });

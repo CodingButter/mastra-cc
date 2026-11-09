@@ -50,13 +50,10 @@ function countingChannel(onEmit?: () => void) {
 async function deskOver(channel: Channel) {
   const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-cc02-")), "daemon.sock");
   const launch: LaunchContext = {
-    permits: new Set(),
-    allows: new Set(["observe", "rawInput"]),
-    keys: { route: "test-route" },
+        keys: { route: "test-route" },
     catalog: {},
     table: new OwnershipTable(),
-    visibility: "all",
-  };
+    };
   started.push(await startServer({ socketPath, backend: new AtspiBackend(channel, new Set(["yad"])), launch }));
   const desk = new MastraCC({ socketPath });
   open.push(desk);

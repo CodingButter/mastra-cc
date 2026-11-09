@@ -44,8 +44,9 @@ const FIELD_CODES = ["%f", "%F", "%u", "%U", "%d", "%D", "%n", "%N", "%i", "%c",
 // argv[0]s that are not the application. A shell would reintroduce a command
 // line through the file even though spawn keeps shell: false, and a wrapper's
 // basename ("flatpak", "env") is a tree name no window will ever report, which
-// would silently break the observe-side appearsAs expansion. Refusing leaves
-// today's behaviour for those entries, which the machine already survives.
+// would silently break the join between launch recipes and runtime application
+// names. Refusing leaves today's behaviour for those entries, which the machine
+// already survives.
 const WRAPPERS = new Set(["sh", "bash", "dash", "zsh", "env", "flatpak", "snap"]);
 
 // Split an Exec value per the specification's quoting: double quotes may hold

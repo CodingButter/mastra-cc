@@ -12,8 +12,8 @@ import { replayCdpChannel } from "../backends/cdp/channel.js";
 import { replayChannel } from "../backends/replay/index.js";
 
 const backends = {
-  "the accessibility bus": () => new AtspiBackend(replayChannel("gtk-dialog"), "all", TRAVERSAL_LIMITS),
-  "the browser protocol": () => new CdpBackend(replayCdpChannel("chrome-page"), "all"),
+  "the accessibility bus": () => new AtspiBackend(replayChannel("gtk-dialog"), TRAVERSAL_LIMITS),
+  "the browser protocol": () => new CdpBackend(replayCdpChannel("chrome-page")),
 };
 
 describe.each(Object.entries(backends))("on %s", (_, make) => {

@@ -133,7 +133,7 @@ describe("every method the contract declares is reachable through this client", 
           if (!line.trim()) continue;
           const message = JSON.parse(line) as { type: string; id?: number };
           if (message.type === "hello") socket.write(`${JSON.stringify({ type: "hello", digest: SCHEMA_DIGEST })}\n`);
-          else socket.write(`${JSON.stringify({ type: "response", id: message.id, result: { refusal: { class: "agent", code: "EffectClassGate", message: "refused by the scope gate" } } })}\n`);
+          else socket.write(`${JSON.stringify({ type: "response", id: message.id, result: { refusal: { class: "agent", code: "MalformedParameter", message: "the request was malformed" } } })}\n`);
         }
       });
     });
@@ -142,7 +142,7 @@ describe("every method the contract declares is reachable through this client", 
     const client: TransportClient = await connect({ socketPath });
 
     await expect(client.submitElement({ id: "el-0123456789ab", attestation: "commits" })).resolves.toEqual({
-      refusal: { class: "agent", code: "EffectClassGate", message: "refused by the scope gate" },
+      refusal: { class: "agent", code: "MalformedParameter", message: "the request was malformed" },
     });
     client.close();
   });

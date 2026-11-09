@@ -75,8 +75,8 @@ export class RecordingNotPerformableError extends EffectUnsupportedError {}
 // The element does not publish the interface this operation is performed
 // through - a text box with no editable-text interface, a slider with no value
 // interface. This is `not-exposed` (ADR-0045, schema 1.4.0): a fact about the
-// application, NOT a refusal a setting could lift. It must never be reported in
-// a policy shape, because telling an agent a setting could change this answer
+// application, NOT a refusal a transient refusal. It must never be reported in
+// a policy shape, because telling an agent the answer was configurable
 // is the false-belief failure ADR-0042 exists to kill.
 export class OperationNotExposedError extends Error {}
 
@@ -212,7 +212,6 @@ export class ApplicationScopeAmbiguousError extends Error {}
 // A name is a claim, not an identity (ADR-0120). A process that publishes a
 // granted name from an executable the grant does not name is refused, so a
 // scope aimed at "mousepad" never reaches a stranger calling itself that.
-export class ApplicationIdentityMismatchError extends Error {}
 
 // The DAEMON cannot describe what this commit would do, so it refuses to make
 // it (ADR-0008 rule 2: "a commit the service cannot describe is a commit nobody

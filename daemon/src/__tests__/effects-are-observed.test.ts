@@ -146,7 +146,7 @@ function stage(overrides: Partial<Staged> = {}): { channel: Channel; staged: Sta
 }
 
 async function subject(channel: Channel): Promise<{ backend: AtspiBackend; id: string }> {
-  const backend = new AtspiBackend(channel, "all");
+  const backend = new AtspiBackend(channel);
   const { elements } = await backend.queryElements({});
   const found = elements.find((element) => element.role === "textbox");
   expect(found, "the staged tree published no subject element").toBeDefined();

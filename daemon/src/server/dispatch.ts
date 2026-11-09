@@ -4,9 +4,11 @@ import { FAILED, PERFORMED, READ, recordAudit, refused, withoutInternals, refusa
 import { DRIVER_CLOSED, type DriverAuthority, type DriverConnection } from "../driver.js";
 import { CancelledAtBoundaryError, underCancellation } from "../cancellation.js";
 import { DialogBlockingError } from "../backends/cdp/channel.js";
-import { ACTIVATE_SCOPE_REFUSAL, APPLICATION_GONE_REFUSAL, BACKEND_UNREADABLE_REFUSAL, EDIT_SCOPE_REFUSAL, ELEMENT_GONE_REFUSAL, LaunchContext, NO_CLEAR_ROUTE_REFUSAL, NO_KEY_ROUTE_REFUSAL, NO_PERMITS, NO_POINTER_ROUTE_REFUSAL, NO_TYPE_ROUTE_REFUSAL, POINTER_BUTTON_NAMES, REVEAL_SCOPE_REFUSAL, SET_CARET_SCOPE_REFUSAL, SET_TEXT_SCOPE_REFUSAL, SET_VALUE_SCOPE_REFUSAL, SUBMIT_SCOPE_REFUSAL, configurationWithholding, holdsEffectAuthority, observedWithConfiguration, outsideElementRefusal, rawInputScopeRefusal, typeTextRefusal, unknownButtonRefusal, unknownCapturedAtRefusal, unknownChordRefusal, unknownClickCountRefusal, withheldRefusal } from "./grants.js";
+import { ACTIVATE_SCOPE_REFUSAL, APPLICATION_GONE_REFUSAL, BACKEND_UNREADABLE_REFUSAL, EDIT_SCOPE_REFUSAL, ELEMENT_GONE_REFUSAL, LaunchContext, NO_CLEAR_ROUTE_REFUSAL, NO_KEY_ROUTE_REFUSAL, NO_POINTER_ROUTE_REFUSAL, NO_TYPE_ROUTE_REFUSAL, POINTER_BUTTON_NAMES, REVEAL_SCOPE_REFUSAL, SET_CARET_SCOPE_REFUSAL, SET_TEXT_SCOPE_REFUSAL, SET_VALUE_SCOPE_REFUSAL, SUBMIT_SCOPE_REFUSAL, outsideElementRefusal, rawInputScopeRefusal, typeTextRefusal, unknownButtonRefusal, unknownCapturedAtRefusal, unknownChordRefusal, unknownClickCountRefusal } from "./grants.js";
 import { acquireAccessibility, auditedAcquire, describeAccessibility, describeDesktop, discoverElements, focusBeforeEffect, listApplications, openApplication, queryElements, restartApplication, restoreFocusAfterEffect, withFocusNote } from "./launch-focus.js";
 import { serialised, targetOf } from "./queues.js";
+import { CATALOG } from "../launch/recipes.js";
+import { OwnershipTable } from "../launch/table.js";
 import { SubscriptionBook, attribute, causeNames, mintCauseId, operation, subscribeElement, unsubscribeElement } from "./subscriptions.js";
 
 // The three element verbs, each refused BEFORE the backend is reached when this
@@ -56,20 +58,7 @@ export async function performEffect(
   // deliberately do not inherit that identity without independent causal evidence.
   let application: string | undefined;
   const decide = async (): Promise<Classified<{ element?: SemanticElement; refusal?: string }>> => {
-    // Refused for want of authority, and the application is deliberately not
-    // asked for: ADR-0019's ordering says an unheld class is answered before
-    // anything names a target, and the receipt records what the daemon knew,
-    // not what it could have gone and looked up to fill a field in.
-    if (!holdsEffectAuthority(launch, effectClass)) return { refusal, refusalClass: "EffectClassGate" };
-    // Authority first, configuration second (ADR-0019's order, one rung down):
-    // the session-wide answer needs no application, so asking it first means an
-    // id this daemon never answered is refused without the configuration ever
-    // being consulted about a name nobody can supply. Both run BEFORE the call.
     application = backend.applicationOfElement(id);
-    const withheld = configurationWithholding(launch, effectClass, application);
-    if (withheld !== undefined) {
-      return { refusal: withheldRefusal(method, effectClass, withheld), refusalClass: "DisabledByConfiguration" };
-    }
     if (application !== undefined) causeNames(application);
     try {
       return await perform();
@@ -277,7 +266,7 @@ export function revealElement(params: { id?: unknown }, backend: Backend, launch
 //                        session without the class hears about the class and
 //                        the backend is never touched (ADR-0021).
 //   reach next         - a build with no route says so without naming a
-//                        setting, because no setting would help.
+//                        setting, because the application does not expose it.
 //   vocabulary next    - a chord this contract never defined is refused BY
 //                        NAME. The generated validator already refuses it at
 //                        the wire, and this is the second lock: the daemon does
@@ -464,7 +453,7 @@ export type Handler = (params: unknown, backend: Backend, launch: LaunchContext,
 export const DISPATCH: Record<string, { effectClass: string; enforcement: string; handler: Handler }> = {
   queryElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => queryElements(p, b, l) },
   discoverElements: { effectClass: "observe", enforcement: "at-result", handler: (p, b, l) => discoverElements(p, b, l) },
-  attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b, l) => observedWithConfiguration(await b.attestElement((p ?? {}) as never), b, l) },
+  attestElement: { effectClass: "observe", enforcement: "at-result", handler: async (p, b) => b.attestElement((p ?? {}) as never) },
   readElementContent: { effectClass: "observe", enforcement: "at-result", handler: async (p, b) => b.readElementContent((p ?? {}) as never) },
   // Observation remains gated by the named semantic element. Native capture
   // crops visible root-display pixels to its bounds, so overlapping windows may
@@ -594,10 +583,12 @@ export function observeOutcome(result: unknown): string {
   return answer.refusal === undefined ? READ : refused(answer.refusalClass);
 }
 
+const DEFAULT_LAUNCH_CONTEXT: LaunchContext = { catalog: CATALOG, table: new OwnershipTable() };
+
 export async function handleRequest(
   request: Request,
   backend: Backend,
-  launch: LaunchContext = NO_PERMITS,
+  launch: LaunchContext = DEFAULT_LAUNCH_CONTEXT,
   book?: SubscriptionBook,
   driver?: { authority: DriverAuthority; connection: DriverConnection },
 ): Promise<HandledResponse> {
@@ -651,7 +642,7 @@ export async function handleRequest(
     // places where a new observation route can be forgotten.
     //
     // The effect routes are excluded because they already wrote, in the places
-    // that know which scope they were permitted under; a second entry here
+    // that know which scope they were classified under; a second entry here
     // would double every effect in the record.
     if (entry.effectClass === "observe") {
       const application = (result as { auditApplication?: string }).auditApplication;

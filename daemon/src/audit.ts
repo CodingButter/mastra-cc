@@ -65,7 +65,7 @@ export interface AuditEntry {
   application: string | null;
   /** every element the call ANSWERED - one for an effect, the answered set for a read */
   element: AuditElement[];
-  /** the capability the gate permitted the call under: the value the gate was handed, never recomputed */
+  /** the effect class recorded for the call: the value the gate was handed, never recomputed */
   scope: string;
   /** the existing attribution machinery's answer, never a second implementation of it */
   cause: AuditCause;
@@ -187,8 +187,6 @@ export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
   CouldNotStart: "world",
   DeadlineExceeded: "world",
   BlockedByDialog: "world",
-  DisabledByConfiguration: "agent",
-  EffectClassGate: "agent",
   ElementGone: "world",
   EnforcementUnrepresentable: "daemon",
   InventoryUnsupported: "world",
@@ -196,8 +194,8 @@ export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
   MalformedParameter: "agent",
   NoConnection: "agent",
   NoMatch: "agent",
-  RestartNotConfirmed: "world",
   RestartNotOurs: "agent",
+  RestartNotConfirmed: "world",
   RestartRefusedByApplication: "world",
   NoRecipe: "world",
   NotReadableInTime: "world",
@@ -214,7 +212,6 @@ export const REFUSAL_OWNER: Record<RefusalClass, RefusalOwner> = {
   WindowScopeUnmatched: "agent",
   WindowScopeAmbiguous: "agent",
   ApplicationScopeUnmatched: "agent",
-  ApplicationIdentityMismatch: "world",
   // The daemon cannot keep the receipt it promised; the operator repairs it.
   AuditUnwritable: "daemon",
   ApplicationScopeAmbiguous: "agent",
@@ -229,7 +226,6 @@ export const REFUSAL_NEXT: Partial<Record<RefusalClass, string>> = {
   DeadlineExceeded: "the application did not answer in time; read the element again before retrying, since an effect may have happened",
   BlockedByDialog: "a page dialog is open; it must be closed by a human or the page before this target answers again",
   UnknownElement: "query again and use an id from the new answer",
-  EffectClassGate: "this session was not started with that class; ask the operator, do not route around it",
   RestartNotOurs: "only an application this daemon started can be restarted by it",
   Unclassified: "report this as a daemon fault; do not retry blindly",
 };

@@ -3,13 +3,12 @@ import type { Channel } from "../backends/atspi/channel.js";
 import { AtspiBackend } from "../backends/atspi/index.js";
 import { applicationName, nameMatches } from "../backends/atspi/names.js";
 import { ReplayBackend } from "../backends/replay/index.js";
-import { runningStateOf } from "../backend.js";
-import { effectiveVisibility, isVisible } from "../grants.js";
+import { InventoryUnsupportedError, runningStateOf, type Backend } from "../backend.js";
 import type { InventoryEntry } from "../inventory.js";
 import type { LaunchCatalog } from "../launch/recipes.js";
 import { findRecipe } from "../launch/spawn.js";
 import { OwnershipTable } from "../launch/table.js";
-import { AMBIGUOUS_NAME_REFUSAL, indexInventory, resolvePermitted } from "../server.js";
+import { AMBIGUOUS_NAME_REFUSAL, handleRequest, indexInventory, resolveLaunchable, type LaunchContext } from "../server.js";
 
 // ONE NAME, ANY CASE (ADR-0069).
 //
@@ -42,32 +41,26 @@ function busHolding(names: string[]): Channel {
 
 const EMPTY_CATALOG: LaunchCatalog = {};
 
+const KATE: InventoryEntry = { name: "org.kde.kate", diagnostic: { "mastra-cc/display-name": "Kate" } };
+const DECOY: InventoryEntry = { name: "vendor.fork.kate", diagnostic: { "mastra-cc/display-name": "Kate Fork" } };
+
+function inventoryBackend(entries: InventoryEntry[] | "unsupported"): Backend {
+  return {
+    name: "alias-inventory",
+    installedApplications: async () => {
+      if (entries === "unsupported") throw new InventoryUnsupportedError("cannot enumerate");
+      return entries;
+    },
+    runningApplications: async () => ({ observable: new Set<string>(), answersFor: new Set<string>() }),
+    queryElements: async () => ({ elements: [] }),
+    applicationOfElement: () => undefined,
+    close: () => undefined,
+  } as unknown as Backend;
+}
+
+
 describe("an application's name is the same name in any case", () => {
-  it("T1: a grant for `yad` makes the application the bus calls `YAD` visible - and vice versa", async () => {
-    // The gtk-dialog tape's application publishes itself as `yad`. An operator
-    // who typed the grant in capitals meant the same application.
-    const visibility = effectiveVisibility({ file: new Set(), flags: new Set(["YAD"]), permits: new Set() });
-    expect(isVisible(visibility, "yad")).toBe(true);
-    expect(isVisible(new Set(["yad"]), "YAD")).toBe(true);
 
-    const backend = new ReplayBackend("gtk-dialog", visibility);
-    const { elements } = await backend.queryElements({ role: "application" });
-    await backend.close();
-    expect(elements.map((e) => e.name)).toEqual(["yad"]);
-  });
-
-  it("T1b: folding widens nothing - an application nobody granted stays invisible in any case", async () => {
-    // The gate did not move, only the comparison. A grant for some other
-    // application does not reach `yad`, however either side is spelled.
-    const visibility = effectiveVisibility({ file: new Set(), flags: new Set(["Kate"]), permits: new Set() });
-    expect(isVisible(visibility, "yad")).toBe(false);
-    expect(isVisible(visibility, "YAD")).toBe(false);
-
-    const backend = new ReplayBackend("gtk-dialog", visibility);
-    const { elements } = await backend.queryElements({});
-    await backend.close();
-    expect(elements).toEqual([]);
-  });
 
   it("T0: applicationName() is NFKC then lowercase - and nothing more", () => {
     expect(applicationName("Chromium")).toBe("chromium");
@@ -80,25 +73,13 @@ describe("an application's name is the same name in any case", () => {
   });
 
   it("T2: the census reports the entry `chromium` answering when the bus says `Chromium`", async () => {
-    const backend = new AtspiBackend(busHolding(["Chromium"]), "all");
+    const backend = new AtspiBackend(busHolding(["Chromium"]));
     const census = await backend.runningApplications();
     expect(runningStateOf(census, applicationName("chromium"))).toBe("answering");
     // The census folds at the source, so the listing's derived candidates
     // (entry id `chromium`) meet it without knowing the bus's spelling.
     expect(census.observable.has("chromium")).toBe(true);
     expect(census.observable.has("Chromium")).toBe(false);
-  });
-
-  it("T3: a permit for `chromium` authorises `Chromium` and `CHROMIUM`", () => {
-    const CHROMIUM: InventoryEntry = { name: "chromium", diagnostic: { "mastra-cc/display-name": "Chromium Web Browser" } };
-    const index = indexInventory([CHROMIUM], EMPTY_CATALOG);
-    const permits = new Set(["chromium"]);
-    expect(resolvePermitted("Chromium", index, EMPTY_CATALOG, permits).kind).toBe("permitted");
-    expect(resolvePermitted("CHROMIUM", index, EMPTY_CATALOG, permits).kind).toBe("permitted");
-    // The permit SET is folded once at boot (grants.ts / main.ts), so the
-    // operator's own spelling may be the capitalised one:
-    const folded = effectiveVisibility({ file: new Set(), flags: new Set(), permits: new Set(["Chromium"]) });
-    expect(resolvePermitted("chromium", index, EMPTY_CATALOG, folded as Set<string>).kind).toBe("permitted");
   });
 
   it("T4: an ownership record written as `Chromium` answers ownsName(`chromium`)", () => {
@@ -120,9 +101,8 @@ describe("an application's name is the same name in any case", () => {
     const upper: InventoryEntry = { name: "org.example.Kate", diagnostic: {} };
     const lower: InventoryEntry = { name: "org.example.kate", diagnostic: {} };
     const index = indexInventory([upper, lower], EMPTY_CATALOG);
-    const permits = new Set(["kate", "org.example.kate", "org.example.Kate"]);
     for (const asked of ["kate", "Kate", "org.example.kate", "org.example.Kate"]) {
-      const resolved = resolvePermitted(asked, index, EMPTY_CATALOG, permits);
+      const resolved = resolveLaunchable(asked, index, EMPTY_CATALOG);
       expect(resolved.kind, asked).toBe("ambiguous");
     }
     expect(AMBIGUOUS_NAME_REFUSAL).toMatch(/ambiguous|more than one/i);
@@ -132,11 +112,78 @@ describe("an application's name is the same name in any case", () => {
     expect(nameMatches("OK", "ok")).toBe(false);
     expect(nameMatches("OK", "OK")).toBe(true);
 
-    const backend = new ReplayBackend("gtk-dialog", new Set(["yad"]));
+    const backend = new ReplayBackend("gtk-dialog");
     const lower = await backend.queryElements({ name: "ok" });
     const exact = await backend.queryElements({ name: "OK" });
     await backend.close();
     expect(exact.elements.filter((e) => e.role === "button")).toHaveLength(1);
     expect(lower.elements.filter((e) => e.role === "button")).toHaveLength(0);
+  });
+});
+
+
+describe("one inventory entry may have several unprivileged names", () => {
+  it("keeps exact full ids resolvable while a shared short name is ambiguous", () => {
+    const catalog: LaunchCatalog = {
+      "org.kde.kate": { argv: ["sleep", "30"], env: {} },
+      "vendor.fork.kate": { argv: ["sleep", "30"], env: {} },
+    };
+    const index = indexInventory([KATE, DECOY], catalog);
+    expect(resolveLaunchable("kate", index, catalog).kind).toBe("ambiguous");
+    expect(resolveLaunchable("org.kde.kate", index, catalog).kind).toBe("launchable");
+    expect(resolveLaunchable("vendor.fork.kate", index, catalog).kind).toBe("launchable");
+  });
+
+  it("does not make a sibling id ambiguous merely because recipes share appearsAs", () => {
+    const catalog: LaunchCatalog = {
+      chrome: { argv: ["sleep", "30"], env: {}, appearsAs: "chrome" },
+      gmail: { argv: ["sleep", "30"], env: {}, appearsAs: "chrome" },
+    };
+    const index = indexInventory([], catalog);
+    expect(resolveLaunchable("gmail", index, catalog).kind).toBe("launchable");
+    expect(resolveLaunchable("chrome", index, catalog).kind).toBe("launchable");
+  });
+
+  it("degrades an unread inventory to an exact catalog check", () => {
+    const catalog: LaunchCatalog = { "org.kde.kate": { argv: ["sleep", "30"], env: {} } };
+    expect(resolveLaunchable("org.kde.kate", undefined, catalog).kind).toBe("launchable");
+    expect(resolveLaunchable("kate", undefined, catalog).kind).toBe("unlaunchable");
+  });
+
+  it("returns AMBIGUOUS_NAME_REFUSAL over the wire and records no owned spawn", async () => {
+    const table = new OwnershipTable();
+    const launch: LaunchContext = {
+      catalog: { "org.kde.kate": { argv: ["sleep", "30"], env: {} } },
+      table,
+      pollBudgetMs: 20,
+      pollIntervalMs: 5,
+    };
+    const answer = await handleRequest(
+      { type: "request", id: 1, method: "openApplication", params: { name: "kate" } },
+      inventoryBackend([KATE, DECOY]),
+      launch,
+    );
+    expect((answer.result as { refusal?: { message: string } }).refusal?.message).toBe(AMBIGUOUS_NAME_REFUSAL);
+    expect(table.entries()).toEqual([]);
+  });
+
+  it("acts on an entry full id when requested through its uncontested short name", async () => {
+    const table = new OwnershipTable();
+    const launch: LaunchContext = {
+      catalog: { "org.kde.kate": { argv: ["sleep", "30"], env: {} } },
+      table,
+      pollBudgetMs: 20,
+      pollIntervalMs: 5,
+    };
+    const answer = await handleRequest(
+      { type: "request", id: 1, method: "openApplication", params: { name: "kate" } },
+      inventoryBackend([KATE]),
+      launch,
+    );
+    expect((answer.result as { refusal?: string }).refusal).not.toBe(AMBIGUOUS_NAME_REFUSAL);
+    expect(table.ownsName("org.kde.kate")).toBeDefined();
+    for (const entry of table.entries()) {
+      try { process.kill(entry.pid, "SIGTERM"); } catch {}
+    }
   });
 });

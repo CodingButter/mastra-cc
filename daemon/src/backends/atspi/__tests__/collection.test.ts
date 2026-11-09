@@ -59,7 +59,7 @@ function desktop(desk: Desk): Channel & { asked: Exchange[] } {
 describe("backend-selected AT-SPI search", () => {
   it("discovers through DFS without content reads, Collection, or actionable ID registration", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     await expect(backend.discoverElements({ application: "scripted-app" })).resolves.toEqual({
       entries: [
@@ -83,7 +83,7 @@ describe("backend-selected AT-SPI search", () => {
   // only honest answer to an unfinished walk is no answer at all.
   it("refuses rather than reporting the vocabulary it managed to reach before the budget ran out", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all", { maxDepth: 10, maxNodesPerApp: 2, maxNodesTotal: 10 });
+    const backend = new AtspiBackend(channel, { maxDepth: 10, maxNodesPerApp: 2, maxNodesTotal: 10 });
 
     await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(/would be partial/);
   });
@@ -99,7 +99,7 @@ describe("backend-selected AT-SPI search", () => {
       watch: channel.watch,
       close: channel.close,
     };
-    const backend = new AtspiBackend(failing, "all");
+    const backend = new AtspiBackend(failing);
 
     await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(/stopped answering/);
   });
@@ -107,17 +107,10 @@ describe("backend-selected AT-SPI search", () => {
   // An application this session may not see answers exactly as an application
   // that is not there: the refusal names the search, not the desktop, so it
   // discloses nothing about what is running behind the visibility line.
-  it("discovers nothing in an application this session was never granted, and says so rather than answering empty", async () => {
-    const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, new Set(["some-other-app"]));
-
-    await expect(backend.discoverElements({ application: "scripted-app" })).rejects.toThrow(ApplicationScopeUnmatchedError);
-    expect(channel.asked.some((exchange) => exchange.path === BUTTON)).toBe(false);
-  });
 
   it("refuses an application selector that does not match, without reading descendants", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     await expect(backend.queryElements({ application: "another-app", role: "textbox" })).rejects.toThrow(ApplicationScopeUnmatchedError);
 
@@ -127,7 +120,7 @@ describe("backend-selected AT-SPI search", () => {
 
   it("selects the matching application before using its Collection instrument", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     const { elements } = await backend.queryElements({ application: "SCRIPTED-APP", role: "textbox" });
 
@@ -137,7 +130,7 @@ describe("backend-selected AT-SPI search", () => {
 
   it("answers a role question through one Collection exchange when the application advertises it", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     const { elements } = await backend.queryElements({ role: "textbox" });
 
@@ -148,9 +141,9 @@ describe("backend-selected AT-SPI search", () => {
   });
 
   it("answers the same question identically by walking when Collection is not advertised", async () => {
-    const fast = new AtspiBackend(desktop({ collection: true }), "all");
+    const fast = new AtspiBackend(desktop({ collection: true }));
     const walked = desktop({ collection: false });
-    const slow = new AtspiBackend(walked, "all");
+    const slow = new AtspiBackend(walked);
 
     const viaCollection = await fast.queryElements({ role: "textbox" });
     const viaWalk = await slow.queryElements({ role: "textbox" });
@@ -161,7 +154,7 @@ describe("backend-selected AT-SPI search", () => {
 
   it("walks for a role the bus vocabulary cannot carry", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     await backend.queryElements({ role: "generic" });
 
@@ -172,7 +165,7 @@ describe("backend-selected AT-SPI search", () => {
   // that was meant. So the wire body itself is pinned, not only the reply.
   it("asks the bus for roles as a bitfield matched by ANY, not as a list of ids", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     await backend.queryElements({ role: "textbox" });
 
@@ -189,7 +182,7 @@ describe("backend-selected AT-SPI search", () => {
   // MATCH_ALL to be vacuously true.
   it("asks the clauses it does not care about with MATCH_ALL, never the invalid match type", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     await backend.queryElements({ role: "textbox" });
 
@@ -213,7 +206,7 @@ describe("backend-selected AT-SPI search", () => {
       watch: scripted.watch,
       close: scripted.close,
     };
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     const { elements } = await backend.queryElements({ role: "textbox" });
 
@@ -223,7 +216,7 @@ describe("backend-selected AT-SPI search", () => {
 
   it("walks for the application role, which Collection would answer without its own root", async () => {
     const channel = desktop({ collection: true });
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     const { elements } = await backend.queryElements({ role: "application" });
 
@@ -243,7 +236,7 @@ describe("backend-selected AT-SPI search", () => {
       watch: scripted.watch,
       close: scripted.close,
     };
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     const { elements } = await backend.queryElements({ role: "textbox" });
 
@@ -262,7 +255,7 @@ describe("backend-selected AT-SPI search", () => {
       watch: recorded.watch,
       close: recorded.close,
     };
-    const backend = new AtspiBackend(channel, "all");
+    const backend = new AtspiBackend(channel);
 
     const { elements } = await backend.queryElements({ role: "textbox" });
 

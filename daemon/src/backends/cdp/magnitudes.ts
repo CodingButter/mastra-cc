@@ -113,7 +113,7 @@ export function readRange(properties: ReadonlyArray<AxProperty>): Range | undefi
 // `not-exposed` is a fact about the page, never a policy shape. Nothing was
 // withheld and no setting turned it off - this element does not publish the
 // property that would back the operation. Saying it in a policy shape would
-// teach a caller that some setting could change the answer, which is the false
+// teach a caller that the answer was configurable, which is the false
 // belief ADR-0042 exists to kill.
 export function readPublishedOperations(properties: ReadonlyArray<AxProperty>): Operation[] {
   const operations: Operation[] = [];

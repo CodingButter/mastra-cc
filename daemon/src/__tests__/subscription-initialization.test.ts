@@ -25,7 +25,7 @@ function fixture(count: number) {
   };
   const book = new SubscriptionBook(event => events.push(event));
   const subscribe = () => handleRequest({ type: "request", id: 1, method: "subscribeElement", params: { id, priority: "high" } }, backend,
-    { permits: new Set(), catalog: {}, table: new OwnershipTable(), allows: new Set(["observe"]), visibility: "all" }, book);
+    { catalog: {}, table: new OwnershipTable(), }, book);
   return { close, events, book, subscribe, backend };
 }
 
@@ -67,14 +67,6 @@ it("closes a subscription that finishes initialization after connection teardown
   await expect(world.book.subscribe(world.backend, id, "high")).rejects.toThrow("closed");
 });
 
-it("does not disclose hidden-application initialization pointers", async () => {
-  const world = fixture(2);
-  const book = new SubscriptionBook(event => world.events.push(event), new Set());
-  try {
-    await book.subscribe(world.backend, id, "high");
-    expect(world.events).toHaveLength(0);
-  } finally { await book.closeAll(); }
-});
 
 it("keeps the existing ended-watch tombstone contract without delivering later changes", async () => {
   const world = fixture(0);
@@ -88,6 +80,18 @@ it("keeps the existing ended-watch tombstone contract without delivering later c
   expect(world.close).toHaveBeenCalledTimes(1);
   expect(await world.book.end(subscriptionId)).toBe(false);
   expect(world.book.size).toBe(0);
+});
+
+it("carries low, medium, and high priorities without changing delivery behavior", async () => {
+  const world = fixture(1);
+  try {
+    for (const priority of ["low", "medium", "high"] as const) {
+      await world.book.subscribe(world.backend, id, priority);
+    }
+    expect(world.events.map(event => event.priority)).toEqual(["low", "medium", "high"]);
+    const shapes = world.events.map(({ priority: _priority, subscriptionId: _subscriptionId, at: _at, ...rest }) => rest);
+    expect(shapes).toEqual([shapes[0], shapes[0], shapes[0]]);
+  } finally { await world.book.closeAll(); }
 });
 
 it("reports overflow cleanup failure as a public refusal without accepting a watch", async () => {

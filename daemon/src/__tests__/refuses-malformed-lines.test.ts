@@ -37,7 +37,7 @@ describe("the daemon refuses malformed lines loudly instead of swallowing them",
 
   beforeAll(async () => {
     // visibility "all": this file witnesses wire framing, not grant policy
-    server = await startServer({ socketPath, backend: registry.replay({ visibility: "all" }) });
+    server = await startServer({ socketPath, backend: registry.replay({ }) });
   });
   afterAll(() => {
     server.close();

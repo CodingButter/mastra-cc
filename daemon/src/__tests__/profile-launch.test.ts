@@ -8,7 +8,7 @@ import { OwnershipTable } from "../launch/table.js";
 import {
   ALREADY_RUNNING_REFUSAL,
   ONE_BROWSER_IDENTITY_REFUSAL,
-  UNAVAILABLE_REFUSAL,
+  NO_LAUNCH_RECIPE_REFUSAL,
   handleRequest,
   type LaunchContext,
 } from "../server.js";
@@ -69,7 +69,7 @@ function spyBackend(elements: SemanticElement[]) {
 }
 
 function launch(overrides: Partial<LaunchContext>): LaunchContext {
-  return { permits: new Set(), catalog: composed, table: new OwnershipTable(), ...FAST, ...overrides };
+  return { catalog: composed, table: new OwnershipTable(), ...FAST, ...overrides };
 }
 
 function open(name: string, backend: Backend, context: LaunchContext) {
@@ -92,7 +92,7 @@ describe("a launched profile is readable", () => {
     const table = new OwnershipTable();
     table.record(process.pid, "chrome-work"); // already ours: no spawn, straight to the poll
     const result = resultOf(
-      await open("chrome-work", backend, launch({ permits: new Set(["chrome-work"]), table })),
+      await open("chrome-work", backend, launch({ table })),
     );
     expect(refusalText(result)).toBeUndefined();
     expect(result.application?.name).toBe("chrome");
@@ -100,51 +100,6 @@ describe("a launched profile is readable", () => {
     expect(asked).not.toContain("chrome-work");
   });
 
-  it("authority runs before the join - an unpermitted identity never reaches the catalog or the tree", async () => {
-    let catalogTouched = false;
-    const trap: LaunchCatalog = new Proxy(
-      {},
-      {
-        get: () => ((catalogTouched = true), undefined),
-        ownKeys: () => ((catalogTouched = true), []),
-        getOwnPropertyDescriptor: () => ((catalogTouched = true), undefined),
-      },
-    );
-    let treeTouched = false;
-    const backend: Backend = {
-      ...observeOnlyEffects,
-      name: "spy",
-      queryElements: async () => ((treeTouched = true), { elements: [] }),
-      attestElement: async () => ((treeTouched = true), {}),
-      readElementContent: async () => ({ content: { kind: "unavailable", reason: "not-exposed" } }),
-      subscribeElement: async () => {
-        treeTouched = true;
-        throw new Error("the authority gate touched the backend");
-      },
-      applicationOfElement: () => undefined,
-      unsubscribeElement: async () => {
-        treeTouched = true;
-      },
-      close: async () => undefined,
-    };
-    const result = resultOf(await open("chrome-work", backend, launch({ catalog: trap })));
-    expect(refusalText(result)).toBe(UNAVAILABLE_REFUSAL);
-    expect(catalogTouched).toBe(false);
-    expect(treeTouched).toBe(false);
-  });
-
-  it("an unpermitted composed identity refuses byte-identically to a name with no recipe at all", async () => {
-    const { backend } = spyBackend([]);
-    const context = launch({ permits: new Set(["chrome-work"]) });
-    const sibling = resultOf(await open("chrome-personal", backend, context));
-    const builtIn = resultOf(await open("chrome", backend, context));
-    const unknown = resultOf(await open("zz-no-such-identity", backend, context));
-    expect(refusalText(sibling)).toBe(UNAVAILABLE_REFUSAL);
-    expect(refusalText(builtIn)).toBe(UNAVAILABLE_REFUSAL);
-    expect(refusalText(unknown)).toBe(UNAVAILABLE_REFUSAL);
-    expect(sibling.refusal).toEqual(unknown.refusal);
-    expect(builtIn.refusal).toEqual(unknown.refusal);
-  });
 });
 
 describe("only one browser identity runs at a time", () => {
@@ -158,7 +113,7 @@ describe("only one browser identity runs at a time", () => {
         await open(
           "chrome-personal",
           backend,
-          launch({ permits: new Set(["chrome-work", "chrome-personal"]), table }),
+          launch({ table }),
         ),
       );
       expect(refusalText(result)).toBe(ONE_BROWSER_IDENTITY_REFUSAL);
@@ -186,7 +141,7 @@ describe("only one browser identity runs at a time", () => {
     // refusal is the truthful one for that case
     const { backend } = spyBackend([application("chrome")]);
     const result = resultOf(
-      await open("chrome-personal", backend, launch({ permits: new Set(["chrome-personal"]) })),
+      await open("chrome-personal", backend, launch({})),
     );
     expect(refusalText(result)).toBe(ALREADY_RUNNING_REFUSAL);
   });
@@ -196,7 +151,7 @@ describe("only one browser identity runs at a time", () => {
     table.record(process.pid, "chrome-work");
     for (const entry of table.entries()) entry.starttime = "0"; // same pid, different boot: not ours
     const { backend } = spyBackend([]);
-    const context = launch({ permits: new Set(["chrome-personal"]), table });
+    const context = launch({ table });
     try {
       const result = resultOf(await open("chrome-personal", backend, context));
       // the guard stayed quiet, so the request proceeded: it spawned, and the
@@ -220,7 +175,7 @@ describe("only one browser identity runs at a time", () => {
     table.record(process.pid, "chrome-work");
     const { backend } = spyBackend([application("chrome")]);
     const result = resultOf(
-      await open("chrome-work", backend, launch({ permits: new Set(["chrome-work"]), table })),
+      await open("chrome-work", backend, launch({ table })),
     );
     expect(refusalText(result)).toBeUndefined();
     expect(result.application?.name).toBe("chrome");
@@ -230,7 +185,7 @@ describe("only one browser identity runs at a time", () => {
     const table = new OwnershipTable();
     table.record(process.pid, "chrome-work"); // a browser identity of ours is live
     const { backend } = spyBackend([application("yad")]);
-    const result = resultOf(await open("yad", backend, launch({ permits: new Set(["yad"]), table })));
+    const result = resultOf(await open("yad", backend, launch({ table })));
     // no cross-fire: yad's tree name is its own, so the guard has nothing to
     // match, and the already-running answer is the truthful one here
     expect(refusalText(result)).toBe(ALREADY_RUNNING_REFUSAL);

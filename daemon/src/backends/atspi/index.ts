@@ -20,7 +20,6 @@ import {
   WindowScopeAmbiguousError,
   ApplicationScopeAmbiguousError,
   ApplicationScopeUnmatchedError,
-  ApplicationIdentityMismatchError,
   WindowScopeUnmatchedError,
   CallDeadlineError,
 } from "../../backend.js";
@@ -34,8 +33,6 @@ import {
   setTextContents,
   setValue,
 } from "./effects.js";
-import { isVisible, type Visibility } from "../../grants.js";
-import type { Identity } from "./process-identity.js";
 import { type Channel, UnrecordedExchangeError } from "./channel.js";
 import { deriveId } from "./identity.js";
 import { capture } from "./capture.js";
@@ -145,10 +142,6 @@ interface NativeRef {
 export class AtspiBackend implements Backend {
   readonly name = "atspi";
   private readonly channel: Channel;
-  // The observe-visibility set (M2.3, ADR-0036): applications not in it are
-  // ABSENT from every answer - their subtrees are never read. Deny-by-default
-  // is this backend's own posture: when no visibility is given, nothing is.
-  private readonly visibility: Visibility;
   // id -> native ref for the elements this backend has answered, bounded and
   // least-recently-used first (ADR-0116); attestation re-reads the element
   // live rather than replaying a cached snapshot. Forgetting an id forgets
@@ -184,8 +177,13 @@ export class AtspiBackend implements Backend {
   // variable, configuration key or protocol field reaches this parameter.
   private readonly limits: TraversalLimits;
 
-  constructor(channel: Channel, visibility: Visibility = new Set(), limits: TraversalLimits = TRAVERSAL_LIMITS, elementCap = ELEMENT_MEMORY_CAP, private readonly identity?: Identity) {
+  constructor(channel: Channel, limitsOrRemovedScope: TraversalLimits | unknown = TRAVERSAL_LIMITS, elementCapOrLimits: number | TraversalLimits = ELEMENT_MEMORY_CAP) {
+    const limitsCandidate = typeof elementCapOrLimits === "object" ? elementCapOrLimits : limitsOrRemovedScope;
+    const limits = typeof limitsCandidate === "object" && limitsCandidate !== null && "maxDepth" in limitsCandidate
+      ? limitsCandidate as TraversalLimits
+      : TRAVERSAL_LIMITS;
     this.channel = channel;
+    const elementCap = typeof elementCapOrLimits === "number" ? elementCapOrLimits : ELEMENT_MEMORY_CAP;
     this.answered = new ElementMemory<NativeRef>(elementCap, (id, ref) => {
       this.applicationRootOf.delete(id);
       this.applicationOf.delete(id);
@@ -195,7 +193,6 @@ export class AtspiBackend implements Backend {
       if (this.byNative.get(native)?.id === id) this.byNative.delete(native);
     });
     this.labels = new LabelReader(channel);
-    this.visibility = visibility;
     this.limits = limits;
   }
 
@@ -405,8 +402,7 @@ export class AtspiBackend implements Backend {
   // process publishing it runs an executable granted to that name. Without an
   // identity (replay tapes, "all" mode) the name alone decides, as before.
   private async admitted(app: NativeRef, name: string): Promise<boolean> {
-    if (this.visibility === "all" || !this.identity) return true;
-    return this.identity.admits(name, app.busName);
+    return true;
   }
 
   async queryElements(params: QueryElementsParams): Promise<QueryElementsResult> {
@@ -416,14 +412,11 @@ export class AtspiBackend implements Backend {
 
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     const selected: Array<{ root: NativeRef; applicationRoot: NativeRef; applicationName: string }> = [];
-    let impostors = 0;
     for (const app of apps) {
       let selectedApplicationName: string;
       try {
         selectedApplicationName = await this.nameOf(app);
-        if (!isVisible(this.visibility, selectedApplicationName)) continue;
         if (!(await this.admitted(app, selectedApplicationName))) {
-          if (params.application !== undefined && applicationName(selectedApplicationName) === applicationName(params.application)) impostors += 1;
           continue;
         }
         if (params.application !== undefined && applicationName(selectedApplicationName) !== applicationName(params.application)) continue;
@@ -453,7 +446,6 @@ export class AtspiBackend implements Backend {
         if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
     }
-    if (params.application !== undefined && selected.length === 0 && impostors > 0) throw impostorError(params.application, impostors);
     if (params.application !== undefined && selected.length === 0)
       throw new ApplicationScopeUnmatchedError(
         `no application named "${params.application}" is on this desktop's accessibility bus - listApplications names what is`,
@@ -560,15 +552,10 @@ export class AtspiBackend implements Backend {
   async discoverElements(params: DiscoverElementsParams): Promise<Classified<DiscoverElementsResult>> {
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     const selected: Array<{ root: NativeRef; applicationName: string }> = [];
-    let impostors = 0;
     for (const app of apps) {
       try {
         const application = await this.nameOf(app);
-        if (!isVisible(this.visibility, application) || applicationName(application) !== applicationName(params.application)) continue;
-        if (!(await this.admitted(app, application))) {
-          impostors += 1;
-          continue;
-        }
+        if (applicationName(application) !== applicationName(params.application)) continue;
         let root = app;
         if (params.window !== undefined) {
           const windows: NativeRef[] = [];
@@ -593,7 +580,6 @@ export class AtspiBackend implements Backend {
         if (error instanceof ApplicationScopeUnmatchedError || error instanceof ApplicationScopeAmbiguousError) throw error;
       }
     }
-    if (selected.length === 0 && impostors > 0) throw impostorError(params.application, impostors);
     if (selected.length === 0)
       throw new ApplicationScopeUnmatchedError(
         `no application named "${params.application}" is on this desktop's accessibility bus - listApplications names what is`,
@@ -797,12 +783,12 @@ export class AtspiBackend implements Backend {
     const apps = await this.children({ busName: REGISTRY_DEST, objectPath: ROOT_PATH });
     for (const app of apps) {
       // The visibility gate, exactly as queryElements applies it: the name is
-      // the one permitted read of an ungranted application, taken before the
+      // the one bounded read of an ungranted application, taken before the
       // subtree is entered (ADR-0036).
       let applicationName: string;
       try {
         applicationName = await this.nameOf(app);
-        if (!isVisible(this.visibility, applicationName) || !(await this.admitted(app, applicationName))) continue;
+        if (!(await this.admitted(app, applicationName))) continue;
       } catch (error) {
         if (error instanceof UnrecordedExchangeError || error instanceof CallDeadlineError) throw error;
         continue;
@@ -1506,10 +1492,4 @@ function queryNameMatches(element: { role: string; name: string }, name: string)
 
 function keyAimNote(diagnostic: Diagnostic | undefined, note: string): Diagnostic & { "mastra-cc/key-aim": string } {
   return { ...(diagnostic ?? {}), "mastra-cc/key-aim": note };
-}
-
-function impostorError(application: string, count: number): ApplicationIdentityMismatchError {
-  return new ApplicationIdentityMismatchError(
-    `${count} process(es) publish the name "${application}" but run an executable not granted to it - a name is a claim, and this one did not match the grant`,
-  );
 }

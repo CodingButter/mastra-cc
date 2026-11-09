@@ -1,16 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { CAPABILITY_NAMES, ROLES, type Diagnostic, type SemanticElement } from "@mastra-cc/protocol-types";
 import type { ListApplicationsResult, OpenApplicationResult, RestartApplicationResult } from "../results.js";
-import { type Backend, type RunningCensus, IncompleteObservationError, ApplicationScopeAmbiguousError, ApplicationIdentityMismatchError, ApplicationScopeUnmatchedError, WindowScopeAmbiguousError, WindowScopeUnmatchedError, InventoryUnsupportedError } from "../backend.js";
+import { type Backend, type RunningCensus, IncompleteObservationError, ApplicationScopeAmbiguousError, ApplicationScopeUnmatchedError, WindowScopeAmbiguousError, WindowScopeUnmatchedError, InventoryUnsupportedError } from "../backend.js";
 import { FAILED, PERFORMED, READ, recordAudit, refused, withoutInternals, type Classified } from "../audit.js";
 import { ACQUIRE_SETTING, type AccessibilityLayerState, type AccessibilityReport } from "../accessibility/index.js";
 import { applicationName } from "../backends/atspi/names.js";
-import { restartLevelForAny, WITHHOLDS_NOTHING } from "../capabilities.js";
-import { isVisible } from "../grants.js";
 import { contendsForBrowserEndpoint, type LaunchCatalog } from "../launch/recipes.js";
 import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "../launch/spawn.js";
 import { causeOf, outcomeOf, performEffect, sendKeyChord } from "./dispatch.js";
-import { ALREADY_RUNNING_REFUSAL, AMBIGUOUS_NAME_REFUSAL, APPLICATION_IDENTITY_MISMATCH_REFUSAL, APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, APPLICATION_SCOPE_UNMATCHED_REFUSAL, COULD_NOT_START_REFUSAL, DISCOVERY_APPLICATION_REFUSAL, DISCOVERY_LIMIT_REFUSAL, DISCOVERY_WINDOW_REFUSAL, InventoryIndex, LIST_APPLICATIONS_REFUSAL, LaunchContext, ONE_BROWSER_IDENTITY_REFUSAL, QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, UNAVAILABLE_REFUSAL, UNKNOWN_ROLE_REFUSAL, WINDOW_SCOPE_AMBIGUOUS_REFUSAL, WINDOW_SCOPE_UNMATCHED_REFUSAL, candidateNamesOf, capabilityStateFor, configurationWithholdingFor, indexInventory, observedWithConfiguration, resolvePermitted, restartAuthority, runningFieldsFor, withheldRefusal } from "./grants.js";
+import { ALREADY_RUNNING_REFUSAL, AMBIGUOUS_NAME_REFUSAL, APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, APPLICATION_SCOPE_UNMATCHED_REFUSAL, COULD_NOT_START_REFUSAL, DISCOVERY_APPLICATION_REFUSAL, DISCOVERY_LIMIT_REFUSAL, DISCOVERY_WINDOW_REFUSAL, InventoryIndex, LIST_APPLICATIONS_REFUSAL, LaunchContext, ONE_BROWSER_IDENTITY_REFUSAL, QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, NO_LAUNCH_RECIPE_REFUSAL, UNKNOWN_ROLE_REFUSAL, WINDOW_SCOPE_AMBIGUOUS_REFUSAL, WINDOW_SCOPE_UNMATCHED_REFUSAL, candidateNamesOf, capabilityExposureFor, indexInventory, resolveLaunchable, runningFieldsFor } from "./grants.js";
 import { serialised } from "./queues.js";
 import { causeNames, operation } from "./subscriptions.js";
 
@@ -84,12 +82,9 @@ export function describeDesktop(): { places: { home?: string; downloads?: string
 // platform's shape as its reason - and a machine whose layer this build cannot
 // touch must not be told to go and change a setting that would not help. Both
 // sentences use the wire's standing vocabulary (protocol/schema.json:236,241).
-export const ACQUIRE_WITHHELD_REFUSAL =
-  `refused before acting: switching this machine's accessibility layer on is disabled-by-configuration, ` +
-  `withheld by ${ACQUIRE_SETTING} - an operator arms it at startup, and no request can`;
 export const ACQUIRE_NOT_EXPOSED_REFUSAL =
   "refused before acting: switching this machine's accessibility layer on is not-exposed on this platform - " +
-  "this build has no adapter that could, and no setting would change that";
+  "this build has no adapter that could, and the reported state is definitive";
 // Acquiring the layer is several writes, not one (ADR-0075), so a failure can
 // land after some of them have already been accepted. The refusal says the
 // attempt did not complete - never that nothing happened - and the report that
@@ -106,9 +101,6 @@ export const ACQUIRE_FAILED_UNREADABLE_REFUSAL =
   "and could not be read afterwards to say what it was left holding";
 
 export async function acquireAccessibility(launch: LaunchContext): Promise<Classified<{ accessibility?: AccessibilityReport; refusal?: string }>> {
-  if (launch.mayAcquireAccessibility !== true) {
-    return { refusal: ACQUIRE_WITHHELD_REFUSAL, refusalClass: "DisabledByConfiguration" };
-  }
   const layer = launch.accessibility;
   if (layer === undefined || !layer.acquirable) {
     return { refusal: ACQUIRE_NOT_EXPOSED_REFUSAL, refusalClass: "AccessibilityNotAcquirable" };
@@ -173,7 +165,7 @@ export async function deafDesk(launch: LaunchContext): Promise<Classified<{ refu
     return undefined;
   }
   if (report.state !== "disabled") return undefined;
-  if (launch.mayAcquireAccessibility !== true || !layer.acquirable) {
+  if (!layer.acquirable) {
     return { refusal: DEAF_DESK_REFUSAL, refusalClass: "AccessibilityLostMidSession" };
   }
   try {
@@ -270,11 +262,10 @@ export async function listApplications(backend: Backend, launch: LaunchContext):
   // alias carries authority. Publish only names directly visible to this
   // session, without adding them to the launch/permission claim index.
   const runtime = [...census.observable]
-    .filter((name) => isVisible(launch.visibility ?? new Set(), name)
-      && !index.entries.some((entry) => applicationName(entry.name) === applicationName(name)))
+    .filter((name) => !index.entries.some((entry) => applicationName(entry.name) === applicationName(name)))
     .map((name) => ({
       name,
-      capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(
+      capabilities: CAPABILITY_NAMES.map((capability) => capabilityExposureFor(
         launch, capability, name, capability === "observe" ? undefined : index,
       )),
       launchable: findRecipe(name, launch.catalog) !== undefined,
@@ -284,7 +275,7 @@ export async function listApplications(backend: Backend, launch: LaunchContext):
     applications: [...index.entries]
       .map((entry) => ({
         name: entry.name,
-        capabilities: CAPABILITY_NAMES.map((capability) => capabilityStateFor(launch, capability, entry.name, index)),
+        capabilities: CAPABILITY_NAMES.map((capability) => capabilityExposureFor(launch, capability, entry.name, index)),
         // A statement about this daemon's own recipes, never about permission:
         // an application can be installed and honestly not launchable.
         launchable: findRecipe(entry.name, launch.catalog) !== undefined,
@@ -455,7 +446,7 @@ export async function queryElements(p: unknown, b: Backend, l: LaunchContext): P
     return { refusal: QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, refusalClass: "MalformedParameter" as const };
   }
   try {
-    const answered = observedWithConfiguration(await b.queryElements(params as never), b, l);
+    const answered = await b.queryElements(params as never);
     // An empty answer is the one shape a switched-off layer and a bare desk
     // share. Only then is the layer asked about (ADR-0089): a query that found
     // something has already proved the desk can be heard.
@@ -486,7 +477,7 @@ export function windowScopeRefusal(
   error: unknown,
   scope?: { application?: string; window?: string },
 ):
-  | { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" | "ApplicationScopeUnmatched" | "ApplicationScopeAmbiguous" | "ApplicationIdentityMismatch" }
+  | { refusal: string; refusalClass: "WindowScopeUnmatched" | "WindowScopeAmbiguous" | "ApplicationScopeUnmatched" | "ApplicationScopeAmbiguous" }
   | undefined {
   // A scope is a NAME. An id looks enough like an answer to be reached for as
   // one, and the bare not-found sentence sends the caller looking for a window
@@ -496,7 +487,6 @@ export function windowScopeRefusal(
   if (error instanceof WindowScopeAmbiguousError) return { refusal: WINDOW_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "WindowScopeAmbiguous" };
   if (error instanceof ApplicationScopeUnmatchedError) return { refusal: APPLICATION_SCOPE_UNMATCHED_REFUSAL, refusalClass: "ApplicationScopeUnmatched" };
   if (error instanceof ApplicationScopeAmbiguousError) return { refusal: APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, refusalClass: "ApplicationScopeAmbiguous" };
-  if (error instanceof ApplicationIdentityMismatchError) return { refusal: APPLICATION_IDENTITY_MISMATCH_REFUSAL, refusalClass: "ApplicationIdentityMismatch" };
   return undefined;
 }
 
@@ -527,7 +517,7 @@ export async function discoverElements(p: unknown, b: Backend, l: LaunchContext)
 
 // The launch handler. Order is the contract (ADR-0019): AUTHORITY first -
 // the permit set is consulted before the catalog, the tree, or anything else,
-// and an unpermitted name never reaches a capability probe, because the probe
+// and an unlaunchable name never reaches a capability probe, because the probe
 // itself would leak that the application exists. Runs inside the serialised
 // chain like every other operation.
 export async function openApplication(
@@ -594,12 +584,12 @@ export async function decideOpenApplication(
   } catch (error) {
     if (!(error instanceof InventoryUnsupportedError)) throw error;
   }
-  const resolution = resolvePermitted(requestedName, index, launch.catalog, launch.permits);
+  const resolution = resolveLaunchable(requestedName, index, launch.catalog);
   if (resolution.kind === "ambiguous") {
     return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: "LaunchUnavailable" };
   }
-  if (resolution.kind === "unpermitted") {
-    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
+  if (resolution.kind === "unlaunchable") {
+    return { refusal: NO_LAUNCH_RECIPE_REFUSAL, refusalClass: "LaunchUnavailable" };
   }
   // From here on the launch acts on the ENTRY the name resolved to - its full
   // id - so a request for `kate` and a request for `org.kde.kate` are the
@@ -609,14 +599,12 @@ export async function decideOpenApplication(
   const name = resolution.entry?.name ?? requestedName;
   // The user's configuration, asked after the session's authority and before
   // anything is spawned or probed. A name that got this far is one this session
-  // was permitted to launch, so naming the setting here tells the caller
+  // resolved to a launch recipe, so naming the setting here tells the caller
   // nothing it did not already know - and it is the difference between "you
   // cannot" and "it is switched off, here is the switch" (ADR-0042). Asked
   // across the ENTRY'S names, not just the resolved id: a rule the operator
   // keyed on `kate` must keep applying when the request resolves to
   // `org.kde.kate`, or resolution would widen what the configuration allows.
-  const withheld = configurationWithholdingFor(launch, "launch", resolution.entry, requestedName);
-  if (withheld !== undefined) return { refusal: withheldRefusal("openApplication", "launch", withheld), refusalClass: "DisabledByConfiguration" };
   const budget = launch.pollBudgetMs ?? POLL_BUDGET_MS;
   const interval = launch.pollIntervalMs ?? POLL_INTERVAL_MS;
   //
@@ -709,19 +697,16 @@ export async function decideOpenApplication(
   }
 }
 
-// RESTART (ADR-0065). The two acting levels are two signals, and the
-// difference between them is whether the application is allowed to say no.
-// SIGTERM is a REQUEST: a well-behaved application with unsaved work answers
-// it by putting up a dialog and staying alive, which is exactly the case
-// clause 4 protects. SIGKILL is not a request, which is why nothing but an
-// operator writing "force" can reach it.
+// RESTART (ADR-0065). Restart is always a graceful SIGTERM request. An
+// application with unsaved work may answer by showing a dialog and remaining
+// alive; the daemon reports that answer and never escalates to SIGKILL.
 //
 // Only owned processes are signalled, and the table re-verifies (pid,
 // starttime) before every signal, so a recycled pid is never touched
 // (ADR-0029). A foreign copy is refused rather than resolved by killing it -
 // the same answer openApplication already gives, for the same reason.
 export const NOT_OURS_REFUSAL =
-  "refused by the restart gate: this daemon did not open that application, and it does not signal processes it does not own - the person at the machine owns that window";
+  "refused by the restart gate: this daemon did not open that application, and it does not signal processes it does not own";
 
 export const RESTART_BUDGET_MS = 10_000; // how long a closing application gets, before and after
 
@@ -756,13 +741,8 @@ export async function decideRestartApplication(
   launch: LaunchContext,
 ): Promise<Classified<RestartApplicationResult>> {
   const requestedName = typeof params.name === "string" ? params.name : "";
-  // Restarting ENDS a program and STARTS one, so it needs the authority to
-  // start it: a session that may not launch this application may not restart
-  // it into existence either. Session authority first, then the operator's
-  // configuration - the same order every other route uses, so `disabledBy`
-  // never names a setting to a caller who was never going to get past the
-  // session gate anyway.
-  //
+  // Restart is graceful and ownership-gated: resolve the catalog identity,
+  // prove the daemon owns the live process, send SIGTERM, and never escalate.
   // The name resolves EXACTLY as the launch gate resolves it, because the
   // launch is what recorded the ownership this gate is about to look up: an
   // application opened as `kate` is owned under its entry id `org.kde.kate`,
@@ -770,38 +750,26 @@ export async function decideRestartApplication(
   // process this daemon started thirty seconds earlier. Same degradation too -
   // a backend that cannot enumerate keeps the exact-name behaviour.
   //
-  // A session holding no launch permits at all has no authority under any
-  // name, so the refusal is decidable without the backend - and MUST be, per
-  // the before-call enforcement pin: no authority, no backend touched.
-  if (launch.permits.size === 0) {
-    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
-  }
   let index: InventoryIndex | undefined;
   try {
     index = indexInventory(await backend.installedApplications(), launch.catalog);
   } catch (error) {
     if (!(error instanceof InventoryUnsupportedError)) throw error;
   }
-  const resolution = resolvePermitted(requestedName, index, launch.catalog, launch.permits);
+  const resolution = resolveLaunchable(requestedName, index, launch.catalog);
   if (resolution.kind === "ambiguous") {
     return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: "LaunchUnavailable" };
   }
-  if (resolution.kind === "unpermitted") {
-    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: "LaunchUnavailable" };
+  if (resolution.kind === "unlaunchable") {
+    return { refusal: NO_LAUNCH_RECIPE_REFUSAL, refusalClass: "LaunchUnavailable" };
   }
   const name = resolution.entry?.name ?? requestedName;
-  // Restart authority across the entry's names, most restrictive winning
-  // (restartLevelForAny): the operator's `restart.applications["kate"]` rule
-  // is about the editor, whichever of its names the caller typed.
-  const authorityNames = resolution.entry === undefined ? [requestedName] : candidateNamesOf(resolution.entry, launch.catalog);
-  const authority = restartAuthority(launch.capabilities ?? WITHHOLDS_NOTHING, authorityNames);
-  if ("refusal" in authority) return authority;
   const treeName = treeNameOf(name, launch.catalog);
   causeNames(treeName);
   const owned = launch.table.ownsName(name);
   if (owned === undefined) return { refusal: NOT_OURS_REFUSAL, refusalClass: "RestartNotOurs", auditApplication: treeName };
   try {
-    process.kill(owned.pid, authority.level === "force" ? "SIGKILL" : "SIGTERM");
+    process.kill(owned.pid, "SIGTERM");
   } catch (error) {
     // Ownership was just established, so "not ours" would be a refusal derived
     // from a check that did not run (ADR-0008 clause 5). Two different things
@@ -811,7 +779,7 @@ export async function decideRestartApplication(
     // and the honest answer is that nothing was confirmed.
     if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
       return {
-        refusal: `the application is this daemon's to close, but the operating system would not accept the signal - it is still running, and nothing was confirmed`,
+        refusal: "the signal could not be delivered; the application is still running",
         refusalClass: "RestartNotConfirmed",
         auditApplication: treeName,
       };
@@ -830,14 +798,10 @@ export async function decideRestartApplication(
     looked += 1;
     // Something it put up outranks this daemon: report the element and stop.
     // Nothing here dismisses it, and nothing escalates the signal - a
-    // "graceful" that ends in a kill is a force with a delay (ADR-0065
-    // clause 4). Two conditions before that sentence may be said. Force asked
-    // nothing, so nothing can have refused it. And a dialog seen in the same
+    // graceful restart never escalates. A dialog seen in the same
     // instant as the signal may be one that was already open - only a dialog
     // that is still there a poll later is an answer to what we sent.
-    const blocking = authority.level === "force" || looked < 2
-      ? undefined
-      : await blockingDialogOf(backend, treeName);
+    const blocking = looked < 2 ? undefined : await blockingDialogOf(backend, treeName);
     if (blocking !== undefined) {
       return {
         blockedBy: blocking,
@@ -852,7 +816,7 @@ export async function decideRestartApplication(
       // application for being slow (ADR-0065 clause 6).
       return {
         refusal: `the application was asked to close and neither closed nor put anything up within ${budget}ms - it is still running, and this daemon does not escalate because a timer expired`,
-        refusalClass: "RestartNotConfirmed",
+        refusalClass: "RestartRefusedByApplication",
         auditApplication: treeName,
       };
     }

@@ -38,7 +38,7 @@ const END = 0xff57;
 const HOME = 0xff50;
 
 const A_ROUTE = { route: "test-route" };
-const ARMED = { allows: new Set(["rawInput"]) };
+const ARMED = { };
 
 // A desk whose elements all publish text, over the recorded one that does not.
 // `deletes` says whether a Backspace actually removes a character: a field that
@@ -89,7 +89,7 @@ function deskCarrying(
     watch: (subscribedTo, sink, anchor) => tape.watch(subscribedTo, sink, anchor),
     close: () => tape.close(),
   };
-  return { backend: new AtspiBackend(channel, "all"), pressed, read: () => buffer };
+  return { backend: new AtspiBackend(channel), pressed, read: () => buffer };
 }
 
 async function anElement(backend: AtspiBackend): Promise<string> {
@@ -117,10 +117,8 @@ function backendThat(options: { cleared: string[]; answer?: () => Promise<unknow
 
 async function clear(id: string, launch: Partial<LaunchContext>, backend: Backend) {
   return handleRequest({ type: "request", id: 1, method: "clearElementText", params: { id } }, backend, {
-    permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
-    visibility: "all",
     keys: A_ROUTE,
     ...launch,
   } as LaunchContext);
@@ -243,14 +241,6 @@ describe("emptying a field one key at a time", () => {
 });
 
 describe("the gates in front of clearing", () => {
-  it("refuses a session that was never given the class, without touching the desk", async () => {
-    const cleared: string[] = [];
-    const answer = await clear("el-1", { allows: new Set() }, backendThat({ cleared }));
-    expect(refusalIn(answer)).toContain('"clearElementText" is rawInput-class');
-    expect(refusalIn(answer)).toContain("--allow rawInput");
-    expect(cleared).toEqual([]);
-  });
-
   it("refuses on a machine with no key route, and names no setting for it", async () => {
     const cleared: string[] = [];
     const answer = await clear("el-1", { ...ARMED, keys: undefined }, backendThat({ cleared }));

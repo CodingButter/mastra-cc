@@ -14,7 +14,7 @@ const recordedWorld = (): Backend => new CdpReplayBackend("chrome-page", "all");
 // a tape before it resolves anything - correctly, and asserted below - so it
 // cannot be the instrument for testing id resolution. This is the class that
 // performs, reading the same recorded world.
-const performingOverARecording = (): Backend => new CdpBackend(replayCdpChannel("chrome-page"), "all");
+const performingOverARecording = (): Backend => new CdpBackend(replayCdpChannel("chrome-page"));
 
 describe("the browser route refuses before it acts", () => {
   it("refuses an id it never answered without saying whether such an element exists", async () => {

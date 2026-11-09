@@ -2,7 +2,7 @@ import { CATALOG, type LaunchCatalog } from "../../launch/recipes.js";
 
 // The real catalog, defanged: every name and every field the real catalog
 // carries, with argv swapped for a harmless sleep. Authority-before-capability
-// is a property about NAMES, not binaries - an unpermitted "gmail" must refuse
+// is a property about NAMES, not binaries - an unlaunchable "gmail" must refuse
 // byte-identically to an unknown name whatever argv the entry holds - so every
 // test that proves it keeps its meaning while a deleted authority guard's
 // blast radius becomes a 30-second sleep instead of a real Chrome on the

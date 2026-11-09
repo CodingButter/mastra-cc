@@ -169,7 +169,7 @@ function channelOver(apps: App[]): Channel {
 
 describe("what holds the keyboard, on a desktop where four nodes claim focus", () => {
   it("names the focused element inside the activated window, not the first one publishing focus", async () => {
-    const backend = new AtspiBackend(channelOver(desktop("yad")), "all");
+    const backend = new AtspiBackend(channelOver(desktop("yad")));
     const focused = await backend.focusedElement();
     await backend.close();
     // gnome-shell's window is walked first and publishes "focused". The answer
@@ -183,11 +183,11 @@ describe("what holds the keyboard, on a desktop where four nodes claim focus", (
     // worlds; the server compared the two answers, found them identical, and
     // concluded the launch took nothing. Both readings must differ here, or
     // focus preservation is measuring a constant.
-    const before = new AtspiBackend(channelOver(desktop("yad")), "all");
+    const before = new AtspiBackend(channelOver(desktop("yad")));
     const held = await before.focusedElement();
     await before.close();
 
-    const after = new AtspiBackend(channelOver(desktop("qt6ct")), "all");
+    const after = new AtspiBackend(channelOver(desktop("qt6ct")));
     const now = await after.focusedElement();
     await after.close();
 
@@ -202,7 +202,7 @@ describe("what holds the keyboard, on a desktop where four nodes claim focus", (
     // qt6ct carries it on a "filler". Keying the ancestor test to a set of
     // window-ish roles is a role table deciding what an element is (ADR-0045
     // clause 2), and it answers "nothing holds focus" on this desktop.
-    const backend = new AtspiBackend(channelOver(desktop("qt6ct")), "all");
+    const backend = new AtspiBackend(channelOver(desktop("qt6ct")));
     const focused = await backend.focusedElement();
     await backend.close();
     expect(focused?.name).toBe("Style");
@@ -218,20 +218,10 @@ describe("what holds the keyboard, on a desktop where four nodes claim focus", (
         ? app
         : { ...app, nodes: app.nodes.map((n) => (n.path === "/frame" ? { ...n, bits: BASE } : n)) },
     );
-    const backend = new AtspiBackend(channelOver(noActivation), "all");
+    const backend = new AtspiBackend(channelOver(noActivation));
     const focused = await backend.focusedElement();
     await backend.close();
     expect(focused).toBeUndefined();
   });
 
-  it("does not report a focused element inside an application this session cannot see", async () => {
-    // The visibility gate applies to this read exactly as it applies to every
-    // other one: the answer is not a second door into an ungranted application
-    // (ADR-0036). yad holds the keyboard; a session that cannot see yad gets
-    // nothing, not the next-best focused node from somewhere else.
-    const backend = new AtspiBackend(channelOver(desktop("yad")), new Set(["qt6ct"]));
-    const focused = await backend.focusedElement();
-    await backend.close();
-    expect(focused).toBeUndefined();
-  });
 });

@@ -93,7 +93,7 @@ function stage(overrides: Partial<Staged> = {}): { channel: Channel; performed: 
 }
 
 async function field(channel: Channel): Promise<{ backend: AtspiBackend; id: string }> {
-  const backend = new AtspiBackend(channel, "all");
+  const backend = new AtspiBackend(channel);
   const { elements } = await backend.queryElements({});
   const found = elements.find((element) => element.role === "textbox");
   expect(found, "the staged dialog published no field").toBeDefined();

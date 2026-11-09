@@ -59,7 +59,7 @@ function fakePipe(): Pipe & { written: string[]; ended: boolean; feed(chunk: str
 function serve(): ReturnType<typeof fakePipe> {
   const pipe = fakePipe();
   // visibility "all": this file witnesses wire framing, not grant policy
-  serveConnection(pipe, { backend: registry.replay({ visibility: "all" }), visibility: "all" });
+  serveConnection(pipe, { backend: registry.replay({ }), });
   return pipe;
 }
 

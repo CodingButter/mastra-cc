@@ -51,7 +51,7 @@ describe("protocol/schema.json v1", () => {
     expect(schema.actions).toBeUndefined();
     expect(schema.types.action.fields.name.type).toBe("string");
     expect(schema.types.action.fields.availability.type).toBe("availabilityState");
-    expect(schema.availabilityStates).toEqual(["available", "disabled-by-configuration", "not-exposed"]);
+    expect(schema.availabilityStates).toEqual(["available", "not-exposed"]);
   });
 
   it("names no distance, direction or coordinate on the reveal operation (ADR-0045 clause 5)", () => {
@@ -69,18 +69,18 @@ describe("protocol/schema.json v1", () => {
     expect(fields).toEqual(["name", "capabilities", "launchable", "running", "runningUnknownBy", "diagnostic"]);
     expect(schema.runningStates).toEqual(["answering", "not-answering", "cannot-tell"]);
     expect(schema.types.installedApplication.fields.running.required).toBe(true);
-    expect(schema.types.capability.fields.disabledBy).toBeDefined();
+    expect(schema.types.capability.fields.disabledBy).toBeUndefined();
   });
 
-  it("requires one provider-neutral observable-content state, including value-free protected redaction (ADR-0056)", () => {
-    expect(schema.version).toBe("1.29.0");
+  it("requires one provider-neutral observable-content state without consent-era redaction", () => {
+    expect(schema.version).toBe("1.30.0");
     expect(schema.types.semanticElement.fields.content).toMatchObject({
       type: "observableContent",
       required: true,
     });
 
     const variants = Object.fromEntries(schema.types.observableContent.variants.map((variant) => [variant.name, variant]));
-    expect(Object.keys(variants)).toEqual(["text", "text-window", "number", "redacted", "unavailable"]);
+    expect(Object.keys(variants)).toEqual(["text", "text-window", "number", "unavailable"]);
     expect(variants.text.fields.value.type).toBe("string");
     expect(Object.keys(variants["text-window"].fields)).toEqual([
       "kind",
@@ -94,8 +94,6 @@ describe("protocol/schema.json v1", () => {
     ]);
     expect(variants.number.fields.value.type).toBe("number");
     expect(variants.number.fields.range.type).toBe("observableRange");
-    expect(variants.redacted.fields.reason.literal).toBe("protected");
-    expect(variants.redacted.fields.value).toBeUndefined();
     expect(variants.unavailable.fields.reason.literals).toEqual(["not-exposed", "unknown"]);
     expect(variants.unavailable.fields.value).toBeUndefined();
   });

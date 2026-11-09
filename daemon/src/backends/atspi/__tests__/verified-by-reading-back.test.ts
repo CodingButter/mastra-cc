@@ -31,7 +31,7 @@ function writableTape(onWrite: (member: string) => void) {
 describe("an effect verb answers with what it read afterwards", () => {
   it("returns a re-read of the element, not the caller's input echoed back", async () => {
     const written: string[] = [];
-    const backend = new AtspiBackend(writableTape((member) => written.push(member)), "all");
+    const backend = new AtspiBackend(writableTape((member) => written.push(member)));
     const { elements } = await backend.queryElements({});
     // The recorded world's action-publishing elements: buttons that answered
     // "click" per index. Nothing on this tape publishes an editable-text
@@ -53,7 +53,7 @@ describe("an effect verb answers with what it read afterwards", () => {
   });
 
   it("refuses an id it never answered, rather than performing against a guess", async () => {
-    const backend = new AtspiBackend(writableTape(() => undefined), "all");
+    const backend = new AtspiBackend(writableTape(() => undefined));
     await backend.queryElements({});
 
     await expect(backend.editElement({ id: "el-000000000000", value: "x" })).rejects.toBeInstanceOf(

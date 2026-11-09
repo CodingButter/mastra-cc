@@ -10,7 +10,6 @@ import { desktopEntryDirectories, scanInstalledApplications } from "../inventory
 import { baseLaunchCatalog, deriveLaunchCatalog } from "../launch/derived.js";
 import {
   MalformedProfilesFileError,
-  composeBootNames,
   composeCatalog,
   loadProfilesFile,
 } from "../launch/profiles.js";
@@ -19,8 +18,8 @@ import { NO_RECIPE_REFUSAL, findRecipe } from "../launch/spawn.js";
 import { OwnershipTable } from "../launch/table.js";
 import {
   ONE_BROWSER_IDENTITY_REFUSAL,
-  UNAVAILABLE_REFUSAL,
-  capabilityStateFor,
+  NO_LAUNCH_RECIPE_REFUSAL,
+  capabilityExposureFor,
   handleRequest,
   type LaunchContext,
 } from "../server.js";
@@ -32,7 +31,7 @@ import { observeOnlyEffects } from "./support/observe-only.js";
 // The catalog is now the machine's own catalog with the hand-written recipes
 // overlaid on top. What that changes is CAPABILITY: openApplication can name
 // an application this machine actually provides. What it does not change is
-// AUTHORITY - a launch still needs a permit, an unpermitted name still refuses
+// AUTHORITY - a launch still needs a permit, an unlaunchable name still refuses
 // byte-identically to an unknown one, and the built-in browser identities can
 // never be displaced by a file on disk.
 //
@@ -57,7 +56,6 @@ function composedBase(directories: string[] = FIXTURE_DIRECTORIES): LaunchCatalo
 
 function launch(overrides: Partial<LaunchContext>): LaunchContext {
   return {
-    permits: new Set(),
     catalog: defang(composedBase()),
     table: new OwnershipTable(),
     pollBudgetMs: 60,
@@ -117,58 +115,29 @@ describe("the machine's own catalog", () => {
   });
 
   it("launch capability is no longer not-exposed for an installed application", () => {
-    const state = capabilityStateFor(launch({}), "launch", "ordinary");
+    const state = capabilityExposureFor(launch({}), "launch", "ordinary");
     expect(state.availability).not.toBe("not-exposed");
     // ...and a name nothing provides still has no path at all.
-    expect(capabilityStateFor(launch({}), "launch", "zz-no-such-app").availability).toBe("not-exposed");
+    expect(capabilityExposureFor(launch({}), "launch", "zz-no-such-app").availability).toBe("not-exposed");
   });
 
-  it("capability grew, authority did not: unpermitted refuses exactly as an unknown name does", async () => {
-    const context = launch({});
-    const unpermitted = await open("ordinary", context);
-    const unknown = await open("zz-no-such-app", context);
-    expect(refusalText(unpermitted)).toBe(UNAVAILABLE_REFUSAL);
-    expect(refusalText(unknown)).toBe(UNAVAILABLE_REFUSAL);
-    expect(unpermitted.refusal).toEqual(unknown.refusal);
-  });
-
-  it("a permitted name the enumerated machine does not claim refuses at the gate, byte-identically to unpermitted", async () => {
+  it("an installed name the enumerated machine does not claim refuses at the gate, byte-identically to unlaunchable", async () => {
     // The inventory WAS read and nothing on it answers to this name: a permit
     // for a name the desk does not publish authorises nothing, and the
-    // refusal is the same constant an unpermitted name gets - the gate does
+    // refusal is the same constant an unlaunchable name gets - the gate does
     // not disclose whether the permit or the machine was the missing half.
-    const context = launch({ permits: new Set(["zz-no-such-app"]) });
+    const context = launch({});
     const answer = await open("zz-no-such-app", context);
-    expect(refusalText(answer)).toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(answer)).toBe(NO_LAUNCH_RECIPE_REFUSAL);
   });
 
-  it("a backend that cannot enumerate keeps the exact-name gate, and NO_RECIPE past it", async () => {
-    // Inventory UNAVAILABLE is not inventory EMPTY: with nothing to resolve
-    // against, the gate degrades to the exact permit check it always was, and
-    // a permitted name with no recipe still reaches the spawner's honest
-    // refusal - a backend that cannot enumerate loses no launch it could do.
-    const backend = {
-      ...inventoryBackend(),
-      installedApplications: async () => {
-        throw new InventoryUnsupportedError("this route cannot look");
-      },
-    } as unknown as Backend;
-    const context = launch({ permits: new Set(["zz-no-such-app"]) });
-    const answer = await handleRequest(
-      { type: "request", id: 1, method: "openApplication", params: { name: "zz-no-such-app" } },
-      backend,
-      context,
-    );
-    expect(refusalText((answer.result as { refusal?: string }))).toBe(NO_RECIPE_REFUSAL);
-  });
-
-  it("a permitted derived name reaches the launch path", async () => {
-    const context = launch({ permits: new Set(["ordinary"]) });
+  it("a launchable derived name reaches the launch path", async () => {
+    const context = launch({});
     const answer = await open("ordinary", context);
     // Defanged argv is a sleep, so nothing observable ever appears: the answer
     // is the honest "opened but did not become readable", NOT either refusal
     // that would mean the name was turned away before spawning.
-    expect(refusalText(answer)).not.toBe(UNAVAILABLE_REFUSAL);
+    expect(refusalText(answer)).not.toBe(NO_LAUNCH_RECIPE_REFUSAL);
     expect(refusalText(answer)).not.toBe(NO_RECIPE_REFUSAL);
   });
 
@@ -191,7 +160,7 @@ describe("the machine's own catalog", () => {
     expect(catalog["office-writer"]?.appearsAs).toBe(catalog["office-calc"]?.appearsAs);
     const table = new OwnershipTable();
     table.record(process.pid, "office-writer"); // a live sibling of ours
-    const context = launch({ permits: new Set(["office-writer", "office-calc"]), catalog, table });
+    const context = launch({ catalog, table });
     try {
       const answer = await open("office-calc", context);
       expect(refusalText(answer)).not.toBe(ONE_BROWSER_IDENTITY_REFUSAL);
@@ -229,7 +198,7 @@ describe("the machine's own catalog", () => {
     expect(findRecipe("chrome", composed)?.argv).toEqual(CATALOG.chrome?.argv);
   });
 
-  it("operator profiles still compose from the built-in browser recipe", () => {
+  it("browser profiles still compose from the built-in browser recipe", () => {
     const composed = composeCatalog(composedBase(), [
       { name: "chrome-work", directory: "/tmp/mastra-cc-profile-work" },
     ]);
@@ -262,25 +231,7 @@ describe("the machine's own catalog", () => {
     );
   });
 
-  it("permitting a derived name implies observing the tree name it appears as", () => {
-    // ordinary's Exec is /home/example/.local/bin/ordinary, so its appearsAs
-    // is the basename. A derived entry whose id and binary differ is what
-    // makes this load-bearing, so build one.
-    const directory = mkdtempSync(join(tmpdir(), "mastra-cc-appears-"));
-    writeFileSync(
-      join(directory, "org.kde.kate.desktop"),
-      "[Desktop Entry]\nType=Application\nName=Kate\nExec=kate -b %U\n",
-    );
-    const catalog = composedBase([directory]);
-    const { visibility } = composeBootNames({
-      permits: new Set(["org.kde.kate"]),
-      grants: new Set<string>(),
-      flags: new Set<string>(),
-      catalog,
-    });
-    expect(visibility).not.toBe("all");
-    expect([...(visibility as ReadonlySet<string>)]).toContain("kate");
-  });
+
 
   it("boot survives a machine with no entries at all", () => {
     const empty = deriveLaunchCatalog([join(tmpdir(), "mastra-cc-does-not-exist-ever")]);
@@ -289,7 +240,7 @@ describe("the machine's own catalog", () => {
   });
 
   it("nothing about the filesystem reaches the wire", async () => {
-    const serialised = JSON.stringify(await listing(launch({ permits: new Set(["ordinary"]) })));
+    const serialised = JSON.stringify(await listing(launch({})));
     expect(serialised).not.toContain("/usr/bin");
     expect(serialised).not.toContain("/home/example");
     expect(serialised).not.toContain("Exec");
@@ -302,5 +253,91 @@ describe("the machine's own catalog", () => {
     expect(desktopEntryDirectories({ HOME: "/home/example" }).length).toBeGreaterThan(0);
     const server = readFileSync(join(here, "..", "server.ts"), "utf8");
     expect(server).not.toContain("deriveLaunchCatalog");
+  });
+});
+
+
+describe("the desktop entry scan remains complete", () => {
+  it("records NoDisplay and Hidden entries instead of dropping installed applications", () => {
+    const found = scanInstalledApplications(FIXTURE_DIRECTORIES);
+    expect(found.find((entry) => entry.name === "hidden-from-menus")?.diagnostic).toMatchObject({
+      "mastra-cc/menu-visibility": "no-display",
+    });
+    expect(found.find((entry) => entry.name === "withdrawn")?.diagnostic).toMatchObject({
+      "mastra-cc/menu-visibility": "hidden",
+    });
+  });
+
+  it("excludes desktop entries whose Type is not Application", () => {
+    expect(scanInstalledApplications(FIXTURE_DIRECTORIES).map((entry) => entry.name)).not.toContain("not-an-application");
+  });
+
+  it("surfaces two entries sharing a display name as distinct applications", () => {
+    const found = scanInstalledApplications(FIXTURE_DIRECTORIES).filter(
+      (entry) => entry.diagnostic?.["mastra-cc/display-name"] === "Same Display Name",
+    );
+    expect(found.map((entry) => entry.name).sort()).toEqual(["collide-one", "collide-two"]);
+  });
+
+  it("skips a malformed entry while preserving its neighbours", () => {
+    const names = scanInstalledApplications(FIXTURE_DIRECTORIES).map((entry) => entry.name);
+    expect(names).not.toContain("malformed");
+    expect(names).toContain("ordinary");
+  });
+
+  it("honours XDG directory precedence", () => {
+    const found = scanInstalledApplications(FIXTURE_DIRECTORIES);
+    expect(found.filter((entry) => entry.name === "ordinary")).toHaveLength(1);
+    expect(found.find((entry) => entry.name === "ordinary")?.diagnostic?.["mastra-cc/display-name"]).toBe(
+      "Ordinary (home copy)",
+    );
+    const reversed = scanInstalledApplications([...FIXTURE_DIRECTORIES].reverse());
+    expect(reversed.find((entry) => entry.name === "ordinary")?.diagnostic?.["mastra-cc/display-name"]).toBe(
+      "Ordinary (second system copy)",
+    );
+  });
+
+  it("uses XDG_DATA_HOME and XDG_DATA_DIRS with specification defaults", () => {
+    expect(desktopEntryDirectories({ HOME: "/home/example" })).toEqual([
+      "/home/example/.local/share/applications",
+      "/usr/local/share/applications",
+      "/usr/share/applications",
+    ]);
+    expect(desktopEntryDirectories({ XDG_DATA_HOME: "/data/home", XDG_DATA_DIRS: "/data/one:/data/two" })).toEqual([
+      "/data/home/applications",
+      "/data/one/applications",
+      "/data/two/applications",
+    ]);
+  });
+
+  it("does not expose paths or command lines from the scan", () => {
+    const serialised = JSON.stringify(scanInstalledApplications(FIXTURE_DIRECTORIES));
+    expect(serialised).not.toContain("/usr/bin");
+    expect(serialised).not.toContain("Exec");
+    expect(serialised).not.toContain(FIXTURE);
+  });
+
+  it("lists every recipe-only application once and merges installed recipes without duplication", async () => {
+    const withoutYadEntry = [join(FIXTURE, "home", "applications")];
+    const recipeOnly = (await listing(launch({}), withoutYadEntry)).applications;
+    expect(scanInstalledApplications(withoutYadEntry).map((entry) => entry.name)).not.toContain("yad");
+    expect(recipeOnly.filter((entry) => entry.name === "yad")).toHaveLength(1);
+    const merged = (await listing(launch({}))).applications;
+    expect(merged.filter((entry) => entry.name === "yad")).toHaveLength(1);
+  });
+
+  it("refuses by name when the backend cannot enumerate applications", async () => {
+    const backend = {
+      ...inventoryBackend(),
+      installedApplications: async () => {
+        throw new InventoryUnsupportedError("this route cannot look");
+      },
+    } as unknown as Backend;
+    const answer = await handleRequest(
+      { type: "request", id: 1, method: "listApplications", params: {} },
+      backend,
+      launch({}),
+    );
+    expect(refusalText(answer.result)).toContain("cannot enumerate what this machine has installed");
   });
 });

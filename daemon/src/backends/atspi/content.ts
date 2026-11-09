@@ -72,8 +72,6 @@ export async function readObservableContent(
   offset = 0,
   limit = INLINE_TEXT_LIMIT,
 ): Promise<ObservableContent> {
-  if (nativeRole === "password text") return { kind: "redacted", reason: "protected" };
-
   let interfaces: string[];
   try {
     interfaces = await interfacesOf(channel, ref);

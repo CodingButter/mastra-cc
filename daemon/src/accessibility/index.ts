@@ -38,11 +38,11 @@ export interface AccessibilityLayer {
   report(): Promise<AccessibilityReport>;
   /**
    * Whether THIS BUILD has a way to switch the layer on for the platform it is
-   * running on. Separate from whether the operator permitted it, because the
+   * running on. Separate from whether the desktop exposes it, because the
    * two refusals are different facts and the wire has always said so
-   * (protocol/schema.json:236): a withheld acquire is disabled-by-configuration
+   * (protocol/schema.json:236): a withheld acquire is configuration-disabled
    * and names the flag, and an acquire this build cannot perform anywhere is
-   * not-exposed, because no setting would change that answer.
+   * not-exposed, because the reported state is definitive answer.
    */
   readonly acquirable: boolean;
   /**

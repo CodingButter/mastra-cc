@@ -165,6 +165,6 @@ describe("a deep application does not silence the desk", () => {
   // T7: the defaults are the constants (wiring pin, not invariant coverage).
   it("uses the recorded limits when none are injected", () => {
     expect(TRAVERSAL_LIMITS).toEqual({ maxDepth: 10_000, maxNodesPerApp: 1_000_000, maxNodesTotal: 5_000_000 });
-    expect(new AtspiBackend(desk([kcalc()]), "all").traversalLimits).toEqual(TRAVERSAL_LIMITS);
+    expect(new AtspiBackend(desk([kcalc()])).traversalLimits).toEqual(TRAVERSAL_LIMITS);
   });
 });

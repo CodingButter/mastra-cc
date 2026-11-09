@@ -40,7 +40,7 @@ it("a client that stops reading bounds the answers the daemon retains, and gets 
   const dir = mkdtempSync(join(tmpdir(), "stalled-answers-"));
   dirs.push(dir);
   const socketPath = join(dir, "d.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["observe"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), };
   const server = await startServer({ socketPath, backend, launch });
   const sockets: Socket[] = [];
   try {

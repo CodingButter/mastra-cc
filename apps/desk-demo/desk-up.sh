@@ -183,7 +183,7 @@ for entry in "${ENTRY_NAMES[@]}"; do
   GRANTS+=("$entry")
 done
 # Extra permit/grant names for a proof or an experiment, stated verbatim on top
-# of the list above - a space-separated list, each name both permitted and
+# of the list above - a space-separated list, each name both launchable and
 # granted. This is a hook, not policy: the same deny-by-default daemon hears
 # exactly these extra names and nothing else.
 if test -n "${MASTRA_CC_EXTRA_PERMITS:-}"; then

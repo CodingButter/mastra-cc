@@ -119,8 +119,7 @@ describe("the daemon serves the same protocol over a websocket", () => {
   async function listen(backend?: Backend) {
     listener = await startWebSocketServer({
       port: 0,
-      backend: backend ?? registry.replay({ visibility: "all" }),
-      visibility: "all",
+      backend: backend ?? registry.replay({ }),
     });
     return listener;
   }

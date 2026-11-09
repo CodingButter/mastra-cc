@@ -32,8 +32,8 @@ describe("the element memory", () => {
 });
 
 const backends = {
-  "the accessibility bus": (cap: number) => new AtspiBackend(replayChannel("gtk-dialog"), "all", TRAVERSAL_LIMITS, cap),
-  "the browser protocol": (cap: number) => new CdpBackend(replayCdpChannel("chrome-page"), "all", cap),
+  "the accessibility bus": (cap: number) => new AtspiBackend(replayChannel("gtk-dialog"), TRAVERSAL_LIMITS, cap),
+  "the browser protocol": (cap: number) => new CdpBackend(replayCdpChannel("chrome-page"), cap),
 };
 
 describe.each(Object.entries(backends))("on %s, a forgotten id", (_, make) => {

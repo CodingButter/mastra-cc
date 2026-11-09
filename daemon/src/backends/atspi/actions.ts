@@ -184,7 +184,7 @@ export async function readPublishedActions(
       //
       // It is not corrected by picking a different word from the closed three:
       // the element DID publish the verb, so it is not `not-exposed`, and no
-      // setting of ours turned it off, so it is not `disabled-by-configuration`
+      // setting of ours turned it off, so it is not `configuration-disabled`
       // - naming a setting that does not exist is the false-remedy failure
       // ADR-0042 exists to kill. The missing state is "the application itself
       // disabled it", and inventing it here is a schema change this file is

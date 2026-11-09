@@ -32,10 +32,6 @@ export function readObservableContent(
   limit = 4096,
   protectedByBackingNode = false,
 ): ObservableContent {
-  if (protectedByBackingNode || property(node, "protected") === true) {
-    return { kind: "redacted", reason: "protected" };
-  }
-
   const role = String(node.role?.value ?? "");
   const rawValue = node.value?.value;
   const minimum = numericProperty(node, "valuemin");

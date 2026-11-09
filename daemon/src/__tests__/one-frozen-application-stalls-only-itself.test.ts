@@ -55,7 +55,7 @@ async function daemon() {
   const dir = mkdtempSync(join(tmpdir(), "per-target-"));
   dirs.push(dir);
   const socketPath = join(dir, "d.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["observe"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), };
   const server = await startServer({ socketPath, backend, launch });
   const sockets: Socket[] = [];
   cleanups.push(async () => {
@@ -176,7 +176,7 @@ it("never runs two effects at once, even on different applications", async () =>
     },
   } as unknown as Backend;
   const socketPath = join(dir, "d.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["rawInput"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), };
   const server = await startServer({ socketPath, backend: fx, launch });
   const socket = connect(socketPath);
   cleanups.push(async () => { socket.destroy(); await new Promise<void>((r) => server.close(() => r())); });

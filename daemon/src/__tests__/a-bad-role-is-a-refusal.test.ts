@@ -40,10 +40,8 @@ function backendThat(behaviour: { asked: unknown[]; throws?: unknown }): Backend
 
 function query(params: Record<string, unknown>, backend: Backend) {
   return handleRequest({ type: "request", id: 1, method: "queryElements", params }, backend, {
-    permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
-    visibility: "all",
   } as unknown as LaunchContext);
 }
 

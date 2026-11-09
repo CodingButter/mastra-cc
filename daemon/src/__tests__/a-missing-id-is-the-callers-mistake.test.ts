@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Backend } from "../backend.js";
-import { handleRequest, NO_PERMITS, type LaunchContext } from "../server.js";
+import { OwnershipTable } from "../launch/table.js";
+import { handleRequest, type LaunchContext } from "../server.js";
 
 // A MISSING ID IS THE CALLER'S MISTAKE.
 //
@@ -27,8 +28,8 @@ const METHODS: Record<string, Record<string, unknown>> = {
 };
 
 const EVERY_CLASS: LaunchContext = {
-  ...NO_PERMITS,
-  allows: new Set(["edit", "activate", "submit", "rawInput"]),
+  catalog: {},
+  table: new OwnershipTable(),
 };
 
 function recording(): { backend: Backend; calls: string[] } {

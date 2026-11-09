@@ -81,7 +81,7 @@ it("closes the old driver's watch on disconnect, answers the new driver's watch 
   };
   const directory = mkdtempSync(join(tmpdir(), "cc-transfer-")); cleanup.push(() => rmSync(directory, { recursive: true, force: true }));
   const socketPath = join(directory, "daemon.sock");
-  const launch: LaunchContext = { permits: new Set(), allows: new Set(["rawInput", "observe"]), keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" };
+  const launch: LaunchContext = { keys: { route: "test" }, catalog: DEFANGED_CATALOG, table: new OwnershipTable() };
   const server = await startServer({ socketPath, backend, launch }); cleanup.push(() => server.close());
 
   const a = await peer(socketPath);

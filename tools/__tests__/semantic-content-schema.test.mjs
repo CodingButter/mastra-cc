@@ -25,7 +25,6 @@ describe("semantic observable content", () => {
     },
     { kind: "number", value: 42 },
     { kind: "number", value: 42, range: { minimum: 0, maximum: 100, step: 1 } },
-    { kind: "redacted", reason: "protected" },
     { kind: "unavailable", reason: "not-exposed" },
     { kind: "unavailable", reason: "unknown" },
   ])("accepts the $kind variant", (content) => {

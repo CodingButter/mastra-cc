@@ -34,7 +34,7 @@ describe("a request that arrives in pieces", () => {
   const socketPath = join(mkdtempSync(join(tmpdir(), "mastra-cc-pieces-")), "daemon.sock");
 
   beforeAll(async () => {
-    server = await startServer({ socketPath, backend: registry.replay({ visibility: "all" }) });
+    server = await startServer({ socketPath, backend: registry.replay({ }) });
   });
   afterAll(() => {
     server.close();

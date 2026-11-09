@@ -27,7 +27,7 @@ it("keeps origin unknown during, after and across independent desktop operations
     await books[2].subscribe(other, element.id, "high");
     emit();
     const answer = await handleRequest({ type: "request", id: 1, method: "editElement", params: { id: element.id, value: "changed" } }, backend,
-      { permits: new Set(), catalog: {}, table: new OwnershipTable(), allows: new Set(["edit"]), visibility: "all" });
+      { catalog: {}, table: new OwnershipTable(), });
     expect(refusalText(answer)).toBeUndefined();
     emit();
     for (const list of events) {

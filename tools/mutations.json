@@ -364,13 +364,6 @@
     "testFile": "__tests__/digest-agreement.test.mjs"
   },
   {
-    "name": "effect-class-gate-name-dropped-from-refusal",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "refused by the effect-class gate: \"${request.method}\" is not a method of ",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
-  },
-  {
     "name": "replay-invents-a-reply-for-an-unrecorded-exchange",
     "file": "daemon/src/backends/replay/index.ts",
     "find": "      if (reply === undefined) {\n        throw new UnrecordedExchangeError(\n          `no recorded exchange for ${exchangeKey(exchange)} - refusing to invent a reply`,\n        );\n      }\n",
@@ -441,13 +434,6 @@
     "testFile": "pins/__tests__/pins.test.mjs"
   },
   {
-    "name": "launch-skips-the-permit-check",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/launch-authority.test.ts"
-  },
-  {
     "name": "cdp-replay-invents-replies",
     "file": "daemon/src/backends/cdp/channel.ts",
     "find": "      if (!table.has(key)) {\n        throw new UnrecordedCdpExchangeError(`no recorded exchange for ${key} - refusing to invent a reply`);\n      }\n",
@@ -460,76 +446,6 @@
     "find": "    if (ref === undefined) {\n      return { refusal: `no element with id \"${params.id}\" is known to this daemon (never answered, or forgotten after newer answers) - nothing to attest`, refusalClass: \"UnknownElement\" };\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/backend-conformance.test.ts"
-  },
-  {
-    "name": "absent-grants-file-grants-everything",
-    "file": "daemon/src/grants.ts",
-    "find": "  if (!existsSync(path)) {\n    // Deny by default: the file's absence grants nothing.\n    return new Set();\n  }\n",
-    "cwd": "daemon",
-    "testFile": "src/backends/__tests__/invisibility.test.ts"
-  },
-  {
-    "name": "visibility-filter-never-consulted",
-    "file": "daemon/src/backends/atspi/index.ts",
-    "find": "        if (!isVisible(this.visibility, selectedApplicationName)) continue;\n",
-    "cwd": "daemon",
-    "testFile": "src/backends/__tests__/invisibility.test.ts"
-  },
-  {
-    "name": "cdp-visibility-never-consulted",
-    "file": "daemon/src/backends/cdp/index.ts",
-    "find": "    if (!isVisible(this.visibility, product)) return { elements: [] };\n    if (params.application !== undefined && applicationName(product) !== applicationName(params.application)) return { elements: [] };\n",
-    "cwd": "daemon",
-    "testFile": "src/backends/__tests__/invisibility.test.ts"
-  },
-  {
-    "name": "scope-gate-serves-edit",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "  editElement: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => editElement((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
-  },
-  {
-    "name": "scope-gate-serves-activate",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "  activateElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: (p, b, l) => activateElement((p ?? {}) as { id?: unknown; action?: unknown }, b, l) },\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
-  },
-  {
-    "name": "scope-gate-serves-submit",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "  submitElement: { effectClass: \"submit\", enforcement: \"before-call\", handler: (p, b, l) => submitElement((p ?? {}) as { id?: unknown; attestation?: unknown }, b, l) },\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
-  },
-  {
-    "name": "the-wire-stops-serving-set-element-value",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "  setElementValue: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementValue((p ?? {}) as { id?: unknown; value?: unknown }, b, l) },\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
-  },
-  {
-    "name": "the-wire-stops-serving-set-element-text",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "  setElementText: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementText((p ?? {}) as { id?: unknown; text?: unknown; offset?: unknown }, b, l) },\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
-  },
-  {
-    "name": "the-wire-stops-serving-set-element-caret",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "  setElementCaret: { effectClass: \"edit\", enforcement: \"before-call\", handler: (p, b, l) => setElementCaret((p ?? {}) as { id?: unknown; offset?: unknown }, b, l) },\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
-  },
-  {
-    "name": "the-wire-stops-serving-reveal-element",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "  revealElement: { effectClass: \"activate\", enforcement: \"before-call\", handler: (p, b, l) => revealElement((p ?? {}) as { id?: unknown }, b, l) },\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/refuses-beyond-observe.test.ts"
   },
   {
     "name": "malformed-profiles-file-composes-nothing",
@@ -546,20 +462,6 @@
     "testFile": "src/__tests__/profile-launch.test.ts"
   },
   {
-    "name": "boot-composition-expands-launch-authority",
-    "file": "daemon/src/launch/profiles.ts",
-    "find": "  const launchPermits: ReadonlySet<string> = new Set([...permits].map(applicationName));\n",
-    "cwd": "daemon",
-    "testFile": "src/launch/__tests__/profiles.test.ts"
-  },
-  {
-    "name": "permit-implies-observe-skips-appears-as",
-    "file": "daemon/src/launch/profiles.ts",
-    "find": "    const appearsAs = findRecipe(name, catalog)?.appearsAs;\n    if (appearsAs !== undefined) expanded.add(applicationName(appearsAs));\n",
-    "cwd": "daemon",
-    "testFile": "src/launch/__tests__/profiles.test.ts"
-  },
-  {
     "name": "attribution-guesses-instead-of-abstaining",
     "file": "daemon/src/server/subscriptions.ts",
     "find": "    return { attribution: \"unattributed\" };\n",
@@ -572,13 +474,6 @@
     "find": "    void book.closeAll();\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/subscription-lifetime.test.ts"
-  },
-  {
-    "name": "event-delivery-skips-the-visibility-check",
-    "file": "daemon/src/server/subscriptions.ts",
-    "find": "    if (!isVisible(this.visibility, entry.application)) return;\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/subscription-visibility.test.ts"
   },
   {
     "name": "a-dead-root-is-silently-forgotten",
@@ -644,41 +539,6 @@
     "testFile": "src/backends/cdp/__tests__/actions.test.ts"
   },
   {
-    "name": "the-configuration-is-read-and-never-enforced",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "    const withheld = configurationWithholding(launch, effectClass, application);\n    if (withheld !== undefined) {\n      return { refusal: withheldRefusal(method, effectClass, withheld), refusalClass: \"DisabledByConfiguration\" };\n    }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/capability-configuration.test.ts"
-  },
-  {
-    "name": "a-withheld-capability-is-reported-as-available",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  if (stamped.elements !== undefined) stamped.elements = stamped.elements.map(stamp);\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/capability-configuration.test.ts"
-  },
-  {
-    "name": "a-hidden-entry-is-dropped-from-the-inventory",
-    "file": "daemon/src/inventory.ts",
-    "find": "    found.set(id, { name: id, diagnostic });\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/installed-inventory.test.ts"
-  },
-  {
-    "name": "precedence-is-decided-by-directory-order-only",
-    "file": "daemon/src/inventory.ts",
-    "find": "      if (!found.has(id)) found.set(id, entry);\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/installed-inventory.test.ts"
-  },
-  {
-    "name": "the-listing-answers-from-its-own-table-not-the-gate",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  const withheld = configurationWithholdingFor(launch, capability, resolved, application);\n  if (withheld !== undefined) {\n    return { capability, availability: \"disabled-by-configuration\", disabledBy: withheld };\n  }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/installed-inventory.test.ts"
-  },
-  {
     "name": "a-launch-takes-the-focus-and-never-gives-it-back",
     "file": "daemon/src/server/launch-focus.ts",
     "find": "    held = await focusBeforeEffect(backend);\n",
@@ -698,20 +558,6 @@
     "find": "underActivation && ",
     "cwd": "daemon",
     "testFile": "src/backends/__tests__/focus-instrument.test.ts"
-  },
-  {
-    "name": "the-listing-forgets-what-this-daemon-can-launch",
-    "file": "daemon/src/server/grants.ts",
-    "find": "    if (!claimed.has(applicationName(key))) {\n      claimed.add(applicationName(key));\n      entries.push({ name: key });\n    }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/installed-inventory.test.ts"
-  },
-  {
-    "name": "the-gate-is-more-permissive-than-the-listing-promised",
-    "file": "daemon/src/server/dispatch.ts",
-    "find": "    if (!holdsEffectAuthority(launch, effectClass)) return { refusal, refusalClass: \"EffectClassGate\" };",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/installed-inventory.test.ts"
   },
   {
     "name": "magnitude-write-is-not-compared-against-what-landed",
@@ -917,44 +763,9 @@
     "testFile": "__tests__/licences.test.mjs"
   },
   {
-    "name": "m6-gmail-permit-removed",
-    "file": "infra/units/mastra-desktop-daemon.service",
-    "find": " --permit gmail",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/m6-gmail-startup-composition.test.ts"
-  },
-  {
-    "name": "m6-gmail-grants-removed",
-    "file": "infra/units/mastra-desktop-daemon.service",
-    "find": " --grants %h/.config/mastra-cc/gmail-grants.json",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/m6-gmail-startup-composition.test.ts"
-  },
-  {
-    "name": "semantic-observable-content-field-removed",
-    "file": "protocol/schema.json",
-    "find": "        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": true,\n          \"description\": \"The current content observation for this element. A permitted ordinary control carries exact text, a bounded text window, or numeric content; a protected control carries only a redaction reason; and an element whose readable content is not published carries an unavailable reason. Callers re-query after a mutation to obtain a fresh observation and use readElementContent to traverse additional text windows.\"\n        },\n",
-    "cwd": "tools",
-    "testFile": "__tests__/schema.test.mjs"
-  },
-  {
-    "name": "semantic-protected-redaction-variant-removed",
-    "file": "protocol/schema.json",
-    "find": "        {\n          \"name\": \"redacted\",\n          \"fields\": {\n            \"kind\": {\n              \"literal\": \"redacted\",\n              \"required\": true,\n              \"description\": \"The element publishes content that the protocol must not reveal.\"\n            },\n            \"reason\": {\n              \"literal\": \"protected\",\n              \"required\": true,\n              \"description\": \"The control is marked as protected; no content value is carried.\"\n            }\n          }\n        },\n",
-    "cwd": "tools",
-    "testFile": "__tests__/schema.test.mjs"
-  },
-  {
     "name": "semantic-text-window-variant-removed",
     "file": "protocol/schema.json",
     "find": "        {\n          \"name\": \"text-window\",\n          \"fields\": {\n            \"kind\": {\n              \"literal\": \"text-window\",\n              \"required\": true,\n              \"description\": \"This element publishes ordinary textual content larger than the inline observation bound.\"\n            },\n            \"value\": {\n              \"type\": \"string\",\n              \"required\": true,\n              \"description\": \"The exact bounded window currently observed; never an unmarked truncation.\"\n            },\n            \"offset\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Zero-based Unicode-scalar offset of the first character in value.\"\n            },\n            \"length\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Number of Unicode scalar values carried in value.\"\n            },\n            \"totalLength\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Total number of Unicode scalar values in the element's current text.\"\n            },\n            \"startLine\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"One-based line number containing the first character in value.\"\n            },\n            \"endLine\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"One-based line number containing the final character in value, or startLine for an empty window.\"\n            },\n            \"totalLines\": {\n              \"type\": \"number\",\n              \"required\": true,\n              \"description\": \"Total number of lines in the element's current text.\"\n            }\n          }\n        },\n",
-    "cwd": "tools",
-    "testFile": "__tests__/schema.test.mjs"
-  },
-  {
-    "name": "semantic-content-reader-method-removed",
-    "file": "protocol/schema.json",
-    "find": "    \"readElementContent\": {\n      \"description\": \"Read one bounded window of an element's ordinary textual content. Observation only. The application grant is checked before resolving the element, and protected controls return structured redaction without reading their value.\",\n      \"params\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"pattern\": \"idPattern\",\n          \"required\": true,\n          \"description\": \"The element whose current textual content is being read.\"\n        },\n        \"offset\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Zero-based Unicode-scalar offset at which the requested window begins.\"\n        },\n        \"limit\": {\n          \"type\": \"number\",\n          \"required\": true,\n          \"description\": \"Maximum number of Unicode scalar values requested. The daemon applies its smaller fixed response bound when necessary.\"\n        }\n      },\n      \"returns\": {\n        \"content\": {\n          \"type\": \"observableContent\",\n          \"required\": false,\n          \"description\": \"Present when the element resolves. Text is exact when it fits; text-window carries bounded content and navigation metadata; protected and unavailable states carry no value.\"\n        },\n        \"refusal\": {\n          \"type\": \"refusal\",\n          \"required\": false,\n          \"description\": \"Present when scope, identity, or request bounds refuse the observation.\"\n        }\n      }\n    },\n",
     "cwd": "tools",
     "testFile": "__tests__/schema.test.mjs"
   },
@@ -1170,27 +981,6 @@
     "testFile": "src/launch/__tests__/derived.test.ts"
   },
   {
-    "name": "derived-catalog-shadows-the-built-in-browser",
-    "file": "daemon/src/launch/derived.ts",
-    "find": "...CATALOG",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
-  },
-  {
-    "name": "derived-launch-skips-the-permit-check",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "  if (resolution.kind === \"ambiguous\") {\n    return { refusal: AMBIGUOUS_NAME_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  if (resolution.kind === \"unpermitted\") {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n  // From here on the launch acts on the ENTRY the name resolved to - its full\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
-  },
-  {
-    "name": "browser-identity-guard-catches-ordinary-derived-apps",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": " && contendsForBrowserEndpoint(requested)",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/any-app-the-machine-has.test.ts"
-  },
-  {
     "name": "shipped-instructions-drift-from-the-reviewed-copy",
     "file": "packages/desktop/instructions/AGENT-INSTRUCTIONS.md",
     "find": "button commonly offers nothing but `focus`, and ",
@@ -1203,13 +993,6 @@
     "find": "`submitElement` sends the form",
     "cwd": "packages/desktop",
     "testFile": "src/__tests__/the-prose-names-real-verbs.test.ts"
-  },
-  {
-    "name": "running-state-escapes-the-observe-grant",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  if (!entryVisible(launch, entry, index)) {\n    return { running: \"cannot-tell\", runningUnknownBy: OBSERVE_SETTING };\n  }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/what-is-running.test.ts"
   },
   {
     "name": "a-failed-census-reports-the-desk-closed",
@@ -1226,60 +1009,11 @@
     "testFile": "src/backends/atspi/__tests__/running-applications.test.ts"
   },
   {
-    "name": "the-daemon-switches-the-desk-on-without-being-asked",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "  if (launch.mayAcquireAccessibility !== true) {\n    return { refusal: ACQUIRE_WITHHELD_REFUSAL, refusalClass: \"DisabledByConfiguration\" };\n  }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
-  },
-  {
     "name": "an-unacquirable-platform-is-asked-to-acquire-anyway",
     "file": "daemon/src/server/launch-focus.ts",
     "find": "  if (layer === undefined || !layer.acquirable) {\n    return { refusal: ACQUIRE_NOT_EXPOSED_REFUSAL, refusalClass: \"AccessibilityNotAcquirable\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/can-the-desk-be-heard.test.ts"
-  },
-  {
-    "name": "the-restart-gate-lets-a-refusing-level-out-as-a-level",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  if (level === \"refuse\" || level === \"ask\") return restartRefusal(level, setting);\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/restart-authority.test.ts"
-  },
-  {
-    "name": "restart-signals-a-process-it-does-not-own",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "const owned = launch.table.ownsName(name);",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
-  },
-  {
-    "name": "graceful-restart-escalates-to-a-kill",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "authority.level === \"force\" ? \"SIGKILL\" : \"SIGTERM\"",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
-  },
-  {
-    "name": "a-dialog-in-the-same-instant-counts-as-a-refusal",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": " || looked < 2",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
-  },
-  {
-    "name": "restart-never-checks-whether-the-process-ended",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "if (launch.table.owns(owned.pid) !== true) break;",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/who-may-close-a-window.test.ts"
-  },
-  {
-    "name": "raw-input-is-available-to-a-session-nobody-armed",
-    "file": "daemon/src/server/grants.ts",
-    "find": "if (allows.has(effectClass) !== true) return false;",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/raw-input-authority.test.ts"
   },
   {
     "name": "the-key-route-forgets-the-chord-list-is-closed",
@@ -1308,13 +1042,6 @@
     "find": "\"infra/webtop/04-a-key-addressed-to-one-element/measure-delivery.sh\",",
     "cwd": "tools",
     "testFile": "pins/__tests__/pins.test.mjs"
-  },
-  {
-    "name": "an-unarmed-session-is-told-only-the-flattering-half",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  if (hasRoute) return sentence;",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/a-key-addressed-to-one-element.test.ts"
   },
   {
     "name": "an-empty-fast-answer-is-believed-instead-of-walked",
@@ -1357,55 +1084,6 @@
     "find": " && stat.starttime === entry.starttime",
     "cwd": "daemon",
     "testFile": "src/__tests__/what-is-running.test.ts"
-  },
-  {
-    "name": "the-gate-picks-a-claimant-instead-of-refusing-ambiguity",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  if (entry === undefined && claimants.length > 1) return { kind: \"ambiguous\" };\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/one-entry-several-names.test.ts"
-  },
-  {
-    "name": "a-contested-name-starts-carrying-permission-for-everyone",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  return claimants.length === 1;",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/one-entry-several-names.test.ts"
-  },
-  {
-    "name": "an-enumerated-desk-that-claims-nothing-still-consults-the-permits",
-    "file": "daemon/src/server/grants.ts",
-    "find": "  if (entry === undefined) return { kind: \"unpermitted\" };",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/one-entry-several-names.test.ts"
-  },
-  {
-    "name": "an-explicit-false-under-a-sibling-name-is-ignored",
-    "file": "daemon/src/capabilities.ts",
-    "find": "    if (answer === false) return settingName(applicationName(application), capability, true);",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/one-entry-several-names.test.ts"
-  },
-  {
-    "name": "the-first-configured-restart-spelling-wins-not-the-restrictive-one",
-    "file": "daemon/src/capabilities.ts",
-    "find": " || RESTRICTIVENESS[named] < RESTRICTIVENESS[chosen.level]",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/one-entry-several-names.test.ts"
-  },
-  {
-    "name": "a-restart-with-no-permits-at-all-still-touches-the-backend",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "  if (launch.permits.size === 0) {\n    return { refusal: UNAVAILABLE_REFUSAL, refusalClass: \"LaunchUnavailable\" };\n  }\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/launch-authority.test.ts"
-  },
-  {
-    "name": "an-application-name-is-only-the-same-name-in-one-case",
-    "file": "daemon/src/backends/atspi/names.ts",
-    "find": ".toLowerCase()",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/one-name-any-case.test.ts"
   },
   {
     "name": "the-typing-route-claims-a-machine-that-has-none",
@@ -1610,13 +1288,6 @@
     "find": "    if (PRESSABLE_CONTROL_ROLES.has(role)) {\n      const [lower, upper] = await this.statesOf(ref);\n      if (!toNeutralStates(lower, upper).includes(\"enabled\")) {\n        // A SECOND REFUSAL AT THE SAME CONTROL IS A DIFFERENT SENTENCE. The\n        // first one is advice - go and do the step this control is waiting on.\n        // Repeated, the advice is wrong: measured 2026-09-05, Plasma's wallpaper\n        // Apply never gains \"enabled\" no matter what is pressed beside it, under\n        // this daemon's pointer or a real one, and a caller told the same\n        // hopeful thing three times read the grey as \"already done\" and reported\n        // a wallpaper the desk never received. So the count is kept, and after\n        // the first the refusal says the road is closed and claims nothing.\n        const refusals = (this.greyRefusals.get(id) ?? 0) + 1;\n        this.greyRefusals.set(id, refusals);\n        let refusal =\n          `this ${role} publishes no \"enabled\" state, so this desk reads it as disabled - a press there would land on a ` +\n          `control that cannot answer it. Whatever must happen first to wake it has not happened yet`;\n        if (refusals > 1) {\n          refusal +=\n            `. This is refusal ${refusals} at this same control, and nothing you have done has woken it: NOTHING HAS BEEN ` +\n            `APPLIED, and a control that stays grey is not a control that acted quietly. This road is closed - finish the ` +\n            `errand another way`;\n        }\n        throw new UnperformableElementError(refusal);\n      }\n    }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-press-inside-one-element.test.ts"
-  },
-  {
-    "name": "a-launch-budget-too-short-for-a-browser",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "const POLL_BUDGET_MS = 60_000;",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/container-portability.test.ts"
   },
   {
     "name": "an-application-found-only-when-the-bus-shouts-the-same-way",
@@ -1833,13 +1504,6 @@
     "file": "daemon/src/server/launch-focus.ts",
     "find": "    // something has already proved the desk can be heard.\n    if (isEmptyAnswer(answered)) return (await deafDesk(l)) ?? answered;\n",
     "replace": "    // something has already proved the desk can be heard.\n",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/a-desk-that-went-deaf-does-not-answer-as-if-it-were-bare.test.ts"
-  },
-  {
-    "name": "a-layer-switched-back-on-for-a-session-that-was-never-granted-it",
-    "file": "daemon/src/server/launch-focus.ts",
-    "find": "  if (launch.mayAcquireAccessibility !== true || !layer.acquirable) {\n    return { refusal: DEAF_DESK_REFUSAL, refusalClass: \"AccessibilityLostMidSession\" };\n  }\n",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-desk-that-went-deaf-does-not-answer-as-if-it-were-bare.test.ts"
   },
@@ -2122,10 +1786,6 @@
     "testFile": "src/__tests__/a-reply-that-never-comes.test.ts"
   },
   {
-    "name": "a-second-request-jumps-the-serialisation-gate",
-    "file": "daemon/src/server.ts",
-    "find": "    const result = await serialised<unknown>(async () => {",
-    "replace": "    const result = await (async () => {",
     "name": "an-effect-begins-though-its-driver-asked-to-stop",
     "file": "daemon/src/backends/atspi/index.ts",
     "find": "    boundary(0, 1);\n    await effect(ref);",
@@ -2150,12 +1810,6 @@
     "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts"
   },
   {
-    "name": "the-screen-grab-starts-though-its-driver-already-asked",
-    "file": "daemon/src/backends/atspi/capture.ts",
-    "find": "    if (signal?.aborted) return reject(new CancelledAtBoundaryError(0, 1));",
-    "replace": "",
-    "cwd": "daemon",
-    "testFile": "src/__tests__/cancellation-is-acknowledged-at-a-boundary.test.ts",
     "name": "the-runner-races-a-live-runner",
     "file": "tools/mutations.mjs",
     "find": "      if (Number.isInteger(holder) && holder !== process.pid && alive(holder)) {",
@@ -2164,12 +1818,6 @@
     "testFile": "__tests__/mutations-runner.test.mjs"
   },
   {
-    "name": "the-finished-runner-keeps-the-tree",
-    "file": "tools/mutations.mjs",
-    "find": "process.on(\"exit\", releaseTree);\n",
-    "replace": "",
-    "cwd": "tools",
-    "testFile": "__tests__/mutations-runner.test.mjs",
     "name": "a-request-character-is-split-in-two",
     "file": "daemon/src/server/pipes.ts",
     "find": "handler(decoder.write(chunk))",
@@ -2521,22 +2169,86 @@
     "cwd": "daemon",
     "testFile": "src/__tests__/every-refusal-says-whose-it-is.test.ts"
   },
-  {"name": "every-call-waits-in-one-desk-queue", "file": "daemon/src/server/queues.ts", "find": "  if (params === null || typeof params !== \"object\") return SPANNING;\n  const p = params", "replace": "  return SPANNING;\n  const p = params", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"},
-  {"name": "a-connection-requests-overtake-each-other", "file": "daemon/src/server/pipes.ts", "find": "const handled = inOrder.then(() => handleRequest(", "replace": "const handled = Promise.resolve().then(() => handleRequest(", "cwd": "daemon", "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"},
-  {"name": "the-launched-browser-opens-its-port-again", "file": "daemon/src/launch/recipes.ts", "find": "      \"--remote-debugging-pipe\",\n      `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`", "replace": "      \"--remote-debugging-port=9744\",\n      `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`", "cwd": "daemon", "testFile": "src/backends/cdp/__tests__/pipe.test.ts"},
-  {"name": "the-pipe-splits-on-newlines", "file": "daemon/src/backends/cdp/pipe.ts", "find": "while ((end = this.#buffer.indexOf(\"\\0\")) >= 0)", "replace": "while ((end = this.#buffer.indexOf(\"\\n\")) >= 0)", "cwd": "daemon", "testFile": "src/backends/cdp/__tests__/pipe.test.ts"},
-  {"name": "a-closed-pipe-leaves-its-sessions-waiting", "file": "daemon/src/backends/cdp/pipe.ts", "find": "    for (const session of [...this.#sessions.values()]) session.gone();", "replace": "", "cwd": "daemon", "testFile": "src/backends/cdp/__tests__/pipe.test.ts"},
-  {"name": "a-detached-target-keeps-its-dead-session", "file": "daemon/src/backends/cdp/pipe.ts", "find": "if (typeof sessionId === \"string\") this.#sessions.get(sessionId)?.gone();", "replace": "void sessionId;", "cwd": "daemon", "testFile": "src/backends/cdp/__tests__/pipe.test.ts"},
-  {"name": "a-granted-name-is-enough", "file": "daemon/src/backends/atspi/index.ts", "find": "return this.identity.admits(name, app.busName);", "replace": "return true;", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
-  {"name": "an-impostor-reads-as-absent", "file": "daemon/src/backends/atspi/index.ts", "find": "    if (selected.length === 0 && impostors > 0) throw impostorError(params.application, impostors);\n", "replace": "\n", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
-  {"name": "a-snap-admits-its-launcher", "file": "daemon/src/backends/atspi/process-identity.ts", "find": "if (real === snapLauncher) return [`/snap/${name}/`];", "replace": "void real;", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
-  {"name": "a-lost-owner-lookup-hides-forever", "file": "daemon/src/backends/atspi/process-identity.ts", "find": "          cache.delete(busName);\n", "replace": "\n", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
-  {"name": "a-granted-name-admits-any-executable", "file": "daemon/src/backends/atspi/process-identity.ts", "find": "return executable !== undefined && matches(allowed, executable);", "replace": "return executable !== undefined;", "cwd": "daemon", "testFile": "src/__tests__/a-name-is-not-an-identity.test.ts"},
-  {"name": "dispatch-walks-the-prototype", "file": "daemon/src/server/dispatch.ts", "find": "Object.hasOwn(DISPATCH, request.method) ? DISPATCH[request.method] : undefined", "replace": "DISPATCH[request.method]", "cwd": "daemon", "testFile": "src/__tests__/refuses-beyond-observe.test.ts"},
-  {"name": "an-effect-runs-without-its-receipt", "file": "daemon/src/server/dispatch.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (false) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
-  {"name": "an-observation-is-refused-for-its-receipt", "file": "daemon/src/server/dispatch.ts", "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {", "replace": "if (!auditWritable()) {", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
-  {"name": "a-lost-receipt-goes-unsaid", "file": "daemon/src/server/dispatch.ts", "find": "if (unwrittenEffectEntries() > unwrittenBefore) markUnwrittenReceipt(answered);", "replace": "void unwrittenBefore;", "cwd": "daemon", "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"},
-  {"name": "a-proof-switch-reads-the-environment", "file": "daemon/src/backends/atspi/channel.ts", "find": "const deaf = options.deafForProof === true;", "replace": "const deaf = options.deafForProof === true || process.env.MASTRA_CC_ATSPI_DEAF_FOR_PROOF === \"1\";", "cwd": "daemon", "testFile": "src/__tests__/no-proof-switch-ships.test.ts"},
+  {
+    "name": "every-call-waits-in-one-desk-queue",
+    "file": "daemon/src/server/queues.ts",
+    "find": "  if (params === null || typeof params !== \"object\") return SPANNING;\n  const p = params",
+    "replace": "  return SPANNING;\n  const p = params",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"
+  },
+  {
+    "name": "a-connection-requests-overtake-each-other",
+    "file": "daemon/src/server/pipes.ts",
+    "find": "const handled = inOrder.then(() => handleRequest(",
+    "replace": "const handled = Promise.resolve().then(() => handleRequest(",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/one-frozen-application-stalls-only-itself.test.ts"
+  },
+  {
+    "name": "the-launched-browser-opens-its-port-again",
+    "file": "daemon/src/launch/recipes.ts",
+    "find": "      \"--remote-debugging-pipe\",\n      `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`",
+    "replace": "      \"--remote-debugging-port=9744\",\n      `--user-data-dir=${DEFAULT_CHROME_PROFILE_DIR}`",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/pipe.test.ts"
+  },
+  {
+    "name": "the-pipe-splits-on-newlines",
+    "file": "daemon/src/backends/cdp/pipe.ts",
+    "find": "while ((end = this.#buffer.indexOf(\"\\0\")) >= 0)",
+    "replace": "while ((end = this.#buffer.indexOf(\"\\n\")) >= 0)",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/pipe.test.ts"
+  },
+  {
+    "name": "a-closed-pipe-leaves-its-sessions-waiting",
+    "file": "daemon/src/backends/cdp/pipe.ts",
+    "find": "    for (const session of [...this.#sessions.values()]) session.gone();",
+    "replace": "",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/pipe.test.ts"
+  },
+  {
+    "name": "a-detached-target-keeps-its-dead-session",
+    "file": "daemon/src/backends/cdp/pipe.ts",
+    "find": "if (typeof sessionId === \"string\") this.#sessions.get(sessionId)?.gone();",
+    "replace": "void sessionId;",
+    "cwd": "daemon",
+    "testFile": "src/backends/cdp/__tests__/pipe.test.ts"
+  },
+  {
+    "name": "an-effect-runs-without-its-receipt",
+    "file": "daemon/src/server/dispatch.ts",
+    "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {",
+    "replace": "if (false) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "an-observation-is-refused-for-its-receipt",
+    "file": "daemon/src/server/dispatch.ts",
+    "find": "if (entry.effectClass !== \"observe\" && !auditWritable()) {",
+    "replace": "if (!auditWritable()) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "a-lost-receipt-goes-unsaid",
+    "file": "daemon/src/server/dispatch.ts",
+    "find": "if (unwrittenEffectEntries() > unwrittenBefore) markUnwrittenReceipt(answered);",
+    "replace": "void unwrittenBefore;",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/the-audit-log-names-what-was-touched.test.ts"
+  },
+  {
+    "name": "a-proof-switch-reads-the-environment",
+    "file": "daemon/src/backends/atspi/channel.ts",
+    "find": "const deaf = options.deafForProof === true;",
+    "replace": "const deaf = options.deafForProof === true || process.env.MASTRA_CC_ATSPI_DEAF_FOR_PROOF === \"1\";",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/no-proof-switch-ships.test.ts"
+  },
   {
     "name": "every-web-page-may-open-the-socket",
     "file": "daemon/src/server/pipes.ts",

@@ -39,7 +39,7 @@ describe.skipIf(process.env.MASTRA_CC_LIVE !== "1")("a commit on the browser rou
         });
       });
       await sleep(1000);
-      const backend = new CdpBackend(liveCdpChannel(`http://127.0.0.1:${port}`), "all");
+      const backend = new CdpBackend(liveCdpChannel(`http://127.0.0.1:${port}`));
       const title = async () => (await backend.queryElements({ role: "window" })).elements?.[0]?.name;
       const button = async (name: string) =>
         (await backend.queryElements({ role: "button", name })).elements?.[0]?.id as string;

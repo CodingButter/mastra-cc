@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 import type { InstalledApplication } from "@mastra-cc/protocol-types";
 import type { Backend, RunningCensus } from "../backend.js";
 import { scanInstalledApplications } from "../inventory.js";
-import { OBSERVE_SETTING } from "../capabilities.js";
 import {
   ACQUIRE_SETTING,
   type AccessibilityLayer,
@@ -89,7 +88,6 @@ async function listing(launch: Partial<LaunchContext>, census: RunningCensus): P
     { type: "request", id: 1, method: "listApplications", params: {} },
     backendSeeing(census),
     {
-      permits: new Set(),
       catalog: DEFANGED_CATALOG,
       table: new OwnershipTable(),
       accessibility: layerReporting("enabled"),
@@ -105,27 +103,35 @@ const entry = (applications: InstalledApplication[], name: string) =>
   applications.find((application) => application.name === name) as InstalledApplication;
 
 describe("the listing says what is answering, not just what is installed", () => {
-  it("publishes an explicitly granted runtime name even without an installed identity", async () => {
-    const applications = await listing({ visibility: new Set(["runtime-editor"]) }, wholeDesk("runtime-editor", "private-editor"));
+  it("publishes every runtime-only identity on an agent-owned desktop", async () => {
+    const applications = await listing({}, wholeDesk("runtime-editor", "private-editor"));
     expect(entry(applications, "runtime-editor")).toMatchObject({
-      name: "runtime-editor", running: "answering", launchable: false,
-      capabilities: expect.arrayContaining([{ capability: "observe", availability: "available" }]),
+      name: "runtime-editor",
+      running: "answering",
+      launchable: false,
     });
-    expect(entry(applications, "private-editor")).toBeUndefined();
+    expect(entry(applications, "private-editor")).toMatchObject({
+      name: "private-editor",
+      running: "answering",
+      launchable: false,
+    });
   });
 
-  it("does not disclose ungranted runtime-only identities", async () => {
-    const applications = await listing({ visibility: new Set() }, wholeDesk("private-editor"));
-    expect(entry(applications, "private-editor")).toBeUndefined();
-    expect(applications).toEqual(await listing({ visibility: new Set() }, wholeDesk()));
+  it("reports bare cannot-tell when the route cannot census an installed application", async () => {
+    const applications = await listing(
+      {},
+      { observable: new Set(["chromium"]), answersFor: new Set(["chromium"]) },
+    );
+    expect(entry(applications, "ordinary").running).toBe("cannot-tell");
+    expect(entry(applications, "ordinary").runningUnknownBy).toBeUndefined();
   });
 
   it("does not duplicate installed identities when the census uses the same name", async () => {
-    const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
+    const applications = await listing({ }, wholeDesk("ordinary"));
     expect(applications.filter(application => application.name === "ordinary")).toHaveLength(1);
   });
   it("a granted application that is on the bus reports observable", async () => {
-    const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
+    const applications = await listing({ }, wholeDesk("ordinary"));
 
     expect(entry(applications, "ordinary").running).toBe("answering");
     // Nothing to act on: the state stands alone, because a setting is only
@@ -134,55 +140,12 @@ describe("the listing says what is answering, not just what is installed", () =>
   });
 
   it("a granted application absent from a fully enumerated desk reports not-answering", async () => {
-    const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
+    const applications = await listing({ }, wholeDesk("ordinary"));
 
     // The horizon is what makes this a measurement rather than a shrug: this
     // route enumerated everything, so absence means absent.
     expect(entry(applications, "hidden-from-menus").running).toBe("not-answering");
     expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
-  });
-
-  it("an application this session may not observe reports cannot-tell and NAMES the grants file", async () => {
-    // The desk is the same desk - the census can see it running. What differs
-    // is permission, and permission may not produce a statement about the
-    // desk. This is the assertion the whole three-state design exists for.
-    const applications = await listing({ visibility: new Set(["something-else"]) }, wholeDesk("ordinary"));
-
-    expect(entry(applications, "ordinary").running).toBe("cannot-tell");
-    expect(entry(applications, "ordinary").runningUnknownBy).toBe(OBSERVE_SETTING);
-  });
-
-  it("and never reports it as not running, however the census answers", async () => {
-    // Both directions of the census, one ungranted session: neither a running
-    // application nor an absent one may reach an ungranted caller as a fact.
-    const running = await listing({ visibility: new Set() }, wholeDesk("ordinary"));
-    const notRunning = await listing({ visibility: new Set() }, wholeDesk());
-
-    for (const applications of [running, notRunning]) {
-      expect(entry(applications, "ordinary").running).toBe("cannot-tell");
-    }
-  });
-
-  it("a session with no grants composed at all is denied by default, not told everything", async () => {
-    // ADR-0036's posture, asserted on the new field: an absent visibility set
-    // is nothing granted, not everything.
-    const applications = await listing({}, wholeDesk("ordinary"));
-
-    expect(entry(applications, "ordinary").running).toBe("cannot-tell");
-    expect(entry(applications, "ordinary").runningUnknownBy).toBe(OBSERVE_SETTING);
-  });
-
-  it("a granted name the answering route has no view of reports a bare cannot-tell", async () => {
-    // The browser route's shape: it speaks for one endpoint. The session may
-    // look, so the grants file is NOT named - no setting would help, and
-    // sending a person to edit one would be a false remedy.
-    const applications = await listing(
-      { visibility: "all" },
-      { observable: new Set(["chromium"]), answersFor: new Set(["chromium"]) },
-    );
-
-    expect(entry(applications, "ordinary").running).toBe("cannot-tell");
-    expect(entry(applications, "ordinary").runningUnknownBy).toBeUndefined();
   });
 
   it("asks the census under the name the desk actually uses, not the desktop-entry id", async () => {
@@ -195,10 +158,8 @@ describe("the listing says what is answering, not just what is installed", () =>
       { type: "request", id: 1, method: "listApplications", params: {} },
       backendSeeing(wholeDesk("editor-binary")),
       {
-        permits: new Set(),
         catalog: { ordinary: { argv: ["sleep", "30"], env: {}, appearsAs: "editor-binary" } },
         table: new OwnershipTable(),
-        visibility: "all",
         accessibility: layerReporting("enabled"),
       },
     ).then((answer) => (answer.result as { applications: InstalledApplication[] }).applications);
@@ -218,10 +179,8 @@ describe("the listing says what is answering, not just what is installed", () =>
       { type: "request", id: 1, method: "listApplications", params: {} },
       backendSeeing(wholeDesk("dolphin")),
       {
-        permits: new Set(),
         catalog: { "org.kde.dolphin": { argv: ["sleep", "30"], env: {} } },
         table: new OwnershipTable(),
-        visibility: "all",
       },
     ).then((answer) => (answer.result as { applications: InstalledApplication[] }).applications);
 
@@ -232,7 +191,7 @@ describe("the listing says what is answering, not just what is installed", () =>
     // Two fixture entries publish the same display name. The bus publishes a
     // name, not which entry started it, so naming one of them the running one
     // would be a coin flip reported as a reading.
-    const applications = await listing({ visibility: "all" }, wholeDesk("Same Display Name"));
+    const applications = await listing({ }, wholeDesk("Same Display Name"));
 
     expect(entry(applications, "collide-one").running).toBe("cannot-tell");
     expect(entry(applications, "collide-two").running).toBe("cannot-tell");
@@ -254,7 +213,7 @@ describe("the listing says what is answering, not just what is installed", () =>
     const applications = await handleRequest(
       { type: "request", id: 1, method: "listApplications", params: {} },
       backend,
-      { permits: new Set(), catalog: DEFANGED_CATALOG, table: new OwnershipTable(), visibility: "all" },
+      { catalog: DEFANGED_CATALOG, table: new OwnershipTable(), },
     ).then((answer) => (answer.result as { applications: InstalledApplication[] }).applications);
 
     expect(applications.length).toBeGreaterThan(1);
@@ -265,7 +224,7 @@ describe("the listing says what is answering, not just what is installed", () =>
   });
 
   it("every entry carries the field, and the listing is not vacuous", async () => {
-    const applications = await listing({ visibility: "all" }, wholeDesk("ordinary"));
+    const applications = await listing({ }, wholeDesk("ordinary"));
 
     expect(applications.length).toBeGreaterThan(1);
     // Never silently absent: a missing field reads as a no (schema 1.7.0).
@@ -282,7 +241,7 @@ describe("the listing says what is answering, not just what is installed", () =>
     // and so must the lookup. A fixture entry whose id differs from its
     // display name is the honest case here: the id is what the census keys on
     // and what a caller names, and both go through normalise() before meeting.
-    const applications = await listing({ visibility: "all" }, wholeDesk("collide-one"));
+    const applications = await listing({ }, wholeDesk("collide-one"));
 
     expect(entry(applications, "collide-one").running).toBe("answering");
     expect(entry(applications, "collide-two").running).toBe("not-answering");
@@ -301,7 +260,7 @@ describe("the listing says what is answering, not just what is installed", () =>
 describe("an unheard desk reports ignorance, not absence", () => {
   it("names the acquire flag when the machine's accessibility layer is switched off", async () => {
     const applications = await listing(
-      { visibility: "all", accessibility: layerReporting("disabled") },
+      { accessibility: layerReporting("disabled") },
       wholeDesk("ordinary"),
     );
 
@@ -316,7 +275,7 @@ describe("an unheard desk reports ignorance, not absence", () => {
     // never off. cannot-tell is what a failed read returns AND what an
     // unsupported platform returns; neither is evidence the layer is off.
     const applications = await listing(
-      { visibility: "all", accessibility: layerReporting("cannot-tell") },
+      { accessibility: layerReporting("cannot-tell") },
       wholeDesk("ordinary"),
     );
 
@@ -327,7 +286,7 @@ describe("an unheard desk reports ignorance, not absence", () => {
   it("still reports a genuine absence when the desk demonstrably can be heard", async () => {
     // The qualification must not swallow the measurement it was added beside.
     const applications = await listing(
-      { visibility: "all", accessibility: layerReporting("enabled") },
+      { accessibility: layerReporting("enabled") },
       wholeDesk("ordinary"),
     );
 
@@ -339,7 +298,7 @@ describe("an unheard desk reports ignorance, not absence", () => {
     // A positive is a measurement. The layer's report and the census are read
     // at different moments, and a stale reading does not un-run an editor.
     const applications = await listing(
-      { visibility: "all", accessibility: layerReporting("disabled") },
+      { accessibility: layerReporting("disabled") },
       wholeDesk("ordinary"),
     );
 
@@ -347,22 +306,11 @@ describe("an unheard desk reports ignorance, not absence", () => {
     expect(entry(applications, "ordinary").runningUnknownBy).toBeUndefined();
   });
 
-  it("asks this session's own authority first, and names the grants file", async () => {
-    // Pointing an unpermitted caller at the acquire flag would send them to
-    // the wrong switch entirely: acquiring the layer would not let them look.
-    const applications = await listing(
-      { visibility: new Set(["something-else"]), accessibility: layerReporting("disabled") },
-      wholeDesk("ordinary"),
-    );
-
-    expect(entry(applications, "ordinary").running).toBe("cannot-tell");
-    expect(entry(applications, "ordinary").runningUnknownBy).toBe(OBSERVE_SETTING);
-  });
 
   it("a daemon with no adapter at all says so, and blames no setting", async () => {
     // This daemon's own incompleteness is not a claim about the machine - the
     // same rule describeAccessibility already follows for the same reason.
-    const applications = await listing({ visibility: "all", accessibility: undefined }, wholeDesk("ordinary"));
+    const applications = await listing({ accessibility: undefined }, wholeDesk("ordinary"));
 
     expect(entry(applications, "hidden-from-menus").running).toBe("cannot-tell");
     expect(entry(applications, "hidden-from-menus").runningUnknownBy).toBeUndefined();
@@ -373,7 +321,7 @@ describe("an unheard desk reports ignorance, not absence", () => {
     // would make listApplications unusable. The census beside it is already
     // asked once; so is this.
     const layer = layerReporting("disabled");
-    const applications = await listing({ visibility: "all", accessibility: layer }, wholeDesk("ordinary"));
+    const applications = await listing({ accessibility: layer }, wholeDesk("ordinary"));
 
     expect(applications.length).toBeGreaterThan(1);
     expect(layer.reads).toBe(1);
@@ -414,7 +362,7 @@ describe("an owned process this daemon can still verify is not reported gone", (
     // pointing a person at a file that cannot help is the mistake the bare
     // cannot-tell exists to avoid.
     const applications = await listing(
-      { visibility: "all", table: tableOwning("hidden-from-menus"), accessibility: layerReporting("enabled") },
+      { table: tableOwning("hidden-from-menus"), accessibility: layerReporting("enabled") },
       wholeDesk("ordinary"),
     );
 
@@ -428,7 +376,7 @@ describe("an owned process this daemon can still verify is not reported gone", (
     // a DIFFERENT name, so nothing about `hidden-from-menus` may change. A
     // hand-launched application must not become observable through this path.
     const applications = await listing(
-      { visibility: "all", table: tableOwning("something-else-entirely"), accessibility: layerReporting("enabled") },
+      { table: tableOwning("something-else-entirely"), accessibility: layerReporting("enabled") },
       wholeDesk("ordinary"),
     );
 
@@ -445,7 +393,7 @@ describe("an owned process this daemon can still verify is not reported gone", (
     for (const owned of table.entries()) owned.starttime = `${Number(owned.starttime) + 1}`;
 
     const applications = await listing(
-      { visibility: "all", table, accessibility: layerReporting("enabled") },
+      { table, accessibility: layerReporting("enabled") },
       wholeDesk("ordinary"),
     );
 
@@ -454,7 +402,7 @@ describe("an owned process this daemon can still verify is not reported gone", (
 
   it("still reports answering when the census heard it, owned or not", async () => {
     const applications = await listing(
-      { visibility: "all", table: tableOwning("ordinary"), accessibility: layerReporting("enabled") },
+      { table: tableOwning("ordinary"), accessibility: layerReporting("enabled") },
       wholeDesk("ordinary"),
     );
 
@@ -468,7 +416,7 @@ describe("an owned process this daemon can still verify is not reported gone", (
     // question, rather than a second answer to the same question - that
     // divergence is the whole subject of the segment after this one.
     const applications = await listing(
-      { visibility: "all", table: tableOwning("Hidden From Menus"), accessibility: layerReporting("enabled") },
+      { table: tableOwning("Hidden From Menus"), accessibility: layerReporting("enabled") },
       wholeDesk("ordinary"),
     );
 
@@ -482,7 +430,7 @@ describe("an owned process this daemon can still verify is not reported gone", (
     // filesystem reads on the event loop inside a hot path.
     const table = tableOwning("hidden-from-menus");
     const applications = await listing(
-      { visibility: "all", table, accessibility: layerReporting("enabled") },
+      { table, accessibility: layerReporting("enabled") },
       wholeDesk("ordinary"),
     );
 

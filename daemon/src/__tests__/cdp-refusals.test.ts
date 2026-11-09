@@ -65,10 +65,8 @@ function stage(): Channel {
 
 function context(): LaunchContext {
   return {
-    permits: new Set(),
     catalog: DEFANGED_CATALOG,
     table: new OwnershipTable(),
-    allows: new Set(["edit", "activate", "submit"]),
   };
 }
 
@@ -93,7 +91,7 @@ afterEach(() => {
 });
 
 async function silentOn(verb: "activateElement" | "queryElements", error: Error) {
-  const backend = new AtspiBackend(stage(), "all");
+  const backend = new AtspiBackend(stage());
   const { elements } = await backend.queryElements({});
   const id = elements.find((element) => element.role === "button")!.id;
   (backend as unknown as Record<string, unknown>)[verb] = async () => {
