@@ -1,9 +1,10 @@
 import { spawn } from "node:child_process";
+import { basename } from "node:path";
 import { adoptLaunchedBrowser, PipeBrowser } from "../backends/cdp/pipe.js";
 import type { Readable, Writable } from "node:stream";
 import { applicationName } from "../backends/atspi/names.js";
 import type { LaunchCatalog, LaunchRecipe } from "./recipes.js";
-import type { OwnershipTable } from "./table.js";
+import { namedProcessSnapshot, type OwnedEntry, type OwnershipTable, type ProcessSnapshot } from "./table.js";
 import type { Socket } from "node:net";
 
 // The launch primitive: the capability half only (ADR-0019 - authority is
@@ -33,13 +34,26 @@ export function findRecipe(name: string, catalog: LaunchCatalog): LaunchRecipe |
  * is removed when the direct child exits (see table.ts for the intended
  * fails-safe consequence for forking wrappers).
  */
+export interface LaunchedProcess {
+  readonly pid: number;
+  readonly name: string;
+  readonly processName: string;
+  readonly before: ProcessSnapshot;
+}
+
+export function confirmLaunchedProcess(launched: LaunchedProcess, table: OwnershipTable): OwnedEntry | undefined {
+  return table.adoptNewProcess(launched.pid, launched.name, launched.processName, launched.before);
+}
+
 export function launchApplication(
   name: string,
   catalog: LaunchCatalog,
   table: OwnershipTable,
-): Promise<{ pid: number }> {
+): Promise<LaunchedProcess> {
   const recipe = findRecipe(name, catalog);
   if (recipe === undefined) return Promise.reject(new Error(NO_RECIPE_REFUSAL));
+  const processName = recipe.appearsAs ?? basename(recipe.argv[0]);
+  const before = namedProcessSnapshot(processName);
   return new Promise((resolve, reject) => {
     const child = spawn(recipe.argv[0], recipe.argv.slice(1), {
       env: { ...process.env, ...recipe.env },
@@ -55,7 +69,7 @@ export function launchApplication(
       table.record(pid, name);
       // diagnostics only - pids never appear on the wire
       process.stderr.write(`launched ${name} pid ${pid}\n`);
-      resolve({ pid });
+      resolve({ pid, name, processName, before });
     });
     child.once("exit", () => {
       if (child.pid !== undefined) table.remove(child.pid);

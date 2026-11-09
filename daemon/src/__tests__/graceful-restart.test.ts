@@ -337,8 +337,12 @@ describe("who may close a window", () => {
     while (gone.alive()) await new Promise((r) => setTimeout(r, 5));
     // the table would now answer "not ours" honestly, so the race is staged by
     // holding the answer it WOULD have given an instant earlier
+    let ownsNameCalls = 0;
     const racing = Object.assign(Object.create(Object.getPrototypeOf(table)), table, {
-      ownsName: () => stale,
+      ownsName(name: string) {
+        ownsNameCalls += 1;
+        return ownsNameCalls === 1 ? stale : OwnershipTable.prototype.ownsName.call(this, name);
+      },
       owns: () => false,
     }) as OwnershipTable;
     const backend = desk(() => showing);
@@ -351,6 +355,23 @@ describe("who may close a window", () => {
     killEverything(racing);
   });
 
+
+  it("does not report success when a wrapper relaunch leaves the same application pid", async () => {
+    const original = await child(false);
+    const table = new OwnershipTable();
+    table.record(original.pid, "test-app");
+    const entry = table.entries()[0];
+    const sameApplication = Object.assign(Object.create(Object.getPrototypeOf(table)), table, {
+      ownsName: () => entry,
+    }) as OwnershipTable;
+    const backend = desk(() => [element(backend, "application", "test-app")]);
+
+    const answer = resultOf(await restart("test-app", backend, { table: sameApplication }));
+
+    expect(refusalText(answer)).toContain("no new owned process replaced");
+    expect(answer.application).toBeUndefined();
+    killEverything(sameApplication);
+  });
 
   it("restarts by short name an application originally owned under its full id", async () => {
     const obliging = await child(false);

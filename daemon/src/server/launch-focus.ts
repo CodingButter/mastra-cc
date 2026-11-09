@@ -6,7 +6,7 @@ import { FAILED, PERFORMED, READ, recordAudit, refused, withoutInternals, type C
 import { ACQUIRE_SETTING, type AccessibilityLayerState, type AccessibilityReport } from "../accessibility/index.js";
 import { applicationName } from "../backends/atspi/names.js";
 import { contendsForBrowserEndpoint, type LaunchCatalog } from "../launch/recipes.js";
-import { findRecipe, launchApplication, NO_RECIPE_REFUSAL } from "../launch/spawn.js";
+import { confirmLaunchedProcess, findRecipe, launchApplication, type LaunchedProcess, NO_RECIPE_REFUSAL } from "../launch/spawn.js";
 import { causeOf, outcomeOf, performEffect, sendKeyChord } from "./dispatch.js";
 import { ALREADY_RUNNING_REFUSAL, AMBIGUOUS_NAME_REFUSAL, APPLICATION_SCOPE_AMBIGUOUS_REFUSAL, APPLICATION_SCOPE_UNMATCHED_REFUSAL, COULD_NOT_START_REFUSAL, DISCOVERY_APPLICATION_REFUSAL, DISCOVERY_LIMIT_REFUSAL, DISCOVERY_WINDOW_REFUSAL, InventoryIndex, LIST_APPLICATIONS_REFUSAL, LaunchContext, ONE_BROWSER_IDENTITY_REFUSAL, QUERY_WINDOW_REQUIRES_APPLICATION_REFUSAL, NO_LAUNCH_RECIPE_REFUSAL, UNKNOWN_ROLE_REFUSAL, WINDOW_SCOPE_AMBIGUOUS_REFUSAL, WINDOW_SCOPE_UNMATCHED_REFUSAL, candidateNamesOf, capabilityExposureFor, indexInventory, resolveLaunchable, runningFieldsFor } from "./grants.js";
 import { serialised } from "./queues.js";
@@ -642,6 +642,7 @@ export async function decideOpenApplication(
   // taken after every refusal that could still fire and immediately before the
   // only thing that can move the focus (ADR-0044 clause 2).
   let held: FocusHeld = { kind: "none" };
+  let launched: LaunchedProcess | undefined;
   let ours = launch.table.ownsName(name) !== undefined;
   // The desk is asked about OURS as well as about a stranger's copy, because a
   // process being alive is not the same as an application being there to work
@@ -664,7 +665,7 @@ export async function decideOpenApplication(
   if (!ours) {
     held = await focusBeforeEffect(backend);
     try {
-      await launchApplication(name, launch.catalog, launch.table);
+      launched = await launchApplication(name, launch.catalog, launch.table);
     } catch (error) {
       // The no-recipe refusal is already honest and leak-free; anything else
       // (a spawn failure) is normalised to a constant so a raw system error
@@ -678,6 +679,7 @@ export async function decideOpenApplication(
   for (;;) {
     const application = await findApplication(backend, treeName);
     if (application !== undefined) {
+      if (launched !== undefined) confirmLaunchedProcess(launched, launch.table);
       // The poll is the settle window: focus is put back once the launched
       // application is readable, which is the earliest moment it could have
       // taken the keyboard. A restore before that races the window that has
@@ -842,8 +844,9 @@ export async function decideRestartApplication(
     }
     await new Promise((r) => setTimeout(r, interval));
   }
+  let relaunched: LaunchedProcess;
   try {
-    await launchApplication(name, launch.catalog, launch.table);
+    relaunched = await launchApplication(name, launch.catalog, launch.table);
   } catch (error) {
     const message = (error as Error).message;
     const noRecipe = message === NO_RECIPE_REFUSAL;
@@ -854,7 +857,18 @@ export async function decideRestartApplication(
     const application = await findApplication(backend, treeName);
     // The outcome is READ BACK, never taken from the signal or the spawn
     // (ADR-0065 clause 5).
-    if (application !== undefined) return { application, auditApplication: treeName };
+    if (application !== undefined) {
+      confirmLaunchedProcess(relaunched, launch.table);
+      const replacement = launch.table.ownsName(name);
+      if (replacement === undefined || replacement.pid === owned.pid) {
+        return {
+          refusal: "the application became readable again, but no new owned process replaced the one that was closed",
+          refusalClass: "RestartNotConfirmed",
+          auditApplication: treeName,
+        };
+      }
+      return { application, auditApplication: treeName };
+    }
     if (Date.now() >= readable) {
       return {
         refusal: `the application was closed and started again but did not become readable within ${budget}ms - refusing to pretend it is ready`,

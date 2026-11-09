@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { applicationName } from "../backends/atspi/names.js";
 
 // The ownership table (ADR-0029): the daemon knows what it launched because
@@ -18,12 +18,12 @@ import { applicationName } from "../backends/atspi/names.js";
 // per-element pid join (proven possible in the ownership spike via the
 // accessibility layer's reported pid) is deferred to M2.4's attribution work.
 //
-// Fails-safe consequence, intended: spawn.ts removes an entry when the DIRECT
-// child exits, so a wrapper that forks the real application and exits orphans
-// the launched app into "not ours". A dead recorded id answers "not ours" and
-// the daemon degrades to asking, never acting - the direction the ownership
-// proof blesses. Descendant acceptance holds while the recorded process
-// lives. M2.4's attribution work may revisit this.
+// A launch first records the direct child. Once the application is readable,
+// the launch path may transfer that record to the single newly appeared root
+// process whose published process name matches the recipe. This keeps an
+// exec/fork wrapper from orphaning the real application while still refusing
+// ambiguous or pre-existing same-name processes. Descendants remain owned
+// through the bounded parent walk while the recorded root lives.
 
 export interface OwnedEntry {
   readonly pid: number;
@@ -36,6 +36,37 @@ export interface OwnedEntry {
 interface StatFields {
   readonly ppid: number;
   readonly starttime: string;
+}
+
+export interface ProcessIdentity extends StatFields {
+  readonly pid: number;
+}
+
+export type ProcessSnapshot = ReadonlyMap<number, string>;
+
+export function namedProcessSnapshot(name: string): ProcessSnapshot {
+  const wanted = applicationName(name);
+  const found = new Map<number, string>();
+  let entries: string[];
+  try {
+    entries = readdirSync("/proc");
+  } catch {
+    return found;
+  }
+  for (const entry of entries) {
+    if (!/^\d+$/.test(entry)) continue;
+    const pid = Number(entry);
+    let comm: string;
+    try {
+      comm = readFileSync(`/proc/${pid}/comm`, "utf8").trim();
+    } catch {
+      continue;
+    }
+    if (applicationName(comm) !== wanted) continue;
+    const stat = readStat(pid);
+    if (stat !== undefined) found.set(pid, stat.starttime);
+  }
+  return found;
 }
 
 // /proc/<pid>/stat: "pid (comm) state ppid ...". The comm field may contain
@@ -72,6 +103,25 @@ export class OwnershipTable {
 
   remove(pid: number): void {
     this.byPid.delete(pid);
+  }
+
+  adoptNewProcess(launcherPid: number, name: string, processName: string, before: ProcessSnapshot): OwnedEntry | undefined {
+    const after = namedProcessSnapshot(processName);
+    const candidates: ProcessIdentity[] = [];
+    for (const [pid, starttime] of after) {
+      if (before.get(pid) === starttime) continue;
+      const stat = readStat(pid);
+      if (stat !== undefined && stat.starttime === starttime) candidates.push({ pid, ...stat });
+    }
+    const direct = candidates.find(({ pid }) => pid === launcherPid);
+    const candidatePids = new Set(candidates.map(({ pid }) => pid));
+    const roots = candidates.filter(({ ppid }) => !candidatePids.has(ppid));
+    const root = direct ?? (roots.length === 1 ? roots[0] : undefined);
+    if (root === undefined) return undefined;
+    const adopted = { pid: root.pid, starttime: root.starttime, name: applicationName(name) };
+    this.byPid.delete(launcherPid);
+    this.byPid.set(root.pid, adopted);
+    return adopted;
   }
 
   /**

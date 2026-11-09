@@ -1,10 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LaunchCatalog } from "../recipes.js";
-import { launchApplication, NO_RECIPE_REFUSAL, terminateOwned } from "../spawn.js";
+import { confirmLaunchedProcess, launchApplication, NO_RECIPE_REFUSAL, terminateOwned } from "../spawn.js";
 import { OwnershipTable, readStat } from "../table.js";
 
 // launchApplication with injected test catalogs - real child processes, real
@@ -78,6 +78,34 @@ describe("launchApplication", () => {
     }
     expect(table.entries()).toHaveLength(0);
     expect(table.owns(pid)).toBe(false);
+  });
+
+  it.runIf(process.platform === "linux")("transfers ownership from an exited wrapper to the new application process", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "mcc-wrapper-owner-"));
+    tempDirs.push(dir);
+    const application = join(dir, "singleton-app");
+    const wrapper = join(dir, "wrapper.sh");
+    const pidFile = join(dir, "singleton.pid");
+    copyFileSync("/usr/bin/sleep", application);
+    chmodSync(application, 0o755);
+    writeFileSync(
+      wrapper,
+      `#!/bin/sh\nif [ -s "${pidFile}" ] && kill -0 "$(cat "${pidFile}")" 2>/dev/null; then exit 0; fi\nsetsid "${application}" 30 >/dev/null 2>&1 &\necho $! > "${pidFile}"\n`,
+    );
+    chmodSync(wrapper, 0o755);
+    const catalog: LaunchCatalog = { singleton: { argv: [wrapper], env: {}, appearsAs: "singleton-app" } };
+    const table = new OwnershipTable();
+
+    const launched = await launchApplication("singleton", catalog, table);
+    tracked(launched.pid);
+    for (let i = 0; i < 100 && !existsSync(pidFile); i += 1) await new Promise((r) => setTimeout(r, 10));
+    const applicationPid = tracked(Number(readFileSync(pidFile, "utf8").trim()));
+    await waitGone(launched.pid);
+
+    const adopted = confirmLaunchedProcess(launched, table);
+    expect(adopted?.pid).toBe(applicationPid);
+    expect(adopted?.starttime).toBe(readStat(applicationPid)?.starttime);
+    expect(table.ownsName("singleton")?.pid).toBe(applicationPid);
   });
 
   it("refuses an unknown catalog name naming nothing about the filesystem", async () => {

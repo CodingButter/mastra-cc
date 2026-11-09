@@ -2328,5 +2328,13 @@
     "replace": "  if (verbs.length < 1) {",
     "cwd": "daemon",
     "testFile": "src/__tests__/attestation.test.ts"
+  },
+  {
+    "name": "a-wrapper-restart-accepts-the-same-application-pid",
+    "file": "daemon/src/server/launch-focus.ts",
+    "find": "      if (replacement === undefined || replacement.pid === owned.pid) {",
+    "replace": "      if (replacement === undefined) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/graceful-restart.test.ts"
   }
 ]
