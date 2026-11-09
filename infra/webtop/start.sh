@@ -16,14 +16,12 @@ docker cp "$WEBTOP_DIR/persistence-control.py" "$MASTRA_CC_WEBTOP_CONTAINER:/tmp
 container_exec bash -lc "cat > /config/workspace/protected.html <<'HTML'
 <!doctype html><html><body><label>Password <input type=password value='$PROTECTED_VALUE' autofocus></label></body></html>
 HTML"
-session_exec 'pgrep -x kate >/dev/null || (kate /config/workspace/proof.txt >/tmp/kate.log 2>&1 &)'
+session_exec "MASTRA_CC_SOCKET='$SOCKET' MASTRA_CC_DAEMON_MAIN='$DEPLOY/daemon/main.mjs' MASTRA_CC_OPEN_MAIN_APPS='$DEPLOY/infra/open-main-apps.mjs' MASTRA_CC_NODE=/usr/local/bin/node MASTRA_CC_AUDIT=/config/.XDG/mastra-cc/audit.jsonl MASTRA_CC_DAEMON_LOG=/tmp/mastra-cc.log MASTRA_CC_DAEMON_PID_FILE=/tmp/mastra-cc.pid '$DEPLOY/infra/agent-owned-session.sh'"
 session_exec 'test -f /tmp/persistence-control.pid && kill -0 $(cat /tmp/persistence-control.pid) 2>/dev/null || (python3 /tmp/persistence-control.py >/tmp/persistence-control.log 2>&1 & echo $! >/tmp/persistence-control.pid)'
 session_exec "test -f /tmp/chromium-proof.pid && kill \$(cat /tmp/chromium-proof.pid) 2>/dev/null || true; rm -f /config/.chromium-proof/SingletonLock /config/.chromium-proof/SingletonSocket /config/.chromium-proof/SingletonCookie; chromium --headless=new --no-sandbox --disable-gpu --force-renderer-accessibility --remote-debugging-address=127.0.0.1 --remote-debugging-port=9744 --user-data-dir=/config/.chromium-proof file:///config/workspace/protected.html >/tmp/chromium-proof.log 2>&1 & echo \$! >/tmp/chromium-proof.pid"
-wait_for 'Kate process' 30 1 container_exec pgrep -x kate
 cdp_ready() { container_exec curl -sf http://127.0.0.1:9744/json/version >/dev/null; }
 wait_for 'protected browser accessibility endpoint' 50 1 cdp_ready
-session_exec "test -f /tmp/mastra-cc.pid && kill \$(cat /tmp/mastra-cc.pid) 2>/dev/null || true; rm -f '$SOCKET'; /usr/local/bin/node '$DEPLOY/daemon/main.mjs' --backend atspi --socket '$SOCKET' --grant kate --grant persistence-proof --allow edit >/tmp/mastra-cc.log 2>&1 & echo \$! >/tmp/mastra-cc.pid"
-session_exec "test -f /tmp/mastra-cc-cdp.pid && kill \$(cat /tmp/mastra-cc-cdp.pid) 2>/dev/null || true; rm -f '$CDP_SOCKET'; /usr/local/bin/node '$DEPLOY/daemon/main.mjs' --backend cdp --socket '$CDP_SOCKET' --grant chrome >/tmp/mastra-cc-cdp.log 2>&1 & echo \$! >/tmp/mastra-cc-cdp.pid"
+session_exec "test -f /tmp/mastra-cc-cdp.pid && kill \$(cat /tmp/mastra-cc-cdp.pid) 2>/dev/null || true; rm -f '$CDP_SOCKET'; /usr/local/bin/node '$DEPLOY/daemon/main.mjs' --backend cdp --socket '$CDP_SOCKET' >/tmp/mastra-cc-cdp.log 2>&1 & echo \$! >/tmp/mastra-cc-cdp.pid"
 wait_for 'AT-SPI daemon socket' 30 1 container_exec test -S "$SOCKET"
 wait_for 'CDP daemon socket' 30 1 container_exec test -S "$CDP_SOCKET"
 container_exec env MASTRA_CC_SOCKET="$SOCKET" /usr/local/bin/node "$DEPLOY/scenario-client.mjs" readiness

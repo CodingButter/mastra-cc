@@ -2320,5 +2320,13 @@
     "replace": "  const id = typeof params.id === \"string\" ? params.id : \"\";",
     "cwd": "daemon",
     "testFile": "src/__tests__/a-missing-id-is-the-callers-mistake.test.ts"
+  },
+  {
+    "name": "attestation-allows-several-verbs",
+    "file": "daemon/src/backend.ts",
+    "find": "  if (verbs.length !== 1) {",
+    "replace": "  if (verbs.length < 1) {",
+    "cwd": "daemon",
+    "testFile": "src/__tests__/attestation.test.ts"
   }
 ]

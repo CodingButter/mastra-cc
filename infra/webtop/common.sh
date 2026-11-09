@@ -49,8 +49,10 @@ copy_node_if_needed() {
 
 copy_built_artifacts() {
   container_exec rm -rf "$DEPLOY"
-  container_exec mkdir -p "$DEPLOY/daemon" "$DEPLOY/transport"
+  container_exec mkdir -p "$DEPLOY/daemon" "$DEPLOY/transport" "$DEPLOY/infra"
   docker cp "$ROOT/daemon/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/daemon/"
   docker cp "$ROOT/packages/transport/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/transport/"
+  docker cp "$ROOT/infra/agent-owned-session.sh" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/infra/agent-owned-session.sh"
+  docker cp "$ROOT/infra/open-main-apps.mjs" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/infra/open-main-apps.mjs"
   docker cp "$WEBTOP_DIR/scenario-client.mjs" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/scenario-client.mjs"
 }

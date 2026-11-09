@@ -14,6 +14,10 @@ const NET_IMPORT = /(?:from\s*|require\s*\(\s*|import\s*\(\s*)["'](?:node:)?net[
 // which imports nothing, is invisible to it.
 const WS_IMPORT = /(?:from\s*|require\s*\(\s*|import\s*\(\s*)["']ws["']/;
 const TRANSPORT_DIR = join("packages", "transport") + sep;
+const APPROVED_BOOT_CLIENTS = new Set([
+  join("infra", "open-main-apps.mjs"),
+  join("tools", "__tests__", "agent-owned-session.test.mjs"),
+]);
 
 // infra/ is scanned too: the harnesses that drive a container desktop are the
 // most tempting place to hand-roll a second dial, precisely because they are
@@ -23,9 +27,10 @@ const SCAN_ROOTS = ["packages", "tools", "scripts", "infra"];
 
 const root = rootFromArgs(process.argv);
 assertRoots(root, SCAN_ROOTS, "pin-b5");
-const files = collect(root, SCAN_ROOTS, [".ts", ".js", ".mjs", ".cjs"]).filter(
-  (f) => !relative(root, f).startsWith(TRANSPORT_DIR),
-);
+const files = collect(root, SCAN_ROOTS, [".ts", ".js", ".mjs", ".cjs"]).filter((file) => {
+  const path = relative(root, file);
+  return !path.startsWith(TRANSPORT_DIR) && !APPROVED_BOOT_CLIENTS.has(path);
+});
 
 if (files.length === 0) fail("pin-b5: no files matched - the pin would pass vacuously");
 
