@@ -151,7 +151,12 @@ function recipeFrom(text: string): LaunchRecipe | undefined {
   if (exec === undefined) return undefined;
   const argv = argvFromExec(exec);
   if (argv === undefined) return undefined;
-  return { argv, env: ACCESSIBILITY_ENV, appearsAs: applicationName(basename(argv[0])) };
+  const startupClass = entryValue(text, "StartupWMClass")?.trim();
+  return {
+    argv,
+    env: ACCESSIBILITY_ENV,
+    appearsAs: applicationName(startupClass === undefined || startupClass === "" ? basename(argv[0]) : startupClass),
+  };
 }
 
 function scanDirectory(directory: string): Map<string, LaunchRecipe> {

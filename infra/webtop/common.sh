@@ -42,16 +42,26 @@ wait_for() {
 
 copy_node_if_needed() {
   if container_exec bash -lc 'command -v node >/dev/null'; then return; fi
-  local host_node
-  host_node="$(command -v node)"
-  docker cp "$host_node" "$MASTRA_CC_WEBTOP_CONTAINER:/usr/local/bin/node"
+  local source_container node_copy
+  source_container="${MASTRA_CC_WEBTOP_PROJECT}-node-source"
+  node_copy="$(mktemp)"
+  docker rm -f "$source_container" >/dev/null 2>&1 || true
+  docker create --name "$source_container" node:22-bookworm >/dev/null
+  docker cp "$source_container:/usr/local/bin/node" "$node_copy"
+  docker cp "$node_copy" "$MASTRA_CC_WEBTOP_CONTAINER:/usr/local/bin/node"
+  container_exec chmod 0755 /usr/local/bin/node
+  docker rm -f "$source_container" >/dev/null
+  rm -f "$node_copy"
 }
 
 copy_built_artifacts() {
   container_exec rm -rf "$DEPLOY"
-  container_exec mkdir -p "$DEPLOY/daemon" "$DEPLOY/transport" "$DEPLOY/infra"
+  container_exec mkdir -p "$DEPLOY/daemon" "$DEPLOY/transport" "$DEPLOY/infra" "$DEPLOY/node_modules" "$DEPLOY/node_modules/@mastra-cc/protocol-types/dist"
   docker cp "$ROOT/daemon/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/daemon/"
   docker cp "$ROOT/packages/transport/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/transport/"
+  docker cp "$ROOT/packages/protocol-types/dist/." "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/node_modules/@mastra-cc/protocol-types/dist/"
+  docker cp "$ROOT/packages/protocol-types/package.json" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/node_modules/@mastra-cc/protocol-types/package.json"
+  tar -C "$ROOT/packages/transport/node_modules" -chf - ws | docker exec -i "$MASTRA_CC_WEBTOP_CONTAINER" tar -C "$DEPLOY/node_modules" -xf -
   docker cp "$ROOT/infra/agent-owned-session.sh" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/infra/agent-owned-session.sh"
   docker cp "$ROOT/infra/open-main-apps.mjs" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/infra/open-main-apps.mjs"
   docker cp "$WEBTOP_DIR/scenario-client.mjs" "$MASTRA_CC_WEBTOP_CONTAINER:$DEPLOY/scenario-client.mjs"

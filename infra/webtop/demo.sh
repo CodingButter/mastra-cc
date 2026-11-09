@@ -8,7 +8,7 @@ semantic="$(container_exec env MASTRA_CC_SOCKET="$SOCKET" MASTRA_CC_PROOF_SENTEN
 printf '%s\n' "$semantic"
 subscription="$(container_exec env MASTRA_CC_SOCKET="$SOCKET" MASTRA_CC_PROOF_SENTENCE="$PROOF_SENTENCE ON WATCH" /usr/local/bin/node "$DEPLOY/scenario-client.mjs" subscribe)"
 printf '%s\n' "$subscription"
-protected="$(container_exec env MASTRA_CC_SOCKET="$CDP_SOCKET" /usr/local/bin/node "$DEPLOY/scenario-client.mjs" protected)"
+protected="$(container_exec env MASTRA_CC_SOCKET="$SOCKET" MASTRA_CC_PROTECTED_VALUE="$PROTECTED_VALUE" /usr/local/bin/node "$DEPLOY/scenario-client.mjs" protected)"
 printf '%s\n' "$protected"
 
 if printf '%s\n' "$protected" | grep -Fq "$PROTECTED_VALUE"; then

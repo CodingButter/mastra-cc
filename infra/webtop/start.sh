@@ -14,9 +14,9 @@ container_exec touch /config/workspace/proof.txt
 container_exec chown -R 1000:1000 /config/workspace /config/.XDG/mastra-cc /config/.chromium-proof
 docker cp "$WEBTOP_DIR/persistence-control.py" "$MASTRA_CC_WEBTOP_CONTAINER:/tmp/persistence-control.py"
 container_exec bash -lc "cat > /config/workspace/protected.html <<'HTML'
-<!doctype html><html><body><label>Password <input type=password value='$PROTECTED_VALUE' autofocus></label></body></html>
+<!doctype html><html><body><div>MCC_VISIBLE_CAPTURE_MARKER</div><label>Password <input id=agent-password type=password value='$PROTECTED_VALUE' autofocus></label></body></html>
 HTML"
-session_exec "MASTRA_CC_SOCKET='$SOCKET' MASTRA_CC_DAEMON_MAIN='$DEPLOY/daemon/main.mjs' MASTRA_CC_OPEN_MAIN_APPS='$DEPLOY/infra/open-main-apps.mjs' MASTRA_CC_NODE=/usr/local/bin/node MASTRA_CC_AUDIT=/config/.XDG/mastra-cc/audit.jsonl MASTRA_CC_DAEMON_LOG=/tmp/mastra-cc.log MASTRA_CC_DAEMON_PID_FILE=/tmp/mastra-cc.pid '$DEPLOY/infra/agent-owned-session.sh'"
+session_exec "MASTRA_CC_SOCKET='$SOCKET' MASTRA_CC_DAEMON_MAIN='$DEPLOY/daemon/main.mjs' MASTRA_CC_OPEN_MAIN_APPS='$DEPLOY/infra/open-main-apps.mjs' MASTRA_CC_NODE=/usr/local/bin/node MASTRA_CC_AUDIT=/config/.XDG/mastra-cc/audit.jsonl MASTRA_CC_DAEMON_LOG=/tmp/mastra-cc.log MASTRA_CC_DAEMON_PID_FILE=/tmp/mastra-cc.pid MASTRA_CC_WS_PORT=9979 MASTRA_CC_WS_HOST=127.0.0.1 '$DEPLOY/infra/agent-owned-session.sh'"
 session_exec 'test -f /tmp/persistence-control.pid && kill -0 $(cat /tmp/persistence-control.pid) 2>/dev/null || (python3 /tmp/persistence-control.py >/tmp/persistence-control.log 2>&1 & echo $! >/tmp/persistence-control.pid)'
 session_exec "test -f /tmp/chromium-proof.pid && kill \$(cat /tmp/chromium-proof.pid) 2>/dev/null || true; rm -f /config/.chromium-proof/SingletonLock /config/.chromium-proof/SingletonSocket /config/.chromium-proof/SingletonCookie; chromium --headless=new --no-sandbox --disable-gpu --force-renderer-accessibility --remote-debugging-address=127.0.0.1 --remote-debugging-port=9744 --user-data-dir=/config/.chromium-proof file:///config/workspace/protected.html >/tmp/chromium-proof.log 2>&1 & echo \$! >/tmp/chromium-proof.pid"
 cdp_ready() { container_exec curl -sf http://127.0.0.1:9744/json/version >/dev/null; }

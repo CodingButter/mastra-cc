@@ -23,6 +23,10 @@ describe("Webtop semantic desktop harness", () => {
     ]);
     expect(common).toContain('docker cp "$ROOT/daemon/dist/."');
     expect(common).toContain('docker cp "$ROOT/packages/transport/dist/."');
+    expect(common).toContain('"$ROOT/packages/transport/node_modules"');
+    expect(common).toContain('packages/protocol-types/dist/.');
+    expect(common).toContain('node:22-bookworm');
+    expect(common).not.toContain('host_node="$(command -v node)"');
     expect(common).not.toContain("daemon/src");
     expect(common).not.toContain("packages/transport/src");
     expect(start).toMatch(/wait_for 'container health' \d+ \d+/);
@@ -36,14 +40,18 @@ describe("Webtop semantic desktop harness", () => {
     expect(cleanup).not.toMatch(/docker\s+(system\s+prune|rm\s+-f\s+\$\()/);
   });
 
-  it("keeps protected values out of responses and diagnostics", async () => {
-    const [client, demo, diagnostics] = await Promise.all([
+  it("keeps protected values out of retained proof output", async () => {
+    const [start, client, demo, diagnostics] = await Promise.all([
+      read("infra/webtop/start.sh"),
       read("infra/webtop/scenario-client.mjs"),
       read("infra/webtop/demo.sh"),
       read("infra/webtop/diagnostics.sh"),
     ]);
-    expect(client).toContain('element.content.kind === "redacted"');
-    expect(client).toContain('if ("value" in protectedElement.content)');
+    expect(start).toContain("MCC_VISIBLE_CAPTURE_MARKER");
+    expect(start).toContain("MASTRA_CC_WS_PORT=9979");
+    expect(client).toContain('createHash("sha256")');
+    expect(client).toContain("matched: true");
+    expect(client).not.toContain('content.kind === "redacted"');
     expect(demo).toContain('grep -Fq "$PROTECTED_VALUE"');
     expect(diagnostics).toContain('grep -R -Fq "$PROTECTED_VALUE"');
     expect(demo).not.toContain('diagnostics.sh" >/dev/null 2>&1 || true');

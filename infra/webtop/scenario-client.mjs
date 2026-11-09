@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { connect } from "/opt/mastra-cc/transport/index.mjs";
 
 const socketPath = process.env.MASTRA_CC_SOCKET;
@@ -124,11 +125,15 @@ try {
     const all = await elements();
     console.log(JSON.stringify(all.map((element) => ({ id: element.id, role: element.role, name: element.name, actions: element.actions.map((action) => action.name), states: element.states, operations: element.operations, contentKind: element.content?.kind, contentValue: element.content?.value, visibility: element.visibility, nativeRole: element.diagnostic?.nativeRole, nativeId: element.diagnostic?.nativeId }))));
   } else if (mode === "protected") {
+    const expected = process.env.MASTRA_CC_PROTECTED_VALUE;
+    if (!expected) throw new Error("MASTRA_CC_PROTECTED_VALUE is required");
     const all = await elements();
-    const protectedElement = all.find((element) => element.content.kind === "redacted" && element.content.reason === "protected");
-    if (!protectedElement) throw new Error("no platform-protected control produced structured redaction");
-    if ("value" in protectedElement.content) throw new Error("protected content carried a value");
-    console.log(JSON.stringify({ protected: "redacted", elementId: protectedElement.id, reason: protectedElement.content.reason }));
+    const protectedElement = all.find(
+      (element) => element.role === "textbox" && element.content.kind === "text" && element.content.value === expected,
+    );
+    if (!protectedElement) throw new Error("the password control did not expose its exact text through AT-SPI");
+    const digest = createHash("sha256").update(protectedElement.content.value).digest("hex");
+    console.log(JSON.stringify({ protected: `sha256:${digest}`, elementId: protectedElement.id, matched: true }));
   } else {
     throw new Error(`unknown scenario mode: ${mode}`);
   }

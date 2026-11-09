@@ -140,6 +140,13 @@ describe("what a derived recipe carries", () => {
     expect(catalog["absolute"].appearsAs).toBe("kate");
   });
 
+  it("uses StartupWMClass when a desktop wrapper has a different process name", () => {
+    const dir = directoryWith({
+      "chromium.desktop": application("/usr/local/bin/wrapped-chromium", "StartupWMClass=chromium\n"),
+    });
+    expect(deriveLaunchCatalog([dir])["chromium"].appearsAs).toBe("chromium");
+  });
+
   it("both measured accessibility knobs, on every recipe", () => {
     const dir = directoryWith({ "a.desktop": application("kate"), "b.desktop": application("dolphin") });
     for (const recipe of Object.values(deriveLaunchCatalog([dir]))) {
